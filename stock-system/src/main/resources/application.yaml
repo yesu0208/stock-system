@@ -1,5 +1,8 @@
 debug: false
 
+jwt:
+  secret-key: ${SECRET_KEY}
+
 logging:
   level:
     arile.toy.stocksystem: debug
