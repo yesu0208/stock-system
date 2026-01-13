@@ -7,7 +7,7 @@ import arile.toy.stocksystem.domain.user.UserLoginRequestBody;
 import arile.toy.stocksystem.domain.user.UserSignUpRequestBody;
 import arile.toy.stocksystem.exception.user.UserAlreadyExistsException;
 import arile.toy.stocksystem.exception.user.UserNotFoundException;
-import arile.toy.stocksystem.repository.UserEntityRepository;
+import arile.toy.stocksystem.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserService implements UserDetailsService {
 
-    @Autowired private UserEntityRepository userEntityRepository;
+    @Autowired private UserRepository userRepository;
     @Autowired private BCryptPasswordEncoder bCryptPasswordEncoder;
     @Autowired private JwtService jwtService;
 
@@ -28,12 +28,12 @@ public class UserService implements UserDetailsService {
     }
 
     public UserDto signUp(UserSignUpRequestBody userSignUpRequestBody) {
-        userEntityRepository.findByUsername(userSignUpRequestBody.username())
+        userRepository.findByUsername(userSignUpRequestBody.username())
                 .ifPresent(userEntity -> {
                     throw new UserAlreadyExistsException();
                 });
 
-        var userEntity = userEntityRepository.save(
+        var userEntity = userRepository.save(
                 UserEntity.of(
                         userSignUpRequestBody.username(),
                         bCryptPasswordEncoder.encode(userSignUpRequestBody.password())
@@ -55,7 +55,7 @@ public class UserService implements UserDetailsService {
     }
 
     private UserEntity getUserEntityByUsername(String username) {
-        return userEntityRepository.findByUsername(username)
+        return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
     }
 }
