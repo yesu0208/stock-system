@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Autowired private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Autowired private JwtExceptionFilter jwtExceptionFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -26,6 +27,7 @@ public class SecurityConfig {
                 )
                 .csrf(CsrfConfigurer::disable)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtExceptionFilter, jwtAuthenticationFilter.getClass())
                 .httpBasic(HttpBasicConfigurer::disable)
                 .logout(logout -> logout.logoutSuccessUrl("/"))
                 .build();
