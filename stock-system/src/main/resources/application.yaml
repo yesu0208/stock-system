@@ -7,6 +7,7 @@ api:
   approval-key-url: ${APPROVAL_KEY_URL}
   app-key: ${APP_KEY}
   app-secret: ${APP_SECRET}
+  ws-url: ${WS_URL}
 
 logging:
   level:
