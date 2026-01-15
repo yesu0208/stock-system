@@ -24,12 +24,13 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(requests ->
                         requests
-                                .requestMatchers(HttpMethod.POST, "/api/*/users", "/api/*/users/authenticate")
-                                .permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/*/users/all")
-                                .hasRole("ADMIN")
-                                .anyRequest()
-                                .authenticated())
+                                .anyRequest().permitAll())
+//                                .requestMatchers(HttpMethod.POST, "/api/*/users", "/api/*/users/authenticate")
+//                                .permitAll()
+//                                .requestMatchers(HttpMethod.GET, "/api/*/users/all")
+//                                .hasRole("ADMIN")
+//                                .anyRequest()
+//                                .authenticated())
                 .sessionManagement(
                         (session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
