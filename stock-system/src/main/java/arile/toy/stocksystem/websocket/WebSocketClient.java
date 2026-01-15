@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.websocket.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ public class WebSocketClient {
     private Session session;
     private String approvalKey;
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final StompManager stompManager;
 
     public void connect(String approvalKey) {
         try {
@@ -47,7 +49,29 @@ public class WebSocketClient {
 
         //TODO: parsing data
         if (!message.contains("|")) {
-            return;
+
+            try {
+                JsonNode root = objectMapper.readTree(message);
+                if (root.path("body").has("msg1")) {
+
+                    String msg1 = root.path("body").path("msg1").asText();
+                    switch (msg1) {
+                        case "SUBSCRIBE SUCCESS" -> log.info("SUBSCRIBE SUCCESS");
+                        case "UNSUBSCRIBE SUCCESS" -> log.info("UNSUBSCRIBE SUCCESS");
+                        case "UNSUBSCRIBE ERROR(not found!)" -> log.warn("UNSUBSCRIBE ERROR(not found!)");
+                        default -> log.warn("JSON PARSING ERROR : input not found");
+                    }
+                    return;
+
+                } else if (root.path("header").path("tr_id").asText().equals("PINGPONG")) { // {"header":{"tr_id":"PINGPONG","datetime":"xxxxxxxxxxxxxx"}}
+                    log.info("PINGPONG");
+                    return;
+                }
+
+            } catch (JsonProcessingException exception) {
+                log.error("JSON 변환 실패", exception);
+                return;
+            }
         }
 
         String[] parts = message.split("\\|", 4);
@@ -94,6 +118,7 @@ public class WebSocketClient {
                 try {
                     json = objectMapper.writeValueAsString(tradePriceTickMessage);
                     log.info("JSON 변환 데이터: {}", json);
+                    stompManager.handleMessage(fields[offset], json);
                 } catch (JsonProcessingException exception) {
                     log.error("JSON 변환 실패", exception);
                 }
@@ -154,6 +179,7 @@ public class WebSocketClient {
                 try {
                     json = objectMapper.writeValueAsString(bidAskPriceTickMessage);
                     log.info("JSON 변환 데이터: {}", json);
+                    stompManager.handleMessage(fields[offset], json);
                 } catch (JsonProcessingException exception) {
                     log.error("JSON 변환 실패", exception);
                 }
