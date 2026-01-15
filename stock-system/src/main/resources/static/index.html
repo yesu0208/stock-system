@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>실시간 주식</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<h1>실시간 주식 데이터</h1>
+<div id="stock-data"></div>
+
+<script>
+    const socket = new SockJS('/ws-stock'); // Spring WebSocket endpoint
+    const stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function(frame) {
+        console.log('Connected: ' + frame);
+
+        // 005930 종목 구독
+        stompClient.subscribe('/sub/stock/005930', function(message) {
+            const data = JSON.parse(message.body);
+            console.log("실시간 데이터:", data);
+            document.getElementById('stock-data').innerText = JSON.stringify(data);
+        });
+
+    });
+</script>
+</body>
+</html>
