@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <title>실시간 주식</title>
@@ -8,23 +8,73 @@
 </head>
 <body>
 <h1>실시간 주식 데이터</h1>
-<div id="stock-data"></div>
+
+<input type="text" id="stock-code" placeholder="종목 코드 입력 (예: 005930)" />
+<button onclick="subscribe()">Subscribe</button>
+<button onclick="unsubscribe()">Unsubscribe</button>
+
+<h2>BID/ASK</h2>
+<pre id="bidask-data"></pre>
+
+<h2>체결가</h2>
+<pre id="trade-data"></pre>
 
 <script>
-    const socket = new SockJS('/ws-stock'); // Spring WebSocket endpoint
+    const socket = new SockJS('/ws-stock');
     const stompClient = Stomp.over(socket);
 
-    stompClient.connect({}, function(frame) {
-        console.log('Connected: ' + frame);
+    let subscription = null;
+    let currentCode = null;
 
-        // 005930 종목 구독
-        stompClient.subscribe('/sub/stock/005930', function(message) {
+    stompClient.connect({}, function (frame) {
+        console.log('Connected: ' + frame);
+    });
+
+    function subscribe() {
+        const codeInput = document.getElementById('stock-code').value.trim();
+        if (!codeInput) {
+            alert("종목 코드를 입력하세요.");
+            return;
+        }
+
+        if (subscription) {
+            alert(`이미 ${currentCode} 종목을 구독 중입니다. 먼저 구독 해제하세요.`);
+            return;
+        }
+
+        currentCode = codeInput;
+
+        subscription = stompClient.subscribe(`/sub/stock/${currentCode}`, function (message) {
             const data = JSON.parse(message.body);
             console.log("실시간 데이터:", data);
-            document.getElementById('stock-data').innerText = JSON.stringify(data);
+
+            if (data.type === "BIDASKPRICE") {
+                document.getElementById('bidask-data').innerText =
+                    JSON.stringify(data, null, 2);
+            } else if (data.type === "TRADEPRICE") {
+                document.getElementById('trade-data').innerText =
+                    JSON.stringify(data, null, 2);
+            }
         });
 
-    });
+        console.log(`${currentCode} 구독 시작`);
+    }
+
+    function unsubscribe() {
+        if (!subscription) {
+            alert("구독 중이 아닙니다.");
+            return;
+        }
+
+        subscription.unsubscribe();
+        subscription = null;
+        console.log(`${currentCode} 구독 해제`);
+        currentCode = null;
+
+        // 화면 초기화
+        document.getElementById('bidask-data').innerText = '';
+        document.getElementById('trade-data').innerText = '';
+    }
 </script>
 </body>
 </html>
