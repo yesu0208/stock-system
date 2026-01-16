@@ -40,7 +40,6 @@ public class WebSocketClient {
     public void onOpen(Session session){
         log.info("외부 Stock WebSocket 연결 성공");
         this.session = session;
-        subscribe("005930");
     }
 
     @OnMessage
@@ -59,6 +58,7 @@ public class WebSocketClient {
                         case "SUBSCRIBE SUCCESS" -> log.info("SUBSCRIBE SUCCESS");
                         case "UNSUBSCRIBE SUCCESS" -> log.info("UNSUBSCRIBE SUCCESS");
                         case "UNSUBSCRIBE ERROR(not found!)" -> log.warn("UNSUBSCRIBE ERROR(not found!)");
+                        case "ALREADY IN SUBSCRIBE" -> log.warn("ALREADY IN SUBSCRIBE");
                         default -> log.warn("JSON PARSING ERROR : input not found");
                     }
                     return;
@@ -188,14 +188,24 @@ public class WebSocketClient {
         }
     }
 
-    public void subscribe(String symbol) {
+    public void subscribe(String code) {
         if (session == null || !session.isOpen()) {
-            log.warn("WebSocket session not open. Skip subscribe: {}", symbol);
+            log.warn("WebSocket session not open. Skip subscribe: {}", code);
             return;
         }
 
-        send(buildTradePriceMsg(symbol));
-        send(buildBidAskMsg(symbol));
+        send(buildTradePriceMsg(code, "1"));
+        send(buildBidAskMsg(code, "1"));
+    }
+
+    public void unsubscribe(String code) {
+        if (session == null || !session.isOpen()) {
+            log.warn("WebSocket session not open. Skip unsubscribe: {}", code);
+            return;
+        }
+
+        send(buildTradePriceMsg(code, "2"));
+        send(buildBidAskMsg(code, "2"));
     }
 
     private void send(String msg) {
@@ -206,13 +216,13 @@ public class WebSocketClient {
         });
     }
 
-    private String buildTradePriceMsg(String symbol) {
+    private String buildTradePriceMsg(String code, String tradeType) {
         return """
     {
       "header": {
         "approval_key": "%s",
         "custtype": "P",
-        "tr_type": "1",
+        "tr_type": "%s",
         "content-type": "utf-8"
       },
       "body": {
@@ -222,16 +232,16 @@ public class WebSocketClient {
         }
       }
     }
-    """.formatted(approvalKey, symbol);
+    """.formatted(approvalKey, tradeType, code);
     }
 
-    private String buildBidAskMsg(String symbol) {
+    private String buildBidAskMsg(String code, String tradeType) {
         return """
     {
       "header": {
         "approval_key": "%s",
         "custtype": "P",
-        "tr_type": "1",
+        "tr_type": "%s",
         "content-type": "utf-8"
       },
       "body": {
@@ -241,6 +251,6 @@ public class WebSocketClient {
         }
       }
     }
-    """.formatted(approvalKey, symbol);
+    """.formatted(approvalKey, tradeType, code);
     }
 }
