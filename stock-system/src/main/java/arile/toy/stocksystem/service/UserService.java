@@ -41,7 +41,7 @@ public class UserService implements UserDetailsService {
                 )
         );
 
-        return UserDto.from(userEntity);
+        return UserDto.fromEntity(userEntity);
     }
 
     public UserAuthenticationResponse authenticate(UserLoginRequestBody userLoginRequestBody) {
@@ -63,7 +63,7 @@ public class UserService implements UserDetailsService {
     public List<UserDto> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(UserDto::from)
+                .map(UserDto::fromEntity)
                 .toList();
     }
 }
