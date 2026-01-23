@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.stockserver.approvalkey;
+package arile.toy.stocksystem.stockserver.external.stock.approvalkey;
 
 import arile.toy.stocksystem.stockserver.exception.ApprovalKeyIssuanceException;
 import lombok.extern.slf4j.Slf4j;

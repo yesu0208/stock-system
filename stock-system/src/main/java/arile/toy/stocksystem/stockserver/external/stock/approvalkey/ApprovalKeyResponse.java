@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.stockserver.approvalkey;
+package arile.toy.stocksystem.stockserver.external.stock.approvalkey;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
