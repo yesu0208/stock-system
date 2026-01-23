@@ -1,18 +1,22 @@
-debug: false
-
-jwt:
-  secret-key: ${SECRET_KEY}
-
 api:
   approval-key-url: ${APPROVAL_KEY_URL}
   app-key: ${APP_KEY}
   app-secret: ${APP_SECRET}
   ws-url: ${WS_URL}
 
+debug: false
+
+jwt:
+  secret-key: ${SECRET_KEY}
+
 logging:
   level:
     arile.toy.stocksystem: debug
     org.springframework.web.service: debug
+
+redis:
+  host: localhost
+  port: 6379
 
 spring:
   application.name: stock-system
