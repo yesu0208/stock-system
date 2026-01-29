@@ -1,7 +1,5 @@
 package arile.toy.stocksystem.stockserver.external.stock.message;
 
-import arile.toy.stocksystem.stockserver.external.stock.event.TradePriceTickEvent;
-
 public record TradePriceTickMessage(
         TickMessageType tickMessageType,
         String stockCode,
