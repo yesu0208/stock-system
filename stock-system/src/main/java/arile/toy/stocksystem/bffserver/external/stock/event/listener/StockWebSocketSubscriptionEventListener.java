@@ -13,7 +13,7 @@ import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class WebSocketSubscriptionEventListener {
+public class StockWebSocketSubscriptionEventListener {
 
     private final StockRealtimeRedisSubscriptionManager subscriptionManager;
 
