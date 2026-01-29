@@ -7,15 +7,11 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-
 @Component
 @RequiredArgsConstructor
 public class ExternalStockConnectionManager {
 
-    private final List<String> stockCodes =
-            List.of("247540", "005930"); // application.yaml로 이동
+    private final ExternalStockProperties stockProperties;
 
     private final ApprovalKeyService approvalKeyService;
     private final ExternalStockListener externalStockListener;
@@ -25,6 +21,6 @@ public class ExternalStockConnectionManager {
         String approvalKey = approvalKeyService.issueApprovalKey();
 
         externalStockListener.connect(approvalKey);
-        stockCodes.forEach(externalStockListener::subscribe);
+        stockProperties.getStocks().forEach(externalStockListener::subscribe);
     }
 }

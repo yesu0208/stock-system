@@ -6,6 +6,13 @@ api:
 
 debug: false
 
+external:
+  stocks:
+    - "005930"
+    - "000660"
+    - "247540"
+    - "086520"
+
 jwt:
   secret-key: ${SECRET_KEY}
 
