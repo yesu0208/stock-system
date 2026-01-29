@@ -28,10 +28,9 @@ public class ExternalStockTickMessageDispatcher {
 
         if (trId.equals("H0STCNT0")) {
             tradePriceTickMessageHandler.handle(message);
+            stockSummaryTickMessageHandler.handle(message);
         } else {
             bidAskPriceTickMessageHandler.handle(message);
         }
-
-        stockSummaryTickMessageHandler.handle(message);
     }
 }
