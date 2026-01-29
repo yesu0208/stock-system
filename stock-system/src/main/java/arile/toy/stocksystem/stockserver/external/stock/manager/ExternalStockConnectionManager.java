@@ -15,7 +15,7 @@ import java.util.List;
 public class ExternalStockConnectionManager {
 
     private final List<String> stockCodes =
-            List.of("247540"); // application.yaml로 이동
+            List.of("247540", "005930"); // application.yaml로 이동
 
     private final ApprovalKeyService approvalKeyService;
     private final ExternalStockListener externalStockListener;
