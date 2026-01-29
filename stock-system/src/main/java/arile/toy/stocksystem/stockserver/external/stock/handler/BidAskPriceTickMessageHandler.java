@@ -1,10 +1,11 @@
 package arile.toy.stocksystem.stockserver.external.stock.handler;
 
 import arile.toy.stocksystem.stockserver.external.stock.event.BidAskPriceTickEvent;
-import arile.toy.stocksystem.stockserver.external.stock.event.publisher.RedisBidAskPriceEventPublisher;
 import arile.toy.stocksystem.stockserver.external.stock.event.PriceLevel;
+import arile.toy.stocksystem.stockserver.external.stock.event.publisher.RedisBidAskPriceEventPublisher;
 import arile.toy.stocksystem.stockserver.external.stock.message.BidAskPriceTickMessage;
 import arile.toy.stocksystem.stockserver.external.stock.message.TickMessageType;
+import arile.toy.stocksystem.stockserver.external.stock.repository.StockServerRedisBidAskPriceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import java.util.List;
 public class BidAskPriceTickMessageHandler {
 
     private final RedisBidAskPriceEventPublisher redisBidAskPriceEventPublisher;
+    private final StockServerRedisBidAskPriceRepository stockServerBidAskPriceRepository;
 
     public void handle(String message) {
 
@@ -68,6 +70,7 @@ public class BidAskPriceTickMessageHandler {
                     Integer.parseInt(fields[offset + 44])
             );
 
+            stockServerBidAskPriceRepository.save(bidAskPriceTickMessage);
             redisBidAskPriceEventPublisher.publish(
                     BidAskPriceTickEvent.fromMessage(bidAskPriceTickMessage));
         }

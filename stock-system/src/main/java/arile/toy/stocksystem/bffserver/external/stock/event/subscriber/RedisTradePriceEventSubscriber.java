@@ -1,7 +1,6 @@
 package arile.toy.stocksystem.bffserver.external.stock.event.subscriber;
 
 import arile.toy.stocksystem.bffserver.external.stock.event.TradePriceTickEvent;
-import arile.toy.stocksystem.bffserver.external.stock.message.TradePriceTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.service.TradePricePushService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,7 @@ public class RedisTradePriceEventSubscriber implements MessageListener {
                             TradePriceTickEvent.class
                     );
 
-            tradePricePushService.push(TradePriceTickMessage.fromEvent(event));
+            tradePricePushService.push(event.stockCode());
         } catch (Exception e) {
             log.warn("tradePriceTickEvent:readValue error", e);
         }

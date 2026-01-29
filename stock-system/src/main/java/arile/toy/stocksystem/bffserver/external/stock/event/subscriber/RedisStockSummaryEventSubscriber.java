@@ -1,7 +1,6 @@
 package arile.toy.stocksystem.bffserver.external.stock.event.subscriber;
 
 import arile.toy.stocksystem.bffserver.external.stock.event.StockSummaryTickEvent;
-import arile.toy.stocksystem.bffserver.external.stock.message.StockSummaryTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.service.StockSummaryPushService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,8 @@ public class RedisStockSummaryEventSubscriber implements MessageListener {
                             StockSummaryTickEvent.class
                     );
 
-            stockSummaryPushService.push(StockSummaryTickMessage.fromEvent(event));
+            stockSummaryPushService.push(event.stockCode());
+
         } catch (Exception e) {
             log.warn("stockSummaryTickEvent:readValue error", e);
         }

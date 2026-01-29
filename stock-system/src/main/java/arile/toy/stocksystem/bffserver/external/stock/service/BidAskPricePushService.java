@@ -1,6 +1,6 @@
 package arile.toy.stocksystem.bffserver.external.stock.service;
 
-import arile.toy.stocksystem.bffserver.external.stock.message.BidAskPriceTickMessage;
+import arile.toy.stocksystem.bffserver.external.stock.repository.BffServerRedisBidAskPriceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -10,11 +10,14 @@ import org.springframework.stereotype.Service;
 public class BidAskPricePushService {
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final BffServerRedisBidAskPriceRepository bffServerRedisBidAskPriceRepository;
 
-    public void push(BidAskPriceTickMessage bidAskPriceTickMessage) {
+    public void push(String stockCode) {
+
+        var bidAskPriceTickMessage = bffServerRedisBidAskPriceRepository.findByStockCode(stockCode);
 
         messagingTemplate.convertAndSend(
-                "/sub/stock/" + bidAskPriceTickMessage.stockCode(),
+                "/sub/stock/" + stockCode,
                 bidAskPriceTickMessage);
     }
 }

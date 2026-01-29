@@ -1,6 +1,6 @@
-package arile.toy.stocksystem.stockserver.external.stock.message;
+package arile.toy.stocksystem.bffserver.external.stock.message;
 
-public record TradePriceTickMessage(
+public record BffServerTradePriceTickMessage(
         TickMessageType tickMessageType,
         String stockCode,
         String tradeTime,

@@ -3,6 +3,7 @@ package arile.toy.stocksystem.stockserver.external.stock.handler;
 import arile.toy.stocksystem.stockserver.external.stock.event.StockSummaryTickEvent;
 import arile.toy.stocksystem.stockserver.external.stock.event.publisher.RedisStockSummaryEventPublisher;
 import arile.toy.stocksystem.stockserver.external.stock.message.StockSummaryTickMessage;
+import arile.toy.stocksystem.stockserver.external.stock.repository.StockServerRedisStockSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class StockSummaryTickMessageHandler {
 
     private final RedisStockSummaryEventPublisher redisStockSummaryEventPublisher;
+    private final StockServerRedisStockSummaryRepository stockServerStockSummaryRepository;
 
     public void handle(String message) {
 
@@ -44,6 +46,7 @@ public class StockSummaryTickMessageHandler {
                     Integer.parseInt(fields[offset + 4])
             );
 
+            stockServerStockSummaryRepository.save(stockSummaryTickMessage);
             redisStockSummaryEventPublisher.publish(
                     StockSummaryTickEvent.fromMessage(stockSummaryTickMessage));
         }

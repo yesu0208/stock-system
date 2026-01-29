@@ -4,7 +4,7 @@ import arile.toy.stocksystem.stockserver.external.stock.event.TradePriceTickEven
 import arile.toy.stocksystem.stockserver.external.stock.event.publisher.RedisTradePriceEventPublisher;
 import arile.toy.stocksystem.stockserver.external.stock.message.TickMessageType;
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
-import arile.toy.stocksystem.stockserver.trading.service.TradeService;
+import arile.toy.stocksystem.stockserver.external.stock.repository.StockServerRedisTradePriceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class TradePriceTickMessageHandler {
 
     private final RedisTradePriceEventPublisher redisTradePriceEventPublisher;
-    private final TradeService tradeService;
+    private final StockServerRedisTradePriceRepository stockServerTradePriceRepository;
 
     public void handle(String message) {
 
@@ -58,6 +58,7 @@ public class TradePriceTickMessageHandler {
                     Integer.parseInt(fields[offset + 41])
             );
 
+            stockServerTradePriceRepository.save(tradePriceTickMessage);
             redisTradePriceEventPublisher.publish(
                     TradePriceTickEvent.fromMessage(tradePriceTickMessage));
         }
