@@ -38,7 +38,6 @@ public class UserEntity implements UserDetails {
     @Column(nullable = false)
     private Instant createdDateTime;
 
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role.equals(Role.ADMIN)) {
@@ -78,15 +77,13 @@ public class UserEntity implements UserDetails {
         return true;
     }
 
-
     public static UserEntity of(String username, String password) {
-        var UserEntity = new UserEntity();
-        UserEntity.setUsername(username);
-        UserEntity.setPassword(password);
-        UserEntity.setRole(Role.USER);
-        return UserEntity;
+        var userEntity = new UserEntity();
+        userEntity.setUsername(username);
+        userEntity.setPassword(password);
+        userEntity.setRole(Role.USER);
+        return userEntity;
     }
-
 
     @PrePersist
     private void prePersist() {
