@@ -108,6 +108,20 @@ public class RedisConfig {
     }
 
     @Bean
+    public RedisTemplate<String, Object> streamRedisTemplate(
+            RedisConnectionFactory connectionFactory) {
+
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new StringRedisSerializer());
+
+        return template;
+    }
+
+    @Bean
     public RedisTemplate<String, BffServerBidAskPriceTickMessage> bffServerBidAskPriceTickMessageRedisTemplate(
             RedisConnectionFactory redisConnectionFactory) {
         var template = new RedisTemplate<String, BffServerBidAskPriceTickMessage>();
@@ -126,6 +140,19 @@ public class RedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(BffServerStockSummaryTickMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, OrderResponseEvent> orderResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, OrderResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(OrderResponseEvent.class));
         template.afterPropertiesSet();
         return template;
     }
