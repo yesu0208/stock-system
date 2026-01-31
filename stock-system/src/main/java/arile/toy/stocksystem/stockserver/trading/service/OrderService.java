@@ -17,7 +17,7 @@ public class OrderService {
     private final OrderResponseEventPublisher orderResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
 
-    public void registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrderDto) {
+    public void registerOrder(StockServerOrderRequestEvent request) {
 
         OrderEntity orderEntity = OrderEntity.of(
                 request.username(),
