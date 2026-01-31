@@ -143,4 +143,17 @@ public class RedisConfig {
         template.afterPropertiesSet();
         return template;
     }
+
+    @Bean
+    public RedisTemplate<String, OrderResponseEvent> orderResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, OrderResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(OrderResponseEvent.class));
+        template.afterPropertiesSet();
+        return template;
+    }
 }
