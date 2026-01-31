@@ -16,6 +16,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderResponseEventPublisher orderResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
+    private final OrderQueueRegistry orderQueueRegistry;
 
     public void registerOrder(StockServerOrderRequestEvent request) {
 
@@ -29,6 +30,9 @@ public class OrderService {
                 request.orderQuantity()
         );
         OrderEntity savedOrder = orderRepository.save(orderEntity);
+
+        var orderDto = OrderDto.fromEntity(savedOrder);
+        orderQueueRegistry.orderEnqueue(orderDto);
 
         var orderResponseMessage = new StockServerOrderResponseMessage(savedOrder.getOrderId(),
                 savedOrder.getUsername(), savedOrder.getStockCode(),
