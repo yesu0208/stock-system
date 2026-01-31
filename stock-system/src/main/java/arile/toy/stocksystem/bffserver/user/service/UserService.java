@@ -8,8 +8,10 @@ import arile.toy.stocksystem.bffserver.user.dto.UserDto;
 import arile.toy.stocksystem.bffserver.user.dto.UserLoginRequest;
 import arile.toy.stocksystem.bffserver.user.dto.UserSignUpRequest;
 import arile.toy.stocksystem.bffserver.user.entity.UserEntity;
+import arile.toy.stocksystem.bffserver.user.event.UserCreatedEvent;
+import arile.toy.stocksystem.bffserver.user.event.publisher.UserCreatedEventPublisher;
 import arile.toy.stocksystem.bffserver.user.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,11 +20,13 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private BCryptPasswordEncoder bCryptPasswordEncoder;
-    @Autowired private JwtService jwtService;
+    private final UserRepository userRepository;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final JwtService jwtService;
+    private final UserCreatedEventPublisher userCreatedEventPublisher;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UserNotFoundException {
@@ -41,6 +45,8 @@ public class UserService implements UserDetailsService {
                         bCryptPasswordEncoder.encode(userSignUpRequest.password())
                 )
         );
+
+        userCreatedEventPublisher.publishUserCreatedEvent(UserCreatedEvent.of(userEntity.getUsername()));
 
         return UserDto.fromEntity(userEntity);
     }
