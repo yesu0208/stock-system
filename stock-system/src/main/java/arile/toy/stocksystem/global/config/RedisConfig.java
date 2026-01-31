@@ -10,6 +10,7 @@ import arile.toy.stocksystem.stockserver.external.stock.message.BidAskPriceTickM
 import arile.toy.stocksystem.stockserver.external.stock.message.StockSummaryTickMessage;
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
 import arile.toy.stocksystem.stockserver.trading.event.*;
+import arile.toy.stocksystem.stockserver.useraccount.dto.StockServerAccountMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -153,6 +154,19 @@ public class RedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(OrderResponseEvent.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, StockServerAccountMessage> stockServerAccountMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, StockServerAccountMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerAccountMessage.class));
         template.afterPropertiesSet();
         return template;
     }
