@@ -26,6 +26,9 @@ redis:
   port: 6379
 
   streams:
+    user:
+      key: user-events
+      consumer-group: stock-group
 
     order:
       prefix: order-events
