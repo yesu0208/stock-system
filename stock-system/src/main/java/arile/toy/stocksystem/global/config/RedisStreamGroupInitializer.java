@@ -21,12 +21,19 @@ public class RedisStreamGroupInitializer {
     @Value("${redis.streams.order.consumer-group}")
     private String orderGroup;
 
+    @Value("${redis.streams.user.key}")
+    private String userStreamKey;
+
+    @Value("${redis.streams.user.consumer-group}")
+    private String userGroup;
+
     @Value("${server.shard-index}")
     private int shardIndex;
 
     @PostConstruct
     public void init() {
         createGroup(orderPrefix + "-" + shardIndex, orderGroup);
+        createGroup(userStreamKey, userGroup);
     }
 
     private void createGroup(String streamKey, String group) {
