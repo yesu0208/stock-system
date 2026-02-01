@@ -3,12 +3,14 @@ package arile.toy.stocksystem.global.config;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerBidAskPriceTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSummaryTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceTickMessage;
+import arile.toy.stocksystem.bffserver.order.dto.OrderResponseMessage;
 import arile.toy.stocksystem.stockserver.external.stock.event.BidAskPriceTickEvent;
 import arile.toy.stocksystem.stockserver.external.stock.event.StockSummaryTickEvent;
 import arile.toy.stocksystem.stockserver.external.stock.event.TradePriceTickEvent;
 import arile.toy.stocksystem.stockserver.external.stock.message.BidAskPriceTickMessage;
 import arile.toy.stocksystem.stockserver.external.stock.message.StockSummaryTickMessage;
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
+import arile.toy.stocksystem.stockserver.trading.dto.order.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.trading.event.*;
 import arile.toy.stocksystem.stockserver.useraccount.dto.StockServerAccountMessage;
 import arile.toy.stocksystem.stockserver.useraccount.event.AccountUpdateEvent;
@@ -181,4 +183,31 @@ public class RedisConfig {
         template.setValueSerializer(new JacksonJsonRedisSerializer<>(AccountUpdateEvent.class));
         return template;
     }
+
+    @Bean
+    public RedisTemplate<String, OrderResponseMessage> orderResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, OrderResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(OrderResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, StockServerOrderResponseMessage> stockServerOrderResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, StockServerOrderResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerOrderResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
 }
