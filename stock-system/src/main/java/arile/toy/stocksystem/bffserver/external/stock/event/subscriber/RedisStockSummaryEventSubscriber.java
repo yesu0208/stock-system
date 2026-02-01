@@ -5,6 +5,7 @@ import arile.toy.stocksystem.bffserver.external.stock.service.StockSummaryPushSe
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 public class RedisStockSummaryEventSubscriber implements MessageListener {
 
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
     private final StockSummaryPushService stockSummaryPushService;
 
     @Override
@@ -33,6 +35,7 @@ public class RedisStockSummaryEventSubscriber implements MessageListener {
                             StockSummaryTickEvent.class
                     );
 
+            eventPublisher.publishEvent(event);
             stockSummaryPushService.push(event.stockCode());
 
         } catch (Exception e) {
