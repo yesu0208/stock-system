@@ -1,15 +1,15 @@
-package arile.toy.stocksystem.bffserver;
+package arile.toy.stocksystem.bffserver.sharding;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RedisAutoOrderStreamShardResolver {
+public class RedisOrderStreamShardResolver {
 
-    @Value("${redis.streams.auto-order.prefix}")
+    @Value("${redis.streams.order.prefix}")
     private String prefix;
 
-    @Value("${redis.streams.auto-order.shard-count}")
+    @Value("${redis.streams.order.shard-count}")
     private int shardCount;
 
     public String resolveStreamKey(String stockCode) {

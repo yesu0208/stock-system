@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.stockserver.useraccount.event;
+package arile.toy.stocksystem.stockserver.useraccount.event.subscriber;
 
 import arile.toy.stocksystem.stockserver.useraccount.UserAccountService;
 import lombok.RequiredArgsConstructor;
