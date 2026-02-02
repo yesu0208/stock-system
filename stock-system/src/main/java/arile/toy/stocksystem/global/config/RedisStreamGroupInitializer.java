@@ -21,6 +21,12 @@ public class RedisStreamGroupInitializer {
     @Value("${redis.streams.order.consumer-group}")
     private String orderGroup;
 
+    @Value("${redis.streams.cancel.prefix}")
+    private String cancelPrefix;
+
+    @Value("${redis.streams.cancel.consumer-group}")
+    private String cancelGroup;
+
     @Value("${redis.streams.user.key}")
     private String userStreamKey;
 
@@ -32,7 +38,11 @@ public class RedisStreamGroupInitializer {
 
     @PostConstruct
     public void init() {
+
         createGroup(orderPrefix + "-" + shardIndex, orderGroup);
+
+        createGroup(cancelPrefix + "-" + shardIndex, cancelGroup);
+
         createGroup(userStreamKey, userGroup);
     }
 
