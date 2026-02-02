@@ -1,6 +1,9 @@
 package arile.toy.stocksystem.stockserver.trading.event.publisher;
 
+import arile.toy.stocksystem.stockserver.trading.dto.order.OrderErrorCode;
+import arile.toy.stocksystem.stockserver.trading.dto.order.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.trading.event.OrderResponseEvent;
+import arile.toy.stocksystem.stockserver.trading.event.StockServerOrderRequestEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,10 +16,30 @@ public class RedisOrderResponseEventPublisher implements OrderResponseEventPubli
 
     private final RedisTemplate<String, OrderResponseEvent> redisOrderResponseEventRedisTemplate;
 
-    public void publish(String username) {
+    public void publish(StockServerOrderResponseMessage orderResponseMessage) {
         try {
-            OrderResponseEvent event = new OrderResponseEvent(username, true, null);
-            String channel = resolveChannel(username);
+            OrderResponseEvent event =
+                    OrderResponseEvent.fromOrderResponseMessage(orderResponseMessage, true, null);
+            String channel = resolveChannel(event.username());
+
+            redisOrderResponseEventRedisTemplate.convertAndSend(
+                    channel,
+                    event
+            );
+        } catch (Exception e) {
+            log.warn("redisOrderResponseEventRedisTemplate.convertAndSend error", e);
+        }
+    }
+
+    public void publishError(StockServerOrderRequestEvent orderRequestEvent, OrderErrorCode orderErrorCode) {
+        try {
+            OrderResponseEvent event = OrderResponseEvent.of(
+                    null, orderRequestEvent.username(), orderRequestEvent.stockCode(),
+                    orderRequestEvent.orderType(), orderRequestEvent.orderPrice(),
+                    orderRequestEvent.orderQuantity(), null, false,
+                    orderErrorCode
+            );
+            String channel = resolveChannel(event.username());
 
             redisOrderResponseEventRedisTemplate.convertAndSend(
                     channel,

@@ -28,7 +28,7 @@ public class OrderService {
                 .reserveCash(request.username(), orderAmount);
 
         if (!reserved) {
-            // Todo: client에게 잔고 부족 알리기
+            orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_BALANCE);
             return;
         }
 
@@ -51,6 +51,7 @@ public class OrderService {
 
         } catch (Exception e) {
             accountBalanceCommand.refundReservedCash(request.username(), orderAmount);
+            orderResponseEventPublisher.publishError(request, OrderErrorCode.INTERNAL_ERROR);
             throw e;
         }
 
@@ -61,6 +62,6 @@ public class OrderService {
                 savedOrder.getOrderTime());
 
         stockServerOrderResponseRepository.save(orderResponseMessage);
-        orderResponseEventPublisher.publish(request.username());
+        orderResponseEventPublisher.publish(orderResponseMessage);
     }
 }
