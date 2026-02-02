@@ -1,6 +1,6 @@
 package arile.toy.stocksystem.bffserver.order.event.publisher;
 
-import arile.toy.stocksystem.bffserver.RedisOrderStreamShardResolver;
+import arile.toy.stocksystem.bffserver.sharding.RedisOrderStreamShardResolver;
 import arile.toy.stocksystem.bffserver.order.event.OrderRequestEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

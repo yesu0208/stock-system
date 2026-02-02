@@ -1,7 +1,7 @@
 package arile.toy.stocksystem.bffserver.order.event.subscriber;
 
+import arile.toy.stocksystem.bffserver.order.event.OrderResponseEvent;
 import arile.toy.stocksystem.bffserver.order.service.OrderResponsePushService;
-import arile.toy.stocksystem.stockserver.trading.event.OrderResponseEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
