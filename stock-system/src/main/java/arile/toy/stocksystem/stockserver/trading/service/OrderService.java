@@ -6,6 +6,7 @@ import arile.toy.stocksystem.stockserver.trading.event.StockServerOrderRequestEv
 import arile.toy.stocksystem.stockserver.trading.event.publisher.OrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.trading.repository.OrderRepository;
 import arile.toy.stocksystem.stockserver.trading.repository.StockServerOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,25 +15,44 @@ import org.springframework.stereotype.Service;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final OrderQueueRegistry orderQueueRegistry;
     private final OrderResponseEventPublisher orderResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
-    private final OrderQueueRegistry orderQueueRegistry;
+    private final AccountBalanceCommand accountBalanceCommand;
 
     public void registerOrder(StockServerOrderRequestEvent request) {
 
-        OrderEntity orderEntity = OrderEntity.of(
-                request.username(),
-                request.stockCode(),
-                request.orderType(),
-                request.orderPrice(),
-                request.orderQuantity(),
-                OrderStatus.OPEN,
-                request.orderQuantity()
-        );
-        OrderEntity savedOrder = orderRepository.save(orderEntity);
+        long orderAmount = (long) request.orderPrice() * request.orderQuantity();
 
-        var orderDto = OrderDto.fromEntity(savedOrder);
-        orderQueueRegistry.orderEnqueue(orderDto);
+        boolean reserved = accountBalanceCommand
+                .reserveCash(request.username(), orderAmount);
+
+        if (!reserved) {
+            // Todo: client에게 잔고 부족 알리기
+            return;
+        }
+
+        OrderEntity savedOrder;
+
+        try {
+            OrderEntity orderEntity = OrderEntity.of(
+                    request.username(),
+                    request.stockCode(),
+                    request.orderType(),
+                    request.orderPrice(),
+                    request.orderQuantity(),
+                    OrderStatus.OPEN,
+                    request.orderQuantity()
+            );
+            savedOrder = orderRepository.save(orderEntity);
+
+            var orderDto = OrderDto.fromEntity(savedOrder);
+            orderQueueRegistry.orderEnqueue(orderDto);
+
+        } catch (Exception e) {
+            accountBalanceCommand.refundReservedCash(request.username(), orderAmount);
+            throw e;
+        }
 
         var orderResponseMessage = new StockServerOrderResponseMessage(savedOrder.getOrderId(),
                 savedOrder.getUsername(), savedOrder.getStockCode(),
