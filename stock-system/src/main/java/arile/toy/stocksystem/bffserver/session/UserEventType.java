@@ -13,6 +13,12 @@ public enum UserEventType {
         public String channel(String username) {
             return "user:account." + username + ":event";
         }
+    },
+    CANCEL {
+        @Override
+        public String channel(String username) {
+            return "user:cancel." + username + ":event";
+        }
     };
 
     public abstract String channel(String username);
