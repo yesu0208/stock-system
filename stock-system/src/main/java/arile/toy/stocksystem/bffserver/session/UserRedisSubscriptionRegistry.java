@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.session;
 
 import arile.toy.stocksystem.bffserver.account.event.subscriber.RedisAccountUpdateEventSubscriber;
+import arile.toy.stocksystem.bffserver.cancel.event.subscriber.RedisCancelResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.order.event.subscriber.RedisOrderResponseEventSubscriber;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class UserRedisSubscriptionRegistry {
     private final RedisMessageListenerContainer container;
 
     private final RedisOrderResponseEventSubscriber orderSubscriber;
+    private final RedisCancelResponseEventSubscriber cancelSubscriber;
     private final RedisAccountUpdateEventSubscriber accountSubscriber;
 
     private final ConcurrentHashMap<String, AtomicInteger> userRefCount = new ConcurrentHashMap<>();
@@ -106,12 +108,21 @@ public class UserRedisSubscriptionRegistry {
         );
 
         map.put(
+                UserEventType.CANCEL,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.CANCEL.channel(username)),
+                        cancelSubscriber
+                )
+        );
+
+        map.put(
                 UserEventType.ACCOUNT,
                 new RedisSubscription(
                         new ChannelTopic(UserEventType.ACCOUNT.channel(username)),
                         accountSubscriber
                 )
         );
+
         return map;
     }
 }
