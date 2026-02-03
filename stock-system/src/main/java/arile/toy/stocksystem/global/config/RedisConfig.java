@@ -192,6 +192,16 @@ public class RedisConfig {
     }
 
     @Bean
+    public RedisTemplate<String, TradeResponseEvent> tradeResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, TradeResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(TradeResponseEvent.class));
+        return template;
+    }
+
+    @Bean
     public RedisTemplate<String, OrderResponseMessage> orderResponseMessageRedisTemplate(
             RedisConnectionFactory redisConnectionFactory
     ) {

@@ -69,7 +69,7 @@ public class OrderService {
     @Transactional
     public UpdateOrderStatusResult updateOrderStatusByCancelEvent(Long orderId) {
 
-        OrderEntity orderEntity = orderRepository.findById(orderId)
+        OrderEntity orderEntity = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("order not found"));
 
         OrderStatus prevStatus = orderEntity.getOrderStatus();
