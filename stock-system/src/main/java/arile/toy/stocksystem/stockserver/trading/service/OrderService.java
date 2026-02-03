@@ -9,6 +9,7 @@ import arile.toy.stocksystem.stockserver.trading.repository.StockServerOrderResp
 import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -63,5 +64,22 @@ public class OrderService {
 
         stockServerOrderResponseRepository.save(orderResponseMessage);
         orderResponseEventPublisher.publish(orderResponseMessage);
+    }
+
+    @Transactional
+    public UpdateOrderStatusResult updateOrderStatusByCancelEvent(Long orderId) {
+
+        OrderEntity orderEntity = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("order not found"));
+
+        OrderStatus prevStatus = orderEntity.getOrderStatus();
+
+        if (prevStatus == OrderStatus.CANCELED ||
+                prevStatus == OrderStatus.FILLED) {
+            return UpdateOrderStatusResult.of(orderEntity, prevStatus);
+        }
+
+        orderEntity.changeOrderStatus(OrderStatus.CANCELED);
+        return UpdateOrderStatusResult.of(orderEntity, prevStatus);
     }
 }
