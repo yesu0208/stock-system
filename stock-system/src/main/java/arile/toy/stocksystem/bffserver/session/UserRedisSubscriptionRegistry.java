@@ -3,6 +3,7 @@ package arile.toy.stocksystem.bffserver.session;
 import arile.toy.stocksystem.bffserver.account.event.subscriber.RedisAccountUpdateEventSubscriber;
 import arile.toy.stocksystem.bffserver.cancel.event.subscriber.RedisCancelResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.order.event.subscriber.RedisOrderResponseEventSubscriber;
+import arile.toy.stocksystem.bffserver.trade.event.subscriber.RedisTradeResponseEventSubscriber;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -24,6 +25,7 @@ public class UserRedisSubscriptionRegistry {
     private final RedisMessageListenerContainer container;
 
     private final RedisOrderResponseEventSubscriber orderSubscriber;
+    private final RedisTradeResponseEventSubscriber tradeSubscriber;
     private final RedisCancelResponseEventSubscriber cancelSubscriber;
     private final RedisAccountUpdateEventSubscriber accountSubscriber;
 
@@ -104,6 +106,14 @@ public class UserRedisSubscriptionRegistry {
                 new RedisSubscription(
                         new ChannelTopic(UserEventType.ORDER.channel(username)),
                         orderSubscriber
+                )
+        );
+
+        map.put(
+                UserEventType.TRADE,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.TRADE.channel(username)),
+                        tradeSubscriber
                 )
         );
 
