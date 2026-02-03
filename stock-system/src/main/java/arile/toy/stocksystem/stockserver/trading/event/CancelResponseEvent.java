@@ -1,6 +1,6 @@
 package arile.toy.stocksystem.stockserver.trading.event;
 
-import arile.toy.stocksystem.stockserver.trading.dto.auto.order.cancel.CancelErrorCode;
+import arile.toy.stocksystem.stockserver.trading.dto.cancel.CancelErrorCode;
 import arile.toy.stocksystem.stockserver.trading.dto.order.OrderType;
 import arile.toy.stocksystem.stockserver.trading.entity.OrderEntity;
 
