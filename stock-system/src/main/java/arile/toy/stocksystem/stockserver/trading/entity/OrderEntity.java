@@ -60,4 +60,8 @@ public class OrderEntity {
         orderEntity.setOrderTime(Instant.now());
         return orderEntity;
     }
+
+    public void changeOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
 }
