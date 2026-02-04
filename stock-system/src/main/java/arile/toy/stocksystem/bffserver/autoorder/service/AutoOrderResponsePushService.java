@@ -2,6 +2,7 @@ package arile.toy.stocksystem.bffserver.autoorder.service;
 
 import arile.toy.stocksystem.bffserver.ResponseType;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResponseMessage;
+import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResultCode;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResultResponse;
 import arile.toy.stocksystem.bffserver.autoorder.event.AutoOrderResponseEvent;
 import arile.toy.stocksystem.bffserver.autoorder.repository.BffServerAutoOrderResponseRepository;
@@ -23,8 +24,8 @@ public class AutoOrderResponsePushService {
         if (!autoOrderResponseEvent.success()) {
 
             String errorMessage =
-                    autoOrderResponseEvent.errorCode() != null
-                            ? autoOrderResponseEvent.errorCode().userMessage()
+                    autoOrderResponseEvent.resultCode() != null
+                            ? autoOrderResponseEvent.resultCode().userMessage()
                             : "알 수 없는 오류가 발생했습니다.";
 
             messagingTemplate.convertAndSendToUser(
@@ -36,6 +37,17 @@ public class AutoOrderResponsePushService {
 
                     )
             );
+        } else if (autoOrderResponseEvent.resultCode() == AutoOrderResultCode.TRIGGERED) {
+
+            List<AutoOrderResponseMessage> responses
+                    = bffServerAutoOrderResponseRepository.findAll(autoOrderResponseEvent.username());
+
+            messagingTemplate.convertAndSendToUser(
+                    autoOrderResponseEvent.username(),
+                    "/sub/auto/order",
+                    responses
+            );
+
         } else {
 
             List<AutoOrderResponseMessage> responses
