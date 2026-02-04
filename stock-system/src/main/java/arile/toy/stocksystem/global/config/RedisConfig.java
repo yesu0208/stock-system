@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.global.config;
 
+import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResponseMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerBidAskPriceTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSummaryTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceTickMessage;
@@ -10,6 +11,7 @@ import arile.toy.stocksystem.stockserver.external.stock.event.TradePriceTickEven
 import arile.toy.stocksystem.stockserver.external.stock.message.BidAskPriceTickMessage;
 import arile.toy.stocksystem.stockserver.external.stock.message.StockSummaryTickMessage;
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
+import arile.toy.stocksystem.stockserver.trading.dto.auto.order.StockServerAutoOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.trading.dto.order.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.trading.event.*;
 import arile.toy.stocksystem.stockserver.useraccount.dto.StockServerAccountMessage;
@@ -182,6 +184,19 @@ public class RedisConfig {
     }
 
     @Bean
+    public RedisTemplate<String, AutoOrderResponseEvent> autoOrderResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, AutoOrderResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(AutoOrderResponseEvent.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
     public RedisTemplate<String, CancelResponseEvent> cancelResponseEventRedisTemplate(
             RedisConnectionFactory redisConnectionFactory) {
         var template = new RedisTemplate<String, CancelResponseEvent>();
@@ -215,6 +230,19 @@ public class RedisConfig {
     }
 
     @Bean
+    public RedisTemplate<String, AutoOrderResponseMessage> autoOrderResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, AutoOrderResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(AutoOrderResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
     public RedisTemplate<String, StockServerOrderResponseMessage> stockServerOrderResponseMessageRedisTemplate(
             RedisConnectionFactory redisConnectionFactory
     ) {
@@ -227,4 +255,16 @@ public class RedisConfig {
         return template;
     }
 
+    @Bean
+    public RedisTemplate<String, StockServerAutoOrderResponseMessage> stockServerAutoOrderResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, StockServerAutoOrderResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerAutoOrderResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
 }
