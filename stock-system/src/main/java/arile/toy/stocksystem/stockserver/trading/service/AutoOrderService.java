@@ -29,7 +29,7 @@ public class AutoOrderService {
                 .reserveCash(request.username(), orderAmount);
 
         if (!reserved) {
-            autoOrderResponseEventPublisher.publishError(request, AutoOrderErrorCode.INSUFFICIENT_BALANCE);
+            autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_BALANCE);
             return;
         }
 
@@ -52,7 +52,7 @@ public class AutoOrderService {
 
         } catch (Exception e) {
             accountBalanceCommand.refundReservedCash(request.username(), orderAmount);
-            autoOrderResponseEventPublisher.publishError(request, AutoOrderErrorCode.INTERNAL_ERROR);
+            autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INTERNAL_ERROR);
             throw e;
 
         }
