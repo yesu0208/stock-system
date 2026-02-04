@@ -1,6 +1,6 @@
 package arile.toy.stocksystem.stockserver.trading.event.publisher;
 
-import arile.toy.stocksystem.stockserver.trading.dto.auto.order.AutoOrderErrorCode;
+import arile.toy.stocksystem.stockserver.trading.dto.auto.order.AutoOrderResultCode;
 import arile.toy.stocksystem.stockserver.trading.dto.auto.order.StockServerAutoOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.trading.event.AutoOrderResponseEvent;
 import arile.toy.stocksystem.stockserver.trading.event.StockServerAutoOrderRequestEvent;
@@ -31,7 +31,7 @@ public class RedisAutoOrderResponseEventPublisher implements AutoOrderResponseEv
         }
     }
 
-    public void publishError(StockServerAutoOrderRequestEvent orderRequestEvent, AutoOrderErrorCode orderErrorCode) {
+    public void publishError(StockServerAutoOrderRequestEvent orderRequestEvent, AutoOrderResultCode orderErrorCode) {
         try {
             AutoOrderResponseEvent event = AutoOrderResponseEvent.of(
                     null, orderRequestEvent.username(), orderRequestEvent.stockCode(),
@@ -40,6 +40,26 @@ public class RedisAutoOrderResponseEventPublisher implements AutoOrderResponseEv
                     orderErrorCode
             );
             String channel = resolveChannel(event.username());
+
+            redisAutoOrderResponseEventRedisTemplate.convertAndSend(
+                    channel,
+                    event
+            );
+        } catch (Exception e) {
+            log.warn("redisAutoOrderResponseEventRedisTemplate.convertAndSend error", e);
+        }
+    }
+
+    public void publishTrigger(String username) {
+        try {
+            AutoOrderResponseEvent event = AutoOrderResponseEvent.of(
+                    null, username, null,
+                    null, null,
+                    null, null, null, true,
+                    AutoOrderResultCode.TRIGGERED
+            );
+
+            String channel = resolveChannel(username);
 
             redisAutoOrderResponseEventRedisTemplate.convertAndSend(
                     channel,
