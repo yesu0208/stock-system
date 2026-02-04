@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.session;
 
 import arile.toy.stocksystem.bffserver.account.event.subscriber.RedisAccountUpdateEventSubscriber;
+import arile.toy.stocksystem.bffserver.autoorder.event.subscriber.RedisAutoOrderResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.cancel.event.subscriber.RedisCancelResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.order.event.subscriber.RedisOrderResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.trade.event.subscriber.RedisTradeResponseEventSubscriber;
@@ -25,6 +26,7 @@ public class UserRedisSubscriptionRegistry {
     private final RedisMessageListenerContainer container;
 
     private final RedisOrderResponseEventSubscriber orderSubscriber;
+    private final RedisAutoOrderResponseEventSubscriber autoOrderSubscriber;
     private final RedisTradeResponseEventSubscriber tradeSubscriber;
     private final RedisCancelResponseEventSubscriber cancelSubscriber;
     private final RedisAccountUpdateEventSubscriber accountSubscriber;
@@ -130,6 +132,14 @@ public class UserRedisSubscriptionRegistry {
                 new RedisSubscription(
                         new ChannelTopic(UserEventType.ACCOUNT.channel(username)),
                         accountSubscriber
+                )
+        );
+
+        map.put(
+                UserEventType.AUTO_ORDER,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.AUTO_ORDER.channel(username)),
+                        autoOrderSubscriber
                 )
         );
 

@@ -25,6 +25,12 @@ public enum UserEventType {
         public String channel(String username) {
             return "user:account." + username + ":event";
         }
+    },
+    AUTO_ORDER {
+        @Override
+        public String channel(String username) {
+            return "user:auto:order." + username + ":event";
+        }
     };
 
     public abstract String channel(String username);
