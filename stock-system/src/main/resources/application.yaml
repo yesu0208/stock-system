@@ -40,6 +40,11 @@ redis:
       shard-count: 1
       consumer-group: stock-group
 
+    auto-order:
+      prefix: auto-order-events
+      shard-count: 1
+      consumer-group: stock-group
+
 server:
   shard-index: 0
 
