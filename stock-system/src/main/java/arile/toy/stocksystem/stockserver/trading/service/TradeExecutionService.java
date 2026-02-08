@@ -117,12 +117,17 @@ public class TradeExecutionService {
             );
         }
 
-        long prevAmount = userStock.getAmount();
-        userStock.setAmount(prevAmount - tradeAmount);
-
         int prevQuantity = userStock.getQuantity();
+        long prevAmount = userStock.getAmount();
+        long avgPrice = prevAmount / prevQuantity;
+
         userStock.setQuantity(prevQuantity - executable);
-        userStockRepository.save(userStock);
+        if (prevQuantity - executable == 0) {
+            userStockRepository.delete(userStock);
+        } else {
+            userStock.setAmount(userStock.getAmount() - avgPrice * executable);
+            userStockRepository.save(userStock);
+        }
 
         TradeEntity tradeEntity = tradeRepository.save(
                 TradeEntity.of(sellOrderDto.orderId(), sellOrderDto.username(),
