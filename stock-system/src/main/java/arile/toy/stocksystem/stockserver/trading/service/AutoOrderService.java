@@ -67,6 +67,22 @@ public class AutoOrderService {
         autoOrderResponseEventPublisher.publish(autoOrderResponseMessage);
     }
 
+    @Transactional
+    public UpdateAutoOrderStatusResult updateAutoOrderStatusByCancel(Long autoOrderId) {
+
+        AutoOrderEntity autoOrderEntity = autoOrderRepository.findByIdForUpdate(autoOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("auto order not found"));
+
+        AutoOrderStatus prevStatus = autoOrderEntity.getAutoOrderStatus();
+
+        if (prevStatus == AutoOrderStatus.CANCELED ||
+                prevStatus == AutoOrderStatus.TRIGGERED) {
+            return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
+        }
+
+        autoOrderEntity.changeAutoOrderStatus(AutoOrderStatus.CANCELED);
+        return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
+    }
 
     @Transactional
     public UpdateAutoOrderStatusResult updateAutoOrderStatusByTrigger(Long autoOrderId) {
