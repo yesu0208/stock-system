@@ -9,6 +9,7 @@ import arile.toy.stocksystem.stockserver.trading.repository.StockServerAutoOrder
 import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class AutoOrderService {
                 .reserveCash(request.username(), orderAmount);
 
         if (!reserved) {
-            autoOrderResponseEventPublisher.publishError(request, AutoOrderErrorCode.INSUFFICIENT_BALANCE);
+            autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_BALANCE);
             return;
         }
 
@@ -51,7 +52,7 @@ public class AutoOrderService {
 
         } catch (Exception e) {
             accountBalanceCommand.refundReservedCash(request.username(), orderAmount);
-            autoOrderResponseEventPublisher.publishError(request, AutoOrderErrorCode.INTERNAL_ERROR);
+            autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INTERNAL_ERROR);
             throw e;
 
         }
@@ -64,5 +65,22 @@ public class AutoOrderService {
 
         stockServerAutoOrderResponseRepository.save(autoOrderResponseMessage);
         autoOrderResponseEventPublisher.publish(autoOrderResponseMessage);
+    }
+
+
+    @Transactional
+    public UpdateAutoOrderStatusResult updateAutoOrderStatusByTrigger(Long autoOrderId) {
+
+        AutoOrderEntity autoOrderEntity = autoOrderRepository.findByIdForUpdate(autoOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("auto order not found"));
+
+        AutoOrderStatus prevStatus = autoOrderEntity.getAutoOrderStatus();
+
+        if (prevStatus != AutoOrderStatus.ACTIVE) {
+            return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
+        }
+
+        autoOrderEntity.changeAutoOrderStatus(AutoOrderStatus.TRIGGERED);
+        return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
     }
 }

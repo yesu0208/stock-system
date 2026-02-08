@@ -1,7 +1,7 @@
 package arile.toy.stocksystem.bffserver.autoorder.event;
 
 
-import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderErrorCode;
+import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResultCode;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderType;
 
 import java.time.Instant;
@@ -16,6 +16,6 @@ public record AutoOrderResponseEvent(
         Integer orderQuantity,
         Instant orderTime,
         boolean success,
-        AutoOrderErrorCode errorCode
+        AutoOrderResultCode resultCode
 ) {
 }

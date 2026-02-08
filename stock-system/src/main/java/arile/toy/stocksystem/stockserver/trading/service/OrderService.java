@@ -21,16 +21,17 @@ public class OrderService {
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final AccountBalanceCommand accountBalanceCommand;
 
-    public void registerOrder(StockServerOrderRequestEvent request) {
+    public void registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
 
         long orderAmount = (long) request.orderPrice() * request.orderQuantity();
 
-        boolean reserved = accountBalanceCommand
-                .reserveCash(request.username(), orderAmount);
-
-        if (!reserved) {
-            orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_BALANCE);
-            return;
+        if (!fromAutoOrder && request.orderType() == OrderType.BUY) {
+            boolean reserved = accountBalanceCommand
+                    .reserveCash(request.username(), orderAmount);
+            if (!reserved) {
+                orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_BALANCE);
+                return;
+            }
         }
 
         OrderEntity savedOrder;
