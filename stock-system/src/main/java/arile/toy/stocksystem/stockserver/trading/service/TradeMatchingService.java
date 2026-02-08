@@ -174,7 +174,7 @@ public class TradeMatchingService {
                     long tradeAmount = (long) buyOrderDto.orderPrice() * tradeResult.tradeEntity().getTradeQuantity();
                     long differenceAmount = (long) (buyOrderDto.orderPrice() - tradeResult.tradeEntity().getTradePrice()) * tradeResult.tradeEntity().getTradeQuantity();
 
-                    boolean redisOk = tradeCommand.applySellTrade(
+                    boolean redisOk = tradeCommand.applyBuyTrade(
                             tradeResult.tradeEntity().getUsername(),
                             tradeResult.tradeEntity().getStockCode(),
                             tradeResult.totalQuantity(),
