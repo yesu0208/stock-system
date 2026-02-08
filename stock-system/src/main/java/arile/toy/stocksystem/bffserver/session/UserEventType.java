@@ -31,6 +31,12 @@ public enum UserEventType {
         public String channel(String username) {
             return "user:auto:order." + username + ":event";
         }
+    },
+    AUTO_CANCEL {
+        @Override
+        public String channel(String username) {
+            return "user:auto:cancel." + username + ":event";
+        }
     };
 
     public abstract String channel(String username);
