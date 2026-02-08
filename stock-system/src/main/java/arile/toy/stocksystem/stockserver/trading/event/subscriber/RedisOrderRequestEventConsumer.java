@@ -103,6 +103,6 @@ public class RedisOrderRequestEventConsumer {
         log.info("Processing order username: {} for stock {}", username, stockCode);
 
         orderService.registerOrder(StockServerOrderRequestEvent
-                .of(username, stockCode, orderType, orderPrice, orderQuantity));
+                .of(username, stockCode, orderType, orderPrice, orderQuantity), false);
     }
 }
