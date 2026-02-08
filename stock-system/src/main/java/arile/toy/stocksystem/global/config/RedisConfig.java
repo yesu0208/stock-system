@@ -184,15 +184,23 @@ public class RedisConfig {
     }
 
     @Bean
+    public RedisTemplate<String, AutoCancelResponseEvent> autoCancelResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, AutoCancelResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(AutoCancelResponseEvent.class));
+        return template;
+    }
+
+    @Bean
     public RedisTemplate<String, AutoOrderResponseEvent> autoOrderResponseEventRedisTemplate(
             RedisConnectionFactory redisConnectionFactory
     ) {
         var template = new RedisTemplate<String, AutoOrderResponseEvent>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(AutoOrderResponseEvent.class));
-        template.afterPropertiesSet();
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(AutoOrderResponseEvent.class));
         return template;
     }
 
