@@ -45,6 +45,11 @@ redis:
       shard-count: 1
       consumer-group: stock-group
 
+    auto-cancel:
+      prefix: auto-cancel-events
+      shard-count: 1
+      consumer-group: stock-group
+
 server:
   shard-index: 0
 
