@@ -2,6 +2,7 @@ package arile.toy.stocksystem.stockserver.trading.event;
 
 import arile.toy.stocksystem.stockserver.trading.dto.auto.cancel.AutoCancelErrorCode;
 import arile.toy.stocksystem.stockserver.trading.dto.auto.order.AutoOrderType;
+import arile.toy.stocksystem.stockserver.trading.entity.AutoOrderEntity;
 
 public record AutoCancelResponseEvent(
         Long autoOrderId,
@@ -14,25 +15,15 @@ public record AutoCancelResponseEvent(
         boolean success,
         AutoCancelErrorCode errorCode
 ) {
-    public static AutoCancelResponseEvent of(
-            Long orderId,
-            String username,
-            String stockCode,
-            AutoOrderType autoOrderType,
-            Integer triggerPrice,
-            Integer orderPrice,
-            Integer orderQuantity,
-            boolean success,
-            AutoCancelErrorCode errorCode
-    ) {
+    public static AutoCancelResponseEvent of(AutoOrderEntity autoOrder, boolean success, AutoCancelErrorCode errorCode) {
         return new AutoCancelResponseEvent(
-                orderId,
-                username,
-                stockCode,
-                autoOrderType,
-                triggerPrice,
-                orderPrice,
-                orderQuantity,
+                autoOrder.getAutoOrderId(),
+                autoOrder.getUsername(),
+                autoOrder.getStockCode(),
+                autoOrder.getAutoOrderType(),
+                autoOrder.getTriggerPrice(),
+                autoOrder.getOrderPrice(),
+                autoOrder.getOrderQuantity(),
                 success,
                 errorCode
         );
