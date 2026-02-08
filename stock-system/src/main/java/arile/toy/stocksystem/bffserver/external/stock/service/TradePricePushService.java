@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.external.stock.service;
 
+import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceClientTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.repository.BffServerRedisTradePriceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,6 +19,6 @@ public class TradePricePushService {
 
         messagingTemplate.convertAndSend(
                 "/sub/stock/" + stockCode,
-                tradePriceTickMessage);
+                BffServerTradePriceClientTickMessage.fromTickMessage(tradePriceTickMessage));
     }
 }
