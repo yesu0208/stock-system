@@ -40,26 +40,33 @@ public class RedisLuaConfig {
     }
 
     @Bean
-    public DefaultRedisScript<Long> buyTradeScript() {
+    public DefaultRedisScript<Long> reserveStockScript() {
         return new DefaultRedisScript<>(
                 """
-                local reserved = tonumber(redis.call('HGET', KEYS[1], 'reservedCash') or '0')
-                if reserved < tonumber(ARGV[3]) then
+                local stockCode = ARGV[2]
+                local qtyToReserve = tonumber(ARGV[1])
+        
+                local stocksJson = redis.call('HGET', KEYS[1], 'stocks')
+                if not stocksJson or stocksJson == '' then
                     return 0
                 end
-    
-                redis.call('HINCRBY', KEYS[1], 'reservedCash', -tonumber(ARGV[3]))
-    
-                redis.call('HINCRBY', KEYS[1], 'availableCash', tonumber(ARGV[5]))
-    
-                local stocksJson = redis.call('HGET', KEYS[1], 'stocks')
-                local stocks = {}
-                if stocksJson and stocksJson ~= '' then
-                    stocks = cjson.decode(stocksJson)
+        
+                local stocks = cjson.decode(stocksJson)
+                local stock = stocks[stockCode]
+        
+                if not stock then
+                    return 0
                 end
-    
-                stocks[ARGV[4]] = {quantity=tonumber(ARGV[1]), buyPrice=tonumber(ARGV[2])}
-    
+        
+                local available = tonumber(stock.availableQuantity or stock.quantity or 0)
+        
+                if available < qtyToReserve then
+                    return 0
+                end
+        
+                stock.availableQuantity = available - qtyToReserve
+        
+                stocks[stockCode] = stock
                 redis.call('HSET', KEYS[1], 'stocks', cjson.encode(stocks))
                 return 1
                 """,
@@ -68,30 +75,105 @@ public class RedisLuaConfig {
     }
 
     @Bean
-    public DefaultRedisScript<Long> sellTradeScript() {
+    public DefaultRedisScript<Long> refundStockScript() {
         return new DefaultRedisScript<>(
                 """
-                redis.call('HINCRBY', KEYS[1], 'availableCash', tonumber(ARGV[3]))
-    
+                local stockCode = ARGV[2]
+                local qtyToRefund = tonumber(ARGV[1])
+        
+                local stocksJson = redis.call('HGET', KEYS[1], 'stocks')
+                if not stocksJson or stocksJson == '' then
+                    return 0
+                end
+        
+                local stocks = cjson.decode(stocksJson)
+                local stock = stocks[stockCode]
+        
+                if not stock then
+                    return 0
+                end
+        
+                local available = tonumber(stock.availableQuantity or stock.quantity or 0)
+        
+                stock.availableQuantity = available + qtyToRefund
+        
+                stocks[stockCode] = stock
+                redis.call('HSET', KEYS[1], 'stocks', cjson.encode(stocks))
+                return 1
+                """,
+                Long.class
+        );
+    }
+
+
+
+    @Bean
+    public DefaultRedisScript<Long> buyTradeScript() {
+        return new DefaultRedisScript<>(
+                """
+                local reserved = tonumber(redis.call('HGET', KEYS[1], 'reservedCash') or '0')
+                if reserved < tonumber(ARGV[3]) then
+                    return 0
+                end
+        
+                redis.call('HINCRBY', KEYS[1], 'reservedCash', -tonumber(ARGV[3]))
+        
                 redis.call('HINCRBY', KEYS[1], 'availableCash', tonumber(ARGV[5]))
-    
+        
                 local stocksJson = redis.call('HGET', KEYS[1], 'stocks')
                 local stocks = {}
                 if stocksJson and stocksJson ~= '' then
                     stocks = cjson.decode(stocksJson)
                 end
-    
-                local qty = tonumber(ARGV[1])
-    
-                if qty > 0 then
-                    stocks[ARGV[4]] = {
-                        quantity = qty,
-                        buyPrice = tonumber(ARGV[2])
-                    }
-                else
-                    stocks[ARGV[4]] = nil
+        
+                stocks[ARGV[4]] = {
+                    quantity = tonumber(ARGV[1]),
+                    buyPrice = tonumber(ARGV[2]),
+                    availableQuantity = tonumber(ARGV[1])
+                }
+        
+                redis.call('HSET', KEYS[1], 'stocks', cjson.encode(stocks))
+                return 1
+                """,
+                Long.class
+        );
+    }
+
+
+    @Bean
+    public DefaultRedisScript<Long> sellTradeScript() {
+        return new DefaultRedisScript<>(
+                """
+                redis.call('HINCRBY', KEYS[1], 'availableCash', tonumber(ARGV[3]))
+                redis.call('HINCRBY', KEYS[1], 'availableCash', tonumber(ARGV[5]))
+        
+                local stocksJson = redis.call('HGET', KEYS[1], 'stocks')
+                local stocks = {}
+                if stocksJson and stocksJson ~= '' then
+                    stocks = cjson.decode(stocksJson)
                 end
-    
+        
+                local sellQty = tonumber(ARGV[1])
+                local stockCode = ARGV[4]
+        
+                if stocks[stockCode] then
+                    local oldQty = tonumber(stocks[stockCode].quantity)
+                    local oldAvailable = tonumber(stocks[stockCode].availableQuantity or oldQty)
+                
+                    local newQty = oldQty - sellQty
+                    local newAvailable = math.max(oldAvailable - sellQty, 0)
+        
+                    if newQty > 0 then
+                        stocks[stockCode] = {
+                            quantity = newQty,
+                            buyPrice = tonumber(ARGV[2]),
+                            availableQuantity = newAvailable
+                        }
+                    else
+                        stocks[stockCode] = nil
+                    end
+                end
+        
                 redis.call('HSET', KEYS[1], 'stocks', cjson.encode(stocks))
                 return 1
                 """,
