@@ -22,7 +22,7 @@ public class StockSummaryTickEventListener {
             for (String username : subscriptionManager.getAllConnectedUsernames()) {
                 accountPushService.push(username);
             }
-            log.info("Pushed account updates to all connected users");
+
         } catch (Exception e) {
             log.error("Failed to push account updates", e);
         }
