@@ -6,6 +6,7 @@ import arile.toy.stocksystem.stockserver.trading.event.StockServerOrderRequestEv
 import arile.toy.stocksystem.stockserver.trading.event.publisher.OrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.trading.repository.OrderRepository;
 import arile.toy.stocksystem.stockserver.trading.repository.StockServerOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class OrderService {
     private final OrderResponseEventPublisher orderResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final AccountBalanceCommand accountBalanceCommand;
+    private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     public void registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
 
@@ -30,6 +32,14 @@ public class OrderService {
                     .reserveCash(request.username(), orderAmount);
             if (!reserved) {
                 orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_BALANCE);
+                return;
+            }
+        }  else if (!fromAutoOrder && request.orderType() == OrderType.SELL){
+            boolean reserved = accountBalanceCommand
+                    .reserveStock(request.username(), request.stockCode(), request.orderQuantity());
+
+            if (!reserved) {
+                orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_STOCK);
                 return;
             }
         }
@@ -65,6 +75,7 @@ public class OrderService {
 
         stockServerOrderResponseRepository.save(orderResponseMessage);
         orderResponseEventPublisher.publish(orderResponseMessage);
+        accountUpdateEventPublisher.publish(savedOrder.getUsername());
     }
 
     @Transactional

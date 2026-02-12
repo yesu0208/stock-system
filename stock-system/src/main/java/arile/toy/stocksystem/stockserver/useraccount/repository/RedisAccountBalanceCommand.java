@@ -14,6 +14,8 @@ public class RedisAccountBalanceCommand implements AccountBalanceCommand {
     private final StringRedisTemplate redisTemplate;
     private final DefaultRedisScript<Long> reserveCashScript;
     private final DefaultRedisScript<Long> refundCashScript;
+    private final DefaultRedisScript<Long> reserveStockScript;
+    private final DefaultRedisScript<Long> refundStockScript;
 
     public boolean reserveCash(String username, long amount) {
         return execute(reserveCashScript, username, amount);
@@ -21,6 +23,27 @@ public class RedisAccountBalanceCommand implements AccountBalanceCommand {
 
     public boolean refundReservedCash(String username, long amount) {
         return execute(refundCashScript, username, amount);
+    }
+
+    public boolean reserveStock(String username, String stockCode, int quantity) {
+        return execute(reserveStockScript, username, quantity, stockCode);
+    }
+
+    public boolean refundReservedStock(String username, String stockCode, int quantity) {
+        return execute(refundStockScript, username, quantity, stockCode);
+    }
+
+    private boolean execute(DefaultRedisScript<Long> script,
+                            String username,
+                            int quantity,
+                            String stockCode) {
+        Long result = redisTemplate.execute(
+                script,
+                List.of(key(username)),
+                String.valueOf(quantity),
+                stockCode
+        );
+        return result != null && result == 1L;
     }
 
     private boolean execute(DefaultRedisScript<Long> script,

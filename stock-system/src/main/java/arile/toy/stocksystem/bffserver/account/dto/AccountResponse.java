@@ -9,14 +9,21 @@ public record AccountResponse(
         Long availableCash,
         Long reservedCash,
         Long stockValue,
+        Long buyValue,
+        Long totalProfit,
+        Double totalProfitRate,
+        Long accumulatedProfit,
+        Double accumulatedProfitRate,
         Map<String, StockInfo> stocks,
         Map<String, Double> profitRates,
-        Map<String, Long> profitAmounts
+        Map<String, Long> profitAmounts,
+        Map<String, Integer> currentPrices
 ) {
     public static AccountResponse of(String username, Long totalValue, Long totalCash,
-                                     Long availableCash, Long reservedCash, Long stockValue,
-                                     Map<String, StockInfo> stocks, Map<String, Double> profitRates, Map<String, Long> profitAmounts) {
+                                     Long availableCash, Long reservedCash, Long stockValue, Long buyValue, Long totalProfit, Double totalProfitRate,
+                                     Long accumulatedProfit, Double accumulatedProfitRate, Map<String, StockInfo> stocks, Map<String, Double> profitRates, Map<String, Long> profitAmounts,
+                                     Map<String, Integer> currentPrices) {
         return new AccountResponse(username, totalValue, totalCash, availableCash,
-                reservedCash, stockValue, stocks, profitRates, profitAmounts);
+                reservedCash, stockValue, buyValue, totalProfit, totalProfitRate, accumulatedProfit, accumulatedProfitRate, stocks, profitRates, profitAmounts, currentPrices);
     }
 }

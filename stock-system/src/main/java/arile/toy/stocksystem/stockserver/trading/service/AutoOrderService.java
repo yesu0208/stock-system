@@ -6,6 +6,7 @@ import arile.toy.stocksystem.stockserver.trading.event.StockServerAutoOrderReque
 import arile.toy.stocksystem.stockserver.trading.event.publisher.AutoOrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.trading.repository.AutoOrderRepository;
 import arile.toy.stocksystem.stockserver.trading.repository.StockServerAutoOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,17 +21,28 @@ public class AutoOrderService {
     private final AutoOrderResponseEventPublisher autoOrderResponseEventPublisher;
     private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
     private final AccountBalanceCommand accountBalanceCommand;
+    private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     public void registerAutoOrder(StockServerAutoOrderRequestEvent request) {
 
         long orderAmount = (long) request.orderPrice() * request.orderQuantity();
 
-        boolean reserved = accountBalanceCommand
-                .reserveCash(request.username(), orderAmount);
+        if (request.autoOrderType() == AutoOrderType.BUY) {
+            boolean reserved = accountBalanceCommand
+                    .reserveCash(request.username(), orderAmount);
 
-        if (!reserved) {
-            autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_BALANCE);
-            return;
+            if (!reserved) {
+                autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_BALANCE);
+                return;
+            }
+        } else {
+            boolean reserved = accountBalanceCommand
+                    .reserveStock(request.username(), request.stockCode(), request.orderQuantity());
+
+            if (!reserved) {
+                autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_STOCK);
+                return;
+            }
         }
 
         AutoOrderEntity savedAutoOrder;
@@ -65,6 +77,7 @@ public class AutoOrderService {
 
         stockServerAutoOrderResponseRepository.save(autoOrderResponseMessage);
         autoOrderResponseEventPublisher.publish(autoOrderResponseMessage);
+        accountUpdateEventPublisher.publish(savedAutoOrder.getUsername());
     }
 
     @Transactional

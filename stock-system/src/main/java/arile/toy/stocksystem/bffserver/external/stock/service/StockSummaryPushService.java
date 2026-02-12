@@ -17,15 +17,6 @@ public class StockSummaryPushService {
     private final SimpMessagingTemplate messagingTemplate;
     private final BffServerRedisStockSummaryRepository bffServerStockSummaryRepository;
 
-    public void push(String stockCode) {
-
-       var stockSummaryTickMessage = bffServerStockSummaryRepository.findByStockCode(stockCode);
-
-       messagingTemplate.convertAndSend(
-               "/sub/stock/summary",
-               BffServerStockSummaryClientTickMessage.fromBiffServerStockSummaryTickMessage(stockSummaryTickMessage));
-    }
-
     @Scheduled(fixedDelay = 1000)
     public void pushAll() {
 
