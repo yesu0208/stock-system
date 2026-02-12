@@ -68,10 +68,10 @@ public class RedisUserCreatedEventConsumer {
             return;
         }
 
-        String userId = (String) value.get("username");
+        String username = (String) value.get("username");
 
-        userAccountService.createAccountIfAbsent(userId);
+        userAccountService.createAccountIfAbsent(username);
 
-        log.info("Account created for userId={}", userId);
+        log.info("Account created for username={}", username);
     }
 }
