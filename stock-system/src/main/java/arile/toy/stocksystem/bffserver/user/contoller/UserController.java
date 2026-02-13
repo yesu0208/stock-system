@@ -5,6 +5,7 @@ import arile.toy.stocksystem.bffserver.user.dto.UserDto;
 import arile.toy.stocksystem.bffserver.user.dto.UserLoginRequest;
 import arile.toy.stocksystem.bffserver.user.dto.UserSignUpRequest;
 import arile.toy.stocksystem.bffserver.user.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +30,10 @@ public class UserController {
 
     @PostMapping("/authenticate")
     public ResponseEntity<UserAuthenticationResponse> authenticate(
-            @Valid @RequestBody UserLoginRequest userLoginRequest) {
-        var response = userService.authenticate(userLoginRequest);
-        return ResponseEntity.ok(response);
+            @Valid @RequestBody UserLoginRequest userLoginRequest,
+            HttpServletResponse response) {
+        var userAuthenticationResponse = userService.authenticate(userLoginRequest, response);
+        return ResponseEntity.ok(userAuthenticationResponse);
     }
 
 //    @GetMapping

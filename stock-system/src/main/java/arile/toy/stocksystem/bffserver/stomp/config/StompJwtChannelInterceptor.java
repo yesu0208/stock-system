@@ -33,7 +33,12 @@ public class StompJwtChannelInterceptor implements ChannelInterceptor {
             }
 
             String accessToken = authHeader.substring(7);
-            String username = jwtService.getUsername(accessToken);
+            String username = jwtService.getUsernameFromAccessToken(accessToken);
+
+            if (username == null) {
+                throw new JwtException("Authorization failed: JWT is expired.");
+            }
+
             var userDetails = userService.loadUserByUsername(username);
 
             var authentication = new UsernamePasswordAuthenticationToken(
