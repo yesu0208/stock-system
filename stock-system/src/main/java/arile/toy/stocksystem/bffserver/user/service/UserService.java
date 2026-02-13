@@ -2,6 +2,7 @@ package arile.toy.stocksystem.bffserver.user.service;
 
 import arile.toy.stocksystem.bffserver.exception.user.UserAlreadyExistsException;
 import arile.toy.stocksystem.bffserver.exception.user.UserNotFoundException;
+import arile.toy.stocksystem.bffserver.security.repository.RefreshTokenRepository;
 import arile.toy.stocksystem.bffserver.security.service.JwtService;
 import arile.toy.stocksystem.bffserver.user.dto.UserAuthenticationResponse;
 import arile.toy.stocksystem.bffserver.user.dto.UserDto;
@@ -29,6 +30,7 @@ public class UserService implements UserDetailsService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JwtService jwtService;
     private final UserCreatedEventPublisher userCreatedEventPublisher;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UserNotFoundException {
@@ -63,11 +65,16 @@ public class UserService implements UserDetailsService {
         var accessToken = jwtService.generateAccessToken(userEntity);
         var refreshToken = jwtService.generateRefreshToken(userEntity);
 
+        String jti = jwtService.getJtiFromRefreshToken(refreshToken);
+
+        refreshTokenRepository.save(jti, userEntity.getUsername(),
+                jwtService.getRefreshValidity());
+
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);
         refreshCookie.setSecure(false);
         refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(7 * 24 * 60 * 60);
+        refreshCookie.setMaxAge((int) jwtService.getRefreshValidity()/1000);
         response.addCookie(refreshCookie);
 
         return new UserAuthenticationResponse(accessToken);
