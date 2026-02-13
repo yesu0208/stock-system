@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.security.service;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -25,23 +26,38 @@ public class JwtService {
     }
 
     public String generateAccessToken(UserDetails userDetails) {
-        return generateToken(userDetails.getUsername());
+        return generateToken(userDetails.getUsername(), 15 * 60 * 1000);
     }
 
-    public String getUsername(String accessToken) {
-        return getSubject(accessToken);
+    public String generateRefreshToken(UserDetails userDetails) {
+        return generateToken(userDetails.getUsername(), 7 * 24 * 60 * 60 * 1000);
     }
 
-    private String generateToken(String subject) {
+    private String generateToken(String subject, long validityMillis) {
         var now = new Date();
-        var exp = new Date(now.getTime() + 3600 * 1000);
-        return Jwts.builder().subject(subject).signWith(key)
+        var exp = new Date(now.getTime() + validityMillis);
+
+        return Jwts.builder()
+                .subject(subject)
                 .issuedAt(now)
                 .expiration(exp)
+                .signWith(key)
                 .compact();
     }
 
-    private String getSubject(String token) {
+    public String getUsernameFromAccessToken(String token) {
+        try {
+            return parseSubject(token);
+        } catch (ExpiredJwtException e) {
+            return null;
+        }
+    }
+
+    public String getUsernameFromRefreshToken(String token) {
+        return parseSubject(token);
+    }
+
+    private String parseSubject(String token) {
         try {
             return Jwts.parser()
                     .verifyWith(key)
@@ -49,10 +65,9 @@ public class JwtService {
                     .parseSignedClaims(token)
                     .getPayload()
                     .getSubject();
-        } catch (JwtException exception) {
-            logger.error("Jwt exception", exception);
-            throw exception;
+        } catch (JwtException e) {
+            logger.error("Jwt exception during parsing.", e);
+            throw e;
         }
     }
-
 }
