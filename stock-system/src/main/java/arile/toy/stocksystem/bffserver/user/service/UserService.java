@@ -11,6 +11,8 @@ import arile.toy.stocksystem.bffserver.user.entity.UserEntity;
 import arile.toy.stocksystem.bffserver.user.event.UserCreatedEvent;
 import arile.toy.stocksystem.bffserver.user.event.publisher.UserCreatedEventPublisher;
 import arile.toy.stocksystem.bffserver.user.repository.UserRepository;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -51,15 +53,24 @@ public class UserService implements UserDetailsService {
         return UserDto.fromEntity(userEntity);
     }
 
-    public UserAuthenticationResponse authenticate(UserLoginRequest userLoginRequest) {
+    public UserAuthenticationResponse authenticate(UserLoginRequest userLoginRequest, HttpServletResponse response) {
         var userEntity = getUserEntityByUsername(userLoginRequest.username());
 
-        if (bCryptPasswordEncoder.matches(userLoginRequest.password(), userEntity.getPassword())) {
-            var accessToken = jwtService.generateAccessToken(userEntity);
-            return new UserAuthenticationResponse(accessToken);
-        } else {
+        if (!bCryptPasswordEncoder.matches(userLoginRequest.password(), userEntity.getPassword())) {
             throw new UserNotFoundException();
         }
+
+        var accessToken = jwtService.generateAccessToken(userEntity);
+        var refreshToken = jwtService.generateRefreshToken(userEntity);
+
+        Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(false);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(7 * 24 * 60 * 60);
+        response.addCookie(refreshCookie);
+
+        return new UserAuthenticationResponse(accessToken);
     }
 
     private UserEntity getUserEntityByUsername(String username) {
