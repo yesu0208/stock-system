@@ -3,6 +3,8 @@ package arile.toy.stocksystem.bffserver.autoorder.controller;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderRequest;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResponse;
 import arile.toy.stocksystem.bffserver.autoorder.service.AutoOrderIngressService;
+import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
+import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AutoOrderController {
 
     private final AutoOrderIngressService autoOrderIngressService;
+    private final BffServerMarketPhaseRegistry bffServerMarketPhaseRegistry;
 
     @PostMapping
     public ResponseEntity<AutoOrderResponse> autoOrder(
@@ -28,6 +31,12 @@ public class AutoOrderController {
     ) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String stockCode = autoOrderRequest.stockCode();
+
+        if (bffServerMarketPhaseRegistry.isClosed(stockCode)) {
+            throw new MarketClosedException();
         }
 
         String username = user.getUsername();
