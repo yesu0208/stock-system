@@ -2,6 +2,7 @@ package arile.toy.stocksystem.bffserver.account.service;
 
 import arile.toy.stocksystem.bffserver.account.dto.AccountSnapshot;
 import arile.toy.stocksystem.bffserver.account.dto.StockInfo;
+import arile.toy.stocksystem.bffserver.exception.server.RedisAccountNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +27,7 @@ public class AccountPullService {
 
         Map<Object, Object> accountMap = redisTemplate.opsForHash().entries(key);
         if (accountMap.isEmpty()) {
-            throw new IllegalArgumentException("Account not found: " + username);
+            throw new RedisAccountNotFoundException("Account not found: " + username);
         }
 
         long availableCash =

@@ -2,12 +2,12 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>실시간 주식</title>
+    <title>실시간 주식 & 주문</title>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 </head>
 <body>
-<h1>실시간 주식 데이터</h1>
+<h1>실시간 주식 & 주문 모니터</h1>
 
 <div>
     <h2>로그인</h2>
@@ -18,9 +18,18 @@
 
 <hr/>
 
-<input type="text" id="stock-code" placeholder="종목 코드 입력 (예: 005930)" />
-<button onclick="subscribeStock()">Subscribe</button>
-<button onclick="unsubscribeStock()">Unsubscribe</button>
+<h2> 내 계좌 요약</h2>
+<pre id="account-message-data"></pre>
+
+<h2>주식 요약</h2>
+<pre id="stock-summary-data"></pre>
+
+<div>
+    <h2>주가 구독</h2>
+    <input type="text" id="stock-code" placeholder="종목 코드 입력 (예: 005930)" />
+    <button onclick="subscribeStock()">Subscribe</button>
+    <button onclick="unsubscribeStock()">Unsubscribe</button>
+</div>
 
 <h2>BID/ASK</h2>
 <pre id="bidask-data"></pre>
@@ -28,12 +37,127 @@
 <h2>체결가</h2>
 <pre id="trade-data"></pre>
 
-<script>
-    let stompClient = null;
-    let subscription = null;
-    let currentCode = null;
+<h2>주문 데이터</h2>
+<pre id="order-data"></pre>
 
-    // JWT 로그인
+<div>
+    <h2>주문 보내기 (REST API)</h2>
+    <input type="text" id="rest-order-stock" placeholder="종목 코드" />
+    <input type="number" id="rest-order-quantity" placeholder="수량" />
+    <input type="number" id="rest-order-price" placeholder="가격" />
+    <select id="rest-order-type">
+        <option value="BUY">매수</option>
+        <option value="SELL">매도</option>
+    </select>
+    <button onclick="sendOrderRest()">주문 전송 (REST)</button>
+</div>
+<div>
+    <h2>나의 주문 응답</h2>
+    <pre id="my-order-data"></pre>
+</div>
+<div>
+    <h2>주문 취소 보내기 (REST API)</h2>
+    <input type="number" id="cancel-order-id" placeholder="취소할 주문 ID" />
+    <input type="text" id="cancel-stock-code" placeholder="종목 코드" />
+    <button onclick="sendCancelRest()">취소 전송</button>
+</div>
+<div>
+    <h2>취소 응답</h2>
+    <pre id="my-cancel-data"></pre>
+</div>
+
+
+<div>
+    <h2>자동 주문 보내기 (AutoOrder)</h2>
+    <input type="text" id="auto-order-stock" placeholder="종목 코드" />
+    <input type="number" id="auto-order-quantity" placeholder="수량" />
+    <input type="number" id="auto-order-price" placeholder="주문 가격" />
+    <input type="number" id="auto-order-trigger" placeholder="트리거 가격" />
+    <select id="auto-order-type">
+        <option value="BUY">자동 매수</option>
+        <option value="SELL">자동 매도</option>
+    </select>
+    <button onclick="sendAutoOrderRest()">자동 주문 등록</button>
+</div>
+
+<div>
+    <h2>나의 자동 주문 응답</h2>
+    <pre id="my-auto-order-data"></pre>
+</div>
+
+<div>
+    <h2>자동 주문 취소 보내기 (AutoOrder Cancel)</h2>
+    <input type="number" id="cancel-auto-order-id" placeholder="취소할 자동 주문 ID" />
+    <input type="text" id="cancel-auto-stock-code" placeholder="종목 코드" />
+    <button onclick="sendAutoOrderCancelRest()">자동 주문 취소</button>
+</div>
+
+<div>
+    <h2>자동 주문 취소 응답</h2>
+    <pre id="my-auto-cancel-data"></pre>
+</div>
+
+<script>
+    let stockClient = null;
+    let stockSubscription = null;
+    let currentStock = null;
+
+    let orderClient = null;
+    let orderSubscription = null;
+    let stockSummarySubscription = null;
+    let autoOrderSubscription = null;
+    let autoCancelSubscription = null;
+
+    let accountMessageSubscription = null;
+    const stockSummaryMap = new Map();
+
+    function subscribeMyOrders() {
+        if (!orderClient || !orderClient.connected) {
+            alert("주문 STOMP가 연결되지 않았습니다.");
+            return;
+        }
+
+
+        if (orderSubscription) {
+            console.log("이미 주문 응답 구독 중");
+            return;
+        }
+
+        orderSubscription = orderClient.subscribe("/user/sub/order", function(message) {
+            const orders = JSON.parse(message.body);
+
+            document.getElementById('my-order-data').innerText = JSON.stringify(orders, null, 2);
+            console.log("실시간 주문 응답:", orders);
+        });
+
+        console.log("나의 주문 응답 구독 시작");
+    }
+
+    let cancelSubscription = null;
+
+
+    function subscribeMyCancels() {
+        if (!orderClient || !orderClient.connected) {
+            alert("주문 STOMP가 연결되지 않았습니다.");
+            return;
+        }
+
+        if (cancelSubscription) {
+            console.log("이미 취소 응답 구독 중");
+            return;
+        }
+
+        cancelSubscription = orderClient.subscribe("/user/sub/cancel", function(message) {
+            const cancelEvent = JSON.parse(message.body);
+
+
+            document.getElementById('my-cancel-data').innerText = JSON.stringify(cancelEvent, null, 2);
+            console.log("실시간 취소 응답:", cancelEvent);
+        });
+
+        console.log("나의 취소 응답 구독 시작");
+    }
+
     async function login() {
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value.trim();
@@ -59,7 +183,8 @@
             localStorage.setItem("accessToken", data.accessToken);
             alert("로그인 성공");
 
-            connectStomp(); // 로그인 후 STOMP 연결
+            connectStockStomp();
+            connectOrderStomp();
 
         } catch (e) {
             console.error(e);
@@ -67,75 +192,431 @@
         }
     }
 
-    // STOMP 연결
-    function connectStomp() {
+    function connectOrderStomp() {
         const token = localStorage.getItem("accessToken");
-        if (!token) {
-            alert("로그인이 필요합니다.");
-            return;
-        }
+        if (!token) return;
 
-        const socket = new SockJS('/ws-stock');
-        stompClient = Stomp.over(socket);
+        const socket = new SockJS('/ws-order');
+        orderClient = Stomp.over(socket);
 
-        stompClient.connect(
+        orderClient.connect(
             { Authorization: "Bearer " + token },
-            function (frame) {
-                console.log("STOMP Connected:", frame);
+            function(frame) {
+                console.log("Order STOMP Connected:", frame);
+
+                subscribeMyOrders();
+                subscribeMyCancels();
+                subscribeMyAutoOrders();
+                subscribeMyAutoCancels();
+
+                subscribeMyAccountMessage();
             },
-            function (error) {
-                console.error("STOMP error:", error);
+            function(error) {
+                console.error("Order STOMP error:", error);
             }
         );
     }
 
-    // 종목 구독
-    function subscribeStock() {
-        if (!stompClient || !stompClient.connected) {
-            alert("STOMP가 연결되지 않았습니다. 로그인 후 시도하세요.");
+    function connectStockStomp() {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
+
+        const socket = new SockJS('/ws-stock');
+        stockClient = Stomp.over(socket);
+
+        stockClient.connect(
+            { Authorization: "Bearer " + token },
+            function(frame) {
+                console.log("Stock STOMP Connected:", frame);
+
+                // summary 자동 구독
+                subscribeStockSummary();
+            },
+            function(error) {
+                console.error("Stock STOMP error:", error);
+            }
+        );
+    }
+
+
+
+    function subscribeStockSummary() {
+        if (!stockClient || !stockClient.connected) {
+            console.warn("Stock STOMP not connected");
             return;
         }
 
-        const codeInput = document.getElementById('stock-code').value.trim();
-        if (!codeInput) {
+        if (stockSummarySubscription) {
+            console.log("이미 stock summary 구독 중");
+            return;
+        }
+
+        stockSummarySubscription = stockClient.subscribe(
+            "/sub/stock/summary",
+            function(message) {
+                const payload = JSON.parse(message.body);
+
+                if (Array.isArray(payload)) {
+                    payload.forEach(summary => {
+                        stockSummaryMap.set(summary.stockCode, summary);
+                    });
+                    console.log("pushAll received:", payload.length);
+                }
+                else {
+                    stockSummaryMap.set(payload.stockCode, payload);
+                    console.log("tick update:", payload.stockCode);
+                }
+
+                renderStockSummary();
+            }
+        );
+
+        console.log("/sub/stock/summary 구독 시작");
+    }
+
+    function renderStockSummary() {
+        const container = document.getElementById('stock-summary-data');
+
+        const summaries = Array.from(stockSummaryMap.values())
+            .sort((a, b) => a.stockCode.localeCompare(b.stockCode));
+
+        let text = "";
+
+        summaries.forEach(s => {
+            const changeRate = calcChangeRate(s.curPrice, s.prevClose);
+
+            text +=
+                ` ${s.stockCode}\n` +
+                `  현재가: ${s.curPrice}\n` +
+                `  전일대비: ${s.changePrice ?? (s.curPrice - s.prevClose)}\n` +
+                `  등락률: ${changeRate}%\n` +
+                `  거래량: ${s.volume ?? "-"}\n\n`;
+        });
+
+        container.innerText = text;
+    }
+
+
+    function subscribeStock() {
+        if (!stockClient || !stockClient.connected) {
+            alert("주가 STOMP가 연결되지 않았습니다.");
+            return;
+        }
+
+        const code = document.getElementById('stock-code').value.trim();
+        if (!code) {
             alert("종목 코드를 입력하세요.");
             return;
         }
 
-        if (subscription) {
-            alert(`이미 ${currentCode} 종목을 구독 중입니다. 먼저 구독 해제하세요.`);
+        if (stockSubscription) {
+            alert(`이미 ${currentStock} 종목을 구독 중입니다.`);
             return;
         }
 
-        currentCode = codeInput;
-        subscription = stompClient.subscribe(`/sub/stock/${currentCode}`, function (message) {
+        currentStock = code;
+        stockSubscription = stockClient.subscribe(`/sub/stock/${code}`, function(message) {
             const data = JSON.parse(message.body);
-
-            if (data.type === "BIDASKPRICE") {
+            if (data.tickMessageType === "BIDASKPRICE") {
                 document.getElementById('bidask-data').innerText = JSON.stringify(data, null, 2);
-            } else if (data.type === "TRADEPRICE") {
+            } else if (data.tickMessageType === "TRADEPRICE") {
                 document.getElementById('trade-data').innerText = JSON.stringify(data, null, 2);
             }
         });
 
-        console.log(`${currentCode} 구독 시작`);
+        console.log(`${currentStock} 주가 구독 시작`);
     }
 
-    // 종목 구독 해제
     function unsubscribeStock() {
-        if (!subscription) {
-            alert("구독 중이 아닙니다.");
-            return;
-        }
+        if (!stockSubscription) return;
 
-        subscription.unsubscribe();
-        subscription = null;
-        console.log(`${currentCode} 구독 해제`);
-        currentCode = null;
+        stockSubscription.unsubscribe();
+        stockSubscription = null;
+        console.log(`${currentStock} 주가 구독 해제`);
+        currentStock = null;
 
         document.getElementById('bidask-data').innerText = '';
         document.getElementById('trade-data').innerText = '';
     }
+
+    function calcChangeRate(curPrice, prevClose) {
+        if (!prevClose || prevClose <= 0) return "-";
+        return ((curPrice - prevClose) * 100 / prevClose).toFixed(2);
+    }
+
+    async function sendOrderRest() {
+        const code = document.getElementById('rest-order-stock').value.trim();
+        const quantity = parseInt(document.getElementById('rest-order-quantity').value);
+        const price = parseInt(document.getElementById('rest-order-price').value);
+        const orderType = document.getElementById('rest-order-type').value; // BUY / SELL
+
+        if (!code || !quantity || quantity <= 0 || !price || price <= 0) {
+            alert("모든 값을 올바르게 입력하세요.");
+            return;
+        }
+
+        const orderRequest = {
+            stockCode: code,
+            orderType: orderType,
+            orderQuantity: quantity,
+            orderPrice: price
+        };
+
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+            alert("로그인 먼저 진행하세요.");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/v1/orders", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify(orderRequest)
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                alert("주문 실패: " + (errData.message ?? res.statusText));
+                return;
+            }
+
+            const data = await res.json();
+            alert("주문 성공! username: " + data.username + "종목토드: " + data.stockCode);
+            console.log("REST 주문 응답:", data);
+
+        } catch (e) {
+            console.error(e);
+            alert("주문 전송 중 오류 발생");
+        }
+    }
+
+    async function sendCancelRest() {
+        const orderId = parseInt(document.getElementById('cancel-order-id').value);
+        const stockCode = document.getElementById('cancel-stock-code').value.trim();
+
+        if (!orderId || !stockCode) {
+            alert("주문 ID와 종목 코드를 입력하세요.");
+            return;
+        }
+
+        const cancelRequest = {
+            orderId: orderId,
+            stockCode: stockCode
+        };
+
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+            alert("로그인 먼저 진행하세요.");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/v1/cancels", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify(cancelRequest)
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                alert("주문 취소 실패: " + (errData.message ?? res.statusText));
+                return;
+            }
+
+            const data = await res.json();
+            alert(`취소 요청 성공! 주문 ID: ${data.orderId}, 종목: ${data.stockCode}`);
+            console.log("REST 취소 응답:", data);
+
+        } catch (e) {
+            console.error(e);
+            alert("주문 취소 전송 중 오류 발생");
+        }
+    }
+
+    function subscribeMyAutoOrders() {
+        if (!orderClient || !orderClient.connected) {
+            alert("주문 STOMP가 연결되지 않았습니다.");
+            return;
+        }
+
+        if (autoOrderSubscription) {
+            console.log("이미 자동 주문 응답 구독 중");
+            return;
+        }
+
+        autoOrderSubscription = orderClient.subscribe(
+            "/user/sub/auto/order",
+            function(message) {
+                const autoOrderEvent = JSON.parse(message.body);
+                document.getElementById('my-auto-order-data').innerText =
+                    JSON.stringify(autoOrderEvent, null, 2);
+
+                console.log("AutoOrder 응답:", autoOrderEvent);
+            }
+        );
+
+        console.log("나의 자동 주문 응답 구독 시작");
+    }
+
+    async function sendAutoOrderRest() {
+        const stockCode = document.getElementById('auto-order-stock').value.trim();
+        const quantity = parseInt(document.getElementById('auto-order-quantity').value);
+        const price = parseInt(document.getElementById('auto-order-price').value);
+        const triggerPrice = parseInt(document.getElementById('auto-order-trigger').value);
+        const type = document.getElementById('auto-order-type').value;
+
+        if (!stockCode || !quantity || quantity <= 0 ||
+            !price || price <= 0 ||
+            !triggerPrice || triggerPrice <= 0) {
+            alert("모든 값을 올바르게 입력하세요.");
+            return;
+        }
+
+        const autoOrderRequest = {
+            stockCode: stockCode,
+            autoOrderType: type,
+            orderQuantity: quantity,
+            orderPrice: price,
+            triggerPrice: triggerPrice
+        };
+
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+            alert("로그인 먼저 진행하세요.");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/v1/auto-orders", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify(autoOrderRequest)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert("자동 주문 실패: " + (err.message ?? res.statusText));
+                return;
+            }
+
+            const data = await res.json();
+            alert("자동 주문 등록 성공!");
+            console.log("AutoOrder 등록 응답:", data);
+
+        } catch (e) {
+            console.error(e);
+            alert("자동 주문 전송 중 오류 발생");
+        }
+    }
+
+    function subscribeMyAutoCancels() {
+        if (!orderClient || !orderClient.connected) {
+            alert("주문 STOMP가 연결되지 않았습니다.");
+            return;
+        }
+
+        if (autoCancelSubscription) {
+            console.log("이미 자동 주문 취소 응답 구독 중");
+            return;
+        }
+
+        autoCancelSubscription = orderClient.subscribe(
+            "/user/sub/auto/cancel",
+            function(message) {
+                const cancelEvent = JSON.parse(message.body);
+                document.getElementById('my-auto-cancel-data').innerText =
+                    JSON.stringify(cancelEvent, null, 2);
+
+                console.log("AutoOrder Cancel 응답:", cancelEvent);
+            }
+        );
+
+        console.log("나의 자동 주문 취소 응답 구독 시작");
+    }
+
+    async function sendAutoOrderCancelRest() {
+        const autoOrderId = parseInt(
+            document.getElementById('cancel-auto-order-id').value
+        );
+        const stockCode = document
+            .getElementById('cancel-auto-stock-code')
+            .value.trim();
+
+        if (!autoOrderId || !stockCode) {
+            alert("자동 주문 ID와 종목 코드를 입력하세요.");
+            return;
+        }
+
+        const cancelRequest = {
+            autoOrderId: autoOrderId,
+            stockCode: stockCode
+        };
+
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+            alert("로그인 먼저 진행하세요.");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/v1/auto-orders/cancel", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify(cancelRequest)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert("자동 주문 취소 실패: " + (err.message ?? res.statusText));
+                return;
+            }
+
+            const data = await res.json();
+            alert("자동 주문 취소 요청 성공!");
+            console.log("AutoOrder Cancel REST 응답:", data);
+
+        } catch (e) {
+            console.error(e);
+            alert("자동 주문 취소 중 오류 발생");
+        }
+    }
+
+    function subscribeMyAccountMessage() {
+        if (!orderClient || !orderClient.connected) return;
+
+        if (accountMessageSubscription) {
+            console.log("이미 계좌 메시지 구독 중");
+            return;
+        }
+
+        accountMessageSubscription = orderClient.subscribe(
+            "/user/sub/account",
+            function(message) {
+                const account = JSON.parse(message.body);
+
+                console.log("AccountMessage:", account);
+
+                document.getElementById("account-message-data").innerText =
+                    JSON.stringify(account, null, 2);
+            }
+        );
+
+        console.log("/user/sub/account 구독 시작");
+    }
+
 </script>
 </body>
 </html>

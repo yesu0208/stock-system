@@ -18,7 +18,7 @@ public class RedisTradeCommand implements TradeCommand {
     public boolean applyBuyTrade(
             String username,
             String stockCode,
-            int quantity,
+            int totalQuantity,
             long buyPrice,
             long tradeAmount,
             long differenceAmount
@@ -26,7 +26,7 @@ public class RedisTradeCommand implements TradeCommand {
         return execute(
                 buyTradeScript,
                 username,
-                String.valueOf(quantity),
+                String.valueOf(totalQuantity),
                 String.valueOf(buyPrice),
                 String.valueOf(tradeAmount),
                 stockCode,
@@ -37,7 +37,7 @@ public class RedisTradeCommand implements TradeCommand {
     public boolean applySellTrade(
             String username,
             String stockCode,
-            int quantity,
+            int totalQuantity,
             long buyPrice,
             long tradeAmount,
             long differenceAmount
@@ -45,7 +45,7 @@ public class RedisTradeCommand implements TradeCommand {
         return execute(
                 sellTradeScript,
                 username,
-                String.valueOf(quantity),
+                String.valueOf(totalQuantity),
                 String.valueOf(buyPrice),
                 String.valueOf(tradeAmount),
                 stockCode,
