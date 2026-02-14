@@ -18,6 +18,16 @@ public class BffServerMarketPhaseRegistry {
     }
 
     public boolean isClosed(String stockCode) {
-        return phaseMap.getOrDefault(stockCode, BffServerMarketPhase.OPEN) == BffServerMarketPhase.CLOSED;
+        BffServerMarketPhase phase = phaseMap.get(stockCode);
+        return phase == BffServerMarketPhase.CLOSED;
+    }
+
+    public boolean isOpen(String stockCode) {
+        BffServerMarketPhase phase = phaseMap.get(stockCode);
+        return phase == BffServerMarketPhase.OPEN;
+    }
+
+    public void setPhase(String stockCode, BffServerMarketPhase phase) {
+        phaseMap.put(stockCode, phase);
     }
 }

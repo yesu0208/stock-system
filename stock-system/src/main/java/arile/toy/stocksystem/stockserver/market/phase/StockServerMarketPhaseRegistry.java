@@ -18,7 +18,16 @@ public class StockServerMarketPhaseRegistry {
     }
 
     public boolean isClosed(String stockCode) {
-        return phaseMap.getOrDefault(stockCode, StockServerMarketPhase.OPEN)
-                == StockServerMarketPhase.CLOSED;
+        StockServerMarketPhase phase = phaseMap.get(stockCode);
+        return phase == StockServerMarketPhase.CLOSED;
+    }
+
+    public boolean isOpened(String stockCode) {
+        StockServerMarketPhase phase = phaseMap.get(stockCode);
+        return phase == StockServerMarketPhase.OPEN;
+    }
+
+    public void setPhase(String stockCode, StockServerMarketPhase phase) {
+        phaseMap.put(stockCode, phase);
     }
 }

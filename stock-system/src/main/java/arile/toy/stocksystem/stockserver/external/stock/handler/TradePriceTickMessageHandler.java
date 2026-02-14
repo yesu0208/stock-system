@@ -5,6 +5,8 @@ import arile.toy.stocksystem.stockserver.external.stock.event.publisher.RedisTra
 import arile.toy.stocksystem.stockserver.external.stock.message.TickMessageType;
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
 import arile.toy.stocksystem.stockserver.external.stock.repository.StockServerRedisTradePriceRepository;
+import arile.toy.stocksystem.stockserver.market.phase.MarketPhaseService;
+import arile.toy.stocksystem.stockserver.trading.service.AutoOrderTriggerService;
 import arile.toy.stocksystem.stockserver.trading.service.TradeMatchingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,8 @@ public class TradePriceTickMessageHandler {
     private final RedisTradePriceEventPublisher redisTradePriceEventPublisher;
     private final StockServerRedisTradePriceRepository stockServerTradePriceRepository;
     private final TradeMatchingService tradeMatchingService;
+    private final AutoOrderTriggerService  autoOrderTriggerService;
+    private final MarketPhaseService marketPhaseService;
 
     public void handle(String message) {
 
@@ -64,7 +68,11 @@ public class TradePriceTickMessageHandler {
             redisTradePriceEventPublisher.publish(
                     TradePriceTickEvent.fromMessage(tradePriceTickMessage));
 
+            autoOrderTriggerService.getExternalTickMessageAndTrigger(tradePriceTickMessage);
             tradeMatchingService.getExternalTickMessageAndTrade(tradePriceTickMessage);
+
+            marketPhaseService.closeMarketAfterClosingCall(tradePriceTickMessage.stockCode(),
+                    tradePriceTickMessage.tradeTime());
         }
     }
 }
