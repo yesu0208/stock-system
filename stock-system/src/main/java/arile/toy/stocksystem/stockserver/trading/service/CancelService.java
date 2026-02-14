@@ -46,7 +46,7 @@ public class CancelService {
                 cancelRepository.save(CancelEntity.of(orderEntity.getOrderId()));
 
                 if (orderEntity.getOrderType() == OrderType.BUY) {
-                    boolean refunded = accountBalanceCommand.refundReservedCash(orderEntity.getUsername(), (long) orderEntity.getOrderPrice() * orderEntity.getOrderQuantity());
+                    boolean refunded = accountBalanceCommand.refundReservedCash(orderEntity.getUsername(), (long) orderEntity.getOrderPrice() * orderEntity.getRemainingQuantity());
 
                     if (!refunded) {
                         log.error("Redis refund failed. orderId={}, username={}", orderEntity.getOrderId(), orderEntity.getUsername());

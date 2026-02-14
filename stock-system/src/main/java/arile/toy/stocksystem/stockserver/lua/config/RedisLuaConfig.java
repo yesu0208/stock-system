@@ -153,21 +153,18 @@ public class RedisLuaConfig {
                     stocks = cjson.decode(stocksJson)
                 end
         
-                local sellQty = tonumber(ARGV[1])
+                local newQty = tonumber(ARGV[1])
                 local stockCode = ARGV[4]
         
                 if stocks[stockCode] then
-                    local oldQty = tonumber(stocks[stockCode].quantity)
-                    local oldAvailable = tonumber(stocks[stockCode].availableQuantity or oldQty)
                 
-                    local newQty = oldQty - sellQty
-                    local newAvailable = math.max(oldAvailable - sellQty, 0)
-        
+                    local oldStock = stocks[stockCode]
+       
                     if newQty > 0 then
                         stocks[stockCode] = {
                             quantity = newQty,
                             buyPrice = tonumber(ARGV[2]),
-                            availableQuantity = newAvailable
+                            availableQuantity = oldStock.availableQuantity
                         }
                     else
                         stocks[stockCode] = nil
