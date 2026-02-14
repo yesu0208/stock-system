@@ -14,7 +14,7 @@ import java.net.URI;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class ExternalStockListener {
+public class ExternalStockWebSocketClient {
 
     @Value("${api.ws-url}")
     private String WS_URL;
@@ -26,10 +26,37 @@ public class ExternalStockListener {
         try {
             this.approvalKey = approvalKey;
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            container.connectToServer(this, URI.create(WS_URL));
+            this.session = container.connectToServer(this, URI.create(WS_URL));
         } catch (DeploymentException | IOException exception) {
             throw new IllegalStateException("External stock websocket connection failed.", exception);
         }
+    }
+
+    public void disconnect() {
+        if (session == null) {
+            log.info("External stock websocket already disconnected.");
+            return;
+        }
+
+        try {
+            if (session.isOpen()) {
+                session.close(new CloseReason(
+                        CloseReason.CloseCodes.NORMAL_CLOSURE,
+                        "Client disconnect"
+                ));
+                log.info("External stock websocket disconnected successfully.");
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "External stock websocket disconnection failed.", e
+            );
+        } finally {
+            session = null;
+        }
+    }
+
+    public boolean isConnected() {
+        return session != null && session.isOpen();
     }
 
     @OnOpen
@@ -40,7 +67,7 @@ public class ExternalStockListener {
 
     @OnMessage
     public void onMessage(String message) {
-        log.info("Received external stock data: {}", message);
+//        log.info("Received external stock data: {}", message);
 
         externalStockTickMessageDispatcher.dispatch(message);
     }

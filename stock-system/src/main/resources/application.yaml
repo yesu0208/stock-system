@@ -6,13 +6,6 @@ api:
 
 debug: false
 
-external:
-  stocks:
-    - "005930"
-    - "000660"
-    - "247540"
-    - "086520"
-
 jwt:
   secret-key: ${SECRET_KEY}
 
@@ -67,6 +60,15 @@ spring:
     properties:
       hibernate.format_sql: true
   sql.init.mode: always
+
+stocks:
+  open:
+    - "005930"
+    - "000660"
+    - "247540"
+    - "086520"
+  close:
+    - "125020"
 
 ---
 

@@ -8,10 +8,11 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-@ConfigurationProperties(prefix = "external")
+@ConfigurationProperties(prefix = "stocks")
 @Getter
 @Setter
 public class ExternalStockProperties {
 
-    private List<String> stocks;
+    private List<String> open;
+    private List<String> close;
 }
