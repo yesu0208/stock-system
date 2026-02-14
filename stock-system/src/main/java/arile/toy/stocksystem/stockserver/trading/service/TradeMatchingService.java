@@ -6,12 +6,12 @@ import arile.toy.stocksystem.stockserver.trading.dto.order.OrderDto;
 import arile.toy.stocksystem.stockserver.trading.dto.order.OrderQueueRegistry;
 import arile.toy.stocksystem.stockserver.trading.dto.order.OrderStatus;
 import arile.toy.stocksystem.stockserver.trading.dto.order.StockServerOrderResponseMessage;
+import arile.toy.stocksystem.stockserver.trading.dto.trade.TradeResult;
 import arile.toy.stocksystem.stockserver.trading.event.TradeResponseEvent;
-import arile.toy.stocksystem.stockserver.trading.event.publisher.RedisOrderResponseEventPublisher;
-import arile.toy.stocksystem.stockserver.trading.event.publisher.RedisTradeResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.trading.event.publisher.TradeResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.trading.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.trading.repository.TradeCommand;
+import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +29,7 @@ public class TradeMatchingService {
     private final TradeResponseEventPublisher tradeResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final TradeCommand tradeCommand;
+    private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     public void getExternalTickMessageAndTrade(TradePriceTickMessage tradePriceTickMessage) {
         ReentrantLock lock = stockLockRegistry.lock(tradePriceTickMessage.stockCode());
@@ -41,157 +42,229 @@ public class TradeMatchingService {
         }
     }
 
-    private void matchAndExecuteWithinLock(TradePriceTickMessage tradePriceTickMessage) {
-        String stockCode = tradePriceTickMessage.stockCode();
-        int tradePrice = tradePriceTickMessage.curPrice();
-        int leftQuantity = tradePriceTickMessage.tradingVolumeTick();
-        String tradingType = tradePriceTickMessage.tradingType(); // 1:BUY, 5:SELL
 
-        if (tradingType.equals("1")) { // BUY -> 모의 투자는 SELL
-            while (leftQuantity > 0) {
-                var sellOrderDto = orderQueueRegistry.pollSell(stockCode);
-                if (sellOrderDto == null) return;
+    private void matchAndExecuteWithinLock(TradePriceTickMessage tick) {
 
-                if (sellOrderDto.orderPrice() > tradePrice) {
-                    orderQueueRegistry.orderEnqueue(sellOrderDto);
-                    return;
-                }
+        String stockCode = tick.stockCode();
+        int tradePrice = tick.curPrice();
+        int leftQuantity = tick.tradingVolumeTick();
+        String tradingType = tick.tradingType();
 
-                int executable = Math.min(leftQuantity, sellOrderDto.remainingQuantity());
-
-                var tradeResult = tradeExecutionService.executeSellTrade(sellOrderDto, tradePrice, executable);
-
-                if (tradeResult != null) {
-
-                    int remainingQuantity = sellOrderDto.remainingQuantity() - executable;
-
-                    if (remainingQuantity > 0) {
-                        var reEnqueuedOrderDto = new OrderDto(sellOrderDto.orderId(),
-                                sellOrderDto.username(),
-                                sellOrderDto.stockCode(),
-                                sellOrderDto.orderType(),
-                                sellOrderDto.orderPrice(),
-                                sellOrderDto.orderQuantity(),
-                                remainingQuantity,
-                                OrderStatus.PARTIAL,
-                                sellOrderDto.orderTime());
-                        orderQueueRegistry.orderEnqueue(reEnqueuedOrderDto);
-                    }
-
-                    if (remainingQuantity == 0) {
-                        stockServerOrderResponseRepository.delete(sellOrderDto.username(), sellOrderDto.orderId());
-                    } else {
-                        stockServerOrderResponseRepository.update(tradeResult.tradeEntity().getUsername(),
-                                tradeResult.tradeEntity().getOrderId(),
-                                StockServerOrderResponseMessage.of(
-                                        sellOrderDto.orderId(),
-                                        sellOrderDto.username(),
-                                        sellOrderDto.stockCode(),
-                                        sellOrderDto.orderType(),
-                                        sellOrderDto.orderPrice(),
-                                        sellOrderDto.orderQuantity(),
-                                        remainingQuantity,
-                                        sellOrderDto.orderTime()
-                                ));
-                    }
-
-                    long tradeAmount = (long) sellOrderDto.orderPrice() * tradeResult.tradeEntity().getTradeQuantity();
-                    long differenceAmount = (long) (tradeResult.tradeEntity().getTradePrice() - sellOrderDto.orderPrice()) * tradeResult.tradeEntity().getTradeQuantity();
-
-                    long buyPrice = 0;
-                    if (tradeResult.totalQuantity() != 0) {
-                        buyPrice = tradeResult.totalAmount() / tradeResult.totalQuantity();
-                    }
-
-                    boolean redisOk = tradeCommand.applySellTrade(
-                            tradeResult.tradeEntity().getUsername(),
-                            tradeResult.tradeEntity().getStockCode(),
-                            tradeResult.totalQuantity(),
-                            buyPrice,
-                            tradeAmount,
-                            differenceAmount
-                    );
-
-                    if (!redisOk) {
-                        log.error("Redis sell command failed.");
-                    }
-
-                    tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(tradeResult.tradeEntity()));
-                    leftQuantity -= tradeResult.tradeEntity().getTradeQuantity();
-                } else {
-                    log.debug("skip canceled order.");
-                }
-
-            }
-        } else if (tradingType.equals("5")) { // SELL -> 모의 투자는 BUY
-            while (leftQuantity > 0) {
-                var buyOrderDto = orderQueueRegistry.pollBuy(stockCode);
-                if (buyOrderDto == null) return;
-
-                if (buyOrderDto.orderPrice() < tradePrice) {
-                    orderQueueRegistry.orderEnqueue(buyOrderDto);
-                    return;
-                }
-
-                int executable = Math.min(leftQuantity, buyOrderDto.remainingQuantity());
-
-                var tradeResult = tradeExecutionService.executeBuyTrade(buyOrderDto, tradePrice, executable);
-
-                if (tradeResult != null) {
-
-                    int remainingQuantity = buyOrderDto.remainingQuantity() - executable;
-
-                    if (remainingQuantity > 0) {
-                        var reEnqueuedOrderDto = new OrderDto(buyOrderDto.orderId(),
-                                buyOrderDto.username(),
-                                buyOrderDto.stockCode(),
-                                buyOrderDto.orderType(),
-                                buyOrderDto.orderPrice(),
-                                buyOrderDto.orderQuantity(),
-                                remainingQuantity,
-                                OrderStatus.PARTIAL,
-                                buyOrderDto.orderTime());
-                        orderQueueRegistry.orderEnqueue(reEnqueuedOrderDto);
-                    }
-
-                    if (remainingQuantity == 0) {
-                        stockServerOrderResponseRepository.delete(buyOrderDto.username(), buyOrderDto.orderId());
-                    } else {
-                        stockServerOrderResponseRepository.update(tradeResult.tradeEntity().getUsername(),
-                                tradeResult.tradeEntity().getOrderId(),
-                                StockServerOrderResponseMessage.of(
-                                        buyOrderDto.orderId(),
-                                        buyOrderDto.username(),
-                                        buyOrderDto.stockCode(),
-                                        buyOrderDto.orderType(),
-                                        buyOrderDto.orderPrice(),
-                                        buyOrderDto.orderQuantity(),
-                                        remainingQuantity,
-                                        buyOrderDto.orderTime()
-                                ));
-                    }
-
-                    long tradeAmount = (long) buyOrderDto.orderPrice() * tradeResult.tradeEntity().getTradeQuantity();
-                    long differenceAmount = (long) (buyOrderDto.orderPrice() - tradeResult.tradeEntity().getTradePrice()) * tradeResult.tradeEntity().getTradeQuantity();
-
-                    boolean redisOk = tradeCommand.applyBuyTrade(
-                            tradeResult.tradeEntity().getUsername(),
-                            tradeResult.tradeEntity().getStockCode(),
-                            tradeResult.totalQuantity(),
-                            tradeResult.totalAmount()/tradeResult.totalQuantity(),
-                            tradeAmount,
-                            differenceAmount
-                    );
-
-                    if (!redisOk) {
-                        log.error("Redis buy command failed.");
-                    }
-
-                    tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(tradeResult.tradeEntity()));
-                    leftQuantity -= tradeResult.tradeEntity().getTradeQuantity();
-                }
-
-            }
+        switch (tradingType) {
+            case "1" -> matchAndExecuteSellSide(stockCode, tradePrice, leftQuantity);
+            case "5" -> matchAndExecuteBuySide(stockCode, tradePrice, leftQuantity);
+            case "3", "" -> matchAndExecuteCallAuction(stockCode, tradePrice, leftQuantity);
         }
+    }
+
+    private void matchAndExecuteSellSide(String stockCode, int tradePrice, int leftQuantity) {
+
+        while (leftQuantity > 0) {
+
+            var sell = orderQueueRegistry.pollSell(stockCode);
+
+            if (sell == null) return;
+
+            if (sell.orderPrice() > tradePrice) {
+                orderQueueRegistry.orderEnqueue(sell);
+                return;
+            }
+
+            int executable = Math.min(leftQuantity, sell.remainingQuantity());
+
+            var tradeResult = tradeExecutionService.executeSellTrade(sell, tradePrice, executable);
+
+            if (tradeResult == null) {
+                log.info("skip canceled order.");
+                continue;
+            }
+
+            int remaining = sell.remainingQuantity() - executable;
+
+            finalizeOrderAfterExecution(sell, remaining);
+            finalizeSellExecution(sell, tradeResult, tradePrice, executable);
+
+            leftQuantity -= executable;
+        }
+    }
+
+    private void matchAndExecuteBuySide(String stockCode, int tradePrice, int leftQuantity) {
+
+        while (leftQuantity > 0) {
+
+            var buy = orderQueueRegistry.pollBuy(stockCode);
+
+            if (buy == null) return;
+
+            if (buy.orderPrice() < tradePrice) {
+                orderQueueRegistry.orderEnqueue(buy);
+                return;
+            }
+
+            int executable = Math.min(leftQuantity, buy.remainingQuantity());
+
+            var tradeResult = tradeExecutionService.executeBuyTrade(buy, tradePrice, executable);
+
+            if (tradeResult == null) {
+                log.info("skip canceled order.");
+                continue;
+            }
+
+            int remaining = buy.remainingQuantity() - executable;
+
+            finalizeOrderAfterExecution(buy, remaining);
+            finalizeBuyExecution(buy, tradeResult, tradePrice, executable);
+
+            leftQuantity -= executable;
+        }
+    }
+
+    private void matchAndExecuteCallAuction(String stockCode, int tradePrice, int leftQuantity) {
+
+        while (leftQuantity > 0) {
+
+            var buy = orderQueueRegistry.pollBuy(stockCode);
+            var sell = orderQueueRegistry.pollSell(stockCode);
+
+            if (buy == null || sell == null) {
+                if (buy != null) orderQueueRegistry.orderEnqueue(buy);
+                if (sell != null) orderQueueRegistry.orderEnqueue(sell);
+                break;
+            }
+
+            if (buy.orderPrice() < tradePrice || sell.orderPrice() > tradePrice) {
+                orderQueueRegistry.orderEnqueue(buy);
+                orderQueueRegistry.orderEnqueue(sell);
+                break;
+            }
+
+            int executable = Math.min(
+                    leftQuantity,
+                    Math.min(buy.remainingQuantity(), sell.remainingQuantity())
+            );
+
+            var sellResult = tradeExecutionService.executeSellTrade(sell, tradePrice, executable);
+
+            if (sellResult != null) {
+                int remaining = sell.remainingQuantity() - executable;
+                finalizeOrderAfterExecution(sell, remaining);
+                finalizeSellExecution(sell, sellResult, tradePrice, executable);
+            } else {
+                log.info("skip canceled order.");
+            }
+
+
+            var buyResult = tradeExecutionService.executeBuyTrade(buy, tradePrice, executable);
+
+            if (buyResult != null) {
+                int remaining = buy.remainingQuantity() - executable;
+                finalizeOrderAfterExecution(buy, remaining);
+                finalizeBuyExecution(buy, buyResult, tradePrice, executable);
+            } else {
+                log.info("skip canceled order.");
+            }
+
+            leftQuantity -= executable;
+        }
+    }
+
+    private void finalizeOrderAfterExecution(OrderDto order, int remainingQuantity) {
+
+        if (remainingQuantity > 0) {
+
+            orderQueueRegistry.orderEnqueue(
+                    new OrderDto(
+                            order.orderId(),
+                            order.username(),
+                            order.stockCode(),
+                            order.orderType(),
+                            order.orderPrice(),
+                            order.orderQuantity(),
+                            remainingQuantity,
+                            OrderStatus.PARTIAL,
+                            order.orderTime()
+                    )
+            );
+        }
+
+        if (remainingQuantity == 0) {
+            stockServerOrderResponseRepository.delete(
+                    order.username(),
+                    order.orderId()
+            );
+        } else {
+            stockServerOrderResponseRepository.update(
+                    order.username(),
+                    order.orderId(),
+                    StockServerOrderResponseMessage.of(
+                            order.orderId(),
+                            order.username(),
+                            order.stockCode(),
+                            order.orderType(),
+                            order.orderPrice(),
+                            order.orderQuantity(),
+                            remainingQuantity,
+                            order.orderTime()
+                    )
+            );
+        }
+    }
+
+    private void finalizeSellExecution(OrderDto sell, TradeResult result,
+                                     int tradePrice, int executable) {
+
+        long orderAmount = (long) sell.orderPrice() * executable;
+        long differenceAmount = (long) (tradePrice - sell.orderPrice()) * executable;
+
+        long avgPrice = result.totalQuantity() == 0
+                ? 0
+                : result.totalAmount() / result.totalQuantity();
+
+        boolean redisOk = tradeCommand.applySellTrade(
+                sell.username(),
+                sell.stockCode(),
+                result.totalQuantity(),
+                avgPrice,
+                orderAmount,
+                differenceAmount
+        );
+
+        if (!redisOk) {
+            log.error("Redis sell command failed.");
+        }
+
+        tradeResponseEventPublisher.publish(
+                TradeResponseEvent.fromEntity(result.tradeEntity())
+        );
+        accountUpdateEventPublisher.publish(sell.username());
+    }
+
+    private void finalizeBuyExecution(OrderDto buy, TradeResult result,
+                                    int tradePrice, int executable) {
+
+        long orderAmount = (long) buy.orderPrice() * executable;
+        long differenceAmount = (long) (buy.orderPrice() - tradePrice) * executable;
+
+        long avgPrice = result.totalQuantity() == 0
+                ? 0
+                : result.totalAmount() / result.totalQuantity();
+
+        boolean redisOk = tradeCommand.applyBuyTrade(
+                buy.username(),
+                buy.stockCode(),
+                result.totalQuantity(),
+                avgPrice,
+                orderAmount,
+                differenceAmount
+        );
+
+        if (!redisOk) {
+            log.error("Redis buy command failed.");
+        }
+
+        tradeResponseEventPublisher.publish(
+                TradeResponseEvent.fromEntity(result.tradeEntity())
+        );
+        accountUpdateEventPublisher.publish(buy.username());
     }
 }
