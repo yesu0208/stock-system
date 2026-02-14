@@ -3,6 +3,8 @@ package arile.toy.stocksystem.bffserver.autocancel.controller;
 import arile.toy.stocksystem.bffserver.autocancel.dto.AutoCancelRequest;
 import arile.toy.stocksystem.bffserver.autocancel.dto.AutoCancelResponse;
 import arile.toy.stocksystem.bffserver.autocancel.service.AutoCancelIngressService;
+import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
+import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AutoCancelController {
 
     private final AutoCancelIngressService autoCancelIngressService;
+    private final BffServerMarketPhaseRegistry bffServerMarketPhaseRegistry;
 
     @PostMapping
     public ResponseEntity<AutoCancelResponse> autoCancel(
@@ -27,6 +30,12 @@ public class AutoCancelController {
     ) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String stockCode = autoCancelRequest.stockCode();
+
+        if (bffServerMarketPhaseRegistry.isClosed(stockCode)) {
+            throw new MarketClosedException();
         }
 
         AutoCancelResponse autoCancelResponse =

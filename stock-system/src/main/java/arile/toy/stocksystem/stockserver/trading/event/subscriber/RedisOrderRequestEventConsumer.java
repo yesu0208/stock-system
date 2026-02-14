@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.trading.event.subscriber;
 
+import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
 import arile.toy.stocksystem.stockserver.trading.dto.order.OrderType;
 import arile.toy.stocksystem.stockserver.trading.event.StockServerOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.trading.service.OrderService;
@@ -23,6 +24,7 @@ public class RedisOrderRequestEventConsumer {
 
     private final RedisTemplate<String, Object> streamRedisTemplate;
     private final OrderService orderService;
+    private final StockServerMarketPhaseRegistry registry;
 
     @Value("${redis.streams.order.prefix}")
     private String prefix;
@@ -100,6 +102,10 @@ public class RedisOrderRequestEventConsumer {
             orderQuantity = Integer.parseInt(rawOrderQuantity.toString());
         }
 
+        if (registry.isClosed(stockCode)) {
+            log.info("Market closed. Skip order for stockCode {}", stockCode);
+            return;
+        }
         log.info("Processing order username: {} for stock {}", username, stockCode);
 
         orderService.registerOrder(StockServerOrderRequestEvent

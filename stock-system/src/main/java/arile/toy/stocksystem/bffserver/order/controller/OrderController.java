@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.bffserver.order.controller;
 
+import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
+import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import arile.toy.stocksystem.bffserver.order.dto.OrderRequest;
 import arile.toy.stocksystem.bffserver.order.dto.OrderResponse;
 import arile.toy.stocksystem.bffserver.order.service.OrderIngressService;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
     private final OrderIngressService orderIngressService;
+    private final BffServerMarketPhaseRegistry bffServerMarketPhaseRegistry;
 
     @PostMapping
     public ResponseEntity<OrderResponse> order(
@@ -30,6 +33,11 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        String stockCode = orderRequest.stockCode();
+
+        if (bffServerMarketPhaseRegistry.isClosed(stockCode)) {
+            throw new MarketClosedException();
+        }
         String username = user.getUsername();
 
         OrderResponse orderResponse =

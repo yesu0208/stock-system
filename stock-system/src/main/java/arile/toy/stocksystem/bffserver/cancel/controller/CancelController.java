@@ -3,6 +3,8 @@ package arile.toy.stocksystem.bffserver.cancel.controller;
 import arile.toy.stocksystem.bffserver.cancel.dto.CancelRequest;
 import arile.toy.stocksystem.bffserver.cancel.dto.CancelResponse;
 import arile.toy.stocksystem.bffserver.cancel.service.CancelIngressService;
+import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
+import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CancelController {
 
     private final CancelIngressService cancelIngressService;
+    private final BffServerMarketPhaseRegistry bffServerMarketPhaseRegistry;
 
     @PostMapping
     public ResponseEntity<CancelResponse> cancel(
@@ -27,6 +30,12 @@ public class CancelController {
     ) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String stockCode = cancelRequest.stockCode();
+
+        if (bffServerMarketPhaseRegistry.isClosed(stockCode)) {
+            throw new MarketClosedException();
         }
 
         CancelResponse cancelResponse =
