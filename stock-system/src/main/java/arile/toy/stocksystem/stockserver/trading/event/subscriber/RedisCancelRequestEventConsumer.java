@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.trading.event.subscriber;
 
+import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
 import arile.toy.stocksystem.stockserver.trading.event.CancelRequestEvent;
 import arile.toy.stocksystem.stockserver.trading.service.CancelService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class RedisCancelRequestEventConsumer {
 
     private final RedisTemplate<String, Object> streamRedisTemplate;
     private final CancelService cancelService;
+    private final StockServerMarketPhaseRegistry registry;
 
     @Value("${redis.streams.cancel.prefix}")
     private String prefix;
@@ -84,6 +86,11 @@ public class RedisCancelRequestEventConsumer {
         }
 
         String stockCode = (String) value.get("stockCode");
+
+        if (registry.isClosed(stockCode)) {
+            log.info("Market closed. Skip cancel for stockCode {}", stockCode);
+            return;
+        }
 
         log.info("Processing cancel orderId: {} for stockCode {}", orderId, stockCode);
 

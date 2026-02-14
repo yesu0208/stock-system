@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.trading.event.subscriber;
 
+import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
 import arile.toy.stocksystem.stockserver.trading.event.AutoCancelRequestEvent;
 import arile.toy.stocksystem.stockserver.trading.service.AutoCancelService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class RedisAutoCancelRequestEventConsumer {
 
     private final RedisTemplate<String, Object> streamRedisTemplate;
     private final AutoCancelService autoCancelService;
+    private final StockServerMarketPhaseRegistry registry;
 
     @Value("${redis.streams.auto-cancel.prefix}")
     private String prefix;
@@ -85,7 +87,10 @@ public class RedisAutoCancelRequestEventConsumer {
 
         String stockCode = (String) value.get("stockCode");
 
-
+        if (registry.isClosed(stockCode)) {
+            log.info("Market closed. Skip auto cancel for stockCode {}", stockCode);
+            return;
+        }
 
         log.info("Processing cancel autoOrderId: {} for stockCode {}", autoOrderId, stockCode);
 
