@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.global.config;
 
+import arile.toy.stocksystem.bffserver.market.phase.RedisMarketCloseEventSubscriber;
 import arile.toy.stocksystem.bffserver.market.phase.RedisMarketPhaseEventSubscriber;
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisStockSummaryEventSubscriber;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ public class RedisSubscriberConfig {
 
     private final RedisConnectionFactory redisConnectionFactory;
     private final RedisStockSummaryEventSubscriber redisStockSummaryEventSubscriber;
+    private final RedisMarketCloseEventSubscriber redisMarketCloseEventSubscriber;
     private final RedisMarketPhaseEventSubscriber redisMarketPhaseEventSubscriber;
 
     @Bean
@@ -28,6 +30,11 @@ public class RedisSubscriberConfig {
         container.addMessageListener(
                 redisStockSummaryEventSubscriber,
                 new ChannelTopic("summary:event")
+        );
+
+        container.addMessageListener(
+                redisMarketCloseEventSubscriber,
+                new ChannelTopic("market:close")
         );
 
         container.addMessageListener(

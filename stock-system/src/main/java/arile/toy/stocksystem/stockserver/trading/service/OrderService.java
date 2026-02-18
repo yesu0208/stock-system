@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -93,5 +95,10 @@ public class OrderService {
 
         orderEntity.changeOrderStatus(OrderStatus.CANCELED);
         return UpdateOrderStatusResult.of(orderEntity, prevStatus);
+    }
+
+    @Transactional
+    public List<OrderEntity> findAllUnfilledOrders() {
+        return orderRepository.findAllUnfilled();
     }
 }
