@@ -30,6 +30,8 @@ public class SecurityConfig {
                         requests
                                 .requestMatchers(HttpMethod.POST, "/api/*/users", "/api/*/users/authenticate", "/api/*/auth/refresh")
                                 .permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/*/users/check-username")
+                                .permitAll()
                                 .requestMatchers("/index.html", "/ws-stock/**", "/ws-order/**")
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/users/all")
