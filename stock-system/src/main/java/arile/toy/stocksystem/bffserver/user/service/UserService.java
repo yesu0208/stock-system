@@ -37,6 +37,12 @@ public class UserService implements UserDetailsService {
         return getUserEntityByUsername(username);
     }
 
+    public UserDto getUserByUsername(String username) {
+        var userEntity = userRepository.findByUsername(username)
+                .orElseThrow(UserNotFoundException::new);
+        return UserDto.fromEntity(userEntity);
+    }
+
     public UserDto signUp(UserSignUpRequest userSignUpRequest) {
         userRepository.findByUsername(userSignUpRequest.username())
                 .ifPresent(userEntity -> {
@@ -90,5 +96,9 @@ public class UserService implements UserDetailsService {
                 .stream()
                 .map(UserDto::fromEntity)
                 .toList();
+    }
+
+    public boolean isUsernameExists(String username) {
+        return userRepository.findByUsername(username).isPresent();
     }
 }
