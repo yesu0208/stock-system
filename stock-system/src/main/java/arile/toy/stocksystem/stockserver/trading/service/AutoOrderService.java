@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AutoOrderService {
@@ -111,5 +113,10 @@ public class AutoOrderService {
 
         autoOrderEntity.changeAutoOrderStatus(AutoOrderStatus.TRIGGERED);
         return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
+    }
+
+    @Transactional
+    public List<AutoOrderEntity> findAllUntriggeredAutoOrders() {
+        return autoOrderRepository.findAllUntriggered();
     }
 }
