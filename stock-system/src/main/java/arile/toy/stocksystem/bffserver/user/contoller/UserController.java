@@ -11,10 +11,14 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("api/v1/users")
@@ -64,9 +68,29 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/check-username")
+    public ResponseEntity<Map<String, Boolean>> checkUsername(@RequestParam String username) {
+        boolean exists = userService.isUsernameExists(username);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<UserDto>> getAllUsers() {
         List<UserDto> userDtoList = userService.getAllUsers();
         return ResponseEntity.ok(userDtoList);
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<UserDto> getUser(
+            @AuthenticationPrincipal UserDetails user) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String username = user.getUsername();
+
+        UserDto userDto = userService.getUserByUsername(username);
+        return ResponseEntity.ok(userDto);
     }
 }
