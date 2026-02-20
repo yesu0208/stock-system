@@ -72,6 +72,12 @@ stocks:
 
 ---
 
+api:
+  approval-key-url: test-approval-key-url
+  app-key: test-app-key
+  app-secret: test-app-secret
+  ws-url: test-ws-url
+
 spring:
   config.activate.on-profile: test
   datasource:
