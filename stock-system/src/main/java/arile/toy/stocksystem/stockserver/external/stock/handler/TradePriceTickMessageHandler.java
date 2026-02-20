@@ -1,13 +1,13 @@
 package arile.toy.stocksystem.stockserver.external.stock.handler;
 
+import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderTriggerService;
 import arile.toy.stocksystem.stockserver.external.stock.event.TradePriceTickEvent;
 import arile.toy.stocksystem.stockserver.external.stock.event.publisher.RedisTradePriceEventPublisher;
 import arile.toy.stocksystem.stockserver.external.stock.message.TickMessageType;
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
 import arile.toy.stocksystem.stockserver.external.stock.repository.StockServerRedisTradePriceRepository;
 import arile.toy.stocksystem.stockserver.market.phase.MarketPhaseService;
-import arile.toy.stocksystem.stockserver.trading.service.AutoOrderTriggerService;
-import arile.toy.stocksystem.stockserver.trading.service.TradeMatchingService;
+import arile.toy.stocksystem.stockserver.trade.service.TradeMatchingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,7 +20,7 @@ public class TradePriceTickMessageHandler {
     private final RedisTradePriceEventPublisher redisTradePriceEventPublisher;
     private final StockServerRedisTradePriceRepository stockServerTradePriceRepository;
     private final TradeMatchingService tradeMatchingService;
-    private final AutoOrderTriggerService  autoOrderTriggerService;
+    private final AutoOrderTriggerService autoOrderTriggerService;
     private final MarketPhaseService marketPhaseService;
 
     public void handle(String message) {
