@@ -1,6 +1,6 @@
 package arile.toy.stocksystem.bffserver.order.dto;
 
-import arile.toy.stocksystem.stockserver.trading.dto.order.OrderType;
+import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 
 import java.time.Instant;
 

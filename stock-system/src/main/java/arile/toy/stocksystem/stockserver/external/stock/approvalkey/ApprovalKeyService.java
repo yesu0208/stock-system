@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.stockserver.external.stock.approvalkey;
 
 import arile.toy.stocksystem.stockserver.exception.ApprovalKeyIssuanceException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -10,6 +11,7 @@ import org.springframework.web.client.RestClient;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class ApprovalKeyService {
 
@@ -22,7 +24,7 @@ public class ApprovalKeyService {
     @Value("${api.approval-key-url}")
     private String approvalKeyUrl;
 
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
 
     public String issueApprovalKey() {
 

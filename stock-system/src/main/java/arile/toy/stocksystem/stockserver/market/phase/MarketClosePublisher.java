@@ -15,9 +15,14 @@ public class MarketClosePublisher {
 
     public void publishMarketClose() {
 
-        String message = "MARKET_CLOSED";
+        try {
 
-        redisTemplate.convertAndSend(MARKET_CLOSE_CHANNEL, message);
-        log.info("[RedisPublisher] Published market close event to channel {}", MARKET_CLOSE_CHANNEL);
+            String message = "MARKET_CLOSED";
+
+            redisTemplate.convertAndSend(MARKET_CLOSE_CHANNEL, message);
+            log.info("[RedisPublisher] Published market close event to channel {}", MARKET_CLOSE_CHANNEL);
+        } catch (Exception e) {
+            log.warn("publishMarketClose.convertAndSend error", e);
+        }
     }
 }

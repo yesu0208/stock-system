@@ -30,4 +30,3 @@ public class RedisBidAskPriceEventPublisher {
         return "bidask." + stockCode + ":event";
     }
 }
-

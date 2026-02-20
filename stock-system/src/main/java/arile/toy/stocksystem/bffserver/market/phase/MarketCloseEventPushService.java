@@ -1,6 +1,5 @@
 package arile.toy.stocksystem.bffserver.market.phase;
 
-import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSummaryClientTickMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;

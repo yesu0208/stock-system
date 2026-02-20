@@ -1,8 +1,8 @@
 package arile.toy.stocksystem.global.config;
 
+import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisStockSummaryEventSubscriber;
 import arile.toy.stocksystem.bffserver.market.phase.RedisMarketCloseEventSubscriber;
 import arile.toy.stocksystem.bffserver.market.phase.RedisMarketPhaseEventSubscriber;
-import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisStockSummaryEventSubscriber;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

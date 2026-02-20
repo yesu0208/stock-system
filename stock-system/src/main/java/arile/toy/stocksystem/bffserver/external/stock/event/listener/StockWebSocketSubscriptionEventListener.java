@@ -52,5 +52,3 @@ public class StockWebSocketSubscriptionEventListener {
         return null;
     }
 }
-
-

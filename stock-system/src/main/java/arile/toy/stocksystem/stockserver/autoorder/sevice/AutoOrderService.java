@@ -1,0 +1,122 @@
+package arile.toy.stocksystem.stockserver.autoorder.sevice;
+
+import arile.toy.stocksystem.stockserver.autoorder.dto.*;
+import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
+import arile.toy.stocksystem.stockserver.autoorder.event.StockServerAutoOrderRequestEvent;
+import arile.toy.stocksystem.stockserver.autoorder.event.publisher.AutoOrderResponseEventPublisher;
+import arile.toy.stocksystem.stockserver.autoorder.repository.AutoOrderRepository;
+import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
+import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class AutoOrderService {
+
+    private final AutoOrderRepository autoOrderRepository;
+    private final AutoOrderQueueRegistry autoOrderQueueRegistry;
+    private final AutoOrderResponseEventPublisher autoOrderResponseEventPublisher;
+    private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
+    private final AccountBalanceCommand accountBalanceCommand;
+    private final AccountUpdateEventPublisher accountUpdateEventPublisher;
+
+    public void registerAutoOrder(StockServerAutoOrderRequestEvent request) {
+
+        long orderAmount = (long) request.orderPrice() * request.orderQuantity();
+
+        if (request.autoOrderType() == AutoOrderType.BUY) {
+            boolean reserved = accountBalanceCommand
+                    .reserveCash(request.username(), orderAmount);
+
+            if (!reserved) {
+                autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_BALANCE);
+                return;
+            }
+        } else {
+            boolean reserved = accountBalanceCommand
+                    .reserveStock(request.username(), request.stockCode(), request.orderQuantity());
+
+            if (!reserved) {
+                autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_STOCK);
+                return;
+            }
+        }
+
+        AutoOrderEntity savedAutoOrder;
+
+        try {
+            AutoOrderEntity autoOrderEntity = AutoOrderEntity.of(
+                    request.username(),
+                    request.stockCode(),
+                    request.autoOrderType(),
+                    request.triggerPrice(),
+                    request.orderPrice(),
+                    request.orderQuantity(),
+                    AutoOrderStatus.ACTIVE
+            );
+            savedAutoOrder = autoOrderRepository.save(autoOrderEntity);
+
+            var autoOrderDto = AutoOrderDto.fromEntity(savedAutoOrder);
+            autoOrderQueueRegistry.autoOrderEnqueue(autoOrderDto);
+
+        } catch (Exception e) {
+            accountBalanceCommand.refundReservedCash(request.username(), orderAmount);
+            autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INTERNAL_ERROR);
+            throw e;
+
+        }
+
+        var autoOrderResponseMessage = new StockServerAutoOrderResponseMessage(savedAutoOrder.getAutoOrderId(),
+                savedAutoOrder.getUsername(), savedAutoOrder.getStockCode(),
+                savedAutoOrder.getAutoOrderType(), savedAutoOrder.getTriggerPrice(),
+                savedAutoOrder.getOrderPrice(), savedAutoOrder.getOrderQuantity(),
+                savedAutoOrder.getOrderTime());
+
+        stockServerAutoOrderResponseRepository.save(autoOrderResponseMessage);
+        autoOrderResponseEventPublisher.publish(autoOrderResponseMessage);
+        accountUpdateEventPublisher.publish(savedAutoOrder.getUsername());
+    }
+
+    @Transactional
+    public UpdateAutoOrderStatusResult updateAutoOrderStatusByCancel(Long autoOrderId) {
+
+        AutoOrderEntity autoOrderEntity = autoOrderRepository.findByIdForUpdate(autoOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("auto order not found"));
+
+        AutoOrderStatus prevStatus = autoOrderEntity.getAutoOrderStatus();
+
+        if (prevStatus == AutoOrderStatus.CANCELED ||
+                prevStatus == AutoOrderStatus.TRIGGERED) {
+            return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
+        }
+
+        autoOrderEntity.changeAutoOrderStatus(AutoOrderStatus.CANCELED);
+        return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
+    }
+
+    @Transactional
+    public UpdateAutoOrderStatusResult updateAutoOrderStatusByTrigger(Long autoOrderId) {
+
+        AutoOrderEntity autoOrderEntity = autoOrderRepository.findByIdForUpdate(autoOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("auto order not found"));
+
+        AutoOrderStatus prevStatus = autoOrderEntity.getAutoOrderStatus();
+
+        if (prevStatus != AutoOrderStatus.ACTIVE) {
+            return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
+        }
+
+        autoOrderEntity.changeAutoOrderStatus(AutoOrderStatus.TRIGGERED);
+        return UpdateAutoOrderStatusResult.of(autoOrderEntity, prevStatus);
+    }
+
+    @Transactional
+    public List<AutoOrderEntity> findAllUntriggeredAutoOrders() {
+        return autoOrderRepository.findAllUntriggered();
+    }
+}
