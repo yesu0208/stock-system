@@ -30,4 +30,3 @@ public class RedisTradePriceEventPublisher {
         return "trade." + stockCode + ":event";
     }
 }
-

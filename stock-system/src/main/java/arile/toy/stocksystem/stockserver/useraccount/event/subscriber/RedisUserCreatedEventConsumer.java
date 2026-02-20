@@ -1,7 +1,6 @@
 package arile.toy.stocksystem.stockserver.useraccount.event.subscriber;
 
-import arile.toy.stocksystem.stockserver.useraccount.UserAccountService;
-import lombok.RequiredArgsConstructor;
+import arile.toy.stocksystem.stockserver.useraccount.service.UserAccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.stream.*;
@@ -15,21 +14,28 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class RedisUserCreatedEventConsumer {
 
     private final RedisTemplate<String, Object> streamRedisTemplate;
     private final UserAccountService userAccountService;
-
-    @Value("${redis.streams.user.key}")
-    private String streamKey;
-
-    @Value("${redis.streams.user.consumer-group}")
-    private String group;
+    private final String streamKey;
+    private final String group;
 
     private final String consumerName =
             "stock-server" + UUID.randomUUID();
+
+    public RedisUserCreatedEventConsumer(
+            RedisTemplate<String, Object> streamRedisTemplate,
+            UserAccountService userAccountService,
+            @Value("${redis.streams.user.key}") String streamKey,
+            @Value("${redis.streams.user.consumer-group}") String group
+    ) {
+        this.streamRedisTemplate = streamRedisTemplate;
+        this.userAccountService = userAccountService;
+        this.streamKey = streamKey;
+        this.group = group;
+    }
 
     @Scheduled(fixedDelay = 1000)
     public void consume() {

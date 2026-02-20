@@ -1,7 +1,7 @@
 package arile.toy.stocksystem.bffserver.autoorder.event.publisher;
 
-import arile.toy.stocksystem.bffserver.sharding.RedisAutoOrderStreamShardResolver;
 import arile.toy.stocksystem.bffserver.autoorder.event.AutoOrderRequestEvent;
+import arile.toy.stocksystem.bffserver.sharding.RedisAutoOrderStreamShardResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.stream.RecordId;

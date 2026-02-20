@@ -1,7 +1,6 @@
 package arile.toy.stocksystem.bffserver.autoorder.dto;
 
 import arile.toy.stocksystem.bffserver.ResponseType;
-import arile.toy.stocksystem.bffserver.order.dto.OrderType;
 
 import java.time.Instant;
 

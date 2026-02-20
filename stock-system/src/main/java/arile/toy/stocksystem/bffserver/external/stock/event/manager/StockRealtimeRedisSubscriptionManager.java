@@ -2,6 +2,7 @@ package arile.toy.stocksystem.bffserver.external.stock.event.manager;
 
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisBidAskPriceEventSubscriber;
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisTradePriceEventSubscriber;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Getter
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -91,5 +93,3 @@ public class StockRealtimeRedisSubscriptionManager {
         return new ChannelTopic("trade." + stockCode + ":event");
     }
 }
-
-

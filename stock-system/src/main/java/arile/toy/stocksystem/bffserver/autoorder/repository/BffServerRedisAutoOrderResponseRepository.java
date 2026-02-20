@@ -1,7 +1,6 @@
 package arile.toy.stocksystem.bffserver.autoorder.repository;
 
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResponseMessage;
-import arile.toy.stocksystem.stockserver.trading.event.publisher.AutoOrderResponseEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;

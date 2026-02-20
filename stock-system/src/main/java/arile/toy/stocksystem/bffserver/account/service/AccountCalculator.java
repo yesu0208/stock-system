@@ -1,7 +1,7 @@
 package arile.toy.stocksystem.bffserver.account.service;
 
-import arile.toy.stocksystem.bffserver.account.dto.AccountSnapshot;
 import arile.toy.stocksystem.bffserver.account.dto.AccountResponse;
+import arile.toy.stocksystem.bffserver.account.dto.AccountSnapshot;
 import arile.toy.stocksystem.bffserver.account.dto.StockInfo;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSummaryTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.repository.BffServerStockSummaryRepository;
@@ -71,5 +71,3 @@ public class AccountCalculator {
                 snapshot.reservedCash(), stockValue, buyValue, totalProfit, totalProfitRate, accumulatedProfit, accumulatedProfitRate, snapshot.stocks(), profitRates, profitAmounts, currentPrices);
     }
 }
-
-

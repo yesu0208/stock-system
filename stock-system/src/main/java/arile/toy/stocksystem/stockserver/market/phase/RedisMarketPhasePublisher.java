@@ -2,11 +2,13 @@ package arile.toy.stocksystem.stockserver.market.phase;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class RedisMarketPhasePublisher implements MarketPhasePublisher {
 
     private final StringRedisTemplate redisTemplate;
@@ -24,7 +26,7 @@ public class RedisMarketPhasePublisher implements MarketPhasePublisher {
             redisTemplate.convertAndSend(CHANNEL, message);
 
         } catch (Exception e) {
-            throw new RuntimeException("MarketPhase publish failed", e);
+            log.warn("marketPhaseEvent.convertAndSend error", e);
         }
     }
 }

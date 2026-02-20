@@ -4,7 +4,6 @@ import arile.toy.stocksystem.bffserver.order.dto.OrderRequest;
 import arile.toy.stocksystem.bffserver.order.dto.OrderResponse;
 import arile.toy.stocksystem.bffserver.order.event.OrderRequestEvent;
 import arile.toy.stocksystem.bffserver.order.event.publisher.OrderRequestEventPublisher;
-import arile.toy.stocksystem.bffserver.order.event.publisher.RedisOrderRequestEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

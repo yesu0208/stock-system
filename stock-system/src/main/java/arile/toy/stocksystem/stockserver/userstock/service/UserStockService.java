@@ -10,7 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,11 @@ public class UserStockService {
             List<UserStockEntity> userStockEntities = userStockRepository.findByUsername(username);
 
             Map<String, StockInfo> redisStocks = stockServerAccountRepository.getStocks(username);
+            
+            if (redisStocks == null) {
+                log.error("Redis stocks is null. username={}", username);
+                redisStocks = new HashMap<>();
+            }
 
             Map<String, StockInfo> stocksMap = new HashMap<>();
 
