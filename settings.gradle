@@ -1,0 +1,3 @@
+rootProject.name = 'stock-system'
+include 'backend'
+include 'frontend'
