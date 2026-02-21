@@ -231,8 +231,6 @@ export default function TradePanel({
         }, 5000)
     }, [cancelResult])
 
-    /* ===== 자동주문 취소 결과 토스트 ===== */
-
     useEffect(() => {
         if (!autoCancelResult) return
 
@@ -799,7 +797,7 @@ export default function TradePanel({
     return (
         <div style={styles.wrapper}>
 
-            {/*  토스트 / 시계 */}
+            {confirmCancelModal && (
                 <Modal
                     show={!!confirmCancelModal}
                     onClose={() => setConfirmCancelModal(null)}
@@ -1124,6 +1122,7 @@ export default function TradePanel({
                 </div>
             </div>
 
+
             {/* ===== 탭 (왼쪽: 주문/자동주문, 오른쪽: 계좌/정보) ===== */}
             <div style={styles.tabContainer}>
                 <div style={{ display: 'flex', gap: '12px' }}>
@@ -1173,6 +1172,246 @@ export default function TradePanel({
                 >
                     <span style={styles.stockName}>{stockName}</span>
                     <span style={styles.stockCode}>({stockCode})</span>
+                </div>
+            )}
+
+            {/* ===== ACCOUNT 탭 (가격 무관) ===== */}
+            {activeTab === 'ACCOUNT' && (
+                <div style={styles.accountTabContent}>
+                    {accountInfo ? (
+                        <>
+
+                            {/* ===== 계좌 사용자 정보 ===== */}
+                            <div style={styles.accountTitleRow}>
+                                {/* 왼쪽 */}
+                                <div>
+        <span style={styles.accountUsername}>
+            {accountInfo.username}
+        </span>
+                                    님의 계좌 정보
+                                </div>
+
+                                {/* 오른쪽 */}
+                                <div style={styles.accountAccumulated}>
+    <span style={{ color: '#FFFFFF' }}>
+        누적 손익:{' '}
+        <span
+            style={{
+                color:
+                    accountInfo.accumulatedProfit > 0
+                        ? '#FF6347'
+                        : accountInfo.accumulatedProfit < 0
+                            ? '#4F9DFF'
+                            : '#FFFFFF',
+            }}
+        >
+            {accountInfo.accumulatedProfit.toLocaleString()}원
+        </span>
+    </span>
+
+                                    <span style={{ color: '#FFFFFF', marginLeft: '12px' }}>
+        누적 수익률:{' '}
+                                        <span
+                                            style={{
+                                                color:
+                                                    accountInfo.accumulatedProfitRate > 0
+                                                        ? '#FF6347'
+                                                        : accountInfo.accumulatedProfitRate < 0
+                                                            ? '#4F9DFF'
+                                                            : '#FFFFFF',
+                                            }}
+                                        >
+            {accountInfo.accumulatedProfitRate.toFixed(2)}%
+        </span>
+    </span>
+                                </div>
+
+
+                            </div>
+                            {/* ===== 계좌 요약 ===== */}
+                            <div style={styles.accountSummaryGrid}>
+                                {/* 1행 */}
+                                <div style={styles.summaryRow}>
+                                    <div style={styles.summaryGroup}>
+                                        <span>총 손익</span>
+                                        <span
+                                            style={{
+                                                ...styles.summaryValue,
+                                                color:
+                                                    (accountInfo.totalProfit ?? 0) > 0
+                                                        ? '#FF6347'
+                                                        : (accountInfo.totalProfit ?? 0) < 0
+                                                            ? '#4F9DFF'
+                                                            : '#AAA',
+                                            }}
+                                        >
+                {(accountInfo.totalProfit ?? 0).toLocaleString()}원
+            </span>
+                                    </div>
+
+                                    <div style={styles.summaryGroup}>
+                                        <span>수익률</span>
+                                        <span
+                                            style={{
+                                                ...styles.summaryValue,
+                                                color:
+                                                    (accountInfo.totalProfitRate ?? 0) > 0
+                                                        ? '#FF6347'
+                                                        : (accountInfo.totalProfitRate ?? 0) < 0
+                                                            ? '#4F9DFF'
+                                                            : '#AAA',
+                                            }}
+                                        >
+                {(accountInfo.totalProfitRate ?? 0).toFixed(2)}%
+            </span>
+                                    </div>
+                                </div>
+
+                                {/* 2행 */}
+                                <div style={styles.summaryRow}>
+                                    <div style={styles.summaryGroup}>
+                                        <span>총 매입</span>
+                                        <span style={styles.summaryValue}>
+                {(accountInfo.buyValue ?? 0).toLocaleString()}원
+            </span>
+                                    </div>
+
+                                    <div style={styles.summaryGroup}>
+                                        <span>총 평가</span>
+                                        <span style={styles.summaryValue}>
+                {(accountInfo.stockValue ?? 0).toLocaleString()}원
+            </span>
+                                    </div>
+                                </div>
+
+                                {/* 3행 */}
+                                <div style={styles.summaryRow}>
+                                    <div style={styles.summaryGroup}>
+                                        <span>총 자산</span>
+                                        <span style={styles.summaryValue}>
+                {(accountInfo.totalValue ?? 0).toLocaleString()}원
+            </span>
+                                    </div>
+
+                                    <div style={styles.summaryGroup}>
+                                        <span>현금</span>
+                                        <span style={styles.summaryValue}>
+                {(accountInfo.totalCash ?? 0).toLocaleString()}원
+            </span>
+                                    </div>
+                                </div>
+
+                                {/* 4행 */}
+                                <div style={styles.summaryRow}>
+                                    <div style={styles.summaryGroup}>
+                                        <span>주문 가능 현금</span>
+                                        <span style={styles.summaryValue}>
+                {(accountInfo.availableCash ?? 0).toLocaleString()}원
+            </span>
+                                    </div>
+
+                                    <div style={styles.summaryGroup}>
+                                        <span>예약 현금</span>
+                                        <span style={styles.summaryValue}>
+                {(accountInfo.reservedCash ?? 0).toLocaleString()}원
+            </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={styles.divider} />
+
+                            {/* ===== 보유 주식 ===== */}
+                            <h4 style={{ color: '#AAA', margin: '12px 0 6px 0' }}>
+                                보유 주식
+                            </h4>
+
+                            {Object.keys(accountInfo.stocks ?? {}).length === 0 ? (
+                                <div
+                                    style={{
+                                        color: '#666',
+                                        fontSize: '13px',
+                                        textAlign: 'center',
+                                    }}
+                                >
+                                    보유 주식 없음
+                                </div>
+                            ) : (
+                                <div style={styles.stockTable}>
+                                    <div style={styles.stockTableHeader}>
+                                        <span>종목명</span>
+                                        <span>보유수량</span>
+                                        <span>가능수량</span>
+                                        <span>매입가</span>
+                                        <span>현재가</span>
+                                        <span>평가손익</span>
+                                        <span>수익률</span>
+                                    </div>
+
+                                    {Object.entries(accountInfo.stocks ?? {}).map(
+                                        ([code, info]) => {
+                                            const profitRate =
+                                                accountInfo.profitRates?.[code] ?? 0
+                                            const profitAmount =
+                                                accountInfo.profitAmounts?.[code] ?? 0
+                                            const curPrice =
+                                                accountInfo.currentPrices?.[code]
+
+                                            return (
+                                                <div key={code} style={styles.stockTableRow} className="stockRow">
+                                        <span>
+                                            {stockNameMap[code] ?? code}
+                                        </span>
+                                                    <span>{info.quantity}주</span>
+                                                    <span>
+                                                        {info.availableQuantity !== undefined
+                                                            ? `${info.availableQuantity}주`
+                                                            : ''}
+</span>
+                                                    <span>
+                                            {info.buyPrice.toLocaleString()}원
+                                        </span>
+                                                    <span>
+                                            {curPrice !== undefined
+                                                ? curPrice.toLocaleString()
+                                                : '-'}원
+                                        </span>
+                                                    <span
+                                                        style={{
+                                                            color:
+                                                                profitAmount > 0
+                                                                    ? '#FF6347'
+                                                                    : profitAmount < 0
+                                                                        ? '#4F9DFF'
+                                                                        : '#FFFFFF', // 0일 때 흰색
+                                                        }}
+                                                    >
+    {profitAmount.toLocaleString()}원
+                                        </span>
+                                                    <span
+                                                        style={{
+                                                            color:
+                                                                profitRate > 0
+                                                                    ? '#FF6347'
+                                                                    : profitRate < 0
+                                                                        ? '#4F9DFF'
+                                                                        : '#FFFFFF', // 0일 때 흰색
+                                                        }}
+                                                    >
+    {profitRate.toFixed(2)}%
+</span>
+                                                </div>
+                                            )
+                                        }
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div style={styles.loadingCenter}>
+                            계좌 정보를 불러오는 중...
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1676,7 +1915,7 @@ const styles = {
         backgroundColor: '#1A1A1A',
         borderRadius: '8px',
         width: '100%',        // 부모 flex 기준으로 늘어나도록
-        minWidth: 0,          // lex-shrink가 제대로 동작
+        minWidth: 0,          // flex-shrink가 제대로 동작
         height: '913px',      // 필요하면 유지
         boxSizing: 'border-box',
         display: 'flex',
@@ -1836,6 +2075,50 @@ const styles = {
         borderRadius: '2px',
         overflow: 'hidden',
     },
+    accountTab: {
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#777',
+        fontSize: '14px',
+    },
+    accountTabContent: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column' as const,
+        overflowY: 'auto' as const,
+        padding: '8px',
+        gap: '12px',
+    },
+    stockTable: {
+        display: 'flex',
+        flexDirection: 'column' as const,
+        border: '1px solid #2A2A2A',
+        borderRadius: '6px',
+        overflow: 'hidden',
+    },
+    stockTableHeader: {
+        display: 'grid',
+        gridTemplateColumns: '1.2fr 0.8fr 0.8fr 1fr 1fr 1fr 0.8fr',
+        padding: '8px 0',
+        backgroundColor: '#222',
+        borderBottom: '1px solid #333',
+        fontSize: '12px',
+        fontWeight: 600,
+        color: '#AAA',
+        textAlign: 'center' as const,
+    },
+    stockTableRow: {
+        display: 'grid',
+        gridTemplateColumns: '1.2fr 0.8fr 0.8fr 1fr 1fr 1fr 0.8fr',
+        padding: '6px 0',
+        fontSize: '13px',
+        color: '#DDD',
+        textAlign: 'center' as const,
+        borderBottom: '1px solid #262626',
+        transition: 'background-color 0.15s ease',
+    },
     loadingCenter: {
         flex: 1,
         display: 'flex',
@@ -1850,6 +2133,38 @@ const styles = {
         gap: '10px',
     },
 
+    summaryRow: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '32px',
+        alignItems: 'center',
+        fontSize: '12px',
+    },
+
+    summaryGroup: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+
+    summaryValue: {
+        fontWeight: 600,
+        textAlign: 'right',
+        fontSize: '12px',
+        color: '#AAA',
+    },
+    accountTitle: {
+        fontSize: '15px',
+        fontWeight: 600,
+        color: '#DDD',
+        paddingBottom: '8px',
+        borderBottom: '1px solid #333',
+    },
+
+    accountUsername: {
+        color: '#DDD',
+        marginRight: '4px',
+    },
     divider: {
         height: '1px',
         backgroundColor: '#333',
@@ -1862,6 +2177,24 @@ const styles = {
         justifyContent: 'center',
         color: '#666',
         fontSize: '13px',
+    },
+    accountTitleRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: '15px',
+        fontWeight: 600,
+        color: '#DDD',
+        paddingBottom: '8px',
+        borderBottom: '1px solid #333',
+    },
+
+    accountAccumulated: {
+        display: 'flex',
+        gap: '12px',
+        fontSize: '13px',
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
     },
     // 모달 기본 오버레이
     modalOverlay: {
