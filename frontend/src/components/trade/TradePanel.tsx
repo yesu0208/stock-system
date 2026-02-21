@@ -29,6 +29,8 @@ interface Props {
     autoCancelResult: AutoCancelResultResponse | null
 }
 
+type TabType = 'ORDER' | 'AUTO' | 'ACCOUNT'
+
 type ToastPayload = {
     responseType: 'SUCCESS' | 'ERROR'
     message: ReactNode
@@ -48,6 +50,7 @@ export default function TradePanel({
     const [toast, setToast] = useState<ToastPayload | null>(null)
     const [now, setNow] = useState(new Date())
 
+    const [activeTab, setActiveTab] = useState<TabType>('ORDER')
     const toastTimerRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -499,6 +502,42 @@ export default function TradePanel({
                     })()}
                 </div>
             </div>
+
+            {/* ===== 탭 (왼쪽: 주문/자동주문, 오른쪽: 계좌/정보) ===== */}
+            <div style={styles.tabContainer}>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                        onClick={() => setActiveTab('ORDER')}
+                        style={{
+                            ...styles.tab,
+                            ...(activeTab === 'ORDER' ? styles.activeTab : {}),
+                        }}
+                    >
+                        주문
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('AUTO')}
+                        style={{
+                            ...styles.tab,
+                            ...(activeTab === 'AUTO' ? styles.activeTab : {}),
+                        }}
+                    >
+                        자동주문
+                    </button>
+                </div>
+
+                <div style={{ marginLeft: 'auto' }}>
+                    <button
+                        onClick={() => setActiveTab('ACCOUNT')}
+                        style={{
+                            ...styles.tab,
+                            ...(activeTab === 'ACCOUNT' ? styles.activeTab : {}),
+                        }}
+                    >
+                        계좌 정보
+                    </button>
+                </div>
+            </div>
         </div>
     )
 }
@@ -539,5 +578,22 @@ const styles = {
     clock: {
         color: '#777',
         fontSize: '13px',
+    },
+    tabContainer: {
+        display: 'flex',
+        gap: '12px',
+        borderBottom: '1px solid #333',
+    },
+    tab: {
+        padding: '6px 12px',
+        background: 'none',
+        border: 'none',
+        color: '#888',
+        cursor: 'pointer',
+    },
+    activeTab: {
+        color: '#FFF',
+        borderBottom: '2px solid #4CAF50',
+        fontWeight: 600,
     },
 } as const
