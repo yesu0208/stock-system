@@ -46,6 +46,8 @@ bin/
 # .idea/modules
 # *.iml
 # *.ipr
+.idea/
+*.iml
 
 # CMake
 cmake-build-*/
