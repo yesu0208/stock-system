@@ -1,0 +1,39 @@
+/* Chrome, Edge, Safari */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.no-spinner[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Chrome, Edge, Safari */
+.ordersSection::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ordersSection::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.ordersSection::-webkit-scrollbar-thumb {
+    background-color: #444;
+    border-radius: 4px;
+}
+
+.ordersSection::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
+}
+
+/* Firefox */
+.ordersSection {
+    scrollbar-width: thin;
+    scrollbar-color: #444 #1a1a1a;
+}
+
+.stockRow:hover {
+    background-color: #232323;
+}
