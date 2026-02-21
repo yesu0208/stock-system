@@ -13,15 +13,6 @@ export default function LoginPage() {
     const [password, setPassword] = useState('')
     const [errorModal, setErrorModal] = useState(false)
 
-    // 자동 로그인: 기존 토큰 있으면 바로 TradePage
-    useEffect(() => {
-        const token = tokenStorage.get()
-        if (token) {
-            connectStomp()
-            navigate('/trade', { replace: true })
-        }
-    }, [])
-
     // STOMP 연결 함수
     const connectStomp = () => {
         const stockClient = getStockClient()
@@ -43,14 +34,24 @@ export default function LoginPage() {
         orderClient.activate()
     }
 
+    // 자동 로그인: 기존 토큰 있으면 바로 TradePage
+    useEffect(() => {
+        const token = tokenStorage.get()
+        if (token) {
+            connectStomp()
+            navigate('/trade', { replace: true })
+        }
+    }, [])
+
     const handleLogin = async () => {
         if (!username || !password) return setErrorModal(true)
         try {
             await login({ username, password })
             connectStomp()
             navigate('/trade', { replace: true })
-        } catch (e) {
-            setErrorModal(true)
+        } catch (error) {
+                console.error('Login failed:', error)
+                setErrorModal(true)
         }
     }
 
