@@ -12,6 +12,7 @@ import './TradePanel.css'
 import type {
     AutoOrderResultResponse,
     AutoOrderResponseMessage,
+    AutoOrderResponse
 } from '../../types/autoOrder'
 import type {AutoCancelResultResponse} from "../../types/autoCancel.ts";
 import api from '../../lib/api' // axios instance
@@ -50,6 +51,7 @@ export default function TradePanel({
                                        cancelResult,
                                        tradeResult,
                                        orders,
+                                       autoOrders,
                                        autoOrderResult,
                                        autoCancelResult,
                                        accountInfo,
@@ -64,6 +66,7 @@ export default function TradePanel({
     const [now, setNow] = useState(new Date())
 
     const [activeTab, setActiveTab] = useState<TabType>('ORDER')
+    const [triggerPrice, setTriggerPrice] = useState<number>(0)
     const [loading, setLoading] = useState(false);
 
     const orderAmount = orderPrice * orderQuantity;
@@ -75,9 +78,23 @@ export default function TradePanel({
         message: React.ReactNode
     } | null>(null)
 
+    const [confirmAutoOrderModal, setConfirmAutoOrderModal] = useState<{
+        type: 'BUY' | 'SELL'
+        stockCode: string
+        stockName: string
+        triggerPrice: number
+        orderPrice: number
+        orderQuantity: number
+    } | null>(null)
+
     // 상태 추가
     const [confirmCancelModal, setConfirmCancelModal] = useState<{
         orderId: number;
+        stockCode: string;
+    } | null>(null);
+
+    const [confirmAutoCancelModal, setConfirmAutoCancelModal] = useState<{
+        autoOrderId: number;
         stockCode: string;
     } | null>(null);
 
@@ -105,6 +122,13 @@ export default function TradePanel({
         if (!initializedRef.current && curPrice !== undefined) {
             setOrderPrice(curPrice)
             initializedRef.current = true
+        }
+    }, [curPrice])
+
+    useEffect(() => {
+        if (!triggerInitializedRef.current && curPrice !== undefined) {
+            setTriggerPrice(curPrice)
+            triggerInitializedRef.current = true
         }
     }, [curPrice])
 
@@ -397,6 +421,11 @@ export default function TradePanel({
         setConfirmCancelModal({ orderId, stockCode});
     }
 
+    const openAutoCancelModal = (autoOrderId: number, stockCode: string) => {
+        setConfirmAutoCancelModal({ autoOrderId, stockCode});
+    }
+
+
     const handleConfirmCancel = async () => {
         if (!confirmCancelModal) return
 
@@ -440,7 +469,54 @@ export default function TradePanel({
     }
 
 
+
+    // 실제 취소 실행
+    const handleConfirmAutoCancel = async () => {
+        if (!confirmAutoCancelModal) return;
+
+        try {
+            await api.post('/auto-orders/cancel', {
+                autoOrderId: confirmAutoCancelModal.autoOrderId,
+                stockCode: confirmAutoCancelModal.stockCode,
+            });
+
+            setHttpResponseModal({
+                success: true,
+                message: '자동주문이 취소되었습니다.',
+            });
+        } catch (e: unknown) {
+            if (axios.isAxiosError(e)) {
+                const status = e.response?.status;
+
+                if (status === 401 || status === 403) {
+                    // 세션 만료 처리 → MainLayout 모달 표시
+                    tokenStorage.clear();
+                } else {
+                    const errMessage = e.response?.data?.message ?? e.message;
+                    setHttpResponseModal({
+                        success: false,
+                        message: `❌ [자동주문 취소 실패] ${errMessage}`,
+                    });
+                }
+            } else {
+                setHttpResponseModal({
+                    success: false,
+                    message: '❌ 알 수 없는 오류가 발생했습니다.',
+                });
+            }
+        } finally {
+            setConfirmAutoCancelModal(null);
+        }
+    };
+
+
     const sortedOrders = [...orders].sort(
+        (a, b) =>
+            new Date(b.orderTime).getTime() -
+            new Date(a.orderTime).getTime()
+    )
+
+    const sortedAutoOrders = [...autoOrders].sort(
         (a, b) =>
             new Date(b.orderTime).getTime() -
             new Date(a.orderTime).getTime()
@@ -476,6 +552,30 @@ export default function TradePanel({
         setQuantityWarning(null);
         onClickOrderButton(type);
     };
+
+    const handleAutoOrderClick = (type: 'BUY' | 'SELL') => {
+        if (type === 'BUY' && orderQuantity > maxBuyQuantity) {
+            setQuantityWarning(`❌ 주문 수량이 매수 가능 수량(${maxBuyQuantity}주)을 초과했습니다.`);
+
+            if (warningTimeout.current) clearTimeout(warningTimeout.current);
+            warningTimeout.current = setTimeout(() => setQuantityWarning(null), 2000);
+            return;
+        }
+
+        if (type === 'SELL' && orderQuantity > maxSellQuantity) {
+            setQuantityWarning(`❌ 주문 수량이 매도 가능 수량(${maxSellQuantity}주)을 초과했습니다.`);
+
+            if (warningTimeout.current) clearTimeout(warningTimeout.current);
+            warningTimeout.current = setTimeout(() => setQuantityWarning(null), 2000);
+            return;
+        }
+
+        // 수량 정상 → 주문
+        setQuantityWarning(null);
+        onClickAutoOrderButton(type);
+    };
+
+
 
     // 자동주문 버튼 클릭 시 → 모달 띄우기
     const onClickOrderButton = (type: 'BUY' | 'SELL') => {
@@ -582,6 +682,120 @@ export default function TradePanel({
 // 모달에서 취소 버튼 클릭 → 모달 닫기
     const handleCancelOrderModal = () => setConfirmOrderModal(null)
 
+
+    // 자동주문 버튼 클릭 시 → 모달 띄우기
+    const onClickAutoOrderButton = (type: 'BUY' | 'SELL') => {
+        setConfirmAutoOrderModal({
+            type,
+            stockCode,
+            stockName,
+            triggerPrice: adjustPrice(triggerPrice),
+            orderPrice: adjustPrice(orderPrice),
+            orderQuantity,
+        })
+    }
+
+    const handleConfirmAutoOrder = async () => {
+        if (!confirmAutoOrderModal) return
+
+        setLoading(true)
+
+        try {
+            const res = await api.post<AutoOrderResponse>('/auto-orders', {
+                stockCode: confirmAutoOrderModal.stockCode,
+                autoOrderType: confirmAutoOrderModal.type,
+                triggerPrice: confirmAutoOrderModal.triggerPrice,
+                orderPrice: confirmAutoOrderModal.orderPrice,
+                orderQuantity: confirmAutoOrderModal.orderQuantity,
+            })
+
+            const data = res.data
+
+            setHttpResponseModal({
+                success: true,
+                message: (
+                    <div style={{ textAlign: 'center' }}>
+                        <h3 style={{ marginBottom: '12px' }}>
+                            {confirmAutoOrderModal.stockName} ({data.stockCode})
+                        </h3>
+
+                        <div style={styles.divider} />
+
+                        <table style={{ width: '100%', marginBottom: '12px', borderCollapse: 'collapse', fontSize: '14px' }}>
+                            <tbody>
+                            <tr>
+                                <td style={styles.modalLabel}>주문구분</td>
+                                <td>{data.autoOrderType === 'BUY' ? '매수' : '매도'}</td>
+                            </tr>
+                            <tr>
+                                <td style={styles.modalLabel}>트리거 가격</td>
+                                <td>{data.triggerPrice.toLocaleString()}원</td>
+                            </tr>
+                            <tr>
+                                <td style={styles.modalLabel}>주문가격</td>
+                                <td>{data.orderPrice.toLocaleString()}원</td>
+                            </tr>
+                            <tr>
+                                <td style={styles.modalLabel}>주문수량</td>
+                                <td>{data.orderQuantity}주</td>
+                            </tr>
+                            <tr>
+                                <td style={styles.modalLabel}>주문금액</td>
+                                <td>{(data.orderPrice * data.orderQuantity).toLocaleString()}원</td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <div style={styles.divider} />
+
+                        <p style={{ fontSize: '12px', lineHeight: 1.5 }}>
+                            {confirmAutoOrderModal.stockName}{' '}
+                            <span
+                                style={{
+                                    color: data.autoOrderType === 'BUY' ? '#FF6347' : '#4F9DFF',
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                        {data.orderPrice.toLocaleString()}원으로 {data.autoOrderType === 'BUY' ? '매수' : '매도'}
+                        </span>{' '}
+                            자동주문이 설정되었습니다.
+                        </p>
+                    </div>
+                ),
+            })
+        } catch (e: unknown) {
+            if (axios.isAxiosError(e)) {
+                const status = e.response?.status;
+
+                if (status === 401 || status === 403) {
+                    // 세션 만료 처리 → MainLayout 모달 표시
+                    tokenStorage.clear();
+                } else {
+                    const errMessage = e.response?.data?.message ?? e.response?.data ?? e.message;
+                    setHttpResponseModal({
+                        success: false,
+                        message: `❌ [자동주문 실패] ${errMessage}`,
+                    });
+                }
+            } else {
+                setHttpResponseModal({
+                    success: false,
+                    message: '❌ 알 수 없는 오류가 발생했습니다.',
+                });
+            }
+        } finally {
+            setConfirmAutoOrderModal(null)
+            setLoading(false)
+        }
+    }
+
+
+
+
+// 모달에서 취소 버튼 클릭 → 모달 닫기
+    const handleCancelAutoOrderModal = () => setConfirmAutoOrderModal(null)
+
+
     return (
         <div style={styles.wrapper}>
 
@@ -596,6 +810,21 @@ export default function TradePanel({
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                         <button style={styles.modalButton} onClick={handleConfirmCancel}>확인</button>
                         <button style={styles.modalButton} onClick={() => setConfirmCancelModal(null)}>취소</button>
+                    </div>
+                </Modal>
+            )}
+
+            {confirmAutoCancelModal && (
+                <Modal
+                    show={!!confirmAutoCancelModal}
+                    onClose={() => setConfirmAutoCancelModal(null)}
+                >
+                    <p style={{ marginBottom: '12px', lineHeight: 1.5, fontSize: '14px', textAlign: 'center' }}>
+                        자동주문을 취소하시겠습니까?
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                        <button style={styles.modalButton} onClick={handleConfirmAutoCancel}>확인</button>
+                        <button style={styles.modalButton} onClick={() => setConfirmAutoCancelModal(null)}>취소</button>
                     </div>
                 </Modal>
             )}
@@ -650,6 +879,67 @@ export default function TradePanel({
             )}
 
 
+            {/* ===== 자동주문 확인 모달 ===== */}
+            {confirmAutoOrderModal && (
+                <Modal show={!!confirmAutoOrderModal} onClose={handleCancelAutoOrderModal}>
+                    {confirmAutoOrderModal && (
+                        <div style={{ textAlign: 'center' }}> {/* 여기에 전체 가운데 정렬 */}
+                            <h3 style={{ marginBottom: '12px' }}>
+                                {confirmAutoOrderModal.stockName} ({confirmAutoOrderModal.stockCode})
+                            </h3>
+                            <div style={styles.divider} />
+
+                            <table style={{ width: '100%', marginBottom: '12px', borderCollapse: 'collapse', fontSize: '14px' }}>
+                                <tbody>
+                                <tr>
+                                    <td style={{ ...styles.modalLabel, textAlign: 'center' }}>주문구분</td>
+                                    <td style={{ textAlign: 'center' }}>{confirmAutoOrderModal.type === 'BUY' ? '자동매수' : '자동매도'}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ ...styles.modalLabel, textAlign: 'center' }}>감시가격</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {confirmAutoOrderModal.type === 'BUY' ? '≥ ' : '≤ '}
+                                        {confirmAutoOrderModal.triggerPrice.toLocaleString()}원
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ ...styles.modalLabel, textAlign: 'center' }}>주문가격</td>
+                                    <td style={{ textAlign: 'center' }}>{confirmAutoOrderModal.orderPrice.toLocaleString()}원</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ ...styles.modalLabel, textAlign: 'center' }}>주문수량</td>
+                                    <td style={{ textAlign: 'center' }}>{confirmAutoOrderModal.orderQuantity}주</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ ...styles.modalLabel, textAlign: 'center' }}>주문금액</td>
+                                    <td style={{ textAlign: 'center' }}>{(confirmAutoOrderModal.orderPrice * confirmAutoOrderModal.orderQuantity).toLocaleString()}원</td>
+                                </tr>
+                                </tbody>
+                            </table>
+
+                            <div style={styles.divider} />
+
+                            <p style={{ marginBottom: '12px', lineHeight: 1.5, fontSize: '12px' }}>
+                                {confirmAutoOrderModal.stockName} 가격이 {confirmAutoOrderModal.triggerPrice.toLocaleString()}원 도달 시{' '}
+                                <span style={{ color: confirmAutoOrderModal.type === 'BUY' ? '#FF6347' : '#4F9DFF', fontWeight: 'bold' }}>
+          {confirmAutoOrderModal.orderPrice.toLocaleString()}원으로 {confirmAutoOrderModal.type === 'BUY' ? '매수' : '매도'}
+        </span>{' '}
+                                합니다.
+                            </p>
+
+                            <p style={{ fontSize: '12px', color: '#AAA' }}>
+                                주문가격과 감시가격의 차이가 클 경우, 체결이 늦어질 수 있습니다.
+                            </p>
+
+                            <div style={styles.modalButtonContainer}>
+                                <button style={styles.modalButton} onClick={handleConfirmAutoOrder}>확인</button>
+                                <button style={styles.modalButton} onClick={handleCancelAutoOrderModal}>취소</button>
+                            </div>
+                        </div>
+                    )}
+                </Modal>
+
+            )}
 
             {/* HTTP Response 모달 */}
             {httpResponseModal && (
@@ -1089,6 +1379,283 @@ export default function TradePanel({
                                                             }}
                                                         />
                                                     </div>
+                                                </div>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+
+                        {activeTab === 'AUTO' && (
+                            <>
+
+                                {/* ===== 매도/매수 가능 수량 표시 ===== */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                                    {/* 매도 */}
+                                    <span>
+        <span style={{ color: '#AAA' }}>매도 가능 수량:</span>{' '}
+                                        <span style={{ color: '#4F9DFF' }}>
+            {accountInfo?.stocks?.[stockCode]?.availableQuantity ?? 0}주
+        </span>
+        <br />
+        <span style={{ color: '#AAA' }}>매도 가능 금액:</span>{' '}
+                                        <span style={{ color: '#4F9DFF' }}>
+    {Number(curPrice) > 0 && Number(accountInfo?.stocks?.[stockCode]?.availableQuantity ?? 0) > 0
+        ? (Number(accountInfo?.stocks[stockCode].availableQuantity) * Number(curPrice)).toLocaleString()
+        : '0'}원
+</span>
+    </span>
+
+                                    {/* 매수 */}
+                                    <span style={{ textAlign: 'right' }}>
+        <span style={{ color: '#AAA' }}>매수 가능 수량:</span>{' '}
+                                        <span style={{ color: '#FF6347' }}>
+            {curPrice && accountInfo
+                ? Math.floor(accountInfo.availableCash / orderPrice)
+                : 0}주
+        </span>
+        <br />
+        <span style={{ color: '#AAA' }}>매수 가능 금액:</span>{' '}
+                                        <span style={{ color: '#FF6347' }}>
+            {(accountInfo?.availableCash ?? 0).toLocaleString()}원
+        </span>
+    </span>
+                                </div>
+                                <div style={styles.divider} />
+
+                                {/* 퍼센트 버튼 (매도 왼쪽, 매수 오른쪽) */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', width: '100%' }}>
+                                    {/* 매도 퍼센트 버튼 */}
+                                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                        <span style={{ color: '#AAA' }}>매도 비율:</span>
+                                        {[10, 20, 50, 100].map(pct => (
+                                            <button
+                                                key={`sell-${pct}`}
+                                                style={styles.percentButton}
+                                                onClick={() => {
+                                                    const available = accountInfo?.stocks?.[stockCode]?.availableQuantity ?? 0
+                                                    setOrderQuantity(Math.max(1, Math.floor(available * pct / 100)))
+                                                }}
+                                            >
+                                                {pct}%
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* 매수 퍼센트 버튼 */}
+                                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                        <span style={{ color: '#AAA' }}>매수 비율:</span>
+                                        {[10, 20, 50, 100].map(pct => (
+                                            <button
+                                                key={`buy-${pct}`}
+                                                style={styles.percentButton}
+                                                onClick={() => {
+                                                    const maxBuy = curPrice && accountInfo
+                                                        ? Math.floor(accountInfo.availableCash / orderPrice)
+                                                        : 0
+                                                    setOrderQuantity(Math.max(1, Math.floor(maxBuy * pct / 100)))
+                                                }}
+                                            >
+                                                {pct}%
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: '14px',
+                                        color: '#FFF',
+                                        textAlign: 'center', // 가운데 정렬
+                                    }}
+                                >
+                                    현재 주문 금액: {orderAmount.toLocaleString()}원
+                                </div>
+                                {/* 수량 초과 경고 메시지 */}
+                                <div style={{ color: '#FF5252', fontSize: '12px', marginTop: '4px', textAlign: 'center' }}>
+                                    {quantityWarning}
+                                </div>
+
+                                {/* ===== 주문 입력 영역 ===== */}
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+
+                                    {/* 트리거 가격 */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ color: '#AAA', minWidth: '40px', textAlign: 'center' }}>감시가격</span>
+
+                                        <button
+                                            onClick={() => setTriggerPrice(p => adjustPrice(p - getStep(p)))}
+                                            style={styles.smallButton}
+                                        >
+                                            -
+                                        </button>
+                                        <input
+                                            type="number"
+                                            value={triggerPrice}
+                                            onChange={e => setTriggerPrice(adjustPrice(Number(e.target.value)))}
+                                            style={{ ...styles.input, textAlign: 'center', width: '80px' }}
+                                            className="no-spinner"
+                                        />
+                                        <span style={{ fontSize: '12px', color: '#AAA', marginLeft: '4px' }}>원</span>
+
+                                        <button
+                                            onClick={() => setTriggerPrice(p => adjustPrice(p + getStep(p)))}
+                                            style={styles.smallButton}
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+
+                                    {/* 지정가 */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ color: '#AAA', minWidth: '40px', textAlign: 'center' }}>주문가격</span>
+
+                                        <button
+                                            onClick={() => setOrderPrice(p => adjustPrice(p - getStep(p)))}
+                                            style={styles.smallButton}
+                                        >
+                                            -
+                                        </button>
+
+                                        <input
+                                            type="number"
+                                            value={orderPrice}
+                                            onChange={e => setOrderPrice(adjustPrice(Number(e.target.value)))}
+                                            style={{ ...styles.input, textAlign: 'center', width: '80px' }}
+                                            className="no-spinner"
+                                        />
+
+                                        <span style={{ fontSize: '12px', color: '#AAA', marginLeft: '4px' }}>원</span>
+
+                                        <button
+                                            onClick={() => setOrderPrice(p => adjustPrice(p + getStep(p)))}
+                                            style={styles.smallButton}
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+
+                                    {/* 수량 입력 */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ color: '#AAA', minWidth: '40px', textAlign: 'center' }}>수량</span>
+
+                                        <button
+                                            onClick={() => setOrderQuantity(q => Math.max(1, q - 1))}
+                                            style={styles.smallButton}
+                                        >
+                                            -
+                                        </button>
+
+                                        <input
+                                            type="number"
+                                            value={orderQuantity}
+                                            onChange={e => setOrderQuantity(Math.max(1, Number(e.target.value)))}
+                                            style={{ ...styles.input, textAlign: 'center', width: '80px' }}
+                                            className="no-spinner"
+                                        />
+
+                                        <span style={{ fontSize: '12px', color: '#AAA', marginLeft: '4px' }}>주</span>
+
+                                        <button
+                                            onClick={() => setOrderQuantity(q => q + 1)}
+                                            style={styles.smallButton}
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+
+                                    {/* 매도/매수 버튼 */}
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '8px' }}>
+                                        <button onClick={() => handleAutoOrderClick('SELL')} style={styles.button}>매도</button>
+                                        <button onClick={() => handleAutoOrderClick('BUY')} style={styles.button}>매수</button>
+                                    </div>
+                                </div>
+                                <div style={styles.divider} />
+
+                                {/* 자동주문 목록 (스크롤 컨테이너 추가) */}
+                                <div className="ordersSection" style={styles.ordersSection}>
+                                    <h4 style={{ color: '#AAA', marginBottom: '8px' }}>
+                                        실시간 자동주문 목록
+                                    </h4>
+
+                                    {sortedAutoOrders.length === 0 ? (
+                                        <div style={styles.emptyCenter}>
+                                            자동주문 내역 없음
+                                        </div>
+                                    ) : (
+
+                                        sortedAutoOrders.map((o) => {
+                                            const time = new Date(o.orderTime)
+                                            const timeText = `${time
+                                                .getHours()
+                                                .toString()
+                                                .padStart(2, '0')}:${time
+                                                .getMinutes()
+                                                .toString()
+                                                .padStart(2, '0')}:${time
+                                                .getSeconds()
+                                                .toString()
+                                                .padStart(2, '0')}`
+
+                                            return (
+                                                <div key={o.autoOrderId} style={styles.orderCard}>
+                                                    <div style={styles.orderHeader}>
+                                                        {/* 왼쪽 */}
+                                                        <span style={{ justifySelf: 'start' }}>
+        {stockNameMap[o.stockCode] ?? ''}
+                                                            <span style={{ color: '#777', marginLeft: '4px' }}>
+            {o.stockCode}
+        </span>
+    </span>
+
+                                                        {/* 가운데 */}
+                                                        <span
+                                                            style={{
+                                                                justifySelf: 'center',
+                                                                color: o.autoOrderType === 'BUY' ? '#FF5252' : '#4F9DFF',
+                                                            }}
+                                                        >
+        {o.autoOrderType === 'BUY' ? '자동 매수' : '자동 매도'}
+    </span>
+
+                                                        {/* 오른쪽 */}
+                                                        <span style={{ justifySelf: 'end', color: '#777' }}>
+        {timeText}
+    </span>
+                                                    </div>
+
+                                                    <div style={styles.orderRowSmall}>
+                                                        {/* 왼쪽 */}
+                                                        <span style={{ justifySelf: 'start' }}>
+        감시가 {o.triggerPrice.toLocaleString()}원
+    </span>
+
+                                                        {/* 가운데 */}
+                                                        <span style={{ justifySelf: 'center' }}>
+        주문가 {o.orderPrice.toLocaleString()}원
+    </span>
+
+                                                        {/* 오른쪽 */}
+                                                        <span style={{ justifySelf: 'end' }}>
+        {o.orderQuantity}주
+    </span>
+                                                    </div>
+                                                    {(
+                                                        <div style={styles.cancelButtonWrapper}>
+                                                            <button
+                                                                onClick={() =>
+                                                                    openAutoCancelModal(
+                                                                        o.autoOrderId,
+                                                                        o.stockCode
+                                                                    )
+                                                                }
+                                                                style={styles.cancelButton}
+                                                            >
+                                                                자동주문 취소
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )
                                         })
