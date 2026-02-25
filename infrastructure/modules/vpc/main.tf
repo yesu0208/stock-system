@@ -17,7 +17,7 @@ resource "aws_subnet" "public" {
   vpc_id   = aws_vpc.this.id
   cidr_block = each.key
   map_public_ip_on_launch = true
-  availability_zone = "ap-northeast-2a"
+  availability_zone = var.availability_zone
   tags = {
     Name = "${var.environment}-public-${each.key}"
   }
@@ -27,7 +27,7 @@ resource "aws_subnet" "private" {
   for_each = toset(var.private_subnet_cidr)
   vpc_id   = aws_vpc.this.id
   cidr_block = each.key
-  availability_zone = "ap-northeast-2a"
+  availability_zone = var.availability_zone
   tags = {
     Name = "${var.environment}-private-${each.key}"
   }

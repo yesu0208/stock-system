@@ -27,3 +27,8 @@ variable "db_password" {
   type    = string
   default = "ChangeMe123!"
 }
+
+variable "availability_zone" {
+  type    = string
+  default = "ap-northeast-2a"
+}
