@@ -20,6 +20,8 @@ module "redis" {
   source          = "../../modules/redis"
   environment     = var.environment
   subnet_ids      = module.vpc.private_subnets
+  vpc_id          = module.vpc.vpc_id
+  ecs_security_group_id = module.ecs.ecs_security_group_id
 }
 
 module "ecr" {
