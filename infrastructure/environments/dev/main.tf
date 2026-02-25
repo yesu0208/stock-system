@@ -14,6 +14,7 @@ module "rds" {
   private_subnets = module.vpc.private_subnets
   db_username = var.db_username
   db_password = var.db_password
+  ecs_security_group_id = module.ecs.ecs_security_group_id
 }
 
 module "redis" {
