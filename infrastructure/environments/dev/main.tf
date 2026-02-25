@@ -1,0 +1,45 @@
+module "vpc" {
+  source            = "../../modules/vpc"
+  environment       = var.environment
+  vpc_cidr          = var.vpc_cidr
+  public_subnet_cidr  = var.public_subnet_cidr
+  private_subnet_cidr = var.private_subnet_cidr
+}
+
+module "rds" {
+  source      = "../../modules/rds"
+  environment = var.environment
+  vpc_id      = module.vpc.vpc_id
+  private_subnets = module.vpc.private_subnets
+  db_username = var.db_username
+  db_password = var.db_password
+}
+
+module "redis" {
+  source          = "../../modules/redis"
+  environment     = var.environment
+  subnet_ids      = module.vpc.private_subnets
+}
+
+module "ecr" {
+  source      = "../../modules/ecr"
+  environment = var.environment
+}
+
+module "ecs" {
+  source          = "../../modules/ecs"
+  environment     = var.environment
+  vpc_id          = module.vpc.vpc_id
+  private_subnets = module.vpc.private_subnets
+  ecr_repo        = module.ecr.repo_url
+  redis_endpoint  = module.redis.endpoint
+  db_endpoint     = module.rds.endpoint
+}
+
+module "alb" {
+  source          = "../../modules/alb"
+  environment     = var.environment
+  vpc_id          = module.vpc.vpc_id
+  public_subnets  = module.vpc.public_subnets
+  ecs_service     = module.ecs.service_arn
+}
