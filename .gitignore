@@ -377,4 +377,32 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
+
+# Terraform (필수)
+
+# Terraform working directory
+.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Terraform plan files
+*.tfplan
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Terraform variable files (보안)
+*.tfvars
+*.tfvars.json
+
 # End of https://www.toptal.com/developers/gitignore/api/react,node,java,gradle,intellij+all,windows,macos,visualstudiocode
