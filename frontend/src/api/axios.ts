@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { tokenStorage } from '../utils/token'
+import { disconnectStomp } from './stompClient'
 
 interface CustomAxiosRequestConfig extends AxiosRequestConfig {
     _retry?: boolean
@@ -24,6 +25,8 @@ instance.interceptors.request.use(config => {
         if (token) {
             config.headers = config.headers ?? {}
             config.headers.Authorization = `Bearer ${token}`
+        } else {
+            if (config.headers) delete config.headers.Authorization
         }
     }
     return config
@@ -84,7 +87,10 @@ instance.interceptors.response.use(
 
                 return instance(originalRequest)
             } catch (refreshError) {
-                setTimeout(() => tokenStorage.clear(), 0) // microtask로 MainLayout가 바로 감지
+                setTimeout(() => {
+                    tokenStorage.clear()
+                    disconnectStomp() // 여기서 STOMP도 종료
+                }, 0) // microtask로 MainLayout가 바로 감지
                 refreshQueue.forEach(p => p.reject(refreshError))
                 refreshQueue = []
 

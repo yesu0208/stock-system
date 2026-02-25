@@ -8,6 +8,7 @@ import StockSummaryPanel from '../components/information/StockSummaryPanel.tsx'
 import { motion } from 'framer-motion'
 import instance from '../api/axios'
 import type { StompSubscription } from '@stomp/stompjs'
+import { tokenStorage } from '../utils/token'
 
 import type { TradePriceTickMessage } from '../types/tradePriceTickMessage'
 import { getStockClient } from '../api/stompClient'
@@ -92,6 +93,9 @@ export default function TradePage() {
     }, [])
 
     useEffect(() => {
+        const token = tokenStorage.get()
+        if (!token) return // 로그인 안된 상태면 STOMP 연결 금지
+
         const client = getStockClient()
 
         let stockSub: StompSubscription | undefined

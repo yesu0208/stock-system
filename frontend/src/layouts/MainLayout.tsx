@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Modal from '../components/Modal'
 import { logout } from '../api/auth'
+import { disconnectStomp } from '../api/stompClient'
 
 interface Props { children: ReactNode }
 
@@ -22,6 +23,7 @@ export default function MainLayout({ children }: Props) {
 
         setLogoutReason('manual')
         tokenStorage.clear()
+        disconnectStomp() // 추가
     }
 
     // 다른 탭 로그아웃 or refresh 실패 감지
@@ -36,7 +38,7 @@ export default function MainLayout({ children }: Props) {
 
     const handleModalClose = () => {
         setLogoutReason(null)
-        navigate('/login', { replace: true })
+        setTimeout(() => navigate('/login', { replace: true }), 0)
     }
 
     return (
