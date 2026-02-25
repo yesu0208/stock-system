@@ -35,6 +35,8 @@ module "ecs" {
   ecr_repo        = module.ecr.repo_url
   redis_endpoint  = module.redis.endpoint
   db_endpoint     = module.rds.endpoint
+  target_group_arn = module.alb.target_group_arn
+  alb_sg_id        = module.alb.alb_sg_id
 }
 
 module "alb" {

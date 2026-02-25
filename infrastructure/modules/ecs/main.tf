@@ -38,7 +38,7 @@ resource "aws_security_group" "ecs" {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # 일단 임시 (나중에 ALB SG로 제한)
+    security_groups = [var.alb_sg_id]
   }
 
   egress {
@@ -101,6 +101,13 @@ resource "aws_ecs_service" "this" {
     subnets         = var.private_subnets
     security_groups = [aws_security_group.ecs.id]
     assign_public_ip = false
+  }
+
+  # Load Balancer
+  load_balancer {
+    target_group_arn = var.target_group_arn
+    container_name   = "backend"
+    container_port   = 8080
   }
 }
 
