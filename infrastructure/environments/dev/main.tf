@@ -42,5 +42,5 @@ module "alb" {
   environment     = var.environment
   vpc_id          = module.vpc.vpc_id
   public_subnets  = module.vpc.public_subnets
-  ecs_service     = module.ecs.service_arn
+  ecs_service     = module.ecs.ecs_service_arn
 }

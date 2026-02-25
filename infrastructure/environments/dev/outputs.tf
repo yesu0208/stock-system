@@ -30,7 +30,12 @@ output "ecr_repo_url" {
 
 output "ecs_cluster_arn" {
   description = "ARN of ECS cluster"
-  value       = module.ecs.service_arn
+  value       = module.ecs.ecs_cluster_arn
+}
+
+output "ecs_service_arn" {
+  description = "ARN of ECS service"
+  value       = module.ecs.ecs_service_arn
 }
 
 output "alb_dns" {

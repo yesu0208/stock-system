@@ -49,6 +49,65 @@ resource "aws_security_group" "ecs" {
   }
 }
 
-output "service_arn" {
+# Task Definition
+resource "aws_ecs_task_definition" "this" {
+  family                   = "${var.environment}-task"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "backend"
+      image     = "${var.ecr_repo}:latest"
+      essential = true
+      portMappings = [{
+        containerPort = 8080
+        hostPort      = 8080
+      }]
+      environment = [
+        {
+          name  = "REDIS_HOST"
+          value = var.redis_endpoint
+        },
+        {
+          name  = "DB_HOST"
+          value = var.db_endpoint
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "ap-northeast-2"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+    }
+  ])
+}
+
+# ECS Service
+resource "aws_ecs_service" "this" {
+  name            = "${var.environment}-service"
+  cluster         = aws_ecs_cluster.this.id
+  task_definition = aws_ecs_task_definition.this.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
+
+  network_configuration {
+    subnets         = var.private_subnets
+    security_groups = [aws_security_group.ecs.id]
+    assign_public_ip = false
+  }
+}
+
+output "ecs_cluster_arn" {
   value = aws_ecs_cluster.this.arn
+}
+
+output "ecs_service_arn" {
+  value = aws_ecs_service.this.arn
 }
