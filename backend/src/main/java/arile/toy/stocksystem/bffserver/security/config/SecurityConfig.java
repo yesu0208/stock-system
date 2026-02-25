@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.security.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,10 +25,13 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+        configuration.setAllowedOrigins(List.of(frontendUrl));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -50,6 +54,8 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/api/*/users/check-username")
                                 .permitAll()
                                 .requestMatchers("/index.html", "/ws-stock/**", "/ws-order/**")
+                                .permitAll()
+                                .requestMatchers("/actuator/health")
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/users/all")
                                 .hasRole("ADMIN")

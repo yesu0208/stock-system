@@ -1,5 +1,6 @@
 import axios from './axios'
 import { tokenStorage } from '../utils/token'
+import { disconnectStomp } from './stompClient'
 
 export interface SignUpRequest { username: string; password: string }
 export interface UserDto { id: number; username: string }
@@ -28,4 +29,10 @@ export const checkUsernameAPI = async (username: string): Promise<{ exists: bool
 // 로그아웃
 export async function logout() {
     await axios.post('/users/logout')
+
+    // 1) 토큰 제거
+    tokenStorage.clear()
+
+    // 2) STOMP 연결 종료
+    disconnectStomp()
 }

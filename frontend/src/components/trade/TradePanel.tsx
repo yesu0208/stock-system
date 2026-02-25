@@ -18,7 +18,6 @@ import type {AutoCancelResultResponse} from "../../types/autoCancel.ts";
 import api from '../../lib/api' // axios instance
 import Modal from '../Modal.tsx'
 import {tokenStorage} from "../../utils/token.ts";
-import axios from 'axios'
 
 interface Props {
     stockCode: string
@@ -437,28 +436,18 @@ export default function TradePanel({
                 success: true,
                 message: '미체결 주문이 취소되었습니다.',
             })
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                const status = e.response?.status
+        } catch (e: any) {
+            const status = e.response?.status
 
-                if (status === 401 || status === 403) {
-                    // 세션 만료 처리 → MainLayout에서 모달 표시
-                    tokenStorage.clear()
-                } else {
-                    const errMessage =
-                        e.response?.data?.message ??
-                        e.response?.data ??
-                        e.message
-
-                    setHttpResponseModal({
-                        success: false,
-                        message: `❌ [주문 취소 실패] ${errMessage}`,
-                    })
-                }
+            if (status === 401 || status === 403) {
+                // 세션 만료 처리 → MainLayout에서 모달 표시
+                tokenStorage.clear()
             } else {
                 setHttpResponseModal({
                     success: false,
-                    message: '❌ 알 수 없는 오류가 발생했습니다.',
+                    message: `❌ [주문 취소 실패] ${
+                        e.response?.data?.message ?? e.message
+                    }`,
                 })
             }
         } finally {
@@ -482,24 +471,18 @@ export default function TradePanel({
                 success: true,
                 message: '자동주문이 취소되었습니다.',
             });
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                const status = e.response?.status;
+        } catch (e: any) {
+            const status = e.response?.status;
 
-                if (status === 401 || status === 403) {
-                    // 세션 만료 처리 → MainLayout 모달 표시
-                    tokenStorage.clear();
-                } else {
-                    const errMessage = e.response?.data?.message ?? e.message;
-                    setHttpResponseModal({
-                        success: false,
-                        message: `❌ [자동주문 취소 실패] ${errMessage}`,
-                    });
-                }
+            if (status === 401 || status === 403) {
+                // 세션 만료 처리 → MainLayout 모달 표시
+                tokenStorage.clear();
             } else {
                 setHttpResponseModal({
                     success: false,
-                    message: '❌ 알 수 없는 오류가 발생했습니다.',
+                    message: `❌ [자동주문 취소 실패] ${
+                        e.response?.data?.message ?? e.message
+                    }`,
                 });
             }
         } finally {
@@ -649,29 +632,24 @@ export default function TradePanel({
                 ),
             })
 
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                const status = e.response?.status
+        } catch (e: any) {
+            const status = e.response?.status
 
-                if (status === 401 || status === 403) {
-                    tokenStorage.clear()
-                } else {
-                    const errMessage =
-                        e.response?.data?.message ??
-                        e.response?.data ??
-                        e.message
-
-                    setHttpResponseModal({
-                        success: false,
-                        message: `❌ [주문 실패] ${errMessage}`,
-                    })
-                }
+            if (status === 401 || status === 403) {
+                // 세션 만료 처리 → MainLayout 모달 표시
+                tokenStorage.clear()
             } else {
+                const errMessage =
+                    e.response?.data?.message ?? e.response?.data ?? e.message;
+
                 setHttpResponseModal({
                     success: false,
-                    message: '❌ 알 수 없는 오류가 발생했습니다.',
+                    message: `❌ [주문 실패] ${errMessage}`,
                 })
             }
+        } finally {
+            setConfirmOrderModal(null)
+            setLoading(false)
         }
     }
 
@@ -761,25 +739,19 @@ export default function TradePanel({
                     </div>
                 ),
             })
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                const status = e.response?.status;
+        } catch (e: any) {
+            const status = e.response?.status
 
-                if (status === 401 || status === 403) {
-                    // 세션 만료 처리 → MainLayout 모달 표시
-                    tokenStorage.clear();
-                } else {
-                    const errMessage = e.response?.data?.message ?? e.response?.data ?? e.message;
-                    setHttpResponseModal({
-                        success: false,
-                        message: `❌ [자동주문 실패] ${errMessage}`,
-                    });
-                }
+            if (status === 401 || status === 403) {
+                // 세션 만료 처리 → MainLayout 모달 표시
+                tokenStorage.clear()
             } else {
+                const errMessage = e.response?.data?.message ?? e.response?.data ?? e.message;
+
                 setHttpResponseModal({
                     success: false,
-                    message: '❌ 알 수 없는 오류가 발생했습니다.',
-                });
+                    message: `❌ [자동주문 실패] ${errMessage}`,
+                })
             }
         } finally {
             setConfirmAutoOrderModal(null)

@@ -5,6 +5,7 @@ import arile.toy.stocksystem.stockserver.external.stock.approvalkey.ApprovalKeyS
 import arile.toy.stocksystem.stockserver.external.stock.checker.ExternalStockWebSocketOrchestrator;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -20,6 +21,9 @@ class StockSystemApplicationTests {
 
     @MockitoBean
     private ExternalStockWebSocketOrchestrator externalStockWebSocketOrchestrator;
+    
+    @MockitoBean
+    private RedisMessageListenerContainer redisContainer;
 
     @Test
     void contextLoads() {

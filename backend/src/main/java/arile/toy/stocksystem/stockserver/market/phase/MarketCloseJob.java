@@ -32,7 +32,7 @@ public class MarketCloseJob {
     private final UserStockService userStockService;
     private final MarketClosePublisher marketClosePublisher;
 
-    @Scheduled(cron = "0 40 15 * * MON-FRI")
+    @Scheduled(cron = "0 40 15 * * MON-FRI", zone = "Asia/Seoul")
     public void runMarketCloseJob() {
 
         if (!marketCloseLock.acquire()) {

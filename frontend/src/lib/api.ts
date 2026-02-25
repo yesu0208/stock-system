@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api/v1',
+    baseURL: import.meta.env.VITE_API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -59,7 +59,7 @@ api.interceptors.response.use(
             try {
                 // refresh token으로 accessToken 재발급
                 const refreshRes = await axios.post<{ accessToken: string }>(
-                    'http://localhost:8080/api/v1/auth/refresh',
+                    `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
                     {},
                     { withCredentials: true }
                 )
