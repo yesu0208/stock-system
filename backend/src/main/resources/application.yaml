@@ -17,6 +17,15 @@ logging:
     arile.toy.stocksystem: debug
     org.springframework.web.service: debug
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
 redis:
   host: ${REDIS_HOST}
   port: ${REDIS_PORT}

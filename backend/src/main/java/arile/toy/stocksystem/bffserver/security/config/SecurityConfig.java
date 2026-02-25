@@ -55,6 +55,8 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/index.html", "/ws-stock/**", "/ws-order/**")
                                 .permitAll()
+                                .requestMatchers("/actuator/health")
+                                .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/users/all")
                                 .hasRole("ADMIN")
                                 .anyRequest()
