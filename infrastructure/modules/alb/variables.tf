@@ -10,6 +10,6 @@ variable "public_subnets" {
    type = list(string)
 }
 
-variable "ecs_service" {
+variable "alb_sg_id" {
    type = string
 }

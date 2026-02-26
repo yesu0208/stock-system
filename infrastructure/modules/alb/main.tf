@@ -3,30 +3,9 @@ resource "aws_lb" "this" {
   internal           = false
   load_balancer_type = "application"
   subnets            = var.public_subnets
-  security_groups    = [aws_security_group.alb.id]
+  security_groups    = [var.alb_sg_id]
 }
 
-# ALB Security Group
-resource "aws_security_group" "alb" {
-  name   = "${var.environment}-alb-sg"
-  vpc_id = var.vpc_id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# Target Group
 resource "aws_lb_target_group" "this" {
   name        = "${var.environment}-tg"
   port        = 8080
@@ -63,8 +42,4 @@ output "alb_dns" {
 
 output "target_group_arn" {
   value = aws_lb_target_group.this.arn
-}
-
-output "alb_sg_id" {
-  value = aws_security_group.alb.id
 }

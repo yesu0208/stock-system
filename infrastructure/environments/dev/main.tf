@@ -7,6 +7,12 @@ module "vpc" {
   availability_zone   = var.availability_zone
 }
 
+module "security" {
+  source      = "../../modules/security"
+  environment = var.environment
+  vpc_id      = module.vpc.vpc_id
+}
+
 module "rds" {
   source      = "../../modules/rds"
   environment = var.environment
@@ -14,7 +20,7 @@ module "rds" {
   private_subnets = module.vpc.private_subnets
   db_username = var.db_username
   db_password = var.db_password
-  ecs_security_group_id = module.ecs.ecs_security_group_id
+  rds_sg_id = module.security.rds_sg_id
 }
 
 module "redis" {
@@ -22,7 +28,7 @@ module "redis" {
   environment     = var.environment
   subnet_ids      = module.vpc.private_subnets
   vpc_id          = module.vpc.vpc_id
-  ecs_security_group_id = module.ecs.ecs_security_group_id
+  redis_sg_id = module.security.redis_sg_id
 }
 
 module "ecr" {
@@ -39,7 +45,7 @@ module "ecs" {
   redis_endpoint  = module.redis.endpoint
   db_endpoint     = module.rds.endpoint
   target_group_arn = module.alb.target_group_arn
-  alb_sg_id        = module.alb.alb_sg_id
+  ecs_sg_id        = module.security.ecs_sg_id
 }
 
 module "alb" {
@@ -47,5 +53,5 @@ module "alb" {
   environment     = var.environment
   vpc_id          = module.vpc.vpc_id
   public_subnets  = module.vpc.public_subnets
-  ecs_service     = module.ecs.ecs_service_arn
+  alb_sg_id = module.security.alb_sg_id
 }

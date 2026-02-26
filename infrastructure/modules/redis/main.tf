@@ -1,38 +1,26 @@
 resource "aws_elasticache_subnet_group" "this" {
-  name       = "${var.environment}-redis-subnet"
+  name = "${var.environment}-redis-subnet"
   subnet_ids = var.subnet_ids
 }
 
-resource "aws_elasticache_cluster" "this" {
-  cluster_id           = "${var.environment}-redis"
-  engine               = "redis"
-  node_type            = "cache.t4g.micro"
-  num_cache_nodes      = 1
-  subnet_group_name    = aws_elasticache_subnet_group.this.name
-  parameter_group_name = "default.redis6.x"
-  security_group_ids = [aws_security_group.redis.id]
-}
+#Redis replication group
+resource "aws_elasticache_replication_group" "this" {
+  replication_group_id = "${var.environment}-redis"
+  description = "Redis replication group"
+  engine = "redis"
+  engine_version = "6.x"
+  node_type = "cache.t4g.micro"
 
-# Redis Security Group
-resource "aws_security_group" "redis" {
-  name   = "${var.environment}-redis-sg"
-  vpc_id = var.vpc_id
+  number_cache_clusters = 1
+  automatic_failover_enabled = false
+  multi_az_enabled = false
 
-  ingress {
-    from_port       = 6379
-    to_port         = 6379
-    protocol        = "tcp"
-    security_groups = [var.ecs_security_group_id]
-  }
+  subnet_group_name = aws_elasticache_subnet_group.this.name
+  security_group_ids = [var.redis_sg_id]
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  port = 6379
 }
 
 output "endpoint" {
-  value = aws_elasticache_cluster.this.cache_nodes[0].address
+  value = aws_elasticache_replication_group.this.primary_endpoint_address
 }

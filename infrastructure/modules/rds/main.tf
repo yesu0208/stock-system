@@ -1,37 +1,19 @@
 resource "aws_db_subnet_group" "this" {
-  name       = "${var.environment}-db-subnet"
+  name = "${var.environment}-db-subnet"
   subnet_ids = var.private_subnets
 }
 
 resource "aws_db_instance" "this" {
   identifier = "${var.environment}-rds"
-  engine     = "mysql"
+  engine = "mysql"
+  engine_version = "8.0"
   instance_class = "db.t3.micro"
-  username   = var.db_username
-  password   = var.db_password
+  username = var.db_username
+  password = var.db_password
   allocated_storage = 20
   db_subnet_group_name = aws_db_subnet_group.this.name
+  vpc_security_group_ids = [var.rds_sg_id]
   skip_final_snapshot = true
-}
-
-# RDS Security Group
-resource "aws_security_group" "rds" {
-  name   = "${var.environment}-rds-sg"
-  vpc_id = var.vpc_id
-
-  ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [var.ecs_security_group_id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }
 
 output "endpoint" {
