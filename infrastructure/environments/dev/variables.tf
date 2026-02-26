@@ -20,22 +20,42 @@ variable "private_subnet_cidr" {
 
 variable "db_username" {
   type    = string
-  default = "admin"
+  sensitive = true
 }
 
 variable "db_password" {
   type    = string
-  default = "ChangeMe123!"
+  sensitive = true
 }
 
 variable "db_name" {
   type    = string
-  default = "default_db"
+  sensitive = true
 }
 
 variable "availability_zones" {
   type    = list(string)
   default = ["ap-northeast-2a","ap-northeast-2c"]
+}
+
+variable "image_tag" {
+  type    = string
+  default = "latest"
+}
+
+variable "fe_url" {
+  type = string
+  sensitive = true
+}
+
+variable "cloudfront_acm_arn" {
+  type = string
+  sensitive = true
+}
+
+variable "alb_acm_arn" {
+  type = string
+  sensitive = true
 }
 
 variable "app_key" {
@@ -61,21 +81,4 @@ variable "secret_key" {
 variable "ws_url" {
   type = string
   sensitive = true
-}
-
-variable "image_tag" {
-  type    = string
-  default = "latest"
-}
-
-variable "fe_url" {
-  type = string
-}
-
-variable "cloudfront_acm_arn" {
-  type = string
-}
-
-variable "alb_acm_arn" {
-  type = string
 }
