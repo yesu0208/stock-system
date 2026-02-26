@@ -52,6 +52,7 @@ module "ecs" {
   approval_key_url = var.approval_key_url
   secret_key = var.secret_key
   ws_url = var.ws_url
+  image_tag       = var.image_tag
 }
 
 module "alb" {

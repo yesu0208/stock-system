@@ -57,3 +57,8 @@ variable "secret_key" {
 variable "ws_url" {
    type = string
 }
+
+variable "image_tag" {
+   type        = string
+   description = "Docker image tag for ECS task"
+}

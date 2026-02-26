@@ -62,3 +62,8 @@ variable "ws_url" {
   type = string
   sensitive = true
 }
+
+variable "image_tag" {
+  type    = string
+  default = "latest"
+}
