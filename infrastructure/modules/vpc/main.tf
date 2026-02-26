@@ -17,28 +17,24 @@ resource "aws_subnet" "public" {
   vpc_id   = aws_vpc.this.id
   cidr_block = each.key
   map_public_ip_on_launch = true
-  availability_zone = var.availability_zone
-  tags = {
-    Name = "${var.environment}-public-${each.key}"
-  }
+  availability_zone = var.availability_zones[0]
+  tags = { Name = "${var.environment}-public-${each.key}" }
 }
 
 resource "aws_subnet" "private" {
   for_each = toset(var.private_subnet_cidr)
   vpc_id   = aws_vpc.this.id
   cidr_block = each.key
-  availability_zone = var.availability_zone
-  tags = {
-    Name = "${var.environment}-private-${each.key}"
-  }
+  availability_zone = var.availability_zones[1]
+  tags = { Name = "${var.environment}-private-${each.key}" }
 }
 
-# NAT Elastic IP
+#1-1 NAT용 Elastic IP
 resource "aws_eip" "nat" {
   domain = "vpc"
 }
 
-# NAT GateWay
+#1-1 NAT GateWay
 resource "aws_nat_gateway" "this" {
   allocation_id = aws_eip.nat.id
   subnet_id     = values(aws_subnet.public)[0].id
