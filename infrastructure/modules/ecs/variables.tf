@@ -18,14 +18,6 @@ variable "db_endpoint" {
    type = string
 }
 
-variable "target_group_arn" {
-   type = string
-}
-
-variable "ecs_sg_id" {
-   type = string
-}
-
 variable "db_name" {
    type = string
 }
@@ -35,6 +27,23 @@ variable "db_username" {
 }
 
 variable "db_password" {
+   type = string
+}
+
+variable "target_group_arn" {
+   type = string
+}
+
+variable "ecs_sg_id" {
+   type = string
+}
+
+variable "image_tag" {
+   type        = string
+   description = "Docker image tag for ECS task"
+}
+
+variable "fe_url" {
    type = string
 }
 
@@ -55,14 +64,5 @@ variable "secret_key" {
 }
 
 variable "ws_url" {
-   type = string
-}
-
-variable "image_tag" {
-   type        = string
-   description = "Docker image tag for ECS task"
-}
-
-variable "fe_url" {
    type = string
 }

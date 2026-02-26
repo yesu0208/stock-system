@@ -2,7 +2,6 @@ resource "aws_ecs_cluster" "this" {
   name = "${var.environment}-ecs"
 }
 
-# IAM Role
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "${var.environment}-ecs-task-execution-role"
 
@@ -18,34 +17,31 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   })
 }
 
-# Policy
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
+  role = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "ecs" {
   name = "/ecs/${var.environment}"
 }
 
-# Task Definition
 resource "aws_ecs_task_definition" "this" {
-  family                   = "${var.environment}-task"
+  family = "${var.environment}-task"
   requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  network_mode = "awsvpc"
+  cpu = "256"
+  memory = "512"
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([
     {
-      name      = "backend"
-      image     = "${var.ecr_repo}:${var.image_tag}"
+      name = "backend"
+      image = "${var.ecr_repo}:${var.image_tag}"
       essential = true
       portMappings = [{
         containerPort = 8080
-        hostPort      = 8080
+        hostPort = 8080
       }]
       environment = [
         {
@@ -54,9 +50,8 @@ resource "aws_ecs_task_definition" "this" {
         },
         {
           name = "REDIS_PORT"
-          value = "6379" # Redis 기본 포트
+          value = "6379"
         },
-
         {
           name = "LOCAL_DB_URL"
           value = "jdbc:mysql://${var.db_endpoint}/${var.db_name}"
@@ -90,15 +85,15 @@ resource "aws_ecs_task_definition" "this" {
           value = var.ws_url
         },
         {
-          name  = "FE_URL"
+          name = "FE_URL"
           value = var.fe_url
         }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.ecs.name
-          awslogs-region        = "ap-northeast-2"
+          awslogs-group  = aws_cloudwatch_log_group.ecs.name
+          awslogs-region = "ap-northeast-2"
           awslogs-stream-prefix = "ecs"
         }
       }
@@ -106,25 +101,23 @@ resource "aws_ecs_task_definition" "this" {
   ])
 }
 
-# ECS Service
 resource "aws_ecs_service" "this" {
-  name            = "${var.environment}-service"
-  cluster         = aws_ecs_cluster.this.id
+  name = "${var.environment}-service"
+  cluster = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.this.arn
-  launch_type     = "FARGATE"
-  desired_count   = 1
+  launch_type = "FARGATE"
+  desired_count = 1
 
   network_configuration {
-    subnets         = var.private_subnets
+    subnets = var.private_subnets
     security_groups = [var.ecs_sg_id]
     assign_public_ip = false
   }
 
-  # Load Balancer
   load_balancer {
     target_group_arn = var.target_group_arn
-    container_name   = "backend"
-    container_port   = 8080
+    container_name = "backend"
+    container_port = 8080
   }
 }
 
