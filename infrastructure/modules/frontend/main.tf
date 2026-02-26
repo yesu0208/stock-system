@@ -1,9 +1,8 @@
-# S3 bucket
 resource "aws_s3_bucket" "frontend" {
   bucket = "stock-system-${var.environment}-frontend-bucket"
 
   tags = {
-    Name        = "stock-system-${var.environment}-frontend-bucket"
+    Name = "stock-system-${var.environment}-frontend-bucket"
     Environment = var.environment
   }
 }
@@ -20,12 +19,10 @@ resource "aws_s3_bucket_website_configuration" "frontend" {
   }
 }
 
-# CloudFront OAI
 resource "aws_cloudfront_origin_access_identity" "frontend" {
   comment = "OAI for ${var.environment} frontend"
 }
 
-# S3 bucket policy: CloudFront OAI access
 resource "aws_s3_bucket_policy" "frontend_policy" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -44,8 +41,12 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
   })
 }
 
-# CloudFront
 resource "aws_cloudfront_distribution" "frontend" {
+  enabled = true
+  is_ipv6_enabled = true
+  default_root_object = "index.html"
+
+  # --- S3 정적 파일 origin ---
   origin {
     domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id = "S3-${aws_s3_bucket.frontend.id}"
@@ -55,9 +56,17 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 
-  enabled = true
-  is_ipv6_enabled = true
-  default_root_object = "index.html"
+  origin {
+    domain_name = var.alb_dns
+    origin_id = "ALB"
+
+    custom_origin_config {
+      http_port = 80
+      https_port = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols = ["TLSv1.2"]
+    }
+  }
 
   default_cache_behavior {
     allowed_methods = ["GET", "HEAD"]
@@ -72,6 +81,35 @@ resource "aws_cloudfront_distribution" "frontend" {
         forward = "none"
       }
     }
+  }
+
+  ordered_cache_behavior {
+    path_pattern = "/api/*"
+    allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods = ["GET", "HEAD"]
+    target_origin_id = "ALB"
+
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = true
+      cookies { forward = "all" }
+      headers = ["Authorization"]
+    }
+  }
+
+  custom_error_response {
+    error_code = 403
+    response_code = 200
+    response_page_path = "/index.html"
+    error_caching_min_ttl = 0
+  }
+
+  custom_error_response {
+    error_code = 404
+    response_code = 200
+    response_page_path = "/index.html"
+    error_caching_min_ttl = 0
   }
 
   restrictions {
