@@ -45,3 +45,7 @@ output "frontend_s3_bucket" {
 output "frontend_cloudfront_url" {
   value = module.frontend.frontend_cloudfront_url
 }
+
+output "frontend_cloudfront_distribution_id" {
+  value = module.frontend.frontend_cloudfront_distribution_id
+}
