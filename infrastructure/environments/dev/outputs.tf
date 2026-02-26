@@ -33,11 +33,6 @@ output "ecs_cluster_arn" {
   value       = module.ecs.ecs_cluster_arn
 }
 
-output "ecs_service_arn" {
-  description = "ARN of ECS service"
-  value       = module.ecs.ecs_service_arn
-}
-
 output "alb_dns" {
   description = "DNS name of ALB for frontend/backend access"
   value       = module.alb.alb_dns
