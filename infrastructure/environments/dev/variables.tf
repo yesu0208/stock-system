@@ -10,12 +10,12 @@ variable "vpc_cidr" {
 
 variable "public_subnet_cidr" {
   type    = list(string)
-  default = ["10.0.1.0/24"]
+  default = ["10.0.1.0/24", "10.0.11.0/24"]
 }
 
 variable "private_subnet_cidr" {
   type    = list(string)
-  default = ["10.0.2.0/24"]
+  default = ["10.0.2.0/24", "10.0.12.0/24"]
 }
 
 variable "db_username" {
@@ -33,9 +33,9 @@ variable "db_name" {
   default = "default_db"
 }
 
-variable "availability_zone" {
-  type    = string
-  default = "ap-northeast-2a"
+variable "availability_zones" {
+  type    = list(string)
+  default = ["ap-northeast-2a","ap-northeast-2c"]
 }
 
 variable "app_key" {

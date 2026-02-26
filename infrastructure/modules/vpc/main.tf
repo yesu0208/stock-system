@@ -12,21 +12,29 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
+# public subnets
 resource "aws_subnet" "public" {
-  for_each = toset(var.public_subnet_cidr)
+  for_each = { for i, cidr in var.public_subnet_cidr : i => cidr }
+
   vpc_id   = aws_vpc.this.id
-  cidr_block = each.key
+  cidr_block = each.value
   map_public_ip_on_launch = true
-  availability_zone = var.availability_zones[0]
-  tags = { Name = "${var.environment}-public-${each.key}" }
+  availability_zone       = var.availability_zones[each.key]
+  tags = {
+    Name = "${var.environment}-public-${each.value}"
+  }
 }
 
+# private subnets
 resource "aws_subnet" "private" {
-  for_each = toset(var.private_subnet_cidr)
+  for_each = { for i, cidr in var.private_subnet_cidr : i => cidr }
+
   vpc_id   = aws_vpc.this.id
-  cidr_block = each.key
-  availability_zone = var.availability_zones[1]
-  tags = { Name = "${var.environment}-private-${each.key}" }
+  cidr_block = each.value
+  availability_zone = var.availability_zones[each.key]
+  tags = {
+    Name = "${var.environment}-private-${each.value}"
+  }
 }
 
 #1-1 NAT용 Elastic IP
