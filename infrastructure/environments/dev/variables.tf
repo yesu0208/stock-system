@@ -28,7 +28,37 @@ variable "db_password" {
   default = "ChangeMe123!"
 }
 
+variable "db_name" {
+  type    = string
+  default = "default_db"
+}
+
 variable "availability_zone" {
   type    = string
   default = "ap-northeast-2a"
+}
+
+variable "app_key" {
+  type = string
+  sensitive = true
+}
+
+variable "app_secret" {
+  type = string
+  sensitive = true
+}
+
+variable "approval_key_url" {
+  type = string
+  sensitive = true
+}
+
+variable "secret_key" {
+  type = string
+  sensitive = true
+}
+
+variable "ws_url" {
+  type = string
+  sensitive = true
 }

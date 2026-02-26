@@ -29,26 +29,6 @@ resource "aws_cloudwatch_log_group" "ecs" {
   name = "/ecs/${var.environment}"
 }
 
-# Security Group
-resource "aws_security_group" "ecs" {
-  name   = "${var.environment}-ecs-sg"
-  vpc_id = var.vpc_id
-
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    security_groups = [var.alb_sg_id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
 # Task Definition
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.environment}-task"
@@ -69,12 +49,45 @@ resource "aws_ecs_task_definition" "this" {
       }]
       environment = [
         {
-          name  = "REDIS_HOST"
+          name = "REDIS_HOST"
           value = var.redis_endpoint
         },
         {
-          name  = "DB_HOST"
-          value = var.db_endpoint
+          name = "REDIS_PORT"
+          value = "6379" # Redis 기본 포트
+        },
+
+        {
+          name = "LOCAL_DB_URL"
+          value = "jdbc:mysql://${var.db_endpoint}/${var.db_name}"
+        },
+        {
+          name = "LOCAL_DB_USER"
+          value = var.db_username
+        },
+        {
+          name = "LOCAL_DB_PW"
+          value = var.db_password
+        },
+        {
+          name = "APP_KEY"
+          value = var.app_key
+        },
+        {
+          name = "APP_SECRET"
+          value = var.app_secret
+        },
+        {
+          name = "APPROVAL_KEY_URL"
+          value = var.approval_key_url
+        },
+        {
+          name = "SECRET_KEY"
+          value = var.secret_key
+        },
+        {
+          name = "WS_URL"
+          value = var.ws_url
         }
       ]
       logConfiguration = {
@@ -117,8 +130,4 @@ output "ecs_cluster_arn" {
 
 output "ecs_service_arn" {
   value = aws_ecs_service.this.arn
-}
-
-output "ecs_security_group_id" {
-  value = aws_security_group.ecs.id
 }

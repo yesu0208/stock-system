@@ -16,10 +16,10 @@ module "security" {
 module "rds" {
   source      = "../../modules/rds"
   environment = var.environment
-  vpc_id      = module.vpc.vpc_id
   private_subnets = module.vpc.private_subnets
   db_username = var.db_username
   db_password = var.db_password
+  db_name = var.db_name
   rds_sg_id = module.security.rds_sg_id
 }
 
@@ -27,7 +27,6 @@ module "redis" {
   source          = "../../modules/redis"
   environment     = var.environment
   subnet_ids      = module.vpc.private_subnets
-  vpc_id          = module.vpc.vpc_id
   redis_sg_id = module.security.redis_sg_id
 }
 
@@ -39,13 +38,20 @@ module "ecr" {
 module "ecs" {
   source          = "../../modules/ecs"
   environment     = var.environment
-  vpc_id          = module.vpc.vpc_id
   private_subnets = module.vpc.private_subnets
   ecr_repo        = module.ecr.repo_url
   redis_endpoint  = module.redis.endpoint
   db_endpoint     = module.rds.endpoint
   target_group_arn = module.alb.target_group_arn
   ecs_sg_id        = module.security.ecs_sg_id
+  db_username = module.rds.username
+  db_password = module.rds.password
+  db_name = module.rds.db_name
+  app_key = var.app_key
+  app_secret = var.app_secret
+  approval_key_url = var.approval_key_url
+  secret_key = var.secret_key
+  ws_url = var.ws_url
 }
 
 module "alb" {

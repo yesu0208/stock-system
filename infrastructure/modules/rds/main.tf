@@ -10,6 +10,7 @@ resource "aws_db_instance" "this" {
   instance_class = "db.t3.micro"
   username = var.db_username
   password = var.db_password
+  db_name = var.db_name
   allocated_storage = 20
   db_subnet_group_name = aws_db_subnet_group.this.name
   vpc_security_group_ids = [var.rds_sg_id]
@@ -18,4 +19,16 @@ resource "aws_db_instance" "this" {
 
 output "endpoint" {
   value = aws_db_instance.this.endpoint
+}
+
+output "username" {
+  value = aws_db_instance.this.username
+}
+
+output "password" {
+  value = aws_db_instance.this.password
+}
+
+output "db_name" {
+  value = aws_db_instance.this.db_name
 }
