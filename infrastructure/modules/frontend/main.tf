@@ -1,16 +1,27 @@
 # S3 bucket
 resource "aws_s3_bucket" "frontend" {
   bucket = "${var.environment}-frontend-bucket"
-  acl = "private"
-
-  website {
-    index_document = "index.html"
-    error_document = "index.html"
-  }
 
   tags = {
-    Name = "${var.environment}-frontend-bucket"
+    Name        = "${var.environment}-frontend-bucket"
     Environment = var.environment
+  }
+}
+
+resource "aws_s3_bucket_acl" "frontend_acl" {
+  bucket = aws_s3_bucket.frontend.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_website_configuration" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
   }
 }
 
