@@ -2,6 +2,7 @@ import axios from 'axios'
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { tokenStorage } from '../utils/token'
 import { disconnectStomp } from './stompClient'
+// import { reconnectStomp } from './stompClient'
 
 interface CustomAxiosRequestConfig extends AxiosRequestConfig {
     _retry?: boolean
@@ -22,13 +23,17 @@ let refreshQueue: {
 instance.interceptors.request.use(config => {
     if (!config.url?.includes('/auth/refresh')) {
         const token = tokenStorage.get()
-        if (token) {
+
+        if (token && token !== "undefined") {
             config.headers = config.headers ?? {}
             config.headers.Authorization = `Bearer ${token}`
         } else {
-            if (config.headers) delete config.headers.Authorization
+            if (config.headers) {
+                delete config.headers.Authorization
+            }
         }
     }
+
     return config
 })
 
@@ -70,14 +75,17 @@ instance.interceptors.response.use(
             isRefreshing = true
 
             try {
-                const refreshRes = await axios.post<{ accessToken: string }>(
+                const refreshRes = await instance.post<{ accessToken: string }>(
                     '/auth/refresh',
-                    {},
-                    { withCredentials: true }
+                    {}
                 )
 
                 const newAccessToken = refreshRes.data.accessToken
                 tokenStorage.set(newAccessToken)
+
+                // // 🔥 WebSocket 재연결 (새 JWT로 CONNECT)
+                // await reconnectStomp()
+                // window.location.reload()
 
                 refreshQueue.forEach(p => p.resolve(newAccessToken))
                 refreshQueue = []
