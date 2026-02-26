@@ -3,7 +3,6 @@ resource "aws_elasticache_subnet_group" "this" {
   subnet_ids = var.subnet_ids
 }
 
-#Redis replication group
 resource "aws_elasticache_replication_group" "this" {
   replication_group_id = "${var.environment}-redis"
   description = "Redis replication group"
@@ -11,13 +10,12 @@ resource "aws_elasticache_replication_group" "this" {
   engine_version = "6.x"
   node_type = "cache.t4g.micro"
 
-  number_cache_clusters = 1
   automatic_failover_enabled = false
   multi_az_enabled = false
+  replicas_per_node_group = 0
 
   subnet_group_name = aws_elasticache_subnet_group.this.name
   security_group_ids = [var.redis_sg_id]
-
   port = 6379
 }
 
