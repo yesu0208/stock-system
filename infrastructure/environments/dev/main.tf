@@ -53,6 +53,7 @@ module "ecs" {
   secret_key = var.secret_key
   ws_url = var.ws_url
   image_tag       = var.image_tag
+  fe_url = "https://${module.frontend.frontend_cloudfront_url}"
 }
 
 module "alb" {

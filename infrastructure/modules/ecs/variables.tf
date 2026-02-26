@@ -62,3 +62,7 @@ variable "image_tag" {
    type        = string
    description = "Docker image tag for ECS task"
 }
+
+variable "fe_url" {
+   type = string
+}

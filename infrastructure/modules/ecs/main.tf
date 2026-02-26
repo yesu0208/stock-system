@@ -88,6 +88,10 @@ resource "aws_ecs_task_definition" "this" {
         {
           name = "WS_URL"
           value = var.ws_url
+        },
+        {
+          name  = "FE_URL"
+          value = var.fe_url
         }
       ]
       logConfiguration = {
