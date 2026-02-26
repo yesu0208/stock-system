@@ -1,0 +1,50 @@
+name: Terraform CI
+
+on:
+  push:
+    paths:
+      - 'infrastructure/**'
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+
+jobs:
+  terraform-ci:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: infrastructure/environments/dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init (no backend)
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="db_username=${{ secrets.DB_USERNAME }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -var="db_name=${{ secrets.DB_NAME }}" \
+            -var="fe_url=${{ secrets.FE_URL }}" \
+            -var="cloudfront_acm_arn=${{ secrets.CLOUDFRONT_ACM_ARN }}" \
+            -var="alb_acm_arn=${{ secrets.ALB_ACM_ARN }}" \
+            -var="app_key=${{ secrets.APP_KEY }}" \
+            -var="app_secret=${{ secrets.APP_SECRET }}" \
+            -var="approval_key_url=${{ secrets.APPROVAL_KEY_URL }}" \
+            -var="secret_key=${{ secrets.SECRET_KEY }}" \
+            -var="ws_url=${{ secrets.WS_URL }}"
