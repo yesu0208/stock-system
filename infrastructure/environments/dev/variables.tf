@@ -67,3 +67,15 @@ variable "image_tag" {
   type    = string
   default = "latest"
 }
+
+variable "fe_url" {
+  type = string
+}
+
+variable "cloudfront_acm_arn" {
+  type = string
+}
+
+variable "alb_acm_arn" {
+  type = string
+}

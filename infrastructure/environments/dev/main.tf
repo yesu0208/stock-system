@@ -53,7 +53,7 @@ module "ecs" {
   secret_key = var.secret_key
   ws_url = var.ws_url
   image_tag       = var.image_tag
-  fe_url = "https://${module.frontend.frontend_cloudfront_url}"
+  fe_url = var.fe_url
 }
 
 module "alb" {
@@ -62,9 +62,11 @@ module "alb" {
   vpc_id          = module.vpc.vpc_id
   public_subnets  = module.vpc.public_subnets
   alb_sg_id = module.security.alb_sg_id
+  alb_acm_certificate_arn = var.alb_acm_arn
 }
 
 module "frontend" {
   source = "../../modules/frontend"
   environment = var.environment
+  acm_certificate_arn = var.cloudfront_acm_arn
 }
