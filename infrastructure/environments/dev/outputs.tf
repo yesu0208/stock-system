@@ -42,3 +42,11 @@ output "alb_dns" {
   description = "DNS name of ALB for frontend/backend access"
   value       = module.alb.alb_dns
 }
+
+output "frontend_s3_bucket" {
+  value = module.frontend.frontend_s3_bucket
+}
+
+output "frontend_cloudfront_url" {
+  value = module.frontend.frontend_cloudfront_url
+}

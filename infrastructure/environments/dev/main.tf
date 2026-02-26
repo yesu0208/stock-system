@@ -55,3 +55,8 @@ module "alb" {
   public_subnets  = module.vpc.public_subnets
   alb_sg_id = module.security.alb_sg_id
 }
+
+module "frontend" {
+  source = "../../modules/frontend"
+  environment = var.environment
+}
