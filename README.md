@@ -1,5 +1,7 @@
 # 모의투자 시스템 (Stock-System)
 
+## 개요/로직
+
 실제 시장을 기반으로 하는 모의투자 시스템입니다.
 모의투자를 시작하기 위해서 회원가입이 필요하며,
 회원가입 이후 5억의 모의투자금이 지급됩니다.
@@ -25,6 +27,62 @@
 모의투자 시스템의 상세한 로직은 아래 Issue에서 확인 가능합니다.
 - #19 10. 모의투자의 기본적인 로직
 - #68 35. 동시호가 체결 로직
+
+## 개발 환경
+- Intellij IDEA
+- Visual Studio Code
+
+## 기술 세부 스택
+### Backend
+- JAVA 21
+- Gradle 8.14.3
+- Spring Boot 4.0.1
+
+#### Database & Cache
+- MySQL (Production)
+- H2 Database (Development)
+- Redis (Cache / Real-time)
+
+#### ORM
+- Spring Data JPA
+- Hibernate
+
+#### Security
+- Spring Security
+- JJWT (JWT Authentication)
+
+#### Real-time Communication
+- Spring WebSocket
+
+#### Validation
+- Spring Validation (JSR-380)
+
+#### Monitoring
+- Spring Boot Actuator
+
+#### Dev Tools
+- Lombok
+- Spring Boot DevTools
+
+#### Testing
+- JUnit Platform
+- Spring Boot Test (JPA, Security, Web, Validation, WebSocket)
+
+### Frontend
+- React
+- Vite
+
+### CI/CD
+- Github Actions
+- Terraform
+- AWS
+
+### Tools
+- MySQL Workbench 8.0 CE
+- Postman
+- Git
+- GitKraken
+- Docker
 
 ## AWS 배포 구조 (+Terraform IaC)
 
