@@ -72,6 +72,9 @@
 - React
 - Vite
 
+아래의 Issue에서 해당 기술스택을 채택하게 된 배경을 확인할 수 있습니다.
+- #80 40. FE 초기 세팅(React + Vite + TypeScript), Monorepo 구성
+
 ### 3. CI/CD
 - Github Actions
 - Terraform
