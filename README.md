@@ -25,3 +25,6 @@
 모의투자 시스템의 상세한 로직은 아래 Issue에서 확인 가능합니다.
 - #19 10. 모의투자의 기본적인 로직
 - #68 35. 동시호가 체결 로직
+
+## AWS 배포 구조
+<img width="1137" height="617" alt="1773816372650" src="https://github.com/user-attachments/assets/7f04a61e-43ff-42b9-b868-2d58890b90c9" />
