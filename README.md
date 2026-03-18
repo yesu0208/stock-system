@@ -26,5 +26,8 @@
 - #19 10. 모의투자의 기본적인 로직
 - #68 35. 동시호가 체결 로직
 
-## AWS 배포 구조
+## AWS 배포 구조 (+Terraform IaC)
+
+다음과 같은 배포구조를 채택하게 된 배경은 아래 Issue에서 확인할 수 있습니다.
+- #111 52. AWS(+Terraform IaC) 배포 채택
 <img width="1137" height="617" alt="1773816372650" src="https://github.com/user-attachments/assets/7f04a61e-43ff-42b9-b868-2d58890b90c9" />
