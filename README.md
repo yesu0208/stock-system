@@ -33,7 +33,7 @@
 - Visual Studio Code
 
 ## 기술 세부 스택
-### Backend
+### 1. Backend
 - JAVA 21
 - Gradle 8.14.3
 - Spring Boot 4.0.1
@@ -68,16 +68,16 @@
 - JUnit Platform
 - Spring Boot Test (JPA, Security, Web, Validation, WebSocket)
 
-### Frontend
+### 2. Frontend
 - React
 - Vite
 
-### CI/CD
+### 3. CI/CD
 - Github Actions
 - Terraform
 - AWS
 
-### Tools
+### 4. Tools
 - MySQL Workbench 8.0 CE
 - Postman
 - Git
