@@ -26,9 +26,8 @@
 
 모의투자 시스템의 상세한 로직은 아래 Issue에서 확인 가능합니다.
 
-- #19 10. 모의투자의 기본적인 로직
-- [#19](https://github.com/yesu0208/stock-system/issues/19)
-- #68 35. 동시호가 체결 로직
+- [#19](https://github.com/yesu0208/stock-system/issues/19) 10. 모의투자의 기본적인 로직
+- [#68](https://github.com/yesu0208/stock-system/issues/68) 35. 동시호가 체결 로직
 
 설계 및 제작 기간은 2026년 1월 ~ 2026년 2월이며, 설계부터 구현(풀스택), 배포까지 100% 기여하였습니다.
 
@@ -77,7 +76,7 @@
 - Vite
 
 아래의 Issue에서 해당 기술스택을 채택하게 된 배경을 확인할 수 있습니다.
-- #80 40. FE 초기 세팅(React + Vite + TypeScript), Monorepo 구성
+- [#80](https://github.com/yesu0208/stock-system/issues/80) 40. FE 초기 세팅(React + Vite + TypeScript), Monorepo 구성
 
 ### 3. CI/CD
 - Github Actions
@@ -94,5 +93,5 @@
 ## AWS 배포 구조 (+Terraform IaC)
 
 다음과 같은 배포구조를 채택하게 된 배경은 아래 Issue에서 확인할 수 있습니다.
-- #111 52. AWS(+Terraform IaC) 배포 채택
+- [#111](https://github.com/yesu0208/stock-system/issues/111) 52. AWS(+Terraform IaC) 배포 채택
 <img width="1137" height="617" alt="1773816372650" src="https://github.com/user-attachments/assets/7f04a61e-43ff-42b9-b868-2d58890b90c9" />
