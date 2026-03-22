@@ -1526,9 +1526,12 @@ export default function TradePanel({
 
                                 <div style={styles.divider} />
 
+                                <h4 style={{ color: '#AAA', marginTop: '0px', marginBottom: '8px' }}>
+                                    실시간 주문 목록
+                                </h4>
+
                                 {/* 주문 목록 */}
                                 <div className="ordersSection" style={styles.ordersSection}>
-                                    <h4 style={{ color: '#AAA', marginBottom: '8px' }}>실시간 주문 목록</h4>
 
                                     {sortedOrders.length === 0 ? (
                                         <div style={styles.emptyCenter}>주문 내역 없음</div>
@@ -1784,12 +1787,12 @@ export default function TradePanel({
                                 </div>
                                 <div style={styles.divider} />
 
+                                <h4 style={{ color: '#AAA', marginTop: '0px', marginBottom: '8px' }}>
+                                    실시간 자동주문 목록
+                                </h4>
+
                                 {/* 자동주문 목록 (스크롤 컨테이너 추가) */}
                                 <div className="ordersSection" style={styles.ordersSection}>
-                                    <h4 style={{ color: '#AAA', marginBottom: '8px' }}>
-                                        실시간 자동주문 목록
-                                    </h4>
-
                                     {sortedAutoOrders.length === 0 ? (
                                         <div style={styles.emptyCenter}>
                                             자동주문 내역 없음
