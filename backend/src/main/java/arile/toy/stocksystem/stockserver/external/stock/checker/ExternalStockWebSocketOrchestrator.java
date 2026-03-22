@@ -26,8 +26,8 @@ public class ExternalStockWebSocketOrchestrator {
     public void onApplicationReady() {
         if (marketTimeChecker.isMarketOpenNow()) {
             log.info("Server started during market hours");
-            connectAndSubscribeIfNeeded();
             marketPhaseService.setScheduledMarkets();
+            connectAndSubscribeIfNeeded();
         } else {
             log.info("Market closed at startup. Skip connect.");
             marketPhaseService.closeAllMarkets();
