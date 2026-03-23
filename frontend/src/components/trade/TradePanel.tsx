@@ -626,7 +626,7 @@ export default function TradePanel({
                         >
                             {data.orderPrice.toLocaleString()}원으로 {data.orderType === 'BUY' ? '매수' : '매도'}
                         </span>{' '}
-                            완료되었습니다.
+                            주문 완료되었습니다.
                         </p>
                     </div>
                 ),
