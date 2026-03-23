@@ -1070,9 +1070,11 @@ export default function TradePanel({
                         padding: '4px 10px',     // 글씨 주변 여백
                         borderRadius: '6px',
                         backgroundColor: (() => {
+                            const day = now.getDay();
                             const hour = now.getHours();
                             const minute = now.getMinutes();
-                            if ((hour === 8 && minute >= 50) || (hour === 9 && minute < 0)) return '#4F9DFF'; // Opening
+                            if (day === 0 || day === 6) return '#9E9E9E';
+                            if ((hour === 8 && minute >= 50)) return '#4F9DFF'; // Opening
                             if ((hour > 9 && hour < 15) || (hour === 9 && minute >= 0) || (hour === 15 && minute < 20)) return '#2E7D32'; // Open
                             if (hour === 15 && minute >= 20 && minute < 30) return '#4F9DFF'; // Closing
                             return '#9E9E9E'; // Closed
@@ -1084,9 +1086,11 @@ export default function TradePanel({
                     }}
                 >
                     {(() => {
+                        const day = now.getDay();
                         const hour = now.getHours();
                         const minute = now.getMinutes();
-                        if ((hour === 8 && minute >= 50) || (hour === 9 && minute < 0)) return 'Opening (8:50~9:00)';
+                        if (day === 0 || day === 6) return "CLOSED";
+                        if ((hour === 8 && minute >= 50)) return 'Opening (8:50~9:00)';
                         if ((hour > 9 && hour < 15) || (hour === 9 && minute >= 0) || (hour === 15 && minute < 20)) return 'Open (9:00~15:20)';
                         if (hour === 15 && minute >= 20 && minute < 30) return 'Closing (15:20~15:30)';
                         return 'Closed';
