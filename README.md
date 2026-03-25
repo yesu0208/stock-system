@@ -90,8 +90,8 @@
 - GitKraken
 - Docker
 
-## 확장성과 트레픽 분산을 고려한 설계(BFF Server/Stock Server 분리 가능)
-- [#22](https://github.com/yesu0208/stock-system/issues/22) 12. 확장성과 트레픽 분산을 고려한 설계
+## 확장성과 트래픽 분산을 고려한 설계(BFF Server/Stock Server 분리 가능)
+- [#22](https://github.com/yesu0208/stock-system/issues/22) 12. 확장성과 트래픽 분산을 고려한 설계
 - [#31](https://github.com/yesu0208/stock-system/issues/31) 17. 주문 서비스 구현(기본 기능)
 
 
