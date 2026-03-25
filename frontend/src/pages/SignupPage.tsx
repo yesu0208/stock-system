@@ -68,10 +68,10 @@ export default function SignupPage() {
     const lowerRegex = /[a-z]/
     const numberRegex = /[0-9]/
     const specialRegex = /[!@#$%^&*]/
-    const allowedUsernameRegex = /^[a-z0-9_]+$/
+    const allowedUsernameRegex = /^[a-z0-9]+$/
 
     const handleUsernameChange = (value: string) => {
-        const filtered = value.replace(/[^a-z0-9_]/g, '')
+        const filtered = value.replace(/[^a-z0-9]/g, '')
         setUsername(filtered)
         setUsernameLength(filtered.length >= 4 && filtered.length <= 20)
         setUsernameChars(allowedUsernameRegex.test(filtered))
@@ -88,8 +88,9 @@ export default function SignupPage() {
     }
 
     const handlePasswordConfirmChange = (value: string) => {
-        setPasswordConfirm(value)
-        setPasswordsMatch(password === value)
+        const filtered = value.replace(/[^a-z0-9!@#$%^&*]/g, '')
+        setPasswordConfirm(filtered)
+        setPasswordsMatch(password === filtered)
     }
 
     const usernameValid = usernameLength && usernameChars
@@ -171,18 +172,20 @@ export default function SignupPage() {
                                 handleUsernameChange(e.target.value)
                             }
                         />
-                        <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+                        <ul style={{ listStyle: 'none', paddingLeft: 0, margin: '4px 0' }}>
                             <Condition met={usernameLength} text="4~20자" />
                             <Condition
                                 met={usernameChars}
-                                text="소문자·숫자·_만 사용"
+                                text="영어 소문자·숫자만 사용"
                             />
-                            {username.length > 0 && (
-                                <Condition
-                                    met={!usernameExists}
-                                    text="중복되지 않은 아이디"
-                                />
-                            )}
+                            <Condition
+                                met={username.length > 0 && !usernameExists}
+                                text={
+                                    username.length === 0
+                                        ? '아이디 입력'
+                                        : '중복되지 않은 아이디'
+                                }
+                            />
                         </ul>
 
                         {/* 비밀번호 */}
@@ -195,7 +198,7 @@ export default function SignupPage() {
                                 handlePasswordChange(e.target.value)
                             }
                         />
-                        <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+                        <ul style={{ listStyle: 'none', paddingLeft: 0, margin: '4px 0' }}>
                             <Condition met={passLength} text="8자 이상" />
                             <Condition met={passLower} text="소문자 포함" />
                             <Condition met={passNumber} text="숫자 포함" />
@@ -215,14 +218,16 @@ export default function SignupPage() {
                                 handlePasswordConfirmChange(e.target.value)
                             }
                         />
-                        {passwordConfirm.length > 0 && (
-                            <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
-                                <Condition
-                                    met={passwordsMatch}
-                                    text="비밀번호 일치"
-                                />
-                            </ul>
-                        )}
+                        <ul style={{ listStyle: 'none', paddingLeft: 0, margin: '4px 0' }}>
+                            <Condition
+                                met={passwordConfirm.length > 0 && passwordsMatch}
+                                text={
+                                    passwordConfirm.length === 0
+                                        ? '비밀번호 확인 입력'
+                                        : '비밀번호 일치'
+                                }
+                            />
+                        </ul>
 
                         {error && <p style={styles.error}>{error}</p>}
 
@@ -303,7 +308,7 @@ const modalStyles = {
 const styles = {
     card: {
         width: '360px',
-        padding: '40px',
+        padding: '14px 40px',
         borderRadius: '12px',
         backgroundColor: '#1E1E1E',
         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
@@ -332,7 +337,7 @@ const styles = {
         fontWeight: 500,
         backgroundColor: '#4F9DFF',
         color: '#FFFFFF',
-        marginTop: '12px',
+        marginTop: '2px',
     },
     error: {
         color: '#FF6347',
@@ -344,7 +349,8 @@ const styles = {
         textAlign: 'center' as const,
         fontSize: '13px',
         color: '#AAAAAA',
-        marginTop: '12px',
+        marginTop: '' +
+            '6px',
     },
     loginLink: {
         color: '#4F9DFF',
