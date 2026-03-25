@@ -166,6 +166,9 @@ export default function TradePanel({
                             }}
                         >
                     {orderResult.orderType === 'BUY' ? '매수' : '매도'}
+                </span>{' '}
+                        <span style={{ color: '#AAA'}}>
+                        주문
                 </span>
                     </div>
                 ) : (
@@ -210,13 +213,16 @@ export default function TradePanel({
                             style={{
                                 color:
                                     cancelResult.orderType === 'BUY'
-                                        ? '#FF6347' // 매수 빨강
-                                        : '#4F9DFF', // 매도 파랑
+                                        ? '#FF6347'
+                                        : '#4F9DFF',
                                 fontWeight: 600,
                             }}
                         >
-                    {cancelResult.orderType === 'BUY' ? '매수 취소' : '매도 취소'}
-                </span>
+                        {cancelResult.orderType === 'BUY' ? '매수' : '매도'}
+                </span>{' '}
+                        <span style={{ color: '#AAA' }}>
+                            주문 취소
+                        </span>
 
                     </div>
                 ) : (
@@ -262,13 +268,16 @@ export default function TradePanel({
                             style={{
                                 color:
                                     autoCancelResult.autoOrderType === 'BUY'
-                                        ? '#FF6347' // 매수 빨강
-                                        : '#4F9DFF', // 매도 파랑
+                                        ? '#FF6347'
+                                        : '#4F9DFF',
                                 fontWeight: 600,
                             }}
                         >
-                    {autoCancelResult.autoOrderType === 'BUY' ? '자동 매수 취소' : '자동 매도 취소'}
-                </span>
+                            {autoCancelResult.autoOrderType === 'BUY' ? '자동 매수' : '자동 매도'}
+                        </span>{' '}
+                        <span style={{ color: '#AAA' }}>
+                            주문 취소
+                        </span>
 
                     </div>
                 ) : (
@@ -371,16 +380,18 @@ export default function TradePanel({
                             style={{
                                 color:
                                     autoOrderResult.autoOrderType === 'BUY'
-                                        ? '#FF6347' // 자동 매수
-                                        : '#4F9DFF', // 자동 매도
+                                        ? '#FF6347'
+                                        : '#4F9DFF',
                                 fontWeight: 600,
-                                marginRight: '6px',
                             }}
                         >
-                    {autoOrderResult.autoOrderType === 'BUY'
-                        ? '자동 매수'
-                        : '자동 매도'}
-                </span>
+                        {autoOrderResult.autoOrderType === 'BUY'
+                            ? '자동 매수'
+                            : '자동 매도'}
+                    </span>{' '}
+                                            <span style={{ color: '#AAA' }}>
+                        주문
+                    </span>
                     </div>
                 ) : (
                     `❌ [자동주문 실패] ${autoOrderResult.errorMessage}`
