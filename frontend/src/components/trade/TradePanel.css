@@ -5,6 +5,18 @@
     margin: 0;
 }
 
+body {
+    user-select: none !important;
+}
+
+* {
+    user-select: none !important;
+}
+
+input, textarea {
+    user-select: text !important;
+}
+
 /* Firefox */
 .no-spinner[type=number] {
     -moz-appearance: textfield;
