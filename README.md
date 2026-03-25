@@ -92,7 +92,14 @@
 
 ## 확장성과 트래픽 분산을 고려한 설계(BFF Server/Stock Server 분리 가능)
 - [#22](https://github.com/yesu0208/stock-system/issues/22) 12. 확장성과 트래픽 분산을 고려한 설계
+<img width="962" height="416" alt="화면 캡처 2026-03-25 144143" src="https://github.com/user-attachments/assets/64f69772-1f29-47c1-93a9-8f62e9b8825e" />
+
 - [#31](https://github.com/yesu0208/stock-system/issues/31) 17. 주문 서비스 구현(기본 기능)
+<img width="990" height="577" alt="화면 캡처 2026-03-25 144156" src="https://github.com/user-attachments/assets/eae7a038-3483-40c6-a8bb-a6de7bbf7a9f" />
+
+
+## System Architecture
+<img width="937" height="493" alt="화면 캡처 2026-03-25 123106" src="https://github.com/user-attachments/assets/390d585e-785b-4800-ba6c-6b22de1cf43e" />
 
 
 ## AWS 배포 구조 (+Terraform IaC)
