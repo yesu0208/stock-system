@@ -937,13 +937,21 @@ export default function TradePanel({
                     )}
                 </Modal>
             )}
-            {/* 토스트 / 시계 */}
+            {/* 토스트 / 시계 + 전체 글래스 */}
             <div
                 style={{
                     ...styles.toastContainer,
                     display: 'flex',
-                    flexDirection: 'column', // 위에서 아래로 쌓기
-                    alignItems: 'center',    // 가로 중앙 정렬
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    width: '100%',
+                    padding: '10px 0',
+                    borderRadius: '12px',
+
+                    background: 'linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+                    backdropFilter: 'blur(3px)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
                 }}
             >
                 {/* 토스트 또는 시계 */}
@@ -952,6 +960,7 @@ export default function TradePanel({
                         style={{
                             ...styles.toast,
                             backgroundColor: toast.responseType === 'SUCCESS' ? '#2A2A2A' : '#C62828',
+                            marginBottom: '6px',
                         }}
                     >
                         {toast.message}
@@ -960,16 +969,17 @@ export default function TradePanel({
                     <div
                         style={{
                             ...styles.toast,
-                            backgroundColor: '#2A2A2A', // 시계 배경색
+                            backgroundColor: '#2A2A2A',
                             color: '#FFF',
                             padding: '10px 16px',
                             borderRadius: '8px',
                             fontWeight: 'bold',
                             textAlign: 'center',
-                            minWidth: '180px',
+                            width: '100%',
+                            maxWidth: '640px',
+                            marginBottom: '6px',
                         }}
                     >
-                        {/* 현재 시각 */}
                         <div>
                             {now.toLocaleDateString('ko-KR', {
                                 year: 'numeric',
@@ -982,10 +992,10 @@ export default function TradePanel({
                     </div>
                 )}
 
-                {/* 장 타이머 정보 (항상 표시, 15:40 이후 제외) */}
+                {/* 장 타이머 */}
                 {(() => {
-                    const day = now.getDay(); // 0:일, 6:토
-                    if (day === 0 || day === 6) return null; // 주말 제외
+                    const day = now.getDay();
+                    if (day === 0 || day === 6) return null;
 
                     const getTargetTime = (h: number, m: number) => {
                         const t = new Date(now);
@@ -998,16 +1008,13 @@ export default function TradePanel({
                         if (diff <= 0) return '0분 0초';
 
                         const totalSec = Math.floor(diff / 1000);
-
                         const hour = Math.floor(totalSec / 3600);
                         const min = Math.floor((totalSec % 3600) / 60);
                         const sec = totalSec % 60;
 
-                        if (hour > 0) {
-                            return `${hour}시간 ${min}분 ${sec}초`;
-                        }
-
-                        return `${min}분 ${sec}초`;
+                        return hour > 0
+                            ? `${hour}시간 ${min}분 ${sec}초`
+                            : `${min}분 ${sec}초`;
                     };
 
                     const hour = now.getHours();
@@ -1016,55 +1023,37 @@ export default function TradePanel({
                     let mainText = '';
                     let subText = '';
 
-                    // 08:00 ~ 08:50
-                    if ((hour === 8 && minute >= 0 && minute < 50)) {
-                        mainText = `⏳ 장 시작(09:00)까지 ${diffText(getTargetTime(9, 0))} ⏳`;
-                        subText = `동시호가(08:50)까지 ${diffText(getTargetTime(8, 50))}`;
-                    }
-
-                    // 08:50 ~ 09:00
-                    else if (hour === 8 && minute >= 50) {
-                        mainText = `⏳ 장 시작(09:00)까지 ${diffText(getTargetTime(9, 0))} ⏳`;
+                    if (hour === 8 && minute < 50) {
+                        mainText = `⏳ 장 시작까지 ${diffText(getTargetTime(9, 0))} ⏳`;
+                        subText = `동시호가까지 ${diffText(getTargetTime(8, 50))}`;
+                    } else if (hour === 8 && minute >= 50) {
+                        mainText = `⏳ 장 시작까지 ${diffText(getTargetTime(9, 0))} ⏳`;
                         subText = `동시호가 진행중`;
-                    }
-
-                    // 09:00 ~ 15:20
-                    else if (
-                        (hour > 9 && hour < 15) ||
-                        (hour === 9) ||
+                    } else if (
+                        (hour >= 9 && hour < 15) ||
                         (hour === 15 && minute < 20)
                     ) {
-                        mainText = `⏳ 장 종료(15:30)까지 ${diffText(getTargetTime(15, 30))} ⏳`;
-                        subText = `동시호가(15:20)까지 ${diffText(getTargetTime(15, 20))}`;
-                    }
-
-                    // 15:20 ~ 15:30
-                    else if (hour === 15 && minute >= 20 && minute < 30) {
-                        mainText = `⏳ 장 종료(15:30)까지 ${diffText(getTargetTime(15, 30))} ⏳`;
+                        mainText = `⏳ 장 종료까지 ${diffText(getTargetTime(15, 30))} ⏳`;
+                        subText = `동시호가까지 ${diffText(getTargetTime(15, 20))}`;
+                    } else if (hour === 15 && minute >= 20 && minute < 30) {
+                        mainText = `⏳ 장 종료까지 ${diffText(getTargetTime(15, 30))} ⏳`;
                         subText = `동시호가 진행중`;
-                    }
-
-                    // 15:30 ~ 15:40
-                    else if (hour === 15 && minute >= 30 && minute < 40) {
-                        mainText = `⏳ ${diffText(getTargetTime(15, 40))} 후에 서버 주문/계좌 정리 ⏳`;
-                    }
-
-                    // 15:40 이후는 표시 안함
-                    else {
+                    } else if (hour === 15 && minute >= 30 && minute < 40) {
+                        mainText = `⏳ ${diffText(getTargetTime(15, 40))} 후 정리 ⏳`;
+                    } else {
                         return null;
                     }
 
                     return (
                         <div
                             style={{
-                                marginTop: '6px',
                                 padding: '6px 10px',
                                 borderRadius: '6px',
                                 backgroundColor: '#333',
                                 color: '#FF6347',
                                 fontSize: '0.8rem',
                                 textAlign: 'center',
-                                lineHeight: '1.4',
+                                marginBottom: '6px',
                             }}
                         >
                             <div>{mainText}</div>
@@ -1073,27 +1062,24 @@ export default function TradePanel({
                     );
                 })()}
 
-
-                {/* 항상 보이는 시장 상태 바 */}
+                {/* 시장 상태 바 */}
                 <div
                     style={{
-                        marginTop: '8px',        // 위쪽과 간격
-                        padding: '4px 10px',     // 글씨 주변 여백
+                        padding: '4px 10px',
                         borderRadius: '6px',
                         backgroundColor: (() => {
                             const day = now.getDay();
                             const hour = now.getHours();
                             const minute = now.getMinutes();
                             if (day === 0 || day === 6) return '#9E9E9E';
-                            if ((hour === 8 && minute >= 50)) return '#4F9DFF'; // Opening
-                            if ((hour > 9 && hour < 15) || (hour === 9 && minute >= 0) || (hour === 15 && minute < 20)) return '#2E7D32'; // Open
-                            if (hour === 15 && minute >= 20 && minute < 30) return '#4F9DFF'; // Closing
-                            return '#9E9E9E'; // Closed
+                            if (hour === 8 && minute >= 50) return '#4F9DFF';
+                            if ((hour >= 9 && hour < 15) || (hour === 15 && minute < 20)) return '#2E7D32';
+                            if (hour === 15 && minute >= 20 && minute < 30) return '#4F9DFF';
+                            return '#9E9E9E';
                         })(),
                         color: '#FFF',
                         fontSize: '0.85rem',
                         fontWeight: 'bold',
-                        whiteSpace: 'nowrap',
                     }}
                 >
                     {(() => {
@@ -1101,9 +1087,9 @@ export default function TradePanel({
                         const hour = now.getHours();
                         const minute = now.getMinutes();
                         if (day === 0 || day === 6) return "CLOSED";
-                        if ((hour === 8 && minute >= 50)) return 'Opening (8:50~9:00)';
-                        if ((hour > 9 && hour < 15) || (hour === 9 && minute >= 0) || (hour === 15 && minute < 20)) return 'Open (9:00~15:20)';
-                        if (hour === 15 && minute >= 20 && minute < 30) return 'Closing (15:20~15:30)';
+                        if (hour === 8 && minute >= 50) return 'Opening';
+                        if ((hour >= 9 && hour < 15) || (hour === 15 && minute < 20)) return 'Open';
+                        if (hour === 15 && minute >= 20 && minute < 30) return 'Closing';
                         return 'Closed';
                     })()}
                 </div>
