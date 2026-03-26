@@ -11,18 +11,15 @@ interface BidListProps {
     bids: BidLevel[]
     tradeTicks?: TradePriceTickMessage[]
     prevClosePrice?: number
+    maxQty?: number
 }
 
 export default function BidList({
                                     bids,
                                     tradeTicks = [],
                                     prevClosePrice = 0,
+                                    maxQty = 0,
                                 }: BidListProps) {
-
-    const maxQty = Math.max(
-        1,
-        ...bids.map(b => Number(b.quantity) || 0)
-    )
 
     // 가격 색상
     const getPriceColor = (price: number) => {
