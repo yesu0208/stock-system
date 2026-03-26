@@ -9,18 +9,16 @@ interface AskListProps {
     asks: PriceLevel[]
     tradeTicks?: TradePriceTickMessage[]
     prevClosePrice?: number
+    maxQty?: number
 }
 
 export default function AskList({
                                     asks,
                                     tradeTicks = [],
                                     prevClosePrice = 0,
+                                    maxQty = 0,
                                 }: AskListProps) {
 
-    const maxQty = Math.max(
-        1,
-        ...asks.map(a => Number(a.quantity) || 0)
-    )
 
     const getPriceColor = (price: number) => {
         if (price > prevClosePrice) return '#FF6347'
