@@ -35,6 +35,12 @@ export default function OrderBook({
     const changeColor =
         change > 0 ? '#FF6347' : change < 0 ? '#4F9DFF' : '#FFF'
 
+    const maxQty = Math.max(
+        1,
+        ...asks.map(a => a.quantity),
+        ...bids.map(b => b.quantity)
+    )
+
     return (
         <div style={styles.wrapper}>
             {!isReady ? (
@@ -60,12 +66,14 @@ export default function OrderBook({
                         asks={asks}
                         tradeTicks={tradeTicks}
                         prevClosePrice={prevClosePrice}
+                        maxQty={maxQty}
                     />
 
                     <BidList
                         bids={bids}
                         tradeTicks={tradeTicks}
                         prevClosePrice={prevClosePrice}
+                        maxQty={maxQty}
                     />
 
                     <div style={styles.footer}>
