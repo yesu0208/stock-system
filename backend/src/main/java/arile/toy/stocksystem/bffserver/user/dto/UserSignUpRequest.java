@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 public record UserSignUpRequest(
         @NotEmpty
         @Size(min = 4, max = 20)
-        @Pattern(regexp = "^[a-z0-9_]+$", message = "아이디는 소문자, 숫자, _만 가능")
+        @Pattern(regexp = "^[a-z0-9]+$", message = "아이디는 소문자, 숫자만 가능")
         String username,
 
         @NotEmpty
