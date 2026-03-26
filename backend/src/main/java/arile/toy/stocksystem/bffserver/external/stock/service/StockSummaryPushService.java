@@ -17,7 +17,7 @@ public class StockSummaryPushService {
     private final SimpMessagingTemplate messagingTemplate;
     private final BffServerRedisStockSummaryRepository bffServerStockSummaryRepository;
 
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedRate = 1000)
     public void pushAll() {
 
         List<BffServerStockSummaryTickMessage> bffServerStockSummaryTickMessages =
