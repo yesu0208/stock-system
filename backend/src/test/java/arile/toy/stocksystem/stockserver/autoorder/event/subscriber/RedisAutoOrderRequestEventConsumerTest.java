@@ -15,8 +15,10 @@ import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.connection.stream.StreamReadOptions;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StreamOperations;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -91,8 +93,18 @@ class RedisAutoOrderRequestEventConsumerTest {
         RecordId recordId = RecordId.of("1-0");
         when(record.getId()).thenReturn(recordId);
 
+        ValueOperations<String, Object> valueOps = mock(ValueOperations.class);
+        StreamOperations<String, Object, Object> streamOps = mock(StreamOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(redisTemplate.opsForStream()).thenReturn(streamOps);
+
         when(streamOps.read(any(Consumer.class), any(StreamReadOptions.class), any()))
                 .thenReturn(List.of(record));
+        when(streamOps.acknowledge(anyString(), anyString(), any(RecordId.class))).thenReturn(1L);
+
+        when(valueOps.get(anyString())).thenReturn(null);
+        when(valueOps.setIfAbsent(anyString(), eq("PROCESSING"), any(Duration.class))).thenReturn(true);
+        doNothing().when(valueOps).set(anyString(), eq("DONE"), any(Duration.class));
 
         when(registry.isClosed("TEST")).thenReturn(false);
 
