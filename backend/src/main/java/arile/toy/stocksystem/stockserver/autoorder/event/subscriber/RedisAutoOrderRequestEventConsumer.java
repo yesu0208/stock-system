@@ -38,7 +38,7 @@ public class RedisAutoOrderRequestEventConsumer {
     private final String consumerName =
             "stock-server" + UUID.randomUUID();
 
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 100)
     public void consume() {
         String streamKey = prefix + "-" + shardIndex;
 
@@ -47,7 +47,7 @@ public class RedisAutoOrderRequestEventConsumer {
                         Consumer.from(group, consumerName),
                         StreamReadOptions.empty()
                                 .count(10)
-                                .block(Duration.ofSeconds(5)),
+                                .block(Duration.ofMillis(100)),
                         StreamOffset.create(streamKey, ReadOffset.lastConsumed())
                 );
 

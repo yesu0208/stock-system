@@ -37,7 +37,7 @@ public class RedisUserCreatedEventConsumer {
         this.group = group;
     }
 
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 100)
     public void consume() {
 
         List<MapRecord<String, Object, Object>> records =
@@ -45,7 +45,7 @@ public class RedisUserCreatedEventConsumer {
                         Consumer.from(group, consumerName),
                         StreamReadOptions.empty()
                                 .count(10)
-                                .block(Duration.ofSeconds(5)),
+                                .block(Duration.ofMillis(100)),
                         StreamOffset.create(streamKey, ReadOffset.lastConsumed())
                 );
 
