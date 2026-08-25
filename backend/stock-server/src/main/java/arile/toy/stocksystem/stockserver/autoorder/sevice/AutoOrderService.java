@@ -116,7 +116,7 @@ public class AutoOrderService {
     }
 
     @Transactional
-    public List<AutoOrderEntity> findAllUntriggeredAutoOrders() {
-        return autoOrderRepository.findAllUntriggered();
+    public List<AutoOrderEntity> findAllUntriggeredAutoOrders(List<String> stockCodes) {
+        return autoOrderRepository.findAllUntriggered(stockCodes);
     }
 }

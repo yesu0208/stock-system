@@ -19,12 +19,12 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
     @Query("select o from OrderEntity o where o.orderId = :orderId")
     Optional<OrderEntity> findByIdForUpdate(@Param("orderId") Long orderId);
 
-    default List<OrderEntity> findAllUnfilled() {
+    default List<OrderEntity> findAllUnfilled(List<String> stockCodes) {
         List<OrderStatus> openStatuses = Arrays.stream(OrderStatus.values())
                 .filter(OrderStatus::isOpen)
                 .toList();
-        return findAllByOrderStatusIn(openStatuses);
+        return findAllByOrderStatusInAndStockCodeIn(openStatuses, stockCodes);
     }
 
-    List<OrderEntity> findAllByOrderStatusIn(List<OrderStatus> statuses);
+    List<OrderEntity> findAllByOrderStatusInAndStockCodeIn(List<OrderStatus> statuses, List<String> stockCodes);
 }

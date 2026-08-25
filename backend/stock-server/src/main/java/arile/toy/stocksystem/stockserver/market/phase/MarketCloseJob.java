@@ -4,6 +4,7 @@ import arile.toy.stocksystem.stockserver.autocancel.service.AutoCancelService;
 import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
 import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderService;
 import arile.toy.stocksystem.stockserver.cancel.service.CancelService;
+import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockProperties;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
 import arile.toy.stocksystem.stockserver.useraccount.service.UserAccountService;
@@ -31,6 +32,7 @@ public class MarketCloseJob {
     private final UserAccountService userAccountService;
     private final UserStockService userStockService;
     private final MarketClosePublisher marketClosePublisher;
+    private final ExternalStockProperties externalStockProperties;
 
     @Scheduled(cron = "0 40 15 * * MON-FRI", zone = "Asia/Seoul")
     public void runMarketCloseJob() {
@@ -43,13 +45,15 @@ public class MarketCloseJob {
         log.info("[MarketCloseJob] market close job started.");
 
         try {
-            List<OrderEntity> unfilledOrders = orderService.findAllUnfilledOrders();
+            List<String> myStockCodes = externalStockProperties.getOpen();
+
+            List<OrderEntity> unfilledOrders = orderService.findAllUnfilledOrders(myStockCodes);
 
             for (OrderEntity order : unfilledOrders) {
                 cancelService.forceCancel(order.getOrderId());
             }
 
-            List<AutoOrderEntity> untriggeredAutoOrders = autoOrderService.findAllUntriggeredAutoOrders();
+            List<AutoOrderEntity> untriggeredAutoOrders = autoOrderService.findAllUntriggeredAutoOrders(myStockCodes);
 
             for (AutoOrderEntity autoOrder : untriggeredAutoOrders) {
                 autoCancelService.forceAutoCancel(autoOrder.getAutoOrderId());

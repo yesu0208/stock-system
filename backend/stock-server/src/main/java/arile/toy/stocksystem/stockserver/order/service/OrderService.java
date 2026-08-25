@@ -98,7 +98,7 @@ public class OrderService {
     }
 
     @Transactional
-    public List<OrderEntity> findAllUnfilledOrders() {
-        return orderRepository.findAllUnfilled();
+    public List<OrderEntity> findAllUnfilledOrders(List<String> stockCodes) {
+        return orderRepository.findAllUnfilled(stockCodes);
     }
 }
