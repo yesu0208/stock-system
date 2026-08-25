@@ -2,7 +2,7 @@ import axios from './axios'
 import { tokenStorage } from '../utils/token'
 import { disconnectStomp } from './stompClient'
 
-export interface SignUpRequest { username: string; password: string }
+export interface SignUpRequest { username: string; nickname: string; password: string } // [수정] nickname 추가
 export interface UserDto { id: number; username: string }
 export interface LoginRequest { username: string; password: string }
 export interface LoginResponse { accessToken: string }
@@ -23,6 +23,12 @@ export async function login(req: LoginRequest): Promise<LoginResponse> {
 // username 중복 체크
 export const checkUsernameAPI = async (username: string): Promise<{ exists: boolean }> => {
     const response = await axios.get(`/users/check-username`, { params: { username } })
+    return response.data
+}
+
+// [신규] nickname 중복 체크
+export const checkNicknameAPI = async (nickname: string): Promise<{ exists: boolean }> => {
+    const response = await axios.get(`/users/check-nickname`, { params: { nickname } })
     return response.data
 }
 

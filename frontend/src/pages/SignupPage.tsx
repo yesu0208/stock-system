@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
-import { signUp, checkUsernameAPI } from '../api/auth'
+import { signUp, checkUsernameAPI, checkNicknameAPI } from '../api/auth' // [수정] checkNicknameAPI 추가
 import Modal from '../components/Modal'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
@@ -30,6 +30,7 @@ export default function SignupPage() {
     const navigate = useNavigate()
 
     const [username, setUsername] = useState('')
+    const [nickname, setNickname] = useState('') // [신규] 닉네임 상태
     const [password, setPassword] = useState('')
     const [passwordConfirm, setPasswordConfirm] = useState('')
     const [error, setError] = useState('')
@@ -59,6 +60,11 @@ export default function SignupPage() {
     const [usernameChars, setUsernameChars] = useState(false)
     const [usernameExists, setUsernameExists] = useState(false)
 
+    // [신규] 닉네임 유효성 상태
+    const [nicknameLength, setNicknameLength] = useState(false)
+    const [nicknameChars, setNicknameChars] = useState(false)
+    const [nicknameExists, setNicknameExists] = useState(false)
+
     const [passLength, setPassLength] = useState(false)
     const [passLower, setPassLower] = useState(false)
     const [passNumber, setPassNumber] = useState(false)
@@ -69,12 +75,21 @@ export default function SignupPage() {
     const numberRegex = /[0-9]/
     const specialRegex = /[!@#$%^&*]/
     const allowedUsernameRegex = /^[a-z0-9]+$/
+    const allowedNicknameRegex = /^[a-z0-9가-힣]+$/ // [신규] 닉네임 허용 문자: 영소문자, 한글, 숫자
 
     const handleUsernameChange = (value: string) => {
         const filtered = value.replace(/[^a-z0-9]/g, '')
         setUsername(filtered)
         setUsernameLength(filtered.length >= 4 && filtered.length <= 20)
         setUsernameChars(allowedUsernameRegex.test(filtered))
+    }
+
+    // [신규] 닉네임 입력 처리 (영소문자, 한글, 숫자만 허용)
+    const handleNicknameChange = (value: string) => {
+        const filtered = value.replace(/[^a-z0-9가-힣]/g, '')
+        setNickname(filtered)
+        setNicknameLength(filtered.length >= 2 && filtered.length <= 10)
+        setNicknameChars(allowedNicknameRegex.test(filtered))
     }
 
     const handlePasswordChange = (value: string) => {
@@ -94,6 +109,7 @@ export default function SignupPage() {
     }
 
     const usernameValid = usernameLength && usernameChars
+    const nicknameValid = nicknameLength && nicknameChars // [신규]
     const passwordValid = passLength && passLower && passNumber && passSpecial
 
     // 아이디 중복 체크
@@ -116,18 +132,43 @@ export default function SignupPage() {
         return () => clearTimeout(handler)
     }, [username, usernameValid])
 
+    // [신규] 닉네임 중복 체크
+    useEffect(() => {
+        if (!nickname || !nicknameValid) {
+            setTimeout(() => setNicknameExists(false), 0)
+            return
+        }
+
+        const handler = setTimeout(async () => {
+            try {
+                const res = await checkNicknameAPI(nickname)
+                setNicknameExists(res.exists)
+            } catch {
+                setNicknameExists(false)
+            }
+        }, 500)
+
+        return () => clearTimeout(handler)
+    }, [nickname, nicknameValid])
+
     // 회원가입
     const handleSignup = async () => {
         setError('')
 
-        if (!username || !password || !passwordConfirm)
-            return setError('아이디와 비밀번호를 입력하세요.')
+        if (!username || !nickname || !password || !passwordConfirm) // [수정] nickname 체크 추가
+            return setError('아이디, 닉네임, 비밀번호를 입력하세요.')
 
         if (!usernameValid)
             return setError('아이디 조건을 확인하세요.')
 
         if (usernameExists)
             return setError('이미 존재하는 아이디입니다.')
+
+        if (!nicknameValid) // [신규]
+            return setError('닉네임 조건을 확인하세요.')
+
+        if (nicknameExists) // [신규]
+            return setError('이미 존재하는 닉네임입니다.')
 
         if (!passwordValid)
             return setError('비밀번호 조건을 확인하세요.')
@@ -136,7 +177,7 @@ export default function SignupPage() {
             return setError('비밀번호가 일치하지 않습니다.')
 
         try {
-            await signUp({ username, password })
+            await signUp({ username, nickname, password }) // [수정] nickname 전달
             openModal()
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
@@ -184,6 +225,31 @@ export default function SignupPage() {
                                     username.length === 0
                                         ? '아이디 입력'
                                         : '중복되지 않은 아이디'
+                                }
+                            />
+                        </ul>
+
+                        {/* [신규] 닉네임 */}
+                        <input
+                            style={styles.input}
+                            placeholder="닉네임"
+                            value={nickname}
+                            onChange={(e) =>
+                                handleNicknameChange(e.target.value)
+                            }
+                        />
+                        <ul style={{ listStyle: 'none', paddingLeft: 0, margin: '4px 0' }}>
+                            <Condition met={nicknameLength} text="2~10자" />
+                            <Condition
+                                met={nicknameChars}
+                                text="영어 소문자·한글·숫자만 사용"
+                            />
+                            <Condition
+                                met={nickname.length > 0 && !nicknameExists}
+                                text={
+                                    nickname.length === 0
+                                        ? '닉네임 입력'
+                                        : '중복되지 않은 닉네임'
                                 }
                             />
                         </ul>
@@ -237,6 +303,8 @@ export default function SignupPage() {
                                 opacity:
                                     usernameValid &&
                                     !usernameExists &&
+                                    nicknameValid && // [수정]
+                                    !nicknameExists && // [수정]
                                     passwordValid &&
                                     passwordsMatch
                                         ? 1
@@ -244,6 +312,8 @@ export default function SignupPage() {
                                 cursor:
                                     usernameValid &&
                                     !usernameExists &&
+                                    nicknameValid && // [수정]
+                                    !nicknameExists && // [수정]
                                     passwordValid &&
                                     passwordsMatch
                                         ? 'pointer'
@@ -253,6 +323,8 @@ export default function SignupPage() {
                             disabled={
                                 !usernameValid ||
                                 usernameExists ||
+                                !nicknameValid || // [수정]
+                                nicknameExists || // [수정]
                                 !passwordValid ||
                                 !passwordsMatch
                             }
