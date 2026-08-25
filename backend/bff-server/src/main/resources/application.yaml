@@ -1,0 +1,79 @@
+debug: false
+
+frontend:
+  url: ${FE_URL}
+
+jwt:
+  secret-key: ${SECRET_KEY}
+
+logging:
+  level:
+    arile.toy.stocksystem: debug
+    org.springframework.web.service: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
+
+  streams:
+    user:
+      key: user-events
+
+    order:
+      prefix: order-events
+      shard-count: 1
+
+    cancel:
+      prefix: cancel-events
+      shard-count: 1
+
+    auto-order:
+      prefix: auto-order-events
+      shard-count: 1
+
+    auto-cancel:
+      prefix: auto-cancel-events
+      shard-count: 1
+
+spring:
+  application.name: bff-server
+  datasource:
+    url: ${LOCAL_DB_URL}
+    username: ${LOCAL_DB_USER}
+    password: ${LOCAL_DB_PW}
+  jpa:
+    open-in-view: false
+    defer-datasource-initialization: true
+    hibernate.ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+  sql.init.mode: always
+
+---
+
+jwt:
+  secret-key: eDlsi387fhsEucu7xhsEehd8fys7ejcSdFeDF92w738lfskc8FejfDB38f==
+
+frontend:
+  url: test-fe-url
+
+spring:
+  config.activate.on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE
+    username:
+    password:
+
+redis:
+  host: localhost
+  port: 6379
