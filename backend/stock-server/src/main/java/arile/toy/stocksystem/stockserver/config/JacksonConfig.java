@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.global.config;
+package arile.toy.stocksystem.stockserver.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

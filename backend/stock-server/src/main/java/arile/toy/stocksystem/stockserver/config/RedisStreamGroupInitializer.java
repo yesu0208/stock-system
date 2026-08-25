@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.global.config;
+package arile.toy.stocksystem.stockserver.config;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

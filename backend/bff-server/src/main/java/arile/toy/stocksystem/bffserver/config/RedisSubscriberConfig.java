@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.global.config;
+package arile.toy.stocksystem.bffserver.config;
 
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisStockSummaryEventSubscriber;
 import arile.toy.stocksystem.bffserver.market.phase.RedisMarketCloseEventSubscriber;
