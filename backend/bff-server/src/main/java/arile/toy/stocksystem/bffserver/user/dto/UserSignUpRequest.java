@@ -12,6 +12,11 @@ public record UserSignUpRequest(
         String username,
 
         @NotEmpty
+        @Size(min = 2, max = 10)
+        @Pattern(regexp = "^[a-z0-9가-힣]+$", message = "닉네임은 영어 소문자, 한글, 숫자만 가능")
+        String nickname,
+
+        @NotEmpty
         @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다")
         @Pattern(
                 regexp = "^(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*]).+$",
