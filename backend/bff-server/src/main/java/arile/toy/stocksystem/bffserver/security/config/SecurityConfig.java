@@ -53,6 +53,8 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/users/check-username")
                                 .permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/*/users/check-nickname")
+                                .permitAll()
                                 .requestMatchers("/index.html", "/ws-stock/**", "/ws-order/**")
                                 .permitAll()
                                 .requestMatchers("/actuator/health")
