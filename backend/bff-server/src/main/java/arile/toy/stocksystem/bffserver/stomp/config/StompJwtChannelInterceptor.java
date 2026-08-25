@@ -29,7 +29,8 @@ public class StompJwtChannelInterceptor implements ChannelInterceptor {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                throw new JwtException("Authorization failed: JWT is missing or invalid.");
+                // 토큰이 없으면 익명 연결로 허용 (지수 등 공개 채널 구독용)
+                return message;
             }
 
             String accessToken = authHeader.substring(7);
