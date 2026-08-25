@@ -367,16 +367,28 @@ public class NaverStockCrawlerClient {
 
         for (Element item : items) {
 
+            Element rankEl = item.select("em").first();
+            Element a = item.selectFirst("a");
+
+            if (rankEl == null || a == null) {
+                continue;
+            }
+
             int rank = Integer.parseInt(
-                    item.select("em").first().text().replace(".", "")
+                    rankEl.text().replace(".", "")
             );
 
-            Element a = item.selectFirst("a");
             String href = a.attr("href");
             String code = href.substring(href.indexOf("code=") + 5);
             String name = a.text();
 
-            Element priceEl = item.selectFirst("span.up, span.dn");
+            Element priceEl = item.selectFirst("span.up, span.dn, span.nv, span.noc");
+
+            if (priceEl == null) {
+                log.warn("인기 종목 price element를 찾을 수 없음. html={}", item.outerHtml());
+                continue;
+            }
+
             String price = priceEl.text();
 
             Element blindEl = item.selectFirst("span.blind");
@@ -384,14 +396,23 @@ public class NaverStockCrawlerClient {
 
             String direction;
 
-            if (priceEl.hasClass("up")) {
+            if (blindText.contains("상한가")) {
+                direction = "UPPER_LIMIT";
+                price += " ⬆";
+            } else if (blindText.contains("하한가")) {
+                direction = "LOWER_LIMIT";
+                price += " ⬇";
+            } else if (blindText.contains("상승")) {
                 direction = "UP";
-                price += blindText.contains("상한가") ? " ⬆" : " ▲";
-            } else if (priceEl.hasClass("dn")) {
+                price += " ▲";
+            } else if (blindText.contains("하락")) {
                 direction = "DOWN";
-                price += blindText.contains("하한가") ? " ⬇" : " ▼";
-            } else {
+                price += " ▼";
+            } else if (blindText.contains("보합")) {
                 direction = "STEADY";
+                price += " -";
+            } else {
+                direction = "UNKNOWN";
                 price += " -";
             }
 
