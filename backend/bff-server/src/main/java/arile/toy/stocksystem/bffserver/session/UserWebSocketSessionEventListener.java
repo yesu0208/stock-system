@@ -1,9 +1,12 @@
 package arile.toy.stocksystem.bffserver.session;
 
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceClientTickMessage;
+import arile.toy.stocksystem.bffserver.stockinfo.dto.MarketMainResponse;
+import arile.toy.stocksystem.bffserver.stockinfo.scheduler.MarketIndexScheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
@@ -16,9 +19,12 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 @Slf4j
 public class UserWebSocketSessionEventListener {
 
+    private static final String MARKET_MAIN_DESTINATION = "/sub/market/main";
+
     private final UserRedisSubscriptionRegistry subscriptionRegistry;
     private final SimpMessagingTemplate messagingTemplate;
     private final InitialDataService initialDataService;
+    private final MarketIndexScheduler marketIndexScheduler;
 
     @EventListener
     public void handleConnect(SessionConnectEvent event) {
@@ -28,7 +34,8 @@ public class UserWebSocketSessionEventListener {
         String username = extractUsername(acc);
 
         if (username == null) {
-            log.warn("WS connect without username, sessionId={}", sessionId);
+            // 익명 연결: /sub/market/main 같은 공개 채널만 구독 가능
+            log.debug("WS anonymous connect, sessionId={}", sessionId);
             return;
         }
 
@@ -48,45 +55,68 @@ public class UserWebSocketSessionEventListener {
     public void handleSubscribe(SessionSubscribeEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 
-        String username = extractUsername(accessor);
-        if (username == null) return;
-
         String destination = accessor.getDestination();
         if (destination == null) return;
+
+        // 익명 사용자도 접근 가능한 공개 채널
+        if (MARKET_MAIN_DESTINATION.equals(destination)) {
+            sendMarketMainSnapshot(accessor);
+            return;
+        }
+
+        // 그 외 채널은 로그인 사용자 전용
+        String username = extractUsername(accessor);
+        if (username == null) return;
 
         if ("/user/sub/account".equals(destination)) {
             initialDataService.getAccountData(username)
                     .ifPresent(data -> messagingTemplate.convertAndSendToUser(
-                            username,
-                            "/sub/account",
-                            data
-                    ));
+                            username, "/sub/account", data));
         } else if ("/user/sub/order".equals(destination)) {
             initialDataService.getOrderData(username)
                     .ifPresent(data -> messagingTemplate.convertAndSendToUser(
-                            username,
-                            "/sub/order",
-                            data
-                    ));
+                            username, "/sub/order", data));
         } else if ("/user/sub/auto/order".equals(destination)) {
             initialDataService.getAutoOrderData(username)
                     .ifPresent(data -> messagingTemplate.convertAndSendToUser(
-                            username,
-                            "/sub/auto/order",
-                            data
-                    ));
+                            username, "/sub/auto/order", data));
         } else if (destination.startsWith("/sub/stock/")) {
             String stockCode = destination.substring("/sub/stock/".length());
             initialDataService.getBidAskPriceData(stockCode)
                     .ifPresent(data -> messagingTemplate.convertAndSend(
-                            "/sub/stock/" + stockCode,
-                            data
-                    ));
+                            "/sub/stock/" + stockCode, data));
             initialDataService.getTradePriceData(stockCode)
                     .ifPresent(data -> messagingTemplate.convertAndSend(
                             "/sub/stock/" + stockCode,
-                            BffServerTradePriceClientTickMessage.fromTickMessage(data)
-                    ));
+                            BffServerTradePriceClientTickMessage.fromTickMessage(data)));
+        }
+    }
+
+    private void sendMarketMainSnapshot(StompHeaderAccessor accessor) {
+        MarketMainResponse snapshot = marketIndexScheduler.getLatestSnapshot();
+        if (snapshot == null) return;
+
+        String username = extractUsername(accessor);
+
+        if (username != null) {
+            // 로그인 사용자: Principal 기반 라우팅
+            messagingTemplate.convertAndSendToUser(
+                    username, MARKET_MAIN_DESTINATION, snapshot);
+        } else {
+            // 익명 사용자: 세션 ID 기반 라우팅 (Spring이 지원하는 공식 방식)
+            String sessionId = accessor.getSessionId();
+            if (sessionId == null) return;
+
+            SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create();
+            headerAccessor.setSessionId(sessionId);
+            headerAccessor.setLeaveMutable(true);
+
+            messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    MARKET_MAIN_DESTINATION,
+                    snapshot,
+                    headerAccessor.getMessageHeaders()
+            );
         }
     }
 
