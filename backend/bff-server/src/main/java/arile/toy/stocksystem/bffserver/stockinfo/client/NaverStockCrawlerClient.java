@@ -176,6 +176,27 @@ public class NaverStockCrawlerClient {
         return result;
     }
 
+    private boolean isSamePage(List<ForeignInstitutionTrade> a, List<ForeignInstitutionTrade> b) {
+
+        if (a.size() != b.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < a.size(); i++) {
+
+            ForeignInstitutionTrade x = a.get(i);
+            ForeignInstitutionTrade y = b.get(i);
+
+            if (!x.date().equals(y.date())
+                    || !x.closePrice().equals(y.closePrice())
+                    || !x.volume().equals(y.volume())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private String parseDiff(String text) {
 
         text = text.replace(",", "").trim();
