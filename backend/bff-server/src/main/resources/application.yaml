@@ -19,6 +19,9 @@ management:
   endpoint:
     health:
       show-details: always
+naver:
+  client-id: ${NAVER_CLIENT_ID}
+  client-secret: ${NAVER_CLIENT_SECRET}
 
 redis:
   host: ${REDIS_HOST}
@@ -79,6 +82,10 @@ jwt:
 
 frontend:
   url: test-fe-url
+
+naver:
+  client-id: test-client-id
+  client-secret: test-client-secret
 
 stock-groups:
   groups:
