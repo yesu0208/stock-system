@@ -1,0 +1,18 @@
+package arile.toy.stocksystem.bffserver.user.dto;
+
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+public record ChangePasswordRequest(
+        @NotEmpty String currentPassword,
+
+        @NotEmpty
+        @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다")
+        @Pattern(
+                regexp = "^(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*]).+$",
+                message = "비밀번호는 소문자, 숫자, 특수문자(!@#$%^&*)를 모두 포함해야 합니다"
+        )
+        String newPassword
+) {
+}
