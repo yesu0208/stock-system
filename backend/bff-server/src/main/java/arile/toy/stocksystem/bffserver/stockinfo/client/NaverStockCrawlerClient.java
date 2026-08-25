@@ -1,6 +1,8 @@
 package arile.toy.stocksystem.bffserver.stockinfo.client;
 
+import arile.toy.stocksystem.bffserver.stockinfo.dto.ForeignInstitutionTrade;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.StockInfo;
+import arile.toy.stocksystem.bffserver.stockinfo.dto.TradePageResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -11,6 +13,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 
 @Component
@@ -111,5 +115,108 @@ public class NaverStockCrawlerClient {
             return new String[]{text, ""};
         }
         return new String[]{split[0].trim(), split[1].trim()};
+    }
+
+
+
+    public TradePageResponse getForeignInstitutionTrades(String code, int page) {
+
+        List<ForeignInstitutionTrade> current = fetchTradePage(code, page);
+        List<ForeignInstitutionTrade> next = fetchTradePage(code, page + 1);
+
+        boolean hasNext = !next.isEmpty() && !isSamePage(current, next);
+
+        return new TradePageResponse(current, hasNext);
+    }
+
+    private List<ForeignInstitutionTrade> fetchTradePage(String code, int page) {
+
+        String html;
+        try {
+            html = restClient.get()
+                    .uri("/item/frgn.naver?code={code}&page={page}", code, page)
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            log.error("Naver foreign trade crawling error. status={}, code={}, page={}",
+                    e.getStatusCode(), code, page);
+            throw new IllegalStateException("네이버 외국인/기관 매매동향 크롤링 실패", e);
+        }
+
+        Document doc = Jsoup.parse(html);
+        List<ForeignInstitutionTrade> result = new ArrayList<>();
+
+        Elements rows = doc.select("table.type2 tr");
+
+        for (Element row : rows) {
+
+            if (!row.hasAttr("onmouseover")) {
+                continue;
+            }
+
+            Elements tds = row.select("td");
+
+            if (tds.size() < 9) {
+                continue;
+            }
+
+            result.add(new ForeignInstitutionTrade(
+                    tds.get(0).text(),
+                    tds.get(1).text(),
+                    parseDiff(tds.get(2).text()),
+                    tds.get(3).text(),
+                    tds.get(4).text(),
+                    tds.get(5).text(),
+                    tds.get(6).text(),
+                    tds.get(7).text(),
+                    tds.get(8).text()
+            ));
+        }
+
+        return result;
+    }
+
+    private boolean isSamePage(List<ForeignInstitutionTrade> a, List<ForeignInstitutionTrade> b) {
+
+        if (a.size() != b.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < a.size(); i++) {
+
+            ForeignInstitutionTrade x = a.get(i);
+            ForeignInstitutionTrade y = b.get(i);
+
+            if (!x.date().equals(y.date())
+                    || !x.closePrice().equals(y.closePrice())
+                    || !x.volume().equals(y.volume())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private String parseDiff(String text) {
+
+        text = text.replace(",", "").trim();
+
+        if (text.startsWith("상승")) {
+            return "▲ " + text.replace("상승", "").trim();
+        }
+        if (text.startsWith("하락")) {
+            return "▼ " + text.replace("하락", "").trim();
+        }
+        if (text.startsWith("보합0")) {
+            return "0";
+        }
+        if (text.startsWith("상한가")) {
+            return "⬆" + text.replace("상한가", "").trim();
+        }
+        if (text.startsWith("하한가")) {
+            return "⬇" + text.replace("하한가", "").trim();
+        }
+
+        return text;
     }
 }
