@@ -7,10 +7,11 @@ import java.time.Instant;
 public record UserDto(
         Long userId,
         String username,
+        String nickname,
         Instant createdDateTime)
 {
     public static UserDto fromEntity(UserEntity userEntity) {
-        return new UserDto(userEntity.getUserId(), userEntity.getUsername(),
+        return new UserDto(userEntity.getUserId(), userEntity.getUsername(), userEntity.getNickname(),
                 userEntity.getCreatedDateTime());
     }
 }
