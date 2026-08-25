@@ -34,8 +34,8 @@ public class RedisAutoCancelRequestEventConsumer {
     @Value("${redis.streams.auto-cancel.consumer-group}")
     private String group;
 
-    @Value("${server.shard-index}")
-    private int shardIndex;
+    @Value("${server.group}")
+    private String stockGroup;
 
     private final String consumerName =
             "stock-server" + UUID.randomUUID();
@@ -45,7 +45,7 @@ public class RedisAutoCancelRequestEventConsumer {
 
     @Scheduled(fixedDelay = 100)
     public void consume() {
-        String streamKey = prefix + "-" + shardIndex;
+        String streamKey = prefix + "-" + stockGroup;
 
         List<MapRecord<String, Object, Object>> records =
                 streamRedisTemplate.opsForStream().read(
@@ -106,7 +106,7 @@ public class RedisAutoCancelRequestEventConsumer {
 
     @Scheduled(fixedDelay = 1000)
     public void retry() {
-        String streamKey = prefix + "-" + shardIndex;
+        String streamKey = prefix + "-" + stockGroup;
         retryPending(streamKey);
     }
 

@@ -30,19 +30,32 @@ redis:
 
     order:
       prefix: order-events
-      shard-count: 1
 
     cancel:
       prefix: cancel-events
-      shard-count: 1
 
     auto-order:
       prefix: auto-order-events
-      shard-count: 1
 
     auto-cancel:
       prefix: auto-cancel-events
-      shard-count: 1
+
+stock-groups:
+  groups:
+    A:
+      - "005930"
+      - "000660"
+      - "005935"
+    B:
+      - "005380"
+      - "373220"
+      - "000250"
+      - "196170"
+      - "086520"
+      - "247540"
+      - "277810"
+    CLOSE:
+      - "125020"
 
 spring:
   application.name: bff-server
@@ -66,6 +79,11 @@ jwt:
 
 frontend:
   url: test-fe-url
+
+stock-groups:
+  groups:
+    A:
+      - "005930"
 
 spring:
   config.activate.on-profile: test

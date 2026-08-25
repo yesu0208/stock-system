@@ -19,50 +19,50 @@ public class RedisStreamGroupInitializer {
     private String orderPrefix;
 
     @Value("${redis.streams.order.consumer-group}")
-    private String orderGroup;
+    private String orderConsumerGroup;
 
     @Value("${redis.streams.cancel.prefix}")
     private String cancelPrefix;
 
     @Value("${redis.streams.cancel.consumer-group}")
-    private String cancelGroup;
+    private String cancelConsumerGroup;
 
     @Value("${redis.streams.auto-order.prefix}")
     private String autoOrderPrefix;
 
     @Value("${redis.streams.auto-order.consumer-group}")
-    private String autoOrderGroup;
+    private String autoOrderConsumerGroup;
 
     @Value("${redis.streams.auto-cancel.prefix}")
     private String autoCancelPrefix;
 
     @Value("${redis.streams.auto-cancel.consumer-group}")
-    private String autoCancelGroup;
+    private String autoCancelConsumerGroup;
 
     @Value("${redis.streams.user.key}")
     private String userStreamKey;
 
     @Value("${redis.streams.user.consumer-group}")
-    private String userGroup;
+    private String userConsumerGroup;
 
-    @Value("${server.shard-index}")
-    private int shardIndex;
+    @Value("${server.group}")
+    private String stockGroup;
 
     @PostConstruct
     public void init() {
-        createGroup(orderPrefix + "-" + shardIndex, orderGroup);
-        createGroup(cancelPrefix + "-" + shardIndex, cancelGroup);
-        createGroup(autoOrderPrefix + "-" + shardIndex, autoOrderGroup);
-        createGroup(autoCancelPrefix + "-" + shardIndex, autoCancelGroup);
+        createGroup(orderPrefix + "-" + stockGroup, orderConsumerGroup);
+        createGroup(cancelPrefix + "-" + stockGroup, cancelConsumerGroup);
+        createGroup(autoOrderPrefix + "-" + stockGroup, autoOrderConsumerGroup);
+        createGroup(autoCancelPrefix + "-" + stockGroup, autoCancelConsumerGroup);
 
-        createGroup(userStreamKey, userGroup);
+        createGroup(userStreamKey, userConsumerGroup);
     }
 
-    private void createGroup(String streamKey, String group) {
+    private void createGroup(String streamKey, String consumerGroup) {
         try {
             redisTemplate.opsForStream()
-                    .createGroup(streamKey, ReadOffset.latest(), group);
-            log.info("Consumer group created. stream={}, group={}", streamKey, group);
+                    .createGroup(streamKey, ReadOffset.latest(), consumerGroup);
+            log.info("Consumer group created. stream={}, group={}", streamKey, consumerGroup);
         } catch (Exception e) {
             log.info("Consumer group already exists. stream={}", streamKey);
         }

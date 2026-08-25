@@ -19,12 +19,12 @@ public interface AutoOrderRepository extends JpaRepository<AutoOrderEntity, Long
     @Query("select o from AutoOrderEntity o where o.autoOrderId = :autoOrderId")
     Optional<AutoOrderEntity> findByIdForUpdate(@Param("autoOrderId") Long autoOrderId);
 
-    default List<AutoOrderEntity> findAllUntriggered() {
+    default List<AutoOrderEntity> findAllUntriggered(List<String> stockCodes) {
         List<AutoOrderStatus> openStatuses = Arrays.stream(AutoOrderStatus.values())
                 .filter(AutoOrderStatus::isOpen)
                 .toList();
-        return findAllByAutoOrderStatusIn(openStatuses);
+        return findAllByAutoOrderStatusInAndStockCodeIn(openStatuses, stockCodes);
     }
 
-    List<AutoOrderEntity> findAllByAutoOrderStatusIn(List<AutoOrderStatus> statuses);
+    List<AutoOrderEntity> findAllByAutoOrderStatusInAndStockCodeIn(List<AutoOrderStatus> statuses, List<String> stockCodes);
 }
