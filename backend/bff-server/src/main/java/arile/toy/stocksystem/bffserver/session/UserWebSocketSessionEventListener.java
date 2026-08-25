@@ -2,7 +2,7 @@ package arile.toy.stocksystem.bffserver.session;
 
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceClientTickMessage;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.MarketMainResponse;
-import arile.toy.stocksystem.bffserver.stockinfo.scheduler.MarketIndexScheduler;
+import arile.toy.stocksystem.bffserver.stockinfo.repository.MarketMainSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -23,7 +23,7 @@ public class UserWebSocketSessionEventListener {
     private final UserRedisSubscriptionRegistry subscriptionRegistry;
     private final SimpMessagingTemplate messagingTemplate;
     private final InitialDataService initialDataService;
-    private final MarketIndexScheduler marketIndexScheduler;
+    private final MarketMainSnapshotRepository marketMainSnapshotRepository;
 
     @EventListener
     public void handleConnect(SessionConnectEvent event) {
@@ -92,9 +92,9 @@ public class UserWebSocketSessionEventListener {
     }
 
     private void sendMarketMainSnapshot(StompHeaderAccessor accessor) {
-        MarketMainResponse snapshot = marketIndexScheduler.getLatestSnapshot();
+        MarketMainResponse snapshot = marketMainSnapshotRepository.getLatest();
         if (snapshot == null) return;
-        
+
         messagingTemplate.convertAndSend(MARKET_MAIN_DESTINATION, snapshot);
     }
 
