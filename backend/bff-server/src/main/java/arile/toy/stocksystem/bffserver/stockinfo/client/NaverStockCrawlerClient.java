@@ -1,8 +1,6 @@
 package arile.toy.stocksystem.bffserver.stockinfo.client;
 
-import arile.toy.stocksystem.bffserver.stockinfo.dto.ForeignInstitutionTrade;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.StockInfo;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.TradePageResponse;
+import arile.toy.stocksystem.bffserver.stockinfo.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -218,5 +216,206 @@ public class NaverStockCrawlerClient {
         }
 
         return text;
+    }
+
+
+
+    public MarketMainResponse getMarketIndices() {
+
+        Document doc = fetchSiseDocument();
+
+        MarketIndexInfo kospi = parseMarketIndex(doc, "KOSPI", "코스피", false);
+        MarketIndexInfo kosdaq = parseMarketIndex(doc, "KOSDAQ", "코스닥", false);
+        MarketIndexInfo kospi200 = parseMarketIndex(doc, "KPI200", "코스피200", true);
+
+        return new MarketMainResponse(kospi, kosdaq, kospi200);
+    }
+
+    public List<PopularStock> getPopularStocks() {
+
+        Document doc = fetchSiseDocument();
+
+        return parsePopularStocks(doc);
+    }
+
+    private Document fetchSiseDocument() {
+        try {
+            String html = restClient.get()
+                    .uri("/sise/")
+                    .retrieve()
+                    .body(String.class);
+
+            return Jsoup.parse(html);
+        } catch (RestClientResponseException e) {
+            log.error("Naver market main crawling error. status={}", e.getStatusCode());
+            throw new IllegalStateException("네이버 증시 메인 크롤링 실패", e);
+        }
+    }
+
+    private MarketIndexInfo parseMarketIndex(Document doc, String code, String name, boolean isKospi200) {
+
+        String current = doc.select("#" + code + "_now").text();
+
+        Element changeEl = doc.selectFirst("#" + code + "_change");
+        String changeText = changeEl.text();
+
+        String direction = "";
+        if (!changeEl.select(".nup").isEmpty()) {
+            direction = "UP";
+        } else if (!changeEl.select(".ndown").isEmpty()) {
+            direction = "DOWN";
+        }
+
+        String[] split = splitChange(changeText);
+        String changeValue = split[0];
+
+        if (direction.equals("UP")) {
+            changeValue = "▲ " + changeValue;
+        } else if (direction.equals("DOWN")) {
+            changeValue = "▼ " + changeValue;
+        }
+
+        String changeRate = split[1].replaceAll("(%).*", "$1").trim();
+
+        String timeId = switch (code) {
+            case "KOSPI" -> "#time1";
+            case "KOSDAQ" -> "#time2";
+            default -> "#time3";
+        };
+
+        String baseTime = doc.select(timeId).text()
+                .replace("장마감", " 장마감")
+                .replace("장중", " 장중");
+
+        MarketBreadth breadth;
+
+        if (isKospi200) {
+            String basis = doc.select("#kpi200_basis").text()
+                    .replace("콘탱고", "")
+                    .replace("백워데이션", "")
+                    .trim();
+
+            breadth = new MarketBreadth(null, null, null, null, null, basis);
+        } else {
+            String panelId = code.equals("KOSPI") ? "#tab_sel1_risefall" : "#tab_sel2_risefall";
+            Elements stockDds = doc.select(panelId + " dl.stock dd");
+
+            breadth = new MarketBreadth(
+                    stockDds.get(0).text(),
+                    stockDds.get(1).text(),
+                    stockDds.get(2).text(),
+                    stockDds.get(3).text(),
+                    stockDds.get(4).text(),
+                    null
+            );
+        }
+
+        String trendId = switch (code) {
+            case "KOSPI" -> "#tab_sel1_risefall";
+            case "KOSDAQ" -> "#tab_sel2_risefall";
+            default -> "#tab_sel3_risefall";
+        };
+
+        Elements trendDds = doc.select(trendId + " dl.trend dd");
+
+        ProgramTrade programTrade = new ProgramTrade(
+                cleanProgramTrade(trendDds.get(0).text()),
+                cleanProgramTrade(trendDds.get(1).text()),
+                cleanProgramTrade(trendDds.get(2).text())
+        );
+
+        String trendSelector = switch (code) {
+            case "KOSPI" -> "#tab_sel1_deal_trend";
+            case "KOSDAQ" -> "#tab_sel2_deal_trend";
+            default -> "#tab_sel3_deal_trend";
+        };
+
+        Elements investorItems = doc.select(trendSelector + " li");
+
+        String personal = investorItems.get(1).select(".val").text();
+        String foreigner = investorItems.get(2).select(".val").text();
+        String institution = investorItems.get(3).select(".val").text();
+
+        InvestorTrend investorTrend = new InvestorTrend(personal, foreigner, institution);
+
+        return new MarketIndexInfo(
+                name,
+                current,
+                changeValue,
+                changeRate,
+                direction,
+                baseTime,
+                breadth,
+                programTrade,
+                investorTrend
+        );
+    }
+
+    private String cleanProgramTrade(String text) {
+        return text
+                .replace("비차익 ", "")
+                .replace("차익 ", "")
+                .replace("전체 ", "")
+                .trim();
+    }
+
+    private List<PopularStock> parsePopularStocks(Document doc) {
+
+        List<PopularStock> result = new ArrayList<>();
+
+        Elements items = doc.select("#popularItemList li");
+
+        for (Element item : items) {
+
+            int rank = Integer.parseInt(
+                    item.select("em").first().text().replace(".", "")
+            );
+
+            Element a = item.selectFirst("a");
+            String href = a.attr("href");
+            String code = href.substring(href.indexOf("code=") + 5);
+            String name = a.text();
+
+            Element priceEl = item.selectFirst("span.up, span.dn");
+            String price = priceEl.text();
+
+            Element blindEl = item.selectFirst("span.blind");
+            String blindText = blindEl != null ? blindEl.text() : "";
+
+            String direction;
+
+            if (priceEl.hasClass("up")) {
+                direction = "UP";
+                price += blindText.contains("상한가") ? " ⬆" : " ▲";
+            } else if (priceEl.hasClass("dn")) {
+                direction = "DOWN";
+                price += blindText.contains("하한가") ? " ⬇" : " ▼";
+            } else {
+                direction = "STEADY";
+                price += " -";
+            }
+
+            result.add(new PopularStock(rank, code, name, price, direction));
+        }
+
+        return result;
+    }
+
+    private String[] splitChange(String text) {
+
+        String[] tokens = text.split(" ");
+
+        String value = "";
+        String rate = "";
+
+        for (String token : tokens) {
+            if (token.contains("%")) {
+                rate = token;
+            } else if (token.matches("^[+-]?[0-9.,]+$")) {
+                value = token;
+            }
+        }
+
+        return new String[]{value, rate};
     }
 }
