@@ -31,27 +31,40 @@ redis:
 
     order:
       prefix: order-events
-      shard-count: 1
       consumer-group: stock-group
 
     cancel:
       prefix: cancel-events
-      shard-count: 1
       consumer-group: stock-group
 
     auto-order:
       prefix: auto-order-events
-      shard-count: 1
       consumer-group: stock-group
 
     auto-cancel:
       prefix: auto-cancel-events
-      shard-count: 1
       consumer-group: stock-group
 
 server:
   port: 8081
-  shard-index: 0
+  group: B
+
+stock-groups:
+  groups:
+    A:
+      - "005930"
+      - "000660"
+      - "005935"
+    B:
+      - "005380"
+      - "373220"
+      - "000250"
+      - "196170"
+      - "086520"
+      - "247540"
+      - "277810"
+    CLOSE:
+      - "125020"
 
 spring:
   application.name: stock-server
@@ -68,21 +81,6 @@ spring:
       hibernate.format_sql: true
   sql.init.mode: always
 
-stocks:
-  open:
-    - "005930"
-    - "000660"
-    - "005935"
-    - "005380"
-    - "373220"
-    - "000250"
-    - "196170"
-    - "086520"
-    - "247540"
-    - "277810"
-  close:
-    - "125020"
-
 ---
 
 api:
@@ -90,6 +88,16 @@ api:
   app-key: test-app-key
   app-secret: test-app-secret
   ws-url: test-ws-url
+
+server:
+  group: A
+
+stock-groups:
+  groups:
+    A:
+      - "005930"
+
+    CLOSE: []
 
 spring:
   config.activate.on-profile: test
