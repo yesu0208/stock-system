@@ -1,8 +1,10 @@
 package arile.toy.stocksystem.bffserver.stockinfo.service;
 
 import arile.toy.stocksystem.bffserver.stockinfo.client.NaverStockCrawlerClient;
+import arile.toy.stocksystem.bffserver.stockinfo.dto.PopularStock;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.StockInfo;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.TradePageResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +12,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +21,7 @@ public class StockInfoService {
 
     private static final Duration CACHE_TTL = Duration.ofSeconds(60);
     private static final String KEY_PREFIX = "stock:info:";
+    private static final String POPULAR_KEY = "stock:popular";
 
     private final NaverStockCrawlerClient naverStockCrawlerClient;
     private final StringRedisTemplate redisTemplate;
@@ -80,6 +84,41 @@ public class StockInfoService {
         cacheTradePage(cacheKey, response);
 
         return response;
+    }
+
+    public List<PopularStock> getPopularStocks() {
+
+        String cached = redisTemplate.opsForValue().get(POPULAR_KEY);
+        if (cached != null) {
+            List<PopularStock> cachedList = deserializePopularStocks(cached);
+            if (cachedList != null) {
+                return cachedList;
+            }
+        }
+
+        List<PopularStock> popularStocks = naverStockCrawlerClient.getPopularStocks();
+
+        cachePopularStocks(popularStocks);
+
+        return popularStocks;
+    }
+
+    private void cachePopularStocks(List<PopularStock> popularStocks) {
+        try {
+            String json = objectMapper.writeValueAsString(popularStocks);
+            redisTemplate.opsForValue().set(POPULAR_KEY, json, CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("PopularStock 캐시 저장 실패", e);
+        }
+    }
+
+    private List<PopularStock> deserializePopularStocks(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<PopularStock>>() {});
+        } catch (Exception e) {
+            log.warn("PopularStock 캐시 역직렬화 실패. 크롤링으로 대체.", e);
+            return null;
+        }
     }
 
     private void cacheTradePage(String cacheKey, TradePageResponse response) {

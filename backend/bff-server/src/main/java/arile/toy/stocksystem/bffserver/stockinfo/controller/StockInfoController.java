@@ -1,10 +1,13 @@
 package arile.toy.stocksystem.bffserver.stockinfo.controller;
 
+import arile.toy.stocksystem.bffserver.stockinfo.dto.PopularStock;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.StockInfo;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.TradePageResponse;
 import arile.toy.stocksystem.bffserver.stockinfo.service.StockInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/stocks")
@@ -12,6 +15,11 @@ import org.springframework.web.bind.annotation.*;
 public class StockInfoController {
 
     private final StockInfoService stockInfoService;
+
+    @GetMapping("/market/popular")
+    public List<PopularStock> getPopularStocks() {
+        return stockInfoService.getPopularStocks();
+    }
 
     @GetMapping("/{code}")
     public StockInfo getStockInfo(@PathVariable String code) {
