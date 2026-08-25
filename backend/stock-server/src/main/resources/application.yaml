@@ -50,6 +50,7 @@ redis:
       consumer-group: stock-group
 
 server:
+  port: 8081
   shard-index: 0
 
 spring:
