@@ -6,7 +6,6 @@ import arile.toy.stocksystem.bffserver.stockinfo.scheduler.MarketIndexScheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
@@ -95,29 +94,8 @@ public class UserWebSocketSessionEventListener {
     private void sendMarketMainSnapshot(StompHeaderAccessor accessor) {
         MarketMainResponse snapshot = marketIndexScheduler.getLatestSnapshot();
         if (snapshot == null) return;
-
-        String username = extractUsername(accessor);
-
-        if (username != null) {
-            // 로그인 사용자: Principal 기반 라우팅
-            messagingTemplate.convertAndSendToUser(
-                    username, MARKET_MAIN_DESTINATION, snapshot);
-        } else {
-            // 익명 사용자: 세션 ID 기반 라우팅 (Spring이 지원하는 공식 방식)
-            String sessionId = accessor.getSessionId();
-            if (sessionId == null) return;
-
-            SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create();
-            headerAccessor.setSessionId(sessionId);
-            headerAccessor.setLeaveMutable(true);
-
-            messagingTemplate.convertAndSendToUser(
-                    sessionId,
-                    MARKET_MAIN_DESTINATION,
-                    snapshot,
-                    headerAccessor.getMessageHeaders()
-            );
-        }
+        
+        messagingTemplate.convertAndSend(MARKET_MAIN_DESTINATION, snapshot);
     }
 
     private String extractUsername(StompHeaderAccessor acc) {
