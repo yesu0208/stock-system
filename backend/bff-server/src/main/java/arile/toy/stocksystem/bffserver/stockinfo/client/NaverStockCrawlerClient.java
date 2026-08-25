@@ -439,4 +439,103 @@ public class NaverStockCrawlerClient {
 
         return new String[]{value, rate};
     }
+
+    public UpjongResponse getAllUpjongs() {
+
+        String html;
+        try {
+            html = restClient.get()
+                    .uri("/sise/sise_group.naver?type=upjong")
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            log.error("Naver 업종 목록 크롤링 실패. status={}", e.getStatusCode());
+            throw new IllegalStateException("네이버 업종 목록 크롤링 실패", e);
+        }
+
+        Document doc = Jsoup.parse(html);
+        List<UpjongInfo> result = new ArrayList<>();
+
+        Elements rows = doc.select("table.type_1 tr");
+
+        for (Element row : rows) {
+            Elements tds = row.select("td");
+            if (tds.isEmpty()) {
+                continue;
+            }
+
+            Element a = tds.get(0).selectFirst("a");
+            if (a == null) {
+                continue;
+            }
+
+            String name = a.text().trim();
+
+            String href = a.attr("href");
+            String no = href.contains("no=")
+                    ? href.substring(href.indexOf("no=") + 3)
+                    : "";
+
+            String changeRate = tds.get(1).text().trim();
+            String total = tds.get(2).text().trim();
+            String rise = tds.get(3).text().trim();
+            String steady = tds.get(4).text().trim();
+            String fall = tds.get(5).text().trim();
+            String graphRatio = tds.get(6).text().trim();
+
+            result.add(new UpjongInfo(
+                    name, no, changeRate, total, rise, steady, fall, graphRatio
+            ));
+        }
+
+        return new UpjongResponse(result);
+    }
+
+    public UpjongStockResponse getUpjongStocks(String upjongNo) {
+
+        String html;
+        try {
+            html = restClient.get()
+                    .uri("/sise/sise_group_detail.naver?type=upjong&no={no}", upjongNo)
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            log.error("Naver 업종별 종목 크롤링 실패. status={}, no={}", e.getStatusCode(), upjongNo);
+            throw new IllegalStateException("네이버 업종별 종목 크롤링 실패", e);
+        }
+
+        Document doc = Jsoup.parse(html);
+        List<UpjongStock> result = new ArrayList<>();
+
+        String upjongName = doc.select("h3.sub_tlt").text();
+
+        Elements rows = doc.select("table.type_5 tr");
+
+        for (Element row : rows) {
+            Elements tds = row.select("td");
+            if (tds.size() < 5) {
+                continue;
+            }
+
+            Element a = tds.get(0).selectFirst("a");
+            if (a == null) {
+                continue;
+            }
+
+            String name = a.text();
+
+            String href = a.attr("href");
+            String code = href.contains("code=")
+                    ? href.substring(href.indexOf("code=") + 5)
+                    : "";
+
+            String price = tds.get(1).text().trim();
+            String change = tds.get(2).text().trim();
+            String rate = tds.get(3).text().trim();
+
+            result.add(new UpjongStock(name, code, price, change, rate));
+        }
+
+        return new UpjongStockResponse(upjongName, result);
+    }
 }
