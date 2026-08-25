@@ -1,9 +1,13 @@
 package arile.toy.stocksystem.bffserver.user.service;
 
+import arile.toy.stocksystem.bffserver.exception.user.NicknameAlreadyExistsException;
+import arile.toy.stocksystem.bffserver.exception.user.PasswordMismatchException;
 import arile.toy.stocksystem.bffserver.exception.user.UserAlreadyExistsException;
 import arile.toy.stocksystem.bffserver.exception.user.UserNotFoundException;
 import arile.toy.stocksystem.bffserver.security.repository.RefreshTokenRepository;
 import arile.toy.stocksystem.bffserver.security.service.JwtService;
+import arile.toy.stocksystem.bffserver.user.dto.ChangeNicknameRequest;
+import arile.toy.stocksystem.bffserver.user.dto.ChangePasswordRequest;
 import arile.toy.stocksystem.bffserver.user.dto.UserAuthenticationResponse;
 import arile.toy.stocksystem.bffserver.user.dto.UserDto;
 import arile.toy.stocksystem.bffserver.user.dto.UserLoginRequest;
@@ -19,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -49,10 +54,15 @@ public class UserService implements UserDetailsService {
                     throw new UserAlreadyExistsException();
                 });
 
+        if (userRepository.existsByNickname(userSignUpRequest.nickname())) {
+            throw new NicknameAlreadyExistsException();
+        }
+
         var userEntity = userRepository.save(
                 UserEntity.of(
                         userSignUpRequest.username(),
-                        bCryptPasswordEncoder.encode(userSignUpRequest.password())
+                        bCryptPasswordEncoder.encode(userSignUpRequest.password()),
+                        userSignUpRequest.nickname()
                 )
         );
 
@@ -86,6 +96,33 @@ public class UserService implements UserDetailsService {
         return new UserAuthenticationResponse(accessToken);
     }
 
+    @Transactional
+    public UserDto changePassword(String username, ChangePasswordRequest request) {
+        var userEntity = getUserEntityByUsername(username);
+
+        if (!bCryptPasswordEncoder.matches(request.currentPassword(), userEntity.getPassword())) {
+            throw new PasswordMismatchException();
+        }
+
+        userEntity.changePassword(bCryptPasswordEncoder.encode(request.newPassword()));
+
+        return UserDto.fromEntity(userEntity);
+    }
+
+    @Transactional
+    public UserDto changeNickname(String username, ChangeNicknameRequest request) {
+        var userEntity = getUserEntityByUsername(username);
+
+        if (!userEntity.getNickname().equals(request.nickname())
+                && userRepository.existsByNickname(request.nickname())) {
+            throw new NicknameAlreadyExistsException();
+        }
+
+        userEntity.changeNickname(request.nickname());
+
+        return UserDto.fromEntity(userEntity);
+    }
+
     private UserEntity getUserEntityByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
@@ -100,5 +137,9 @@ public class UserService implements UserDetailsService {
 
     public boolean isUsernameExists(String username) {
         return userRepository.findByUsername(username).isPresent();
+    }
+
+    public boolean isNicknameExists(String nickname) {
+        return userRepository.existsByNickname(nickname);
     }
 }

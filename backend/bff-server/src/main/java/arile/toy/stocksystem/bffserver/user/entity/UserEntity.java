@@ -28,6 +28,9 @@ public class UserEntity implements UserDetails {
     @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(unique = true, nullable = false)
+    private String nickname;
+
     @Column(nullable = false)
     private String password;
 
@@ -77,12 +80,21 @@ public class UserEntity implements UserDetails {
         return true;
     }
 
-    public static UserEntity of(String username, String password) {
+    public static UserEntity of(String username, String password, String nickname) {
         var userEntity = new UserEntity();
         userEntity.setUsername(username);
         userEntity.setPassword(password);
+        userEntity.setNickname(nickname);
         userEntity.setRole(Role.USER);
         return userEntity;
+    }
+
+    public void changePassword(String password) {
+        this.password = password;
+    }
+
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     @PrePersist

@@ -2,6 +2,8 @@ package arile.toy.stocksystem.bffserver.user.contoller;
 
 import arile.toy.stocksystem.bffserver.security.repository.RefreshTokenRepository;
 import arile.toy.stocksystem.bffserver.security.service.JwtService;
+import arile.toy.stocksystem.bffserver.user.dto.ChangeNicknameRequest;
+import arile.toy.stocksystem.bffserver.user.dto.ChangePasswordRequest;
 import arile.toy.stocksystem.bffserver.user.dto.UserAuthenticationResponse;
 import arile.toy.stocksystem.bffserver.user.dto.UserDto;
 import arile.toy.stocksystem.bffserver.user.dto.UserLoginRequest;
@@ -57,7 +59,7 @@ public class UserController {
             } catch (Exception ignored) {
             }
         }
-        
+
         Cookie deleteCookie = new Cookie("refreshToken", null);
         deleteCookie.setHttpOnly(true);
         deleteCookie.setSecure(false);
@@ -71,6 +73,12 @@ public class UserController {
     @GetMapping("/check-username")
     public ResponseEntity<Map<String, Boolean>> checkUsername(@RequestParam String username) {
         boolean exists = userService.isUsernameExists(username);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
+    @GetMapping("/check-nickname")
+    public ResponseEntity<Map<String, Boolean>> checkNickname(@RequestParam String nickname) {
+        boolean exists = userService.isNicknameExists(nickname);
         return ResponseEntity.ok(Map.of("exists", exists));
     }
 
@@ -91,6 +99,32 @@ public class UserController {
         String username = user.getUsername();
 
         UserDto userDto = userService.getUserByUsername(username);
+        return ResponseEntity.ok(userDto);
+    }
+
+    @PatchMapping("/password")
+    public ResponseEntity<UserDto> changePassword(
+            @Valid @RequestBody ChangePasswordRequest changePasswordRequest,
+            @AuthenticationPrincipal UserDetails user
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserDto userDto = userService.changePassword(user.getUsername(), changePasswordRequest);
+        return ResponseEntity.ok(userDto);
+    }
+
+    @PatchMapping("/nickname")
+    public ResponseEntity<UserDto> changeNickname(
+            @Valid @RequestBody ChangeNicknameRequest changeNicknameRequest,
+            @AuthenticationPrincipal UserDetails user
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserDto userDto = userService.changeNickname(user.getUsername(), changeNicknameRequest);
         return ResponseEntity.ok(userDto);
     }
 }
