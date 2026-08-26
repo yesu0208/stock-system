@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -888,5 +890,90 @@ public class NaverStockCrawlerClient {
         }
 
         return result;
+    }
+
+    // 투자자별 매매동향 (시간별/일자별)
+
+    public List<InvestorTrendDto> getInvestorTrend(MarketType market, String type, int page) {
+
+        String url = buildInvestorTrendUri(market, type, page);
+
+        String html;
+        try {
+            html = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            log.error("Naver 투자자별 매매동향 크롤링 실패. status={}, market={}, type={}, page={}",
+                    e.getStatusCode(), market, type, page);
+            throw new IllegalStateException("네이버 투자자별 매매동향 크롤링 실패", e);
+        }
+
+        return parseInvestorTrend(html);
+    }
+
+    private String buildInvestorTrendUri(MarketType market, String type, int page) {
+
+        String path = "time".equals(type)
+                ? "/sise/investorDealTrendTime.naver"
+                : "/sise/investorDealTrendDay.naver";
+
+        String bizDate = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+
+        String uri = path
+                + "?bizdate=" + bizDate
+                + "&sosok=" + market.getCode();
+
+        if (page > 1) {
+            uri += "&page=" + page;
+        }
+
+        return uri;
+    }
+
+    private List<InvestorTrendDto> parseInvestorTrend(String html) {
+
+        Document doc = Jsoup.parse(html);
+        List<InvestorTrendDto> result = new ArrayList<>();
+
+        Elements rows = doc.select("table.type_1 tr");
+
+        for (Element row : rows) {
+
+            Elements tds = row.select("td");
+
+            if (tds.size() != 11) {
+                continue;
+            }
+
+            result.add(new InvestorTrendDto(
+                    tds.get(0).text(),
+                    parseLong(tds.get(1).text()),
+                    parseLong(tds.get(2).text()),
+                    parseLong(tds.get(3).text()),
+                    parseLong(tds.get(4).text()),
+                    parseLong(tds.get(5).text()),
+                    parseLong(tds.get(6).text()),
+                    parseLong(tds.get(7).text()),
+                    parseLong(tds.get(8).text()),
+                    parseLong(tds.get(9).text()),
+                    parseLong(tds.get(10).text())
+            ));
+        }
+
+        return result;
+    }
+
+    private long parseLong(String value) {
+        if (value == null || value.isBlank()) {
+            return 0L;
+        }
+
+        return Long.parseLong(
+                value.replace(",", "")
+                        .replace("+", "")
+                        .trim()
+        );
     }
 }
