@@ -23,6 +23,7 @@ public class StockInfoService {
     private static final String ALL_UPJONG_KEY = "stock:upjong:all";
     private static final String UPJONG_STOCK_KEY_PREFIX = "stock:upjong:stocks:";
     private static final String INVESTOR_TREND_KEY_PREFIX = "stock:investor:trend:";
+    private static final String DEAL_RANK_KEY_PREFIX = "stock:deal-rank:";
 
     private final NaverStockCrawlerClient naverStockCrawlerClient;
     private final StringRedisTemplate redisTemplate;
@@ -315,5 +316,45 @@ public class StockInfoService {
 
     private String buildInvestorTrendKey(MarketType market, TrendType type, int page) {
         return INVESTOR_TREND_KEY_PREFIX + market.name() + ":" + type.name() + ":" + page;
+    }
+
+    public DealRankResponse getDealRank(DealRankMarket market, InvestorType investorType, DealType dealType) {
+        String cacheKey = buildDealRankKey(market, investorType, dealType);
+
+        String cached = redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            DealRankResponse cachedResponse = deserializeDealRank(cached);
+            if (cachedResponse != null) {
+                return cachedResponse;
+            }
+        }
+
+        DealRankResponse response = naverStockCrawlerClient.getDealRank(market, investorType, dealType);
+
+        cacheDealRank(cacheKey, response);
+
+        return response;
+    }
+
+    private void cacheDealRank(String cacheKey, DealRankResponse response) {
+        try {
+            String json = objectMapper.writeValueAsString(response);
+            redisTemplate.opsForValue().set(cacheKey, json, CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("DealRank 캐시 저장 실패. key={}", cacheKey, e);
+        }
+    }
+
+    private DealRankResponse deserializeDealRank(String json) {
+        try {
+            return objectMapper.readValue(json, DealRankResponse.class);
+        } catch (Exception e) {
+            log.warn("DealRank 캐시 역직렬화 실패. 크롤링으로 대체.", e);
+            return null;
+        }
+    }
+
+    private String buildDealRankKey(DealRankMarket market, InvestorType investorType, DealType dealType) {
+        return DEAL_RANK_KEY_PREFIX + market.name() + ":" + investorType.name() + ":" + dealType.name();
     }
 }
