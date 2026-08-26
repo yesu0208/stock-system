@@ -163,6 +163,10 @@ public class NaverStockCrawlerClient {
                 continue;
             }
 
+            String date = tds.get(0).text().trim();
+            
+            if (date.isBlank()) continue;
+
             result.add(new ForeignInstitutionTrade(
                     tds.get(0).text(),
                     tds.get(1).text(),
