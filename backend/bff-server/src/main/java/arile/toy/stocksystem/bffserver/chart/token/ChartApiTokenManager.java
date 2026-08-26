@@ -31,7 +31,7 @@ public class ChartApiTokenManager {
     }
 
     // 명세상 유효기간 24h, 갱신주기 6h 이지만, 여유있게 12h마다 갱신
-    @Scheduled(fixedRate = 12 * 60 * 60 * 1000)
+    @Scheduled(initialDelay = 12 * 60 * 60 * 1000, fixedRate = 12 * 60 * 60 * 1000)
     public void scheduledRefresh() {
         refreshAccessToken();
     }
