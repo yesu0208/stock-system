@@ -538,4 +538,246 @@ public class NaverStockCrawlerClient {
 
         return new UpjongStockResponse(upjongName, result);
     }
+
+    // 종목 상세 (5초 브로드캐스트용)
+
+    public StockDetailTickMessage getStockDetailSummary(String code) {
+
+        Document doc = fetchDetailDocument(code);
+
+        Element blind = doc.selectFirst("dl.blind");
+        if (blind == null) {
+            throw new IllegalStateException("네이버 종목 상세 파싱 실패: dl.blind 없음. code=" + code);
+        }
+
+        Elements dds = blind.select("dd");
+        if (dds.size() < 12) {
+            throw new IllegalStateException("네이버 종목 상세 파싱 실패: dd 개수 부족. code=" + code);
+        }
+
+        String baseTime = dds.get(0).text();
+
+        String stockName = extractAfter(dds.get(1).text(), "종목명");
+
+        String codeMarket = dds.get(2).text();
+        String market = codeMarket.contains("코스닥") ? "코스닥" : "코스피";
+
+        PriceInfo priceInfo = parsePriceInfo(dds.get(3).text());
+
+        String prevPrice = extractAfter(dds.get(4).text(), "전일가");
+        String openPrice = extractAfter(dds.get(5).text(), "시가");
+        String highPrice = extractAfter(dds.get(6).text(), "고가");
+        String upperLimit = extractAfter(dds.get(7).text(), "상한가");
+        String lowPrice = extractAfter(dds.get(8).text(), "저가");
+        String lowerLimit = extractAfter(dds.get(9).text(), "하한가");
+        String volume = extractAfter(dds.get(10).text(), "거래량");
+        String tradingValue = extractAfter(dds.get(11).text(), "거래대금");
+
+        return StockDetailTickMessage.of(
+                code,
+                stockName,
+                market,
+                baseTime,
+                priceInfo.currentPrice(),
+                priceInfo.diffPrice(),
+                priceInfo.diffRate(),
+                priceInfo.direction(),
+                prevPrice,
+                openPrice,
+                highPrice,
+                upperLimit,
+                lowPrice,
+                lowerLimit,
+                volume,
+                tradingValue
+        );
+    }
+
+    private PriceInfo parsePriceInfo(String text) {
+
+        String direction = "STEADY";
+
+        if (text.contains("상승")) {
+            direction = "UP";
+        } else if (text.contains("하락")) {
+            direction = "DOWN";
+        }
+
+        String currentPrice = text.replaceAll("현재가\\s*([0-9,]+).*", "$1");
+
+        String diffPrice = "0";
+        if (text.matches(".*(상승|하락).*")) {
+            diffPrice = text.replaceAll(".*전일대비\\s*(상승|하락)\\s*([0-9,]+).*", "$2");
+        }
+
+        String diffRate = text.replaceAll(".*([0-9]+\\.[0-9]+)\\s*퍼센트.*", "$1");
+
+        return new PriceInfo(currentPrice, diffPrice, diffRate, direction);
+    }
+
+    private record PriceInfo(String currentPrice, String diffPrice, String diffRate, String direction) {
+    }
+
+
+    // 종목 상세 (REST 부가정보)
+
+    public StockDetailExtraResponse getStockDetailExtra(String code) {
+
+        Document doc = fetchDetailDocument(code);
+
+        String companySummary = parseCompanySummary(doc);
+        String warningType = parseWarningType(doc);
+        String manage = parseManage(doc);
+        List<BrokerTradeInfo> brokerTrades = parseBrokerTrades(doc);
+        ForeignBrokerSummary foreignBrokerSummary = parseForeignBrokerSummary(doc);
+
+        return new StockDetailExtraResponse(
+                code,
+                companySummary,
+                warningType,
+                manage,
+                brokerTrades,
+                foreignBrokerSummary
+        );
+    }
+
+    private Document fetchDetailDocument(String code) {
+        try {
+            String html = getHtml(code);
+            return Jsoup.parse(html);
+        } catch (RestClientResponseException e) {
+            log.error("Naver 종목 상세 크롤링 실패. status={}, code={}", e.getStatusCode(), code);
+            throw new IllegalStateException("네이버 종목 상세 크롤링 실패", e);
+        }
+    }
+
+    private String parseCompanySummary(Document doc) {
+
+        Elements ps = doc.select("#summary_info p");
+
+        StringBuilder sb = new StringBuilder();
+
+        for (Element p : ps) {
+            String text = p.text().trim();
+            if (!text.isBlank()) {
+                if (!sb.isEmpty()) {
+                    sb.append("\n");
+                }
+                sb.append(text);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private String parseWarningType(Document doc) {
+        Element warning = doc.selectFirst(".description em.warning");
+        return warning == null ? "" : warning.text().trim();
+    }
+
+    private String parseManage(Document doc) {
+        Element manage = doc.selectFirst(".description em.manage");
+        return manage == null ? "" : manage.text().trim();
+    }
+
+    private List<BrokerTradeInfo> parseBrokerTrades(Document doc) {
+
+        List<BrokerTradeInfo> result = new ArrayList<>();
+
+        Element investTrend = doc.selectFirst("div.invest_trend");
+        if (investTrend == null) {
+            return result;
+        }
+
+        Element table = investTrend.selectFirst("table.tb_type1");
+        if (table == null) {
+            return result;
+        }
+
+        Elements rows = table.select("tbody tr");
+
+        for (Element row : rows) {
+
+            Elements tds = row.select("td");
+            if (tds.size() != 4) {
+                continue;
+            }
+
+            result.add(new BrokerTradeInfo(
+                    tds.get(0).text(),
+                    tds.get(1).text(),
+                    tds.get(2).text(),
+                    tds.get(3).text(),
+                    extractDirection(tds.get(0)),
+                    extractDirection(tds.get(1)),
+                    extractDirection(tds.get(2)),
+                    extractDirection(tds.get(3))
+            ));
+        }
+
+        return result;
+    }
+
+    private String extractDirection(Element td) {
+
+        if (td == null) {
+            return "";
+        }
+        if (!td.select(".f_up").isEmpty()) {
+            return "UP";
+        }
+        if (!td.select(".f_down").isEmpty()) {
+            return "DOWN";
+        }
+        return "";
+    }
+
+    private ForeignBrokerSummary parseForeignBrokerSummary(Document doc) {
+
+        Element row = doc.selectFirst(".invest_trend table.tb_type1 tfoot tr");
+        if (row == null) {
+            return null;
+        }
+
+        Elements tds = row.select("td");
+        if (tds.size() != 4) {
+            return null;
+        }
+
+        Element sellEm = tds.get(1).selectFirst("em");
+        Element buyDiffEm = tds.get(2).selectFirst("em");
+        Element buyVolEm = tds.get(3).selectFirst("em");
+
+        return new ForeignBrokerSummary(
+                tds.get(0).text(),
+                tds.get(1).text(),
+                tds.get(2).text(),
+                tds.get(3).text(),
+                extractClass(sellEm),
+                extractClass(buyDiffEm),
+                extractClass(buyVolEm)
+        );
+    }
+
+    private String extractClass(Element element) {
+
+        if (element == null) {
+            return "";
+        }
+        if (element.hasClass("f_up")) {
+            return "UP";
+        }
+        if (element.hasClass("f_down")) {
+            return "DOWN";
+        }
+        return "";
+    }
+
+    private String extractAfter(String text, String prefix) {
+
+        if (text == null) {
+            return "";
+        }
+        return text.replace(prefix, "").trim();
+    }
 }

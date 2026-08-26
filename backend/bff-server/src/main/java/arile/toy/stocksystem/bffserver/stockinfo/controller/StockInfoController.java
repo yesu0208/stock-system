@@ -1,10 +1,6 @@
 package arile.toy.stocksystem.bffserver.stockinfo.controller;
 
-import arile.toy.stocksystem.bffserver.stockinfo.dto.PopularStock;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.StockInfo;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.TradePageResponse;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.UpjongResponse;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.UpjongStockResponse;
+import arile.toy.stocksystem.bffserver.stockinfo.dto.*;
 import arile.toy.stocksystem.bffserver.stockinfo.service.StockInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -44,5 +40,10 @@ public class StockInfoController {
     @GetMapping("/upjong/{no}")
     public UpjongStockResponse getUpjongStocks(@PathVariable String no) {
         return stockInfoService.getUpjongStocks(no);
+    }
+
+    @GetMapping("/{code}/detail-extra")
+    public StockDetailExtraResponse getStockDetailExtra(@PathVariable String code) {
+        return stockInfoService.getStockDetailExtra(code);
     }
 }

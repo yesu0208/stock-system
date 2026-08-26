@@ -1,11 +1,7 @@
 package arile.toy.stocksystem.bffserver.stockinfo.service;
 
 import arile.toy.stocksystem.bffserver.stockinfo.client.NaverStockCrawlerClient;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.PopularStock;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.StockInfo;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.TradePageResponse;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.UpjongResponse;
-import arile.toy.stocksystem.bffserver.stockinfo.dto.UpjongStockResponse;
+import arile.toy.stocksystem.bffserver.stockinfo.dto.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -220,5 +216,42 @@ public class StockInfoService {
 
     private String buildUpjongStockKey(String upjongNo) {
         return UPJONG_STOCK_KEY_PREFIX + upjongNo.trim();
+    }
+
+    private static final String DETAIL_EXTRA_KEY_PREFIX = "stock:detail:extra:";
+
+    public StockDetailExtraResponse getStockDetailExtra(String code) {
+        String cacheKey = DETAIL_EXTRA_KEY_PREFIX + code.trim();
+
+        String cached = redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            StockDetailExtraResponse cachedResponse = deserializeDetailExtra(cached);
+            if (cachedResponse != null) {
+                return cachedResponse;
+            }
+        }
+
+        StockDetailExtraResponse response = naverStockCrawlerClient.getStockDetailExtra(code);
+        cacheDetailExtra(cacheKey, response);
+
+        return response;
+    }
+
+    private void cacheDetailExtra(String cacheKey, StockDetailExtraResponse response) {
+        try {
+            String json = objectMapper.writeValueAsString(response);
+            redisTemplate.opsForValue().set(cacheKey, json, CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("StockDetailExtra 캐시 저장 실패. key={}", cacheKey, e);
+        }
+    }
+
+    private StockDetailExtraResponse deserializeDetailExtra(String json) {
+        try {
+            return objectMapper.readValue(json, StockDetailExtraResponse.class);
+        } catch (Exception e) {
+            log.warn("StockDetailExtra 캐시 역직렬화 실패. 크롤링으로 대체.", e);
+            return null;
+        }
     }
 }
