@@ -22,14 +22,15 @@ public class StockMinuteChartController {
      * 분봉 조회
      * <p>
      * 예시:
-     * GET /api/v1/chart/minute/005930?date=20260528&hour=150000
+     * GET /api/v1/chart/minute/005930?date=20260528&hour=150000&count=500
      */
     @GetMapping("/minute/{code}")
     public List<MinuteCandle> getMinute(
             @PathVariable String code,
             @RequestParam String date,
-            @RequestParam String hour
+            @RequestParam String hour,
+            @RequestParam(defaultValue = "700") int count
     ) {
-        return stockMinuteChartService.getMinuteChart(code, date, hour);
+        return stockMinuteChartService.getMinuteChart(code, date, hour, count);
     }
 }
