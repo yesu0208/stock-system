@@ -52,7 +52,7 @@ public class StockInfoController {
             @RequestParam(defaultValue = "KOSPI") MarketType market,
             @RequestParam(defaultValue = "1") int page
     ) {
-        return stockInfoService.getInvestorTrend(market, "time", page);
+        return stockInfoService.getInvestorTrend(market, TrendType.TIME, page);
     }
 
     @GetMapping("/investor-trend/day")
@@ -60,6 +60,6 @@ public class StockInfoController {
             @RequestParam(defaultValue = "KOSPI") MarketType market,
             @RequestParam(defaultValue = "1") int page
     ) {
-        return stockInfoService.getInvestorTrend(market, "day", page);
+        return stockInfoService.getInvestorTrend(market, TrendType.DAY, page);
     }
 }

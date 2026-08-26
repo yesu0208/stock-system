@@ -892,9 +892,7 @@ public class NaverStockCrawlerClient {
         return result;
     }
 
-    // 투자자별 매매동향 (시간별/일자별)
-
-    public List<InvestorTrendDto> getInvestorTrend(MarketType market, String type, int page) {
+    public List<InvestorTrendDto> getInvestorTrend(MarketType market, TrendType type, int page) {
 
         String url = buildInvestorTrendUri(market, type, page);
 
@@ -913,9 +911,9 @@ public class NaverStockCrawlerClient {
         return parseInvestorTrend(html);
     }
 
-    private String buildInvestorTrendUri(MarketType market, String type, int page) {
+    private String buildInvestorTrendUri(MarketType market, TrendType type, int page) {
 
-        String path = "time".equals(type)
+        String path = type == TrendType.TIME
                 ? "/sise/investorDealTrendTime.naver"
                 : "/sise/investorDealTrendDay.naver";
 

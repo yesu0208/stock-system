@@ -256,7 +256,7 @@ public class StockInfoService {
         }
     }
 
-    public TrendResponse getInvestorTrend(MarketType market, String type, int page) {
+    public TrendResponse getInvestorTrend(MarketType market, TrendType type, int page) {
 
         String cacheKey = buildInvestorTrendKey(market, type, page);
 
@@ -313,7 +313,7 @@ public class StockInfoService {
         }
     }
 
-    private String buildInvestorTrendKey(MarketType market, String type, int page) {
-        return INVESTOR_TREND_KEY_PREFIX + market.name() + ":" + type + ":" + page;
+    private String buildInvestorTrendKey(MarketType market, TrendType type, int page) {
+        return INVESTOR_TREND_KEY_PREFIX + market.name() + ":" + type.name() + ":" + page;
     }
 }
