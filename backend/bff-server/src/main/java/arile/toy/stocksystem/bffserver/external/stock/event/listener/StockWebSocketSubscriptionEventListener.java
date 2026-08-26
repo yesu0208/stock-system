@@ -46,6 +46,7 @@ public class StockWebSocketSubscriptionEventListener {
 
     private String extractStockCode(String destination) {
         if (destination == null) return null;
+        if (destination.equals("/sub/stock/summary")) return null;
         if (destination.startsWith("/sub/stock/")) {
             return destination.substring("/sub/stock/".length());
         }
