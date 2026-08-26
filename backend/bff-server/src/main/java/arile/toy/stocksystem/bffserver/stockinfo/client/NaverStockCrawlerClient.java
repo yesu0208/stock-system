@@ -268,13 +268,7 @@ public class NaverStockCrawlerClient {
 
         String[] split = splitChange(changeText);
         String changeValue = split[0];
-
-        if (direction.equals("UP")) {
-            changeValue = "▲ " + changeValue;
-        } else if (direction.equals("DOWN")) {
-            changeValue = "▼ " + changeValue;
-        }
-
+        
         String changeRate = split[1].replaceAll("(%).*", "$1").trim();
 
         String timeId = switch (code) {
@@ -367,7 +361,7 @@ public class NaverStockCrawlerClient {
 
         for (Element item : items) {
 
-            Element rankEl = item.select("em").first();
+            Element rankEl = item.selectFirst("em");
             Element a = item.selectFirst("a");
 
             if (rankEl == null || a == null) {
@@ -398,22 +392,16 @@ public class NaverStockCrawlerClient {
 
             if (blindText.contains("상한가")) {
                 direction = "UPPER_LIMIT";
-                price += " ⬆";
             } else if (blindText.contains("하한가")) {
                 direction = "LOWER_LIMIT";
-                price += " ⬇";
             } else if (blindText.contains("상승")) {
                 direction = "UP";
-                price += " ▲";
             } else if (blindText.contains("하락")) {
                 direction = "DOWN";
-                price += " ▼";
             } else if (blindText.contains("보합")) {
                 direction = "STEADY";
-                price += " -";
             } else {
                 direction = "UNKNOWN";
-                price += " -";
             }
 
             result.add(new PopularStock(rank, code, name, price, direction));
