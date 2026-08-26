@@ -1,7 +1,9 @@
 package arile.toy.stocksystem.bffserver.session;
 
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceClientTickMessage;
+import arile.toy.stocksystem.bffserver.stockinfo.dto.GlobalMarketResponse;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.MarketMainResponse;
+import arile.toy.stocksystem.bffserver.stockinfo.repository.GlobalMarketSnapshotRepository;
 import arile.toy.stocksystem.bffserver.stockinfo.repository.MarketMainSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +21,13 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 public class UserWebSocketSessionEventListener {
 
     private static final String MARKET_MAIN_DESTINATION = "/sub/market/main";
+    private static final String GLOBAL_MARKET_DESTINATION = "/sub/market/global";
 
     private final UserRedisSubscriptionRegistry subscriptionRegistry;
     private final SimpMessagingTemplate messagingTemplate;
     private final InitialDataService initialDataService;
     private final MarketMainSnapshotRepository marketMainSnapshotRepository;
+    private final GlobalMarketSnapshotRepository globalMarketSnapshotRepository;
 
     @EventListener
     public void handleConnect(SessionConnectEvent event) {
@@ -63,6 +67,11 @@ public class UserWebSocketSessionEventListener {
             return;
         }
 
+        if (GLOBAL_MARKET_DESTINATION.equals(destination)) {
+            sendGlobalMarketSnapshot(accessor);
+            return;
+        }
+
         // 그 외 채널은 로그인 사용자 전용
         String username = extractUsername(accessor);
         if (username == null) return;
@@ -99,6 +108,13 @@ public class UserWebSocketSessionEventListener {
         if (snapshot == null) return;
 
         messagingTemplate.convertAndSend(MARKET_MAIN_DESTINATION, snapshot);
+    }
+
+    private void sendGlobalMarketSnapshot(StompHeaderAccessor accessor) {
+        GlobalMarketResponse snapshot = globalMarketSnapshotRepository.getLatest();
+        if (snapshot == null) return;
+
+        messagingTemplate.convertAndSend(GLOBAL_MARKET_DESTINATION, snapshot);
     }
 
     private String extractUsername(StompHeaderAccessor acc) {

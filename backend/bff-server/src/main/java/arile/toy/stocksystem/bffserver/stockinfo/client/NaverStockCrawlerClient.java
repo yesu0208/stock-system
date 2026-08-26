@@ -768,4 +768,125 @@ public class NaverStockCrawlerClient {
         }
         return text.replace(prefix, "").trim();
     }
+
+    public List<ExchangeRateDto> getExchangeRates() {
+
+        String html;
+        try {
+            html = restClient.get()
+                    .uri("/marketindex/")
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            log.error("Naver 환율 크롤링 실패. status={}", e.getStatusCode());
+            throw new IllegalStateException("네이버 환율 크롤링 실패", e);
+        }
+
+        Document doc = Jsoup.parse(html);
+        Elements items = doc.select("#exchangeList li");
+
+        List<ExchangeRateDto> result = new ArrayList<>();
+
+        for (Element li : items) {
+
+            Element head = li.selectFirst("a.head");
+            if (head == null) {
+                continue;
+            }
+
+            String currencyName = head.selectFirst("h3 span.blind").text().trim();
+
+            String currencyCode = head.classNames().stream()
+                    .filter(c -> !c.equals("head"))
+                    .findFirst()
+                    .orElse("");
+
+            Element info = head.selectFirst("div.head_info");
+            String rate = info.selectFirst("span.value").text().trim();
+            String change = info.selectFirst("span.change").text().trim();
+
+            String direction;
+            if (info.hasClass("point_up")) {
+                direction = "상승";
+            } else if (info.hasClass("point_dn")) {
+                direction = "하락";
+            } else {
+                direction = "보합";
+            }
+
+            String time = li.selectFirst("div.graph_info span.time").text().trim();
+            String detailUrl = head.attr("href");
+
+            result.add(new ExchangeRateDto(
+                    currencyName, currencyCode, rate, change, direction, time, detailUrl
+            ));
+        }
+
+        return result;
+    }
+
+    public List<WorldIndexDto> getWorldIndexes() {
+
+        String html;
+        try {
+            html = restClient.get()
+                    .uri("/world/")
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            log.error("Naver 세계증시 크롤링 실패. status={}", e.getStatusCode());
+            throw new IllegalStateException("네이버 세계증시 크롤링 실패", e);
+        }
+
+        Document doc = Jsoup.parse(html);
+        Elements indexes = doc.select(
+                "#worldIndexColumn1 li, #worldIndexColumn2 li, #worldIndexColumn3 li"
+        );
+
+        List<WorldIndexDto> result = new ArrayList<>();
+
+        for (Element index : indexes) {
+
+            Element dl = index.selectFirst("dl");
+            if (dl == null) {
+                continue;
+            }
+
+            Element nameElement = dl.selectFirst("dt span.blind");
+            Element pointStatus = dl.selectFirst("dd.point_status");
+            Element dateElement = dl.selectFirst("dd.date em");
+            Element linkElement = dl.selectFirst("dt a");
+
+            if (nameElement == null || pointStatus == null
+                    || dateElement == null || linkElement == null) {
+                continue;
+            }
+
+            String name = nameElement.text().trim();
+            String currentPrice = pointStatus.selectFirst("strong").text().trim();
+            String diffPrice = pointStatus.selectFirst("em").text().trim();
+
+            Element spanElement = pointStatus.selectFirst("span");
+            String rawChangeText = spanElement != null ? spanElement.text().trim() : "";
+
+            String direction;
+            if (rawChangeText.contains("+")) {
+                direction = "상승";
+            } else if (rawChangeText.contains("-")) {
+                direction = "하락";
+            } else {
+                direction = "보합";
+            }
+
+            String diffRate = rawChangeText.replace("+", "").replace("-", "").trim();
+            String dateTime = dateElement.text().trim();
+            String detailUrl = linkElement.attr("href");
+
+            result.add(new WorldIndexDto(
+                    name, currentPrice, diffPrice, diffRate, direction, dateTime, detailUrl
+            ));
+        }
+
+        return result;
+    }
 }
