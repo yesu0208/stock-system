@@ -4,6 +4,7 @@ import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisBidA
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisTradePriceEventSubscriber;
 import arile.toy.stocksystem.bffserver.stockinfo.event.RedisStockDetailEventSubscriber;
 import arile.toy.stocksystem.bffserver.stockinfo.registry.StockDetailWatchRegistry;
+import arile.toy.stocksystem.bffserver.stockinfo.service.StockDetailCrawlService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
@@ -27,6 +30,8 @@ public class StockRealtimeRedisSubscriptionManager {
     private final RedisTradePriceEventSubscriber tradeSubscriber;
     private final RedisStockDetailEventSubscriber detailSubscriber;
     private final StockDetailWatchRegistry watchRegistry;
+    private final StockDetailCrawlService crawlService;
+    private final ExecutorService stockDetailCrawlExecutor;
 
     private final ConcurrentHashMap<String, AtomicInteger> stockRefCount = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Set<String>> sessionSubscriptions = new ConcurrentHashMap<>();
@@ -37,12 +42,15 @@ public class StockRealtimeRedisSubscriptionManager {
                 .computeIfAbsent(sessionId, k -> ConcurrentHashMap.newKeySet())
                 .add(stockCode);
 
+        AtomicBoolean isFirstSubscriber = new AtomicBoolean(false);
+
         stockRefCount.compute(stockCode, (code, count) -> {
             if (count == null) {
                 container.addMessageListener(bidAskSubscriber, bidAskTopic(code));
                 container.addMessageListener(tradeSubscriber, tradeTopic(code));
                 container.addMessageListener(detailSubscriber, detailTopic(code));
 
+                isFirstSubscriber.set(true);
                 log.info("Redis subscribe stockCode={}", code);
                 return new AtomicInteger(1);
             }
@@ -51,6 +59,12 @@ public class StockRealtimeRedisSubscriptionManager {
         });
 
         watchRegistry.heartbeat(stockCode);
+
+        // 이 인스턴스에서 처음 구독된 종목이면 5초 주기를 기다리지 않고 즉시 1회 크롤링 시도.
+        // 다른 인스턴스가 이미 크롤링 중이거나 방금 크롤링했다면 락에 막혀 조용히 스킵됨.
+        if (isFirstSubscriber.get()) {
+            stockDetailCrawlExecutor.submit(() -> crawlService.crawlAndPublish(stockCode));
+        }
     }
 
     public void unsubscribe(String sessionId, String stockCode) {
