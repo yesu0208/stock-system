@@ -568,7 +568,20 @@ public class NaverStockCrawlerClient {
         String lowPrice = extractAfter(dds.get(8).text(), "저가");
         String lowerLimit = extractAfter(dds.get(9).text(), "하한가");
         String volume = extractAfter(dds.get(10).text(), "거래량");
-        String tradingValue = extractAfter(dds.get(11).text(), "거래대금");
+
+        // 백만만 처리 : 1,123백만 -> 1,123,000,000
+        String raw = extractAfter(dds.get(11).text(), "거래대금").trim();
+
+        String numberPart = raw.replaceAll("[^0-9,]", "");
+        String unitPart = raw.replaceAll("[0-9,]", "");
+
+        long value = Long.parseLong(numberPart.replace(",", ""));
+
+        if (unitPart.contains("백만")) {
+            value *= 1_000_000L;
+        }
+
+        String tradingValue = String.format("%,d", value);
 
         return StockDetailTickMessage.of(
                 code,
