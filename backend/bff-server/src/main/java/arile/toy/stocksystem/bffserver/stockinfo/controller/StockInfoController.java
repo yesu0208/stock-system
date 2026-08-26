@@ -62,4 +62,13 @@ public class StockInfoController {
     ) {
         return stockInfoService.getInvestorTrend(market, TrendType.DAY, page);
     }
+
+    @GetMapping("/deal-rank")
+    public DealRankResponse getDealRank(
+            @RequestParam DealRankMarket market,
+            @RequestParam InvestorType investorType,
+            @RequestParam DealType dealType
+    ) {
+        return stockInfoService.getDealRank(market, investorType, dealType);
+    }
 }
