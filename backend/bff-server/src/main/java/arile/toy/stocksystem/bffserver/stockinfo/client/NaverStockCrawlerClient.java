@@ -664,8 +664,23 @@ public class NaverStockCrawlerClient {
     }
 
     private String parseWarningType(Document doc) {
-        Element warning = doc.selectFirst(".description em.warning");
-        return warning == null ? "" : warning.text().trim();
+        for (String cls : List.of("caution", "warning", "danger")) {
+            Element em = doc.selectFirst(".description em." + cls);
+
+            if (em == null) continue;
+
+            Element blind = em.selectFirst("span.blind");
+
+            if (blind != null && !blind.text().isBlank()) {
+                return blind.text().trim();
+            }
+
+            String text = em.text().trim();
+            if (!text.isBlank()) {
+                return text;
+            }
+        }
+        return "";
     }
 
     private String parseManage(Document doc) {
