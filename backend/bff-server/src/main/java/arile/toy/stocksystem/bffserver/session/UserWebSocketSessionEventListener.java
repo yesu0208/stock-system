@@ -88,6 +88,9 @@ public class UserWebSocketSessionEventListener {
                     .ifPresent(data -> messagingTemplate.convertAndSend(
                             "/sub/stock/" + stockCode,
                             BffServerTradePriceClientTickMessage.fromTickMessage(data)));
+            initialDataService.getStockDetailData(stockCode)
+                    .ifPresent(data -> messagingTemplate.convertAndSend(
+                            "/sub/stock/" + stockCode, data));
         }
     }
 

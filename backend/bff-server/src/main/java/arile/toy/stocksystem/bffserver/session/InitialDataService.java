@@ -11,6 +11,8 @@ import arile.toy.stocksystem.bffserver.external.stock.repository.BffServerBidAsk
 import arile.toy.stocksystem.bffserver.external.stock.repository.BffServerTradePriceRepository;
 import arile.toy.stocksystem.bffserver.order.dto.OrderResponseMessage;
 import arile.toy.stocksystem.bffserver.order.repository.BffServerOrderResponseRepository;
+import arile.toy.stocksystem.bffserver.stockinfo.dto.StockDetailTickMessage;
+import arile.toy.stocksystem.bffserver.stockinfo.repository.StockDetailSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ public class InitialDataService {
     private final BffServerAutoOrderResponseRepository bffServerAutoOrderResponseRepository;
     private final BffServerTradePriceRepository bffServerTradePriceRepository;
     private final BffServerBidAskPriceRepository bffServerBidAskPriceRepository;
+    private final StockDetailSnapshotRepository stockDetailSnapshotRepository;
 
     public Optional<AccountResponse> getAccountData(String username) {
 
@@ -97,6 +100,18 @@ public class InitialDataService {
 
         } catch (Exception e) {
             log.error("Unexpected error while getting bid/ask data for stockCode={}", stockCode, e);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<StockDetailTickMessage> getStockDetailData(String stockCode) {
+
+        try {
+            var message = stockDetailSnapshotRepository.getLatest(stockCode);
+            return Optional.ofNullable(message);
+
+        } catch (Exception e) {
+            log.error("Unexpected error while getting stock detail data for stockCode={}", stockCode, e);
             return Optional.empty();
         }
     }
