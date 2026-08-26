@@ -33,8 +33,7 @@ public class GlobalMarketScheduler {
 
         try {
             GlobalMarketResponse response = new GlobalMarketResponse(
-                    naverStockCrawlerClient.getExchangeRates(),
-                    naverStockCrawlerClient.getWorldIndexes()
+                    naverStockCrawlerClient.getExchangeRates()
             );
             snapshotRepository.save(response);
             publisher.publish(response);
