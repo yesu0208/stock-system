@@ -2,7 +2,7 @@ package arile.toy.stocksystem.bffserver.external.stock.event.manager;
 
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisBidAskPriceEventSubscriber;
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisTradePriceEventSubscriber;
-import arile.toy.stocksystem.bffserver.stockinfo.event.subscriber.RedisStockDetailEventSubscriber;
+import arile.toy.stocksystem.bffserver.stockinfo.event.RedisStockDetailEventSubscriber;
 import arile.toy.stocksystem.bffserver.stockinfo.registry.StockDetailWatchRegistry;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
