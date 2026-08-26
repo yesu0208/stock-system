@@ -46,4 +46,20 @@ public class StockInfoController {
     public StockDetailExtraResponse getStockDetailExtra(@PathVariable String code) {
         return stockInfoService.getStockDetailExtra(code);
     }
+
+    @GetMapping("/investor-trend/time")
+    public TrendResponse getInvestorTimeTrend(
+            @RequestParam(defaultValue = "KOSPI") MarketType market,
+            @RequestParam(defaultValue = "1") int page
+    ) {
+        return stockInfoService.getInvestorTrend(market, TrendType.TIME, page);
+    }
+
+    @GetMapping("/investor-trend/day")
+    public TrendResponse getInvestorDayTrend(
+            @RequestParam(defaultValue = "KOSPI") MarketType market,
+            @RequestParam(defaultValue = "1") int page
+    ) {
+        return stockInfoService.getInvestorTrend(market, TrendType.DAY, page);
+    }
 }

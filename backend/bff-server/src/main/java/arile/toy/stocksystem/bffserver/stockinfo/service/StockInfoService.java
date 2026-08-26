@@ -22,6 +22,7 @@ public class StockInfoService {
     private static final String POPULAR_KEY = "stock:popular";
     private static final String ALL_UPJONG_KEY = "stock:upjong:all";
     private static final String UPJONG_STOCK_KEY_PREFIX = "stock:upjong:stocks:";
+    private static final String INVESTOR_TREND_KEY_PREFIX = "stock:investor:trend:";
 
     private final NaverStockCrawlerClient naverStockCrawlerClient;
     private final StringRedisTemplate redisTemplate;
@@ -253,5 +254,66 @@ public class StockInfoService {
             log.warn("StockDetailExtra 캐시 역직렬화 실패. 크롤링으로 대체.", e);
             return null;
         }
+    }
+
+    public TrendResponse getInvestorTrend(MarketType market, TrendType type, int page) {
+
+        String cacheKey = buildInvestorTrendKey(market, type, page);
+
+        String cached = redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            TrendResponse cachedResponse = deserializeTrendResponse(cached);
+            if (cachedResponse != null) {
+                return cachedResponse;
+            }
+        }
+
+        List<InvestorTrendDto> current = naverStockCrawlerClient.getInvestorTrend(market, type, page);
+        List<InvestorTrendDto> next = naverStockCrawlerClient.getInvestorTrend(market, type, page + 1);
+
+        boolean hasNext = !next.isEmpty() && !isSamePage(current, next);
+
+        TrendResponse response = new TrendResponse(current, hasNext);
+
+        cacheInvestorTrend(cacheKey, response);
+
+        return response;
+    }
+
+    private <T> boolean isSamePage(List<T> a, List<T> b) {
+
+        if (a.size() != b.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < a.size(); i++) {
+            if (!a.get(i).equals(b.get(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void cacheInvestorTrend(String cacheKey, TrendResponse response) {
+        try {
+            String json = objectMapper.writeValueAsString(response);
+            redisTemplate.opsForValue().set(cacheKey, json, CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("InvestorTrend 캐시 저장 실패. key={}", cacheKey, e);
+        }
+    }
+
+    private TrendResponse deserializeTrendResponse(String json) {
+        try {
+            return objectMapper.readValue(json, TrendResponse.class);
+        } catch (Exception e) {
+            log.warn("InvestorTrend 캐시 역직렬화 실패. 크롤링으로 대체.", e);
+            return null;
+        }
+    }
+
+    private String buildInvestorTrendKey(MarketType market, TrendType type, int page) {
+        return INVESTOR_TREND_KEY_PREFIX + market.name() + ":" + type.name() + ":" + page;
     }
 }
