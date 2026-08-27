@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.bffserver.chart.token;
+package arile.toy.stocksystem.stockserver.chart.token;
 
 public record ChartApiTokenRequest(
         String grant_type,
