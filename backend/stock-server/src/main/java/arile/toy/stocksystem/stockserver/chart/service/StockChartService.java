@@ -1,8 +1,8 @@
-package arile.toy.stocksystem.bffserver.chart.service;
+package arile.toy.stocksystem.stockserver.chart.service;
 
-import arile.toy.stocksystem.bffserver.chart.dto.CandleData;
-import arile.toy.stocksystem.bffserver.chart.dto.ChartResponse;
-import arile.toy.stocksystem.bffserver.chart.token.ChartApiTokenManager;
+import arile.toy.stocksystem.stockserver.chart.dto.CandleData;
+import arile.toy.stocksystem.stockserver.chart.dto.ChartResponse;
+import arile.toy.stocksystem.stockserver.chart.token.ChartApiTokenManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
