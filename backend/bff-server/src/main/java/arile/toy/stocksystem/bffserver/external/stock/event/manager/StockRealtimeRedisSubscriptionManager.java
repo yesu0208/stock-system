@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.bffserver.external.stock.event.manager;
 
+import arile.toy.stocksystem.bffserver.chart.service.ChartCacheService;
+import arile.toy.stocksystem.bffserver.chart.service.LiveMinuteCandleService;
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisBidAskPriceEventSubscriber;
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisTradePriceEventSubscriber;
 import arile.toy.stocksystem.bffserver.stockinfo.event.RedisStockDetailEventSubscriber;
@@ -32,6 +34,8 @@ public class StockRealtimeRedisSubscriptionManager {
     private final StockDetailWatchRegistry watchRegistry;
     private final StockDetailCrawlService crawlService;
     private final ExecutorService stockDetailCrawlExecutor;
+    private final ChartCacheService chartCacheService;
+    private final LiveMinuteCandleService liveMinuteCandleService;
 
     private final ConcurrentHashMap<String, AtomicInteger> stockRefCount = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Set<String>> sessionSubscriptions = new ConcurrentHashMap<>();
@@ -61,9 +65,11 @@ public class StockRealtimeRedisSubscriptionManager {
         watchRegistry.heartbeat(stockCode);
 
         // 이 인스턴스에서 처음 구독된 종목이면 5초 주기를 기다리지 않고 즉시 1회 크롤링 시도.
-        // 다른 인스턴스가 이미 크롤링 중이거나 방금 크롤링했다면 락에 막혀 조용히 스킵됨.
+        // 다른 인스턴스가 이미 크롤링 중이거나 방금 크롤링했다면 락에 막혀 스킵됨.
         if (isFirstSubscriber.get()) {
             stockDetailCrawlExecutor.submit(() -> crawlService.crawlAndPublish(stockCode));
+            stockDetailCrawlExecutor.submit(() -> chartCacheService.refreshDailyChart(stockCode));
+            stockDetailCrawlExecutor.submit(() -> chartCacheService.refreshMinuteChart(stockCode));
         }
     }
 
@@ -110,6 +116,8 @@ public class StockRealtimeRedisSubscriptionManager {
                 container.removeMessageListener(bidAskSubscriber, bidAskTopic(code));
                 container.removeMessageListener(tradeSubscriber, tradeTopic(code));
                 container.removeMessageListener(detailSubscriber, detailTopic(code));
+
+                liveMinuteCandleService.clear(code); // 메모리 누수 방지
 
                 log.info("Redis unsubscribe stockCode={}", code);
                 return null;

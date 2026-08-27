@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.bffserver.session;
 
+import arile.toy.stocksystem.bffserver.chart.dto.DailyChartSnapshotMessage;
+import arile.toy.stocksystem.bffserver.chart.dto.MinuteChartSnapshotMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceClientTickMessage;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.GlobalMarketResponse;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.MarketMainResponse;
@@ -90,6 +92,11 @@ public class UserWebSocketSessionEventListener {
                             username, "/sub/auto/order", data));
         } else if (destination.startsWith("/sub/stock/")) {
             String stockCode = destination.substring("/sub/stock/".length());
+
+            if ("summary".equals(stockCode)) {
+                return;
+            }
+
             initialDataService.getBidAskPriceData(stockCode)
                     .ifPresent(data -> messagingTemplate.convertAndSend(
                             "/sub/stock/" + stockCode, data));
@@ -100,6 +107,20 @@ public class UserWebSocketSessionEventListener {
             initialDataService.getStockDetailData(stockCode)
                     .ifPresent(data -> messagingTemplate.convertAndSend(
                             "/sub/stock/" + stockCode, data));
+
+            log.info("[구독] 차트 데이터 조회 시작. stockCode={}", stockCode);
+            initialDataService.getDailyChartData(stockCode)
+                    .ifPresent(data -> {
+                        log.info("[구독] 일봉 스냅샷 전송. stockCode={}, count={}", stockCode, data.size());
+                        messagingTemplate.convertAndSend(
+                                "/sub/stock/" + stockCode, DailyChartSnapshotMessage.of(stockCode, data));
+                    });
+            initialDataService.getMinuteChartData(stockCode)
+                    .ifPresent(data -> {
+                        log.info("[구독] 분봉 스냅샷 전송. stockCode={}, count={}", stockCode, data.size());
+                        messagingTemplate.convertAndSend(
+                                "/sub/stock/" + stockCode, MinuteChartSnapshotMessage.of(stockCode, data));
+                    });
         }
     }
 
