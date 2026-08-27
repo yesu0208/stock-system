@@ -1,7 +1,7 @@
 package arile.toy.stocksystem.bffserver.external.stock.event.manager;
 
-import arile.toy.stocksystem.bffserver.chart.service.ChartCacheService;
-import arile.toy.stocksystem.bffserver.chart.service.LiveMinuteCandleService;
+import arile.toy.stocksystem.bffserver.chart.event.subscriber.RedisDailyCandleEventSubscriber;
+import arile.toy.stocksystem.bffserver.chart.event.subscriber.RedisMinuteCandleEventSubscriber;
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisBidAskPriceEventSubscriber;
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisTradePriceEventSubscriber;
 import arile.toy.stocksystem.bffserver.stockinfo.event.RedisStockDetailEventSubscriber;
@@ -31,11 +31,11 @@ public class StockRealtimeRedisSubscriptionManager {
     private final RedisBidAskPriceEventSubscriber bidAskSubscriber;
     private final RedisTradePriceEventSubscriber tradeSubscriber;
     private final RedisStockDetailEventSubscriber detailSubscriber;
+    private final RedisDailyCandleEventSubscriber dailyCandleSubscriber;
+    private final RedisMinuteCandleEventSubscriber minuteCandleSubscriber;
     private final StockDetailWatchRegistry watchRegistry;
     private final StockDetailCrawlService crawlService;
     private final ExecutorService stockDetailCrawlExecutor;
-    private final ChartCacheService chartCacheService;
-    private final LiveMinuteCandleService liveMinuteCandleService;
 
     private final ConcurrentHashMap<String, AtomicInteger> stockRefCount = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Set<String>> sessionSubscriptions = new ConcurrentHashMap<>();
@@ -53,6 +53,8 @@ public class StockRealtimeRedisSubscriptionManager {
                 container.addMessageListener(bidAskSubscriber, bidAskTopic(code));
                 container.addMessageListener(tradeSubscriber, tradeTopic(code));
                 container.addMessageListener(detailSubscriber, detailTopic(code));
+                container.addMessageListener(dailyCandleSubscriber, dailyCandleTopic(code));
+                container.addMessageListener(minuteCandleSubscriber, minuteCandleTopic(code));
 
                 isFirstSubscriber.set(true);
                 log.info("Redis subscribe stockCode={}", code);
@@ -64,17 +66,12 @@ public class StockRealtimeRedisSubscriptionManager {
 
         watchRegistry.heartbeat(stockCode);
 
-        // 이 인스턴스에서 처음 구독된 종목이면 5초 주기를 기다리지 않고 즉시 1회 크롤링 시도.
-        // 다른 인스턴스가 이미 크롤링 중이거나 방금 크롤링했다면 락에 막혀 스킵됨.
         if (isFirstSubscriber.get()) {
             stockDetailCrawlExecutor.submit(() -> crawlService.crawlAndPublish(stockCode));
-            stockDetailCrawlExecutor.submit(() -> chartCacheService.refreshDailyChart(stockCode));
-            stockDetailCrawlExecutor.submit(() -> chartCacheService.refreshMinuteChart(stockCode));
         }
     }
 
     public void unsubscribe(String sessionId, String stockCode) {
-
         Set<String> stocks = sessionSubscriptions.get(sessionId);
         if (stocks != null && stocks.remove(stockCode)) {
             decreaseRefCount(stockCode);
@@ -84,29 +81,19 @@ public class StockRealtimeRedisSubscriptionManager {
     public void unsubscribeAll(String sessionId) {
         Set<String> stocks = sessionSubscriptions.remove(sessionId);
         if (stocks == null) return;
-
-        for (String stockCode : stocks) {
-            decreaseRefCount(stockCode);
-        }
+        for (String stockCode : stocks) decreaseRefCount(stockCode);
     }
 
     public void disconnect(String sessionId) {
-
         Set<String> stocks = sessionSubscriptions.remove(sessionId);
         if (stocks == null) return;
-
-        for (String stockCode : stocks) {
-            decreaseRefCount(stockCode);
-        }
+        for (String stockCode : stocks) decreaseRefCount(stockCode);
     }
 
-    // 로컬에서 여전히 활성 상태인 종목들을 전역 레지스트리에 계속 살아있다고 알림
     @Scheduled(fixedRate = 10_000)
     public void heartbeatActiveStocks() {
         stockRefCount.forEach((stockCode, count) -> {
-            if (count.get() > 0) {
-                watchRegistry.heartbeat(stockCode);
-            }
+            if (count.get() > 0) watchRegistry.heartbeat(stockCode);
         });
     }
 
@@ -116,8 +103,8 @@ public class StockRealtimeRedisSubscriptionManager {
                 container.removeMessageListener(bidAskSubscriber, bidAskTopic(code));
                 container.removeMessageListener(tradeSubscriber, tradeTopic(code));
                 container.removeMessageListener(detailSubscriber, detailTopic(code));
-
-                liveMinuteCandleService.clear(code); // 메모리 누수 방지
+                container.removeMessageListener(dailyCandleSubscriber, dailyCandleTopic(code));
+                container.removeMessageListener(minuteCandleSubscriber, minuteCandleTopic(code));
 
                 log.info("Redis unsubscribe stockCode={}", code);
                 return null;
@@ -136,5 +123,13 @@ public class StockRealtimeRedisSubscriptionManager {
 
     private ChannelTopic detailTopic(String stockCode) {
         return new ChannelTopic("stockdetail." + stockCode + ":event");
+    }
+
+    private ChannelTopic dailyCandleTopic(String stockCode) {
+        return new ChannelTopic("dailycandle." + stockCode + ":event");
+    }
+
+    private ChannelTopic minuteCandleTopic(String stockCode) {
+        return new ChannelTopic("minutecandle." + stockCode + ":event");
     }
 }
