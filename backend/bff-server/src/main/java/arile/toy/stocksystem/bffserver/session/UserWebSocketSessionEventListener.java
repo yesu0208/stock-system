@@ -92,6 +92,11 @@ public class UserWebSocketSessionEventListener {
                             username, "/sub/auto/order", data));
         } else if (destination.startsWith("/sub/stock/")) {
             String stockCode = destination.substring("/sub/stock/".length());
+
+            if ("summary".equals(stockCode)) {
+                return;
+            }
+
             initialDataService.getBidAskPriceData(stockCode)
                     .ifPresent(data -> messagingTemplate.convertAndSend(
                             "/sub/stock/" + stockCode, data));
