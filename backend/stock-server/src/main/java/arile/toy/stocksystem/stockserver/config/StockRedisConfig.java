@@ -4,6 +4,8 @@ import arile.toy.stocksystem.stockserver.autocancel.event.AutoCancelResponseEven
 import arile.toy.stocksystem.stockserver.autoorder.dto.StockServerAutoOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.autoorder.event.AutoOrderResponseEvent;
 import arile.toy.stocksystem.stockserver.cancel.event.CancelResponseEvent;
+import arile.toy.stocksystem.stockserver.chart.event.DailyCandleUpdateEvent;
+import arile.toy.stocksystem.stockserver.chart.event.MinuteCandleUpdateEvent;
 import arile.toy.stocksystem.stockserver.external.stock.event.BidAskPriceTickEvent;
 import arile.toy.stocksystem.stockserver.external.stock.event.StockSummaryTickEvent;
 import arile.toy.stocksystem.stockserver.external.stock.event.TradePriceTickEvent;
@@ -211,6 +213,26 @@ public class StockRedisConfig {
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerAutoOrderResponseMessage.class));
         template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, DailyCandleUpdateEvent> dailyCandleUpdateEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, DailyCandleUpdateEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(DailyCandleUpdateEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, MinuteCandleUpdateEvent> minuteCandleUpdateEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, MinuteCandleUpdateEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(MinuteCandleUpdateEvent.class));
         return template;
     }
 }
