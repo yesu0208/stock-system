@@ -1,8 +1,3 @@
-chart-api:
-  base-url: ${CHART_API_URL}
-  appkey: ${CHART_API_APPKEY}
-  appsecret: ${CHART_API_APPSECRET}
-
 debug: false
 
 frontend:
@@ -81,11 +76,6 @@ spring:
   sql.init.mode: always
 
 ---
-
-chart-api:
-  base-url: https://test.com
-  appkey: test-appkey
-  appsecret: test-appsecret
 
 jwt:
   secret-key: eDlsi387fhsEucu7xhsEehd8fys7ejcSdFeDF92w738lfskc8FejfDB38f==

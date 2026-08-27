@@ -7,7 +7,6 @@ import arile.toy.stocksystem.bffserver.autoorder.repository.BffServerAutoOrderRe
 import arile.toy.stocksystem.bffserver.chart.dto.CandleData;
 import arile.toy.stocksystem.bffserver.chart.dto.MinuteCandle;
 import arile.toy.stocksystem.bffserver.chart.repository.ChartSnapshotRepository;
-import arile.toy.stocksystem.bffserver.chart.service.ChartCacheService;
 import arile.toy.stocksystem.bffserver.exception.server.RedisAccountNotFoundException;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerBidAskPriceTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceTickMessage;
@@ -36,7 +35,6 @@ public class InitialDataService {
     private final BffServerBidAskPriceRepository bffServerBidAskPriceRepository;
     private final StockDetailSnapshotRepository stockDetailSnapshotRepository;
     private final ChartSnapshotRepository chartSnapshotRepository;
-    private final ChartCacheService chartCacheService;
 
     public Optional<AccountResponse> getAccountData(String username) {
 
@@ -124,10 +122,6 @@ public class InitialDataService {
 
     public Optional<List<CandleData>> getDailyChartData(String stockCode) {
         try {
-            List<CandleData> cached = chartSnapshotRepository.getDaily(stockCode);
-            if (cached != null) return Optional.of(cached);
-
-            chartCacheService.refreshDailyChart(stockCode);
             return Optional.ofNullable(chartSnapshotRepository.getDaily(stockCode));
         } catch (Exception e) {
             log.error("Unexpected error while getting daily chart data for stockCode={}", stockCode, e);
@@ -137,10 +131,6 @@ public class InitialDataService {
 
     public Optional<List<MinuteCandle>> getMinuteChartData(String stockCode) {
         try {
-            List<MinuteCandle> cached = chartSnapshotRepository.getMinute(stockCode);
-            if (cached != null) return Optional.of(cached);
-
-            chartCacheService.refreshMinuteChart(stockCode);
             return Optional.ofNullable(chartSnapshotRepository.getMinute(stockCode));
         } catch (Exception e) {
             log.error("Unexpected error while getting minute chart data for stockCode={}", stockCode, e);

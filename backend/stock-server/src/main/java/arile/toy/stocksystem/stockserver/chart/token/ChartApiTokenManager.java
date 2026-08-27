@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.bffserver.chart.token;
+package arile.toy.stocksystem.stockserver.chart.token;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

@@ -4,6 +4,11 @@ api:
   app-secret: ${APP_SECRET}
   ws-url: ${WS_URL}
 
+chart-api:
+  base-url: ${CHART_API_URL}
+  appkey: ${CHART_API_APPKEY}
+  appsecret: ${CHART_API_APPSECRET}
+
 debug: false
 
 logging:
@@ -88,6 +93,11 @@ api:
   app-key: test-app-key
   app-secret: test-app-secret
   ws-url: test-ws-url
+
+chart-api:
+  base-url: https://test.com
+  appkey: test-appkey
+  appsecret: test-appsecret
 
 server:
   group: A

@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.bffserver.chart.config;
+package arile.toy.stocksystem.stockserver.chart.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

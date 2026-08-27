@@ -1,6 +1,8 @@
 package arile.toy.stocksystem.stockserver.external.stock.handler;
 
 import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderTriggerService;
+import arile.toy.stocksystem.stockserver.chart.service.LiveDailyCandleService;
+import arile.toy.stocksystem.stockserver.chart.service.LiveMinuteCandleService;
 import arile.toy.stocksystem.stockserver.external.stock.event.TradePriceTickEvent;
 import arile.toy.stocksystem.stockserver.external.stock.event.publisher.RedisTradePriceEventPublisher;
 import arile.toy.stocksystem.stockserver.external.stock.message.TickMessageType;
@@ -22,6 +24,8 @@ public class TradePriceTickMessageHandler {
     private final TradeMatchingService tradeMatchingService;
     private final AutoOrderTriggerService autoOrderTriggerService;
     private final MarketPhaseService marketPhaseService;
+    private final LiveDailyCandleService liveDailyCandleService;
+    private final LiveMinuteCandleService liveMinuteCandleService;
 
     public void handle(String message) {
 
@@ -73,6 +77,9 @@ public class TradePriceTickMessageHandler {
 
             marketPhaseService.closeMarketAfterClosingCall(tradePriceTickMessage.stockCode(),
                     tradePriceTickMessage.tradeTime());
+
+            liveDailyCandleService.buildAndPublish(stockCode, tradePriceTickMessage);
+            liveMinuteCandleService.updateAndPublish(stockCode, tradePriceTickMessage);
         }
     }
 }
