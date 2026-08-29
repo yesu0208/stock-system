@@ -4,6 +4,9 @@ api:
   app-secret: ${APP_SECRET}
   ws-url: ${WS_URL}
 
+account-api:
+  base-url: ${ACCOUNT_API_URL}
+
 chart-api:
   base-url: ${CHART_API_URL}
   appkey: ${CHART_API_APPKEY}
@@ -89,6 +92,9 @@ api:
   app-key: test-app-key
   app-secret: test-app-secret
   ws-url: test-ws-url
+
+account-api:
+  base-url: http://localhost:8082
 
 chart-api:
   base-url: https://test.com
