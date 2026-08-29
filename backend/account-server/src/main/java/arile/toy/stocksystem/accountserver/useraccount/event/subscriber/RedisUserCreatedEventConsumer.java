@@ -1,6 +1,6 @@
-package arile.toy.stocksystem.stockserver.useraccount.event.subscriber;
+package arile.toy.stocksystem.accountserver.useraccount.event.subscriber;
 
-import arile.toy.stocksystem.stockserver.useraccount.service.UserAccountService;
+import arile.toy.stocksystem.accountserver.useraccount.service.UserAccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Range;
@@ -25,7 +25,7 @@ public class RedisUserCreatedEventConsumer {
     private final String group;
 
     private final String consumerName =
-            "stock-server" + UUID.randomUUID();
+            "account-server" + UUID.randomUUID();
 
     public RedisUserCreatedEventConsumer(
             RedisTemplate<String, Object> streamRedisTemplate,
