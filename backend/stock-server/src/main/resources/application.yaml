@@ -49,6 +49,9 @@ redis:
       prefix: auto-cancel-events
       consumer-group: stock-group
 
+    trade-executed:
+      key: trade-executed-events
+
 server:
   port: 8081
   group: B
