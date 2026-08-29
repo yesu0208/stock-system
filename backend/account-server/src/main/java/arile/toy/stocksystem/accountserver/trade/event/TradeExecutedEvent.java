@@ -8,6 +8,7 @@ public record TradeExecutedEvent(
         String username,
         String stockCode,
         TradeType tradeType,
+        Integer orderPrice,
         Integer tradePrice,
         Integer tradeQuantity
 ) {
