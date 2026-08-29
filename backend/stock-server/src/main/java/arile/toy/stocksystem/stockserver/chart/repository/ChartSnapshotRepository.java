@@ -2,7 +2,6 @@ package arile.toy.stocksystem.stockserver.chart.repository;
 
 import arile.toy.stocksystem.stockserver.chart.dto.CandleData;
 import arile.toy.stocksystem.stockserver.chart.dto.MinuteCandle;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

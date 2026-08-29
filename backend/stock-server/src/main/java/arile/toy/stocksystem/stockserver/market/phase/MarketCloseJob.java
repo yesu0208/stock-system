@@ -8,8 +8,6 @@ import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockPro
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
-import arile.toy.stocksystem.stockserver.useraccount.service.UserAccountService;
-import arile.toy.stocksystem.stockserver.userstock.service.UserStockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

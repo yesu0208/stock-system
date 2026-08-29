@@ -7,7 +7,6 @@ import arile.toy.stocksystem.stockserver.order.dto.OrderQueueRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.OrderStatus;
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
-import arile.toy.stocksystem.stockserver.trade.dto.TradeResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
