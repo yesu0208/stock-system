@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.chart.dto;
 
 import arile.toy.stocksystem.bffserver.external.stock.message.TickMessageType;
+
 import java.util.List;
 
 public record DailyChartSnapshotMessage(

@@ -7,8 +7,7 @@ import arile.toy.stocksystem.stockserver.cancel.service.CancelService;
 import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockProperties;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
-import arile.toy.stocksystem.stockserver.useraccount.service.UserAccountService;
-import arile.toy.stocksystem.stockserver.userstock.service.UserStockService;
+import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,8 +28,7 @@ public class MarketCloseJob {
     private final CancelService cancelService;
     private final AutoOrderService autoOrderService;
     private final AutoCancelService autoCancelService;
-    private final UserAccountService userAccountService;
-    private final UserStockService userStockService;
+    private final AccountApiClient accountApiClient;
     private final MarketClosePublisher marketClosePublisher;
     private final ExternalStockProperties externalStockProperties;
 
@@ -65,8 +63,7 @@ public class MarketCloseJob {
                     )
                     .collect(Collectors.toSet());
 
-            userAccountService.settleAccounts(usernames);
-            userStockService.settleStocks(usernames);
+            accountApiClient.settle(usernames);
 
             marketClosePublisher.publishMarketClose();
 

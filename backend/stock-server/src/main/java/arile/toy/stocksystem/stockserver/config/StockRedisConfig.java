@@ -15,8 +15,6 @@ import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMe
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.event.OrderResponseEvent;
 import arile.toy.stocksystem.stockserver.trade.event.TradeResponseEvent;
-import arile.toy.stocksystem.stockserver.useraccount.dto.StockServerAccountMessage;
-import arile.toy.stocksystem.stockserver.useraccount.event.AccountUpdateEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -123,29 +121,6 @@ public class StockRedisConfig {
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new JacksonJsonRedisSerializer<>(OrderResponseEvent.class));
-        return template;
-    }
-
-    @Bean
-    public RedisTemplate<String, StockServerAccountMessage> stockServerAccountMessageRedisTemplate(
-            RedisConnectionFactory redisConnectionFactory
-    ) {
-        var template = new RedisTemplate<String, StockServerAccountMessage>();
-        template.setConnectionFactory(redisConnectionFactory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerAccountMessage.class));
-        template.afterPropertiesSet();
-        return template;
-    }
-
-    @Bean
-    public RedisTemplate<String, AccountUpdateEvent> accountUpdateEventRedisTemplate(
-            RedisConnectionFactory redisConnectionFactory) {
-        var template = new RedisTemplate<String, AccountUpdateEvent>();
-        template.setConnectionFactory(redisConnectionFactory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new JacksonJsonRedisSerializer<>(AccountUpdateEvent.class));
         return template;
     }
 
