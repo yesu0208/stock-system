@@ -50,12 +50,21 @@ public class TradePriceTickMessageHandler {
 
             String stockCode = fields[offset];
 
+            Integer curPrice = Integer.parseInt(fields[offset + 2]);
+            Integer prevCloseDiff = Integer.parseInt(fields[offset + 4]);
+            Integer prevClosePrice = curPrice - prevCloseDiff;
+            String prevCloseRate = (prevClosePrice != 0)
+                    ? String.format("%.2f", (prevCloseDiff * 100.0) / prevClosePrice)
+                    : "0.00";
+
             TradePriceTickMessage tradePriceTickMessage = new TradePriceTickMessage(
                     TickMessageType.TRADEPRICE,
                     stockCode,
                     fields[offset + 1],
-                    Integer.parseInt(fields[offset + 2]),
-                    Integer.parseInt(fields[offset + 4]),
+                    curPrice,
+                    prevCloseDiff,
+                    prevClosePrice,
+                    prevCloseRate,
                     Integer.parseInt(fields[offset + 7]),
                     Integer.parseInt(fields[offset + 8]),
                     Integer.parseInt(fields[offset + 9]),

@@ -6,6 +6,8 @@ public record BffServerTradePriceTickMessage(
         String tradeTime,
         Integer curPrice,
         Integer prevCloseDiff,
+        Integer prevClosePrice,
+        String prevCloseRate,
         Integer startPrice,
         Integer highPrice,
         Integer lowPrice,

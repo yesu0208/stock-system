@@ -6,6 +6,8 @@ public record TradePriceTickMessage(
         String tradeTime,
         Integer curPrice,
         Integer prevCloseDiff,
+        Integer prevClosePrice,
+        String prevCloseRate,
         Integer startPrice,
         Integer highPrice,
         Integer lowPrice,
