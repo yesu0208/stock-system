@@ -7,11 +7,11 @@ import arile.toy.stocksystem.stockserver.order.repository.OrderRepository;
 import arile.toy.stocksystem.stockserver.trade.dto.TradeResult;
 import arile.toy.stocksystem.stockserver.trade.dto.TradeType;
 import arile.toy.stocksystem.stockserver.trade.entity.TradeEntity;
+import arile.toy.stocksystem.stockserver.trade.event.TradeExecutedEvent;
+import arile.toy.stocksystem.stockserver.trade.event.TradeResponseEvent;
+import arile.toy.stocksystem.stockserver.trade.event.publisher.TradeResponseEventPublisher;
+import arile.toy.stocksystem.stockserver.trade.outbox.service.TradeOutboxRecorder;
 import arile.toy.stocksystem.stockserver.trade.repository.TradeRepository;
-import arile.toy.stocksystem.stockserver.useraccount.entity.UserAccountEntity;
-import arile.toy.stocksystem.stockserver.useraccount.repository.UserAccountRepository;
-import arile.toy.stocksystem.stockserver.userstock.entity.UserStockEntity;
-import arile.toy.stocksystem.stockserver.userstock.repository.UserStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,73 +22,24 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class TradeExecutionService {
 
-    private final UserAccountRepository userAccountRepository;
-    private final UserStockRepository userStockRepository;
     private final TradeRepository tradeRepository;
     private final OrderRepository orderRepository;
+    private final TradeResponseEventPublisher tradeResponseEventPublisher;
+    private final TradeOutboxRecorder tradeOutboxRecorder;
 
     @Transactional
     public TradeResult executeBuyTrade(OrderDto buyOrderDto, int tradePrice, int executable) {
-
-        OrderEntity orderEntity = orderRepository.findByIdForUpdate(buyOrderDto.orderId())
-                .orElseThrow(() -> new IllegalArgumentException("Order not found."));
-
-        if (orderEntity.getOrderStatus() != OrderStatus.OPEN &&
-        orderEntity.getOrderStatus() != OrderStatus.PARTIAL) {
-            return null;
-        }
-
-        long tradeAmount = (long) tradePrice * executable;
-
-        UserAccountEntity account = userAccountRepository
-                .findByUsernameForUpdate(buyOrderDto.username())
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
-
-        if (account.getBalance() < tradeAmount) {
-            throw new IllegalStateException(
-                    "DB/Redis balance inconsistency detected during trade execution."
-            );
-        }
-
-        account.setBalance(account.getBalance() - tradeAmount);
-        userAccountRepository.save(account);
-
-        UserStockEntity userStock = userStockRepository
-                .findByUsernameAndStockCode(buyOrderDto.username(), buyOrderDto.stockCode())
-                .orElseGet(() ->
-                        UserStockEntity.of(
-                                buyOrderDto.username(),
-                                buyOrderDto.stockCode(),
-                                0L,
-                                0
-                        )
-                );
-
-        int prevQuantity = userStock.getQuantity();
-        userStock.setQuantity(prevQuantity + executable);
-
-        long prevAmount = userStock.getAmount();
-        userStock.setAmount(prevAmount + tradeAmount);
-
-        userStockRepository.save(userStock);
-
-        TradeEntity tradeEntity = tradeRepository.save(
-                TradeEntity.of(buyOrderDto.orderId(), buyOrderDto.username(),
-                        buyOrderDto.stockCode(), TradeType.BUY, tradePrice, executable)
-        );
-
-        int remainingQuantity = buyOrderDto.remainingQuantity() - executable;
-        orderEntity.setOrderStatus(remainingQuantity > 0 ? OrderStatus.PARTIAL : OrderStatus.FILLED);
-        orderEntity.setRemainingQuantity(remainingQuantity);
-        orderRepository.save(orderEntity);
-
-        return TradeResult.of(tradeEntity, prevAmount + tradeAmount, prevQuantity + executable);
+        return execute(buyOrderDto, tradePrice, executable, TradeType.BUY);
     }
 
     @Transactional
     public TradeResult executeSellTrade(OrderDto sellOrderDto, int tradePrice, int executable) {
+        return execute(sellOrderDto, tradePrice, executable, TradeType.SELL);
+    }
 
-        OrderEntity orderEntity = orderRepository.findByIdForUpdate(sellOrderDto.orderId())
+    private TradeResult execute(OrderDto orderDto, int tradePrice, int executable, TradeType tradeType) {
+
+        OrderEntity orderEntity = orderRepository.findByIdForUpdate(orderDto.orderId())
                 .orElseThrow(() -> new IllegalArgumentException("Order not found."));
 
         if (orderEntity.getOrderStatus() != OrderStatus.OPEN &&
@@ -96,49 +47,25 @@ public class TradeExecutionService {
             return null;
         }
 
-        long tradeAmount = (long) tradePrice * executable;
-
-        UserAccountEntity account = userAccountRepository
-                .findByUsernameForUpdate(sellOrderDto.username())
-                .orElseThrow(() -> new IllegalArgumentException("Account not found."));
-
-        account.setBalance(account.getBalance() + tradeAmount);
-        userAccountRepository.save(account);
-
-        UserStockEntity userStock = userStockRepository
-                .findByUsernameAndStockCode(sellOrderDto.username(), sellOrderDto.stockCode())
-                .orElseThrow(() ->
-                        new RuntimeException("No stocks owned.")
-                );
-
-        if (userStock.getQuantity() < sellOrderDto.remainingQuantity()) {
-            throw new IllegalStateException(
-                    "DB/Redis stock quantity inconsistency detected during trade execution."
-            );
-        }
-
-        int prevQuantity = userStock.getQuantity();
-        long prevAmount = userStock.getAmount();
-        long avgPrice = prevAmount / prevQuantity;
-
-        userStock.setQuantity(prevQuantity - executable);
-        if (prevQuantity - executable == 0) {
-            userStockRepository.delete(userStock);
-        } else {
-            userStock.setAmount(userStock.getAmount() - avgPrice * executable);
-            userStockRepository.save(userStock);
-        }
-
         TradeEntity tradeEntity = tradeRepository.save(
-                TradeEntity.of(sellOrderDto.orderId(), sellOrderDto.username(),
-                        sellOrderDto.stockCode(), TradeType.SELL, tradePrice, executable)
+                TradeEntity.of(orderDto.orderId(), orderDto.username(),
+                        orderDto.stockCode(), tradeType, tradePrice, executable)
         );
 
-        int remainingQuantity = sellOrderDto.remainingQuantity() - executable;
+        int remainingQuantity = orderDto.remainingQuantity() - executable;
         orderEntity.setOrderStatus(remainingQuantity > 0 ? OrderStatus.PARTIAL : OrderStatus.FILLED);
         orderEntity.setRemainingQuantity(remainingQuantity);
         orderRepository.save(orderEntity);
 
-        return TradeResult.of(tradeEntity, prevAmount - tradeAmount, prevQuantity - executable);
+        tradeOutboxRecorder.record(
+                TradeExecutedEvent.of(
+                        tradeEntity.getTradeId(), orderDto.orderId(), orderDto.username(),
+                        orderDto.stockCode(), tradeType, orderDto.orderPrice(), tradePrice, executable
+                )
+        );
+
+        tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(tradeEntity));
+
+        return TradeResult.of(tradeEntity);
     }
 }
