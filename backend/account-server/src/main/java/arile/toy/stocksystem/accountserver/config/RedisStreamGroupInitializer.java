@@ -21,9 +21,16 @@ public class RedisStreamGroupInitializer {
     @Value("${redis.streams.user.consumer-group}")
     private String userConsumerGroup;
 
+    @Value("${redis.streams.trade-executed.key}")
+    private String tradeExecutedStreamKey;
+
+    @Value("${redis.streams.trade-executed.consumer-group}")
+    private String tradeExecutedConsumerGroup;
+
     @PostConstruct
     public void init() {
         createGroup(userStreamKey, userConsumerGroup);
+        createGroup(tradeExecutedStreamKey, tradeExecutedConsumerGroup);
     }
 
     private void createGroup(String streamKey, String consumerGroup) {

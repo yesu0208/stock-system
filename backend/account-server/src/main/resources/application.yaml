@@ -23,6 +23,9 @@ redis:
     user:
       key: user-events
       consumer-group: account-group
+    trade-executed:
+      key: trade-executed-events
+      consumer-group: account-group
 
 spring:
   application.name: account-server
