@@ -19,6 +19,10 @@ management:
 redis:
   host: ${REDIS_HOST}
   port: ${REDIS_PORT}
+  streams:
+    user:
+      key: user-events
+      consumer-group: account-group
 
 spring:
   application.name: account-server
@@ -47,3 +51,7 @@ spring:
 redis:
   host: localhost
   port: 6379
+  streams:
+    user:
+      key: user-events
+      consumer-group: account-group
