@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -37,6 +38,18 @@ public class AccountApiClient {
     public boolean refundReservedStock(String username, String stockCode, int quantity) {
         return post("/internal/accounts/" + username + "/refund-stock",
                 Map.of("stockCode", stockCode, "quantity", quantity));
+    }
+
+    public void settle(Set<String> usernames) {
+        try {
+            restClient.post()
+                    .uri(baseUrl + "/internal/accounts/settle")
+                    .body(Map.of("usernames", usernames))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientException e) {
+            log.error("Account settle API call failed.", e);
+        }
     }
 
     private boolean post(String path, Map<String, Object> body) {
