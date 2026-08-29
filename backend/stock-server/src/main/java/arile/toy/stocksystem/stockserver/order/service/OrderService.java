@@ -6,6 +6,7 @@ import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEven
 import arile.toy.stocksystem.stockserver.order.event.publisher.OrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.order.repository.OrderRepository;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class OrderService {
     private final OrderQueueRegistry orderQueueRegistry;
     private final OrderResponseEventPublisher orderResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
-    private final AccountBalanceCommand accountBalanceCommand;
+    private final AccountApiClient accountApiClient;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     public void registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
@@ -30,14 +31,14 @@ public class OrderService {
         long orderAmount = (long) request.orderPrice() * request.orderQuantity();
 
         if (!fromAutoOrder && request.orderType() == OrderType.BUY) {
-            boolean reserved = accountBalanceCommand
+            boolean reserved = accountApiClient
                     .reserveCash(request.username(), orderAmount);
             if (!reserved) {
                 orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_BALANCE);
                 return;
             }
         }  else if (!fromAutoOrder && request.orderType() == OrderType.SELL){
-            boolean reserved = accountBalanceCommand
+            boolean reserved = accountApiClient
                     .reserveStock(request.username(), request.stockCode(), request.orderQuantity());
 
             if (!reserved) {
@@ -64,7 +65,7 @@ public class OrderService {
             orderQueueRegistry.orderEnqueue(orderDto);
 
         } catch (Exception e) {
-            accountBalanceCommand.refundReservedCash(request.username(), orderAmount);
+            accountApiClient.refundReservedCash(request.username(), orderAmount);
             orderResponseEventPublisher.publishError(request, OrderErrorCode.INTERNAL_ERROR);
             throw e;
         }

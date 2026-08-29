@@ -12,6 +12,7 @@ import arile.toy.stocksystem.stockserver.autoorder.dto.UpdateAutoOrderStatusResu
 import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderService;
+import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class AutoCancelService {
     private final AutoOrderQueueRegistry autoOrderQueueRegistry;
     private final AutoCancelResponseEventPublisher autoCancelResponseEventPublisher;
     private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
-    private final AccountBalanceCommand accountBalanceCommand;
+    private final AccountApiClient accountApiClient;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     @Transactional
@@ -97,7 +98,7 @@ public class AutoCancelService {
 
         if (autoOrderEntity.getAutoOrderType() == AutoOrderType.BUY) {
 
-            refunded = accountBalanceCommand.refundReservedCash(
+            refunded = accountApiClient.refundReservedCash(
                     autoOrderEntity.getUsername(),
                     (long) autoOrderEntity.getOrderPrice()
                             * autoOrderEntity.getOrderQuantity()
@@ -113,7 +114,7 @@ public class AutoCancelService {
 
         } else {
 
-            refunded = accountBalanceCommand.refundReservedStock(
+            refunded = accountApiClient.refundReservedStock(
                     autoOrderEntity.getUsername(),
                     autoOrderEntity.getStockCode(),
                     autoOrderEntity.getOrderQuantity()

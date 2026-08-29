@@ -6,6 +6,7 @@ import arile.toy.stocksystem.stockserver.autoorder.event.StockServerAutoOrderReq
 import arile.toy.stocksystem.stockserver.autoorder.event.publisher.AutoOrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.autoorder.repository.AutoOrderRepository;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class AutoOrderService {
     private final AutoOrderQueueRegistry autoOrderQueueRegistry;
     private final AutoOrderResponseEventPublisher autoOrderResponseEventPublisher;
     private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
-    private final AccountBalanceCommand accountBalanceCommand;
+    private final AccountApiClient accountApiClient;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     public void registerAutoOrder(StockServerAutoOrderRequestEvent request) {
@@ -30,7 +31,7 @@ public class AutoOrderService {
         long orderAmount = (long) request.orderPrice() * request.orderQuantity();
 
         if (request.autoOrderType() == AutoOrderType.BUY) {
-            boolean reserved = accountBalanceCommand
+            boolean reserved = accountApiClient
                     .reserveCash(request.username(), orderAmount);
 
             if (!reserved) {
@@ -38,7 +39,7 @@ public class AutoOrderService {
                 return;
             }
         } else {
-            boolean reserved = accountBalanceCommand
+            boolean reserved = accountApiClient
                     .reserveStock(request.username(), request.stockCode(), request.orderQuantity());
 
             if (!reserved) {
@@ -65,7 +66,7 @@ public class AutoOrderService {
             autoOrderQueueRegistry.autoOrderEnqueue(autoOrderDto);
 
         } catch (Exception e) {
-            accountBalanceCommand.refundReservedCash(request.username(), orderAmount);
+            accountApiClient.refundReservedCash(request.username(), orderAmount);
             autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INTERNAL_ERROR);
             throw e;
 

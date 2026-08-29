@@ -12,6 +12,7 @@ import arile.toy.stocksystem.stockserver.order.dto.UpdateOrderStatusResult;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class CancelService {
     private final OrderQueueRegistry orderQueueRegistry;
     private final CancelResponseEventPublisher cancelResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
-    private final AccountBalanceCommand accountBalanceCommand;
+    private final AccountApiClient accountApiClient;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     @Transactional
@@ -100,7 +101,7 @@ public class CancelService {
 
         if (orderEntity.getOrderType() == OrderType.BUY) {
 
-            refunded = accountBalanceCommand.refundReservedCash(
+            refunded = accountApiClient.refundReservedCash(
                     orderEntity.getUsername(),
                     (long) orderEntity.getOrderPrice()
                             * orderEntity.getRemainingQuantity()
@@ -116,7 +117,7 @@ public class CancelService {
 
         } else {
 
-            refunded = accountBalanceCommand.refundReservedStock(
+            refunded = accountApiClient.refundReservedStock(
                     orderEntity.getUsername(),
                     orderEntity.getStockCode(),
                     orderEntity.getRemainingQuantity()
