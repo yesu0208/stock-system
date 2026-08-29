@@ -1,0 +1,107 @@
+package arile.toy.stocksystem.accountserver.lua.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+
+@Configuration
+public class AccountLuaConfig {
+
+    @Bean
+    public DefaultRedisScript<Long> reserveCashScript() {
+        return new DefaultRedisScript<>("""
+            local available = tonumber(redis.call('HGET', KEYS[1], 'availableCash') or '0')
+            local amount = tonumber(ARGV[1])
+
+            if available < amount then
+                return 0
+            end
+
+            redis.call('HINCRBY', KEYS[1], 'availableCash', -amount)
+            redis.call('HINCRBY', KEYS[1], 'reservedCash', amount)
+            return 1
+        """, Long.class);
+    }
+
+    @Bean
+    public DefaultRedisScript<Long> refundCashScript() {
+        return new DefaultRedisScript<>("""
+            local reserved = tonumber(redis.call('HGET', KEYS[1], 'reservedCash') or '0')
+            local refund = tonumber(ARGV[1])
+
+            if reserved < refund then
+                return 0
+            end
+
+            redis.call('HINCRBY', KEYS[1], 'reservedCash', -refund)
+            redis.call('HINCRBY', KEYS[1], 'availableCash', refund)
+            return 1
+        """, Long.class);
+    }
+
+    @Bean
+    public DefaultRedisScript<Long> reserveStockScript() {
+        return new DefaultRedisScript<>(
+                """
+                local stockCode = ARGV[2]
+                local qtyToReserve = tonumber(ARGV[1])
+        
+                local stocksJson = redis.call('HGET', KEYS[1], 'stocks')
+                if not stocksJson or stocksJson == '' then
+                    return 0
+                end
+        
+                local stocks = cjson.decode(stocksJson)
+                local stock = stocks[stockCode]
+        
+                if not stock then
+                    return 0
+                end
+        
+                local available = tonumber(stock.availableQuantity or stock.quantity or 0)
+        
+                if available < qtyToReserve then
+                    return 0
+                end
+        
+                stock.availableQuantity = available - qtyToReserve
+        
+                stocks[stockCode] = stock
+                redis.call('HSET', KEYS[1], 'stocks', cjson.encode(stocks))
+                return 1
+                """,
+                Long.class
+        );
+    }
+
+    @Bean
+    public DefaultRedisScript<Long> refundStockScript() {
+        return new DefaultRedisScript<>(
+                """
+                local stockCode = ARGV[2]
+                local qtyToRefund = tonumber(ARGV[1])
+        
+                local stocksJson = redis.call('HGET', KEYS[1], 'stocks')
+                if not stocksJson or stocksJson == '' then
+                    return 0
+                end
+        
+                local stocks = cjson.decode(stocksJson)
+                local stock = stocks[stockCode]
+        
+                if not stock then
+                    return 0
+                end
+        
+                local available = tonumber(stock.availableQuantity or stock.quantity or 0)
+        
+                stock.availableQuantity = available + qtyToRefund
+        
+                stocks[stockCode] = stock
+                redis.call('HSET', KEYS[1], 'stocks', cjson.encode(stocks))
+                return 1
+                """,
+                Long.class
+        );
+    }
+}
