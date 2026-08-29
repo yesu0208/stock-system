@@ -13,8 +13,6 @@ import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
-import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
-import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,7 +29,6 @@ public class CancelService {
     private final CancelResponseEventPublisher cancelResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final AccountApiClient accountApiClient;
-    private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     @Transactional
     public void registerCancel(CancelRequestEvent request) {
@@ -140,6 +137,5 @@ public class CancelService {
         stockServerOrderResponseRepository.delete(event.username(), event.orderId());
 
         cancelResponseEventPublisher.publish(event);
-        accountUpdateEventPublisher.publish(event.username());
     }
 }

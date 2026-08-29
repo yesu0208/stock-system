@@ -7,8 +7,6 @@ import arile.toy.stocksystem.stockserver.autoorder.event.publisher.AutoOrderResp
 import arile.toy.stocksystem.stockserver.autoorder.repository.AutoOrderRepository;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
-import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
-import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +22,6 @@ public class AutoOrderService {
     private final AutoOrderResponseEventPublisher autoOrderResponseEventPublisher;
     private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
     private final AccountApiClient accountApiClient;
-    private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     public void registerAutoOrder(StockServerAutoOrderRequestEvent request) {
 
@@ -80,7 +77,6 @@ public class AutoOrderService {
 
         stockServerAutoOrderResponseRepository.save(autoOrderResponseMessage);
         autoOrderResponseEventPublisher.publish(autoOrderResponseMessage);
-        accountUpdateEventPublisher.publish(savedAutoOrder.getUsername());
     }
 
     @Transactional

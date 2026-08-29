@@ -13,8 +13,6 @@ import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderService;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
-import arile.toy.stocksystem.stockserver.useraccount.event.publisher.AccountUpdateEventPublisher;
-import arile.toy.stocksystem.stockserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,7 +29,6 @@ public class AutoCancelService {
     private final AutoCancelResponseEventPublisher autoCancelResponseEventPublisher;
     private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
     private final AccountApiClient accountApiClient;
-    private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     @Transactional
     public void registerAutoCancel(AutoCancelRequestEvent request) {
@@ -137,6 +134,5 @@ public class AutoCancelService {
         stockServerAutoOrderResponseRepository.delete(event.username(), event.autoOrderId());
 
         autoCancelResponseEventPublisher.publish(event);
-        accountUpdateEventPublisher.publish(event.username());
     }
 }
