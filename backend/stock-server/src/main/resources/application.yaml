@@ -30,10 +30,6 @@ redis:
   port: ${REDIS_PORT}
 
   streams:
-    user:
-      key: user-events
-      consumer-group: stock-group
-
     order:
       prefix: order-events
       consumer-group: stock-group

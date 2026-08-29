@@ -39,12 +39,6 @@ public class RedisStreamGroupInitializer {
     @Value("${redis.streams.auto-cancel.consumer-group}")
     private String autoCancelConsumerGroup;
 
-    @Value("${redis.streams.user.key}")
-    private String userStreamKey;
-
-    @Value("${redis.streams.user.consumer-group}")
-    private String userConsumerGroup;
-
     @Value("${server.group}")
     private String stockGroup;
 
@@ -54,8 +48,6 @@ public class RedisStreamGroupInitializer {
         createGroup(cancelPrefix + "-" + stockGroup, cancelConsumerGroup);
         createGroup(autoOrderPrefix + "-" + stockGroup, autoOrderConsumerGroup);
         createGroup(autoCancelPrefix + "-" + stockGroup, autoCancelConsumerGroup);
-
-        createGroup(userStreamKey, userConsumerGroup);
     }
 
     private void createGroup(String streamKey, String consumerGroup) {
