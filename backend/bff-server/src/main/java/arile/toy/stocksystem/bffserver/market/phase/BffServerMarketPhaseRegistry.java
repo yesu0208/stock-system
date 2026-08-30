@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -22,6 +23,11 @@ public class BffServerMarketPhaseRegistry {
 
     @PostConstruct
     public void init() {
+        resync();
+    }
+
+    @Scheduled(fixedRate = 300_000)
+    public void resync() {
         try {
             Map<Object, Object> snapshot = redisTemplate.opsForHash().entries(SNAPSHOT_KEY);
 
@@ -32,10 +38,8 @@ public class BffServerMarketPhaseRegistry {
                     log.warn("알 수 없는 market phase 값. stockCode={}, phase={}", stockCode, phase);
                 }
             });
-
-            log.info("Market phase snapshot loaded from Redis. size={}", phaseMap.size());
         } catch (Exception e) {
-            log.warn("Market phase snapshot 로딩 실패. pub/sub 갱신에만 의존합니다.", e);
+            log.warn("Market phase snapshot 재동기화 실패. 다음 주기에 재시도합니다.", e);
         }
     }
 
