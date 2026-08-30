@@ -62,6 +62,10 @@ stock-groups:
 
 spring:
   application.name: bff-server
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
   datasource:
     url: ${LOCAL_DB_URL}
     username: ${LOCAL_DB_USER}

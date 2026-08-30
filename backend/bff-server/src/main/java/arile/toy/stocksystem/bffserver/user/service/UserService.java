@@ -11,6 +11,7 @@ import arile.toy.stocksystem.bffserver.user.entity.UserEntity;
 import arile.toy.stocksystem.bffserver.user.event.UserCreatedEvent;
 import arile.toy.stocksystem.bffserver.user.event.publisher.UserCreatedEventPublisher;
 import arile.toy.stocksystem.bffserver.user.repository.UserRepository;
+import arile.toy.stocksystem.bffserver.user.storage.ProfileImageStorage;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -31,6 +33,7 @@ public class UserService implements UserDetailsService {
     private final JwtService jwtService;
     private final UserCreatedEventPublisher userCreatedEventPublisher;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final ProfileImageStorage profileImageStorage;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UserNotFoundException {
@@ -114,6 +117,16 @@ public class UserService implements UserDetailsService {
         }
 
         userEntity.changeNickname(request.nickname());
+
+        return UserDto.fromEntity(userEntity);
+    }
+
+    @Transactional
+    public UserDto changeProfileImage(String username, MultipartFile file) {
+        var userEntity = getUserEntityByUsername(username);
+
+        String imageUrl = profileImageStorage.store(file, username);
+        userEntity.changeProfileImageUrl(imageUrl);
 
         return UserDto.fromEntity(userEntity);
     }
