@@ -71,16 +71,18 @@ public class TradeExecutionApplyService {
 
         long totalAmount = prevAmount + tradeAmount;
         int totalQuantity = prevQuantity + executable;
-        long avgPrice = totalQuantity == 0 ? 0 : totalAmount / totalQuantity;
 
         boolean redisOk = tradeCommand.applyBuyTrade(
-                event.username(), event.stockCode(), totalQuantity, avgPrice,
+                event.username(), event.stockCode(), totalQuantity, totalAmount,
                 orderAmount, differenceAmount
         );
 
         if (!redisOk) {
             log.error("Redis buy trade apply failed. username={}, stockCode={}",
                     event.username(), event.stockCode());
+            throw new IllegalStateException(
+                    "Redis buy trade apply failed. username=%s, stockCode=%s"
+                            .formatted(event.username(), event.stockCode()));
         }
     }
 
@@ -110,26 +112,30 @@ public class TradeExecutionApplyService {
 
         int prevQuantity = userStock.getQuantity();
         long prevAmount = userStock.getAmount();
-        long avgPrice = prevAmount / prevQuantity;
+        int totalQuantity = prevQuantity - executable;
 
-        userStock.setQuantity(prevQuantity - executable);
-        if (prevQuantity - executable == 0) {
+        long soldAmount = prevAmount * executable / prevQuantity;
+        long remainingAmount = prevAmount - soldAmount;
+
+        userStock.setQuantity(totalQuantity);
+        if (totalQuantity == 0) {
             userStockRepository.delete(userStock);
         } else {
-            userStock.setAmount(userStock.getAmount() - avgPrice * executable);
+            userStock.setAmount(remainingAmount);
             userStockRepository.save(userStock);
         }
 
-        int totalQuantity = prevQuantity - executable;
-
         boolean redisOk = tradeCommand.applySellTrade(
-                event.username(), event.stockCode(), totalQuantity, avgPrice,
+                event.username(), event.stockCode(), totalQuantity, remainingAmount,
                 orderAmount, differenceAmount
         );
 
         if (!redisOk) {
             log.error("Redis sell trade apply failed. username={}, stockCode={}",
                     event.username(), event.stockCode());
+            throw new IllegalStateException(
+                    "Redis buy trade apply failed. username=%s, stockCode=%s"
+                            .formatted(event.username(), event.stockCode()));
         }
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -80,5 +81,11 @@ public class UserAccountService {
         }
 
         log.info("Account settlement completed for {} users.", usernames.size());
+    }
+
+    @Transactional
+    public void settleAllAccounts() {
+        Set<String> allUsernames = new HashSet<>(userAccountRepository.findAllUsernames());
+        settleAccounts(allUsernames);
     }
 }

@@ -2,21 +2,27 @@ package arile.toy.stocksystem.stockserver.autoorder.sevice;
 
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderDto;
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderQueueRegistry;
+import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderResultCode;
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderStatus;
+import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderType;
 import arile.toy.stocksystem.stockserver.autoorder.dto.UpdateAutoOrderStatusResult;
+import arile.toy.stocksystem.stockserver.autoorder.event.StockServerAutoOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.autoorder.event.publisher.AutoOrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
 import arile.toy.stocksystem.stockserver.lock.AutoStockLockRegistry;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AutoOrderTriggerService {
 
     private final AutoOrderQueueRegistry autoOrderQueueRegistry;
@@ -25,6 +31,7 @@ public class AutoOrderTriggerService {
     private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
     private final OrderService orderService;
     private final AutoOrderResponseEventPublisher autoOrderResponseEventPublisher;
+    private final AccountApiClient accountApiClient;
 
     public void getExternalTickMessageAndTrigger(TradePriceTickMessage tradePriceTickMessage) {
         ReentrantLock lock = autoStockLockRegistry.lock(tradePriceTickMessage.stockCode());
@@ -35,7 +42,6 @@ public class AutoOrderTriggerService {
         } finally {
             lock.unlock();
         }
-
     }
 
     private void moveToStockQueue(TradePriceTickMessage tick) {
@@ -43,7 +49,6 @@ public class AutoOrderTriggerService {
         int currentPrice = tick.curPrice();
 
         pollAndTriggerSell(stockCode, currentPrice);
-
         pollAndTriggerBuy(stockCode, currentPrice);
     }
 
@@ -58,17 +63,7 @@ public class AutoOrderTriggerService {
                 break;
             }
 
-            UpdateAutoOrderStatusResult result =
-                    autoOrderService.updateAutoOrderStatusByTrigger(autoOrderDto.autoOrderId());
-            if (result.previousStatus() != AutoOrderStatus.ACTIVE) {
-                continue;
-            }
-
-            StockServerOrderRequestEvent event = StockServerOrderRequestEvent.fromAutoOrderDto(autoOrderDto);
-            orderService.registerOrder(event, true);
-
-            stockServerAutoOrderResponseRepository.delete(autoOrderDto.username(), autoOrderDto.autoOrderId());
-            autoOrderResponseEventPublisher.publishTrigger(autoOrderDto.username());
+            triggerAndRegisterOrder(autoOrderDto);
         }
     }
 
@@ -83,17 +78,57 @@ public class AutoOrderTriggerService {
                 break;
             }
 
-            UpdateAutoOrderStatusResult result =
-                    autoOrderService.updateAutoOrderStatusByTrigger(autoOrderDto.autoOrderId());
-            if (result.previousStatus() != AutoOrderStatus.ACTIVE) {
-                continue;
-            }
+            triggerAndRegisterOrder(autoOrderDto);
+        }
+    }
 
-            StockServerOrderRequestEvent event = StockServerOrderRequestEvent.fromAutoOrderDto(autoOrderDto);
+    private void triggerAndRegisterOrder(AutoOrderDto autoOrderDto) {
+
+        UpdateAutoOrderStatusResult result =
+                autoOrderService.updateAutoOrderStatusByTrigger(autoOrderDto.autoOrderId());
+
+        if (result.previousStatus() != AutoOrderStatus.ACTIVE) {
+            return;
+        }
+
+        StockServerOrderRequestEvent event = StockServerOrderRequestEvent.fromAutoOrderDto(autoOrderDto);
+
+        try {
             orderService.registerOrder(event, true);
 
             stockServerAutoOrderResponseRepository.delete(autoOrderDto.username(), autoOrderDto.autoOrderId());
             autoOrderResponseEventPublisher.publishTrigger(autoOrderDto.username());
+
+        } catch (Exception e) {
+
+            log.error("Auto order trigger -> order registration failed. autoOrderId={}, username={}, stockCode={}",
+                    autoOrderDto.autoOrderId(), autoOrderDto.username(), autoOrderDto.stockCode(), e);
+
+            compensateFailedTrigger(autoOrderDto);
         }
+    }
+
+    private void compensateFailedTrigger(AutoOrderDto autoOrderDto) {
+
+        boolean refunded;
+
+        if (autoOrderDto.autoOrderType() == AutoOrderType.BUY) {
+            long orderAmount = (long) autoOrderDto.orderPrice() * autoOrderDto.orderQuantity();
+            refunded = accountApiClient.refundReservedCash(autoOrderDto.username(), orderAmount);
+        } else {
+            refunded = accountApiClient.refundReservedStock(
+                    autoOrderDto.username(), autoOrderDto.stockCode(), autoOrderDto.orderQuantity());
+        }
+
+        if (!refunded) {
+            log.error("CRITICAL: Auto order trigger compensation refund FAILED. " +
+                            "Manual intervention required. autoOrderId={}, username={}, stockCode={}, type={}",
+                    autoOrderDto.autoOrderId(), autoOrderDto.username(),
+                    autoOrderDto.stockCode(), autoOrderDto.autoOrderType());
+        }
+
+        stockServerAutoOrderResponseRepository.delete(autoOrderDto.username(), autoOrderDto.autoOrderId());
+
+        autoOrderResponseEventPublisher.publishTriggerFailure(autoOrderDto, AutoOrderResultCode.INTERNAL_ERROR);
     }
 }

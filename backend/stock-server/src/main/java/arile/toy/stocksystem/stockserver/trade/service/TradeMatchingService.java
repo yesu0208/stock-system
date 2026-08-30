@@ -7,6 +7,8 @@ import arile.toy.stocksystem.stockserver.order.dto.OrderQueueRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.OrderStatus;
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.trade.event.TradeResponseEvent;
+import arile.toy.stocksystem.stockserver.trade.event.publisher.TradeResponseEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ public class TradeMatchingService {
     private final OrderQueueRegistry orderQueueRegistry;
     private final TradeExecutionService tradeExecutionService;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
+    private final TradeResponseEventPublisher tradeResponseEventPublisher;
 
     public void getExternalTickMessageAndTrade(TradePriceTickMessage tradePriceTickMessage) {
         ReentrantLock lock = stockLockRegistry.lock(tradePriceTickMessage.stockCode());
@@ -70,6 +73,8 @@ public class TradeMatchingService {
                 continue;
             }
 
+            tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(tradeResult.tradeEntity()));
+
             int remaining = sell.remainingQuantity() - executable;
             finalizeOrderAfterExecution(sell, remaining);
 
@@ -98,6 +103,8 @@ public class TradeMatchingService {
                 log.info("skip canceled order.");
                 continue;
             }
+
+            tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(tradeResult.tradeEntity()));
 
             int remaining = buy.remainingQuantity() - executable;
             finalizeOrderAfterExecution(buy, remaining);

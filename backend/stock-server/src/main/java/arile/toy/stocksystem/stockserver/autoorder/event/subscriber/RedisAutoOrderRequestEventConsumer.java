@@ -99,6 +99,7 @@ public class RedisAutoOrderRequestEventConsumer {
                         .acknowledge(streamKey, group, record.getId());
             } catch (Exception e) {
                 log.error("Failed to process {}", record.getId(), e);
+                clearProcessingMark(record.getId().getValue());
             }
         }
     }
@@ -303,5 +304,9 @@ public class RedisAutoOrderRequestEventConsumer {
                 .get(processedKey(recordId));
 
         return val == null ? null : val.toString();
+    }
+
+    private void clearProcessingMark(String recordId) {
+        streamRedisTemplate.delete(processedKey(recordId));
     }
 }

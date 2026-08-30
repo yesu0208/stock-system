@@ -8,7 +8,6 @@ import arile.toy.stocksystem.stockserver.trade.dto.TradeResult;
 import arile.toy.stocksystem.stockserver.trade.dto.TradeType;
 import arile.toy.stocksystem.stockserver.trade.entity.TradeEntity;
 import arile.toy.stocksystem.stockserver.trade.event.TradeExecutedEvent;
-import arile.toy.stocksystem.stockserver.trade.event.TradeResponseEvent;
 import arile.toy.stocksystem.stockserver.trade.event.publisher.TradeResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.trade.outbox.service.TradeOutboxRecorder;
 import arile.toy.stocksystem.stockserver.trade.repository.TradeRepository;
@@ -63,8 +62,6 @@ public class TradeExecutionService {
                         orderDto.stockCode(), tradeType, orderDto.orderPrice(), tradePrice, executable
                 )
         );
-
-        tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(tradeEntity));
 
         return TradeResult.of(tradeEntity);
     }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -18,4 +19,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccountEntity, 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM UserAccountEntity u WHERE u.username = :username")
     Optional<UserAccountEntity> findByUsernameForUpdate(@Param("username") String username);
+
+    @Query("SELECT u.username FROM UserAccountEntity u")
+    List<String> findAllUsernames();
 }

@@ -126,7 +126,7 @@ public class AccountLuaConfig {
         
                 stocks[ARGV[4]] = {
                     quantity = tonumber(ARGV[1]),
-                    buyPrice = tonumber(ARGV[2]),
+                    totalAmount = tonumber(ARGV[2]),
                     availableQuantity = tonumber(ARGV[1])
                 }
         
@@ -160,7 +160,7 @@ public class AccountLuaConfig {
                     if newQty > 0 then
                         stocks[stockCode] = {
                             quantity = newQty,
-                            buyPrice = tonumber(ARGV[2]),
+                            totalAmount = tonumber(ARGV[2]),
                             availableQuantity = oldStock.availableQuantity
                         }
                     else

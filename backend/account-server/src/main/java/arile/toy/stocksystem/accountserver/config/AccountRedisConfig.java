@@ -39,19 +39,6 @@ public class AccountRedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, UserAccountMessage> userAccountMessageRedisTemplate(
-            RedisConnectionFactory redisConnectionFactory
-    ) {
-        var template = new RedisTemplate<String, UserAccountMessage>();
-        template.setConnectionFactory(redisConnectionFactory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(UserAccountMessage.class));
-        template.afterPropertiesSet();
-        return template;
-    }
-
-    @Bean
     public RedisTemplate<String, AccountUpdateEvent> accountUpdateEventRedisTemplate(
             RedisConnectionFactory redisConnectionFactory) {
         var template = new RedisTemplate<String, AccountUpdateEvent>();

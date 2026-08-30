@@ -35,7 +35,7 @@ public class AccountCalculator {
             String stockCode = entry.getKey();
             StockInfo stockInfo = entry.getValue();
             int quantity = stockInfo.quantity();
-            int buyPrice = stockInfo.buyPrice();
+            long totalAmount = stockInfo.totalAmount();
 
             BffServerStockSummaryTickMessage summary = stockSummaryRepository.findByStockCode(stockCode);
             if (summary == null) {
@@ -49,11 +49,10 @@ public class AccountCalculator {
             long curStockValue = (long) quantity * curPrice;
             stockValue += curStockValue;
 
-            long curBuyValue = (long) buyPrice * quantity;
-            buyValue += curBuyValue;
+            buyValue += totalAmount;
 
-            long profitAmount = (long) (curPrice - buyPrice) * quantity;
-            double profitRate = (curPrice - buyPrice) * 100.0 / buyPrice;
+            long profitAmount = curStockValue - totalAmount;
+            double profitRate = totalAmount == 0 ? 0 : profitAmount * 100.0 / totalAmount;
 
             profitAmounts.put(stockCode, profitAmount);
             profitRates.put(stockCode, profitRate);

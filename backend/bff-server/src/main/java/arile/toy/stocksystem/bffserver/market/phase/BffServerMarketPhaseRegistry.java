@@ -1,13 +1,47 @@
 package arile.toy.stocksystem.bffserver.market.phase;
 
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class BffServerMarketPhaseRegistry {
 
+    private static final String SNAPSHOT_KEY = "market:phase:snapshot";
+
+    private final StringRedisTemplate redisTemplate;
+
     private final ConcurrentHashMap<String, BffServerMarketPhase> phaseMap = new ConcurrentHashMap<>();
+
+    @PostConstruct
+    public void init() {
+        resync();
+    }
+
+    @Scheduled(fixedRate = 300_000)
+    public void resync() {
+        try {
+            Map<Object, Object> snapshot = redisTemplate.opsForHash().entries(SNAPSHOT_KEY);
+
+            snapshot.forEach((stockCode, phase) -> {
+                try {
+                    phaseMap.put((String) stockCode, BffServerMarketPhase.valueOf((String) phase));
+                } catch (IllegalArgumentException e) {
+                    log.warn("알 수 없는 market phase 값. stockCode={}, phase={}", stockCode, phase);
+                }
+            });
+        } catch (Exception e) {
+            log.warn("Market phase snapshot 재동기화 실패. 다음 주기에 재시도합니다.", e);
+        }
+    }
 
     public void setClosed(String stockCode) {
         phaseMap.put(stockCode, BffServerMarketPhase.CLOSED);
