@@ -1,5 +1,8 @@
 package arile.toy.stocksystem.accountserver.trade.service;
 
+import arile.toy.stocksystem.accountserver.rank.dto.RankLevel;
+import arile.toy.stocksystem.accountserver.rank.entity.UserRankEntity;
+import arile.toy.stocksystem.accountserver.rank.repository.UserRankRepository;
 import arile.toy.stocksystem.accountserver.trade.TradeCommand;
 import arile.toy.stocksystem.accountserver.trade.dto.TradeType;
 import arile.toy.stocksystem.accountserver.trade.event.TradeExecutedEvent;
@@ -22,6 +25,7 @@ public class TradeExecutionApplyService {
     private final UserStockRepository userStockRepository;
     private final TradeCommand tradeCommand;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
+    private final UserRankRepository userRankRepository;
 
     @Transactional
     public void apply(TradeExecutedEvent event) {
@@ -31,6 +35,8 @@ public class TradeExecutionApplyService {
             applySell(event);
         }
 
+        long tradeAmount = (long) event.tradePrice() * event.tradeQuantity();
+        updateRankOnTrade(event.username(), tradeAmount);
         accountUpdateEventPublisher.publish(event.username());
     }
 
@@ -137,5 +143,19 @@ public class TradeExecutionApplyService {
                     "Redis buy trade apply failed. username=%s, stockCode=%s"
                             .formatted(event.username(), event.stockCode()));
         }
+    }
+
+    private void updateRankOnTrade(String username, long tradeAmount) {
+        UserRankEntity rank = userRankRepository.findByUsernameForUpdate(username)
+                .orElseThrow(() -> new IllegalStateException("UserRank not found: " + username));
+
+        if (!rank.getEntered()) {
+            rank.setEntered(true);
+            rank.setCurrentLevel(RankLevel.BRONZE_5);
+            rank.setHighestTierReached(RankLevel.BRONZE_5);
+        }
+
+        rank.addDailyTradeAmount(tradeAmount);
+        userRankRepository.save(rank);
     }
 }
