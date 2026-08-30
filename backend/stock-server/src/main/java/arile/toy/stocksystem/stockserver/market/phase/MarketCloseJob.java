@@ -14,9 +14,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
@@ -31,6 +28,7 @@ public class MarketCloseJob {
     private final AccountApiClient accountApiClient;
     private final MarketClosePublisher marketClosePublisher;
     private final ExternalStockProperties externalStockProperties;
+    private final MarketCloseCoordinator marketCloseCoordinator;
 
     @Scheduled(cron = "0 40 15 * * MON-FRI", zone = "Asia/Seoul")
     public void runMarketCloseJob() {
@@ -57,15 +55,17 @@ public class MarketCloseJob {
                 autoCancelService.forceAutoCancel(autoOrder.getAutoOrderId());
             }
 
-            Set<String> usernames = Stream.concat(
-                            unfilledOrders.stream().map(OrderEntity::getUsername),
-                            untriggeredAutoOrders.stream().map(AutoOrderEntity::getUsername)
-                    )
-                    .collect(Collectors.toSet());
+            log.info("[MarketCloseJob] cancel finished for this group. stockCodes={}", myStockCodes);
 
-            accountApiClient.settle(usernames);
+            boolean isLast = marketCloseCoordinator.markDoneAndCheckLast();
 
-            marketClosePublisher.publishMarketClose();
+            if (isLast) {
+                accountApiClient.settleAll();
+                marketClosePublisher.publishMarketClose();
+                log.info("[MarketCloseJob] all groups finished cancel. settle-all triggered by this server.");
+            } else {
+                log.info("[MarketCloseJob] waiting for other groups to finish cancel before settle.");
+            }
 
             log.info("[MarketCloseJob] market closing job finished.");
 
