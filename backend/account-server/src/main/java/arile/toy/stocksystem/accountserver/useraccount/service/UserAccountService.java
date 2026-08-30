@@ -20,7 +20,7 @@ import java.util.Set;
 @Slf4j
 public class UserAccountService {
 
-    private static final long INITIAL_BALANCE = 500_000_000L;
+    private static final long INITIAL_BALANCE = 1_000_000_000L;
 
     private final UserAccountRepository userAccountRepository;
     private final UserAccountRedisRepository userAccountRedisRepository;

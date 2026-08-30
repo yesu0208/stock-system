@@ -17,6 +17,8 @@ import java.util.Map;
 @Slf4j
 public class AccountCalculator {
 
+    private static final long INITIAL_BALANCE = 1_000_000_000L;
+
     private final AccountPullService accountPullService;
     private final BffServerStockSummaryRepository stockSummaryRepository;
 
@@ -63,8 +65,8 @@ public class AccountCalculator {
         double totalProfitRate = 0;
         if (buyValue != 0) totalProfitRate = totalProfit * 100.0 / buyValue;
 
-        long accumulatedProfit = totalValue - 500000000;
-        double accumulatedProfitRate = (double) (totalValue - 500000000) / 500000000 * 100;
+        long accumulatedProfit = totalValue - INITIAL_BALANCE;
+        double accumulatedProfitRate = (double) (totalValue - INITIAL_BALANCE) / INITIAL_BALANCE * 100;
 
         return AccountResponse.of(username, totalValue, totalCash, snapshot.availableCash(),
                 snapshot.reservedCash(), stockValue, buyValue, totalProfit, totalProfitRate, accumulatedProfit, accumulatedProfitRate, snapshot.stocks(), profitRates, profitAmounts, currentPrices);
