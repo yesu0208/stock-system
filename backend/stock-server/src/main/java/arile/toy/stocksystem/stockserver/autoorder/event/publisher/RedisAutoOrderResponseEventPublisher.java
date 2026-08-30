@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.autoorder.event.publisher;
 
+import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderDto;
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderResultCode;
 import arile.toy.stocksystem.stockserver.autoorder.dto.StockServerAutoOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.autoorder.event.AutoOrderResponseEvent;
@@ -65,6 +66,28 @@ public class RedisAutoOrderResponseEventPublisher implements AutoOrderResponseEv
                     channel,
                     event
             );
+        } catch (Exception e) {
+            log.warn("redisAutoOrderResponseEventRedisTemplate.convertAndSend error", e);
+        }
+    }
+
+    public void publishTriggerFailure(AutoOrderDto autoOrderDto, AutoOrderResultCode resultCode) {
+        try {
+            AutoOrderResponseEvent event = AutoOrderResponseEvent.of(
+                    autoOrderDto.autoOrderId(),
+                    autoOrderDto.username(),
+                    autoOrderDto.stockCode(),
+                    autoOrderDto.autoOrderType(),
+                    autoOrderDto.triggerPrice(),
+                    autoOrderDto.orderPrice(),
+                    autoOrderDto.orderQuantity(),
+                    null,
+                    false,
+                    resultCode
+            );
+
+            String channel = resolveChannel(event.username());
+            redisAutoOrderResponseEventRedisTemplate.convertAndSend(channel, event);
         } catch (Exception e) {
             log.warn("redisAutoOrderResponseEventRedisTemplate.convertAndSend error", e);
         }

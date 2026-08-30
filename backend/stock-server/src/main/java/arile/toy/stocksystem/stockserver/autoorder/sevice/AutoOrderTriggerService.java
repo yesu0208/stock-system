@@ -129,16 +129,6 @@ public class AutoOrderTriggerService {
 
         stockServerAutoOrderResponseRepository.delete(autoOrderDto.username(), autoOrderDto.autoOrderId());
 
-        autoOrderResponseEventPublisher.publishError(
-                StockServerAutoOrderRequestEvent.of(
-                        autoOrderDto.username(),
-                        autoOrderDto.stockCode(),
-                        autoOrderDto.autoOrderType(),
-                        autoOrderDto.triggerPrice(),
-                        autoOrderDto.orderPrice(),
-                        autoOrderDto.orderQuantity()
-                ),
-                AutoOrderResultCode.INTERNAL_ERROR
-        );
+        autoOrderResponseEventPublisher.publishTriggerFailure(autoOrderDto, AutoOrderResultCode.INTERNAL_ERROR);
     }
 }
