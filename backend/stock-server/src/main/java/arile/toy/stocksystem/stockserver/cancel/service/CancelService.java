@@ -85,15 +85,6 @@ public class CancelService {
 
     private void cancelInternal(OrderEntity orderEntity) {
 
-        orderQueueRegistry.orderCancel(
-                orderEntity.getOrderId(),
-                orderEntity.getStockCode()
-        );
-
-        cancelRepository.save(
-                CancelEntity.of(orderEntity.getOrderId())
-        );
-
         boolean refunded;
 
         if (orderEntity.getOrderType() == OrderType.BUY) {
@@ -128,6 +119,15 @@ public class CancelService {
                 throw new IllegalStateException("Stock refund failed");
             }
         }
+
+        cancelRepository.save(
+                CancelEntity.of(orderEntity.getOrderId())
+        );
+
+        orderQueueRegistry.orderCancel(
+                orderEntity.getOrderId(),
+                orderEntity.getStockCode()
+        );
     }
 
     private void publishSuccess(OrderEntity orderEntity) {

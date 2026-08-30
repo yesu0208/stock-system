@@ -82,15 +82,6 @@ public class AutoCancelService {
 
     private void cancelInternal(AutoOrderEntity autoOrderEntity) {
 
-        autoOrderQueueRegistry.autoOrderCancel(
-                autoOrderEntity.getAutoOrderId(),
-                autoOrderEntity.getStockCode()
-        );
-
-        autoCancelRepository.save(
-                AutoCancelEntity.of(autoOrderEntity.getAutoOrderId())
-        );
-
         boolean refunded;
 
         if (autoOrderEntity.getAutoOrderType() == AutoOrderType.BUY) {
@@ -125,6 +116,15 @@ public class AutoCancelService {
                 throw new IllegalStateException("Stock refund failed");
             }
         }
+
+        autoCancelRepository.save(
+                AutoCancelEntity.of(autoOrderEntity.getAutoOrderId())
+        );
+
+        autoOrderQueueRegistry.autoOrderCancel(
+                autoOrderEntity.getAutoOrderId(),
+                autoOrderEntity.getStockCode()
+        );
     }
 
     private void publishSuccess(AutoOrderEntity autoOrderEntity) {
