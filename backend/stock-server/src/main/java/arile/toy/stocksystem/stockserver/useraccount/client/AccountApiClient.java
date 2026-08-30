@@ -52,6 +52,17 @@ public class AccountApiClient {
         }
     }
 
+    public void settleAll() {
+        try {
+            restClient.post()
+                    .uri(baseUrl + "/internal/accounts/settle-all")
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientException e) {
+            log.error("Account settle-all API call failed.", e);
+        }
+    }
+
     private boolean post(String path, Map<String, Object> body) {
         try {
             BalanceCommandResponse response = restClient.post()
