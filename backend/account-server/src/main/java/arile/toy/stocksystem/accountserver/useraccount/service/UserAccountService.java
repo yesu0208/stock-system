@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.accountserver.useraccount.service;
 
+import arile.toy.stocksystem.accountserver.rank.entity.UserRankEntity;
+import arile.toy.stocksystem.accountserver.rank.repository.UserRankRepository;
 import arile.toy.stocksystem.accountserver.useraccount.dto.UserAccountMessage;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
@@ -24,6 +26,7 @@ public class UserAccountService {
 
     private final UserAccountRepository userAccountRepository;
     private final UserAccountRedisRepository userAccountRedisRepository;
+    private final UserRankRepository userRankRepository;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
     @Transactional
@@ -38,6 +41,7 @@ public class UserAccountService {
                 UserAccountEntity.of(username, INITIAL_BALANCE);
 
         userAccountRepository.save(userAccountEntity);
+        userRankRepository.save(UserRankEntity.of(username, INITIAL_BALANCE));
 
         log.info("UserAccount created. username={}, cash={}", username, INITIAL_BALANCE);
 
