@@ -8,10 +8,11 @@ public record UserDto(
         Long userId,
         String username,
         String nickname,
-        Instant createdDateTime)
+        Instant createdDateTime,
+        String profileImageUrl)
 {
     public static UserDto fromEntity(UserEntity userEntity) {
         return new UserDto(userEntity.getUserId(), userEntity.getUsername(), userEntity.getNickname(),
-                userEntity.getCreatedDateTime());
+                userEntity.getCreatedDateTime(), userEntity.getProfileImageUrl());
     }
 }

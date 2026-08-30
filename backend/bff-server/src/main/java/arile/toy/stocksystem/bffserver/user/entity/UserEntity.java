@@ -41,6 +41,9 @@ public class UserEntity implements UserDetails {
     @Column(nullable = false)
     private Instant createdDateTime;
 
+    @Column
+    private String profileImageUrl;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role.equals(Role.ADMIN)) {
@@ -95,6 +98,10 @@ public class UserEntity implements UserDetails {
 
     public void changeNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public void changeProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     @PrePersist
