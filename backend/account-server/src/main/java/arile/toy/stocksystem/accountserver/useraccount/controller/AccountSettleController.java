@@ -24,4 +24,11 @@ public class AccountSettleController {
         userStockService.settleStocks(request.usernames());
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/settle-all")
+    public ResponseEntity<Void> settleAll() {
+        userAccountService.settleAllAccounts();
+        userStockService.settleAllStocks();
+        return ResponseEntity.ok().build();
+    }
 }

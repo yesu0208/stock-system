@@ -3,6 +3,7 @@ package arile.toy.stocksystem.accountserver.userstock.service;
 import arile.toy.stocksystem.accountserver.useraccount.dto.StockInfo;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRedisRepository;
+import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import arile.toy.stocksystem.accountserver.userstock.entity.UserStockEntity;
 import arile.toy.stocksystem.accountserver.userstock.repository.UserStockRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +23,7 @@ import java.util.Set;
 public class UserStockService {
 
     private final UserStockRepository userStockRepository;
+    private final UserAccountRepository userAccountRepository;
     private final UserAccountRedisRepository userAccountRedisRepository;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
 
@@ -73,5 +76,11 @@ public class UserStockService {
             accountUpdateEventPublisher.publish(username);
             log.info("Redis stocks updated for user {}", username);
         }
+    }
+
+    @Transactional
+    public void settleAllStocks() {
+        Set<String> allUsernames = new HashSet<>(userAccountRepository.findAllUsernames());
+        settleStocks(allUsernames);
     }
 }
