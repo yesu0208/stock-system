@@ -28,9 +28,6 @@ management:
     health:
       show-details: always
 
-market-close:
-  total-groups: 1
-
 redis:
   host: ${REDIS_HOST}
   port: ${REDIS_PORT}
