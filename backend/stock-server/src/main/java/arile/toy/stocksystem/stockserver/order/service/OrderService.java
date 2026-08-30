@@ -62,7 +62,14 @@ public class OrderService {
             orderQueueRegistry.orderEnqueue(orderDto);
 
         } catch (Exception e) {
-            accountApiClient.refundReservedCash(request.username(), orderAmount);
+            if (!fromAutoOrder) {
+                if (request.orderType() == OrderType.BUY) {
+                    accountApiClient.refundReservedCash(request.username(), orderAmount);
+                } else {
+                    accountApiClient.refundReservedStock(
+                            request.username(), request.stockCode(), request.orderQuantity());
+                }
+            }
             orderResponseEventPublisher.publishError(request, OrderErrorCode.INTERNAL_ERROR);
             throw e;
         }
