@@ -47,22 +47,21 @@ public class UserStockService {
 
                 String stockCode = entity.getStockCode();
                 int quantity = entity.getQuantity();
-                int buyPrice = quantity != 0
-                        ? (int) (entity.getAmount() / quantity)
-                        : 0;
+                long totalAmount = entity.getAmount();
 
                 StockInfo redisInfo = redisStocks.get(stockCode);
 
                 if (redisInfo == null ||
                         redisInfo.quantity() != quantity ||
-                        redisInfo.buyPrice() != buyPrice) {
+                        redisInfo.totalAmount() == null ||
+                        redisInfo.totalAmount() != totalAmount) {
 
                     log.warn("Stock {} out of sync for user {}. DB: {}:{}, Redis: {}",
-                            stockCode, username, quantity, buyPrice, redisInfo);
+                            stockCode, username, quantity, totalAmount, redisInfo);
                 }
 
                 stocksMap.put(stockCode,
-                        StockInfo.of(quantity, buyPrice, quantity));
+                        StockInfo.of(quantity, quantity, totalAmount));
             }
 
             for (String redisStockCode : redisStocks.keySet()) {

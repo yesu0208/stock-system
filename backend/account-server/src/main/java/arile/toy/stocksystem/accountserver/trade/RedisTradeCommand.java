@@ -17,16 +17,16 @@ public class RedisTradeCommand implements TradeCommand {
 
     public boolean applyBuyTrade(
             String username, String stockCode, int totalQuantity,
-            long buyPrice, long tradeAmount, long differenceAmount
+            long totalAmount, long tradeAmount, long differenceAmount
     ) {
-        return execute(buyTradeScript, username, totalQuantity, buyPrice, tradeAmount, stockCode, differenceAmount);
+        return execute(buyTradeScript, username, totalQuantity, totalAmount, tradeAmount, stockCode, differenceAmount);
     }
 
     public boolean applySellTrade(
             String username, String stockCode, int totalQuantity,
-            long buyPrice, long tradeAmount, long differenceAmount
+            long totalAmount, long tradeAmount, long differenceAmount
     ) {
-        return execute(sellTradeScript, username, totalQuantity, buyPrice, tradeAmount, stockCode, differenceAmount);
+        return execute(sellTradeScript, username, totalQuantity, totalAmount, tradeAmount, stockCode, differenceAmount);
     }
 
     private boolean execute(
