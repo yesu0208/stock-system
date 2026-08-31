@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.rank.client;
 
+import arile.toy.stocksystem.bffserver.rank.dto.RankHistoryResponse;
 import arile.toy.stocksystem.bffserver.rank.dto.RankResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,18 @@ public class RankApiClient {
                     .body(RankResponse.class);
         } catch (RestClientException e) {
             log.warn("Rank API call failed. username={}", username, e);
+            return null;
+        }
+    }
+
+    public RankHistoryResponse getRankHistory(String username, int page, int size) {
+        try {
+            return restClient.get()
+                    .uri(baseUrl + "/internal/ranks/" + username + "/history?page=" + page + "&size=" + size)
+                    .retrieve()
+                    .body(RankHistoryResponse.class);
+        } catch (RestClientException e) {
+            log.warn("Rank history API call failed. username={}", username, e);
             return null;
         }
     }
