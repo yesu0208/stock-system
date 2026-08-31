@@ -43,7 +43,7 @@ public class StockTalkController {
         String username = requireUsername(principal, ticker, "join");
         if (username == null) return;
 
-        stockTalkService.join(ticker, username);
+        stockTalkService.join(ticker, username, sessionId);
         sessionRegistry.registerJoin(sessionId, username, ticker);
     }
 
