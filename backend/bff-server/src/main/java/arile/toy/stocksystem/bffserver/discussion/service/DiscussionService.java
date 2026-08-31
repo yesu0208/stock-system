@@ -15,7 +15,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -206,10 +209,35 @@ public class DiscussionService {
     }
 
     private PostDetail toDetail(DiscussionPostEntity post) {
-        List<CommentResponse> comments = commentRepository.findByPostIdOrderByCommentIdAsc(post.getPostId())
-                .stream()
-                .map(this::toCommentResponse)
-                .toList();
+        List<DiscussionCommentEntity> commentEntities =
+                commentRepository.findByPostIdOrderByCommentIdAsc(post.getPostId());
+
+        List<CommentResponse> comments;
+        if (commentEntities.isEmpty()) {
+            comments = List.of();
+        } else {
+            List<Long> commentIds = commentEntities.stream()
+                    .map(DiscussionCommentEntity::getCommentId)
+                    .toList();
+
+            Map<Long, Integer> likeMap = new HashMap<>();
+            Map<Long, Integer> dislikeMap = new HashMap<>();
+            reactionRepository.countGroupByTargetIds(TargetType.COMMENT, commentIds)
+                    .forEach(row -> {
+                        if (row.getReactionType() == ReactionType.LIKE) {
+                            likeMap.put(row.getTargetId(), (int) row.getCnt());
+                        } else {
+                            dislikeMap.put(row.getTargetId(), (int) row.getCnt());
+                        }
+                    });
+
+            comments = commentEntities.stream()
+                    .map(comment -> CommentResponse.of(
+                            comment,
+                            likeMap.getOrDefault(comment.getCommentId(), 0),
+                            dislikeMap.getOrDefault(comment.getCommentId(), 0)))
+                    .toList();
+        }
 
         int likes = countReaction(TargetType.POST, post.getPostId(), ReactionType.LIKE);
         int dislikes = countReaction(TargetType.POST, post.getPostId(), ReactionType.DISLIKE);
@@ -228,14 +256,40 @@ public class DiscussionService {
         boolean hasNext = posts.size() > PAGE_SIZE;
         List<DiscussionPostEntity> page = hasNext ? posts.subList(0, PAGE_SIZE) : posts;
 
+        if (page.isEmpty()) {
+            return new CursorPage<>(List.of(), null, false);
+        }
+
+        List<Long> postIds = page.stream().map(DiscussionPostEntity::getPostId).toList();
+
+        Map<Long, Integer> likeMap = new HashMap<>();
+        Map<Long, Integer> dislikeMap = new HashMap<>();
+        reactionRepository.countGroupByTargetIds(TargetType.POST, postIds)
+                .forEach(row -> {
+                    if (row.getReactionType() == ReactionType.LIKE) {
+                        likeMap.put(row.getTargetId(), (int) row.getCnt());
+                    } else {
+                        dislikeMap.put(row.getTargetId(), (int) row.getCnt());
+                    }
+                });
+
+        Map<Long, Integer> scrapMap = scrapRepository.countGroupByPostIds(postIds).stream()
+                .collect(Collectors.toMap(
+                        DiscussionScrapRepository.ScrapCountRow::getPostId,
+                        row -> (int) row.getCnt()));
+
+        Map<Long, Integer> commentCountMap = commentRepository.countGroupByPostIds(postIds).stream()
+                .collect(Collectors.toMap(
+                        DiscussionCommentRepository.CommentCountRow::getPostId,
+                        row -> (int) row.getCnt()));
+
         List<PostSummary> items = page.stream()
-                .map(post -> {
-                    int likes = countReaction(TargetType.POST, post.getPostId(), ReactionType.LIKE);
-                    int dislikes = countReaction(TargetType.POST, post.getPostId(), ReactionType.DISLIKE);
-                    int scraps = (int) scrapRepository.countByPostId(post.getPostId());
-                    int commentCount = (int) commentRepository.countByPostId(post.getPostId());
-                    return PostSummary.of(post, likes, dislikes, commentCount, scraps);
-                })
+                .map(post -> PostSummary.of(
+                        post,
+                        likeMap.getOrDefault(post.getPostId(), 0),
+                        dislikeMap.getOrDefault(post.getPostId(), 0),
+                        commentCountMap.getOrDefault(post.getPostId(), 0),
+                        scrapMap.getOrDefault(post.getPostId(), 0)))
                 .toList();
 
         Long nextCursor = hasNext ? page.get(page.size() - 1).getPostId() : null;
