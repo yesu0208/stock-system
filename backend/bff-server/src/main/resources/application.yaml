@@ -1,3 +1,6 @@
+account:
+  initial-balance: 1000000000
+
 debug: false
 
 frontend:
@@ -84,6 +87,9 @@ spring:
         size: 6
 
 ---
+
+account:
+  initial-balance: 1000000000
 
 jwt:
   secret-key: eDlsi387fhsEucu7xhsEehd8fys7ejcSdFeDF92w738lfskc8FejfDB38f==
