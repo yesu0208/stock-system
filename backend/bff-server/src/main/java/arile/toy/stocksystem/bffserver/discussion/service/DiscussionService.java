@@ -58,6 +58,19 @@ public class DiscussionService {
         var post = getPostEntity(postId);
         validateAuthor(post.getAuthorId(), authorId);
 
+        List<Long> commentIds = commentRepository.findByPostIdOrderByCommentIdAsc(postId)
+                .stream()
+                .map(DiscussionCommentEntity::getCommentId)
+                .toList();
+
+        if (!commentIds.isEmpty()) {
+            reactionRepository.deleteByTargetTypeAndTargetIdIn(TargetType.COMMENT, commentIds);
+        }
+        commentRepository.deleteByPostId(postId);
+
+        reactionRepository.deleteByTargetTypeAndTargetIdIn(TargetType.POST, List.of(postId));
+        scrapRepository.deleteByPostId(postId);
+
         postRepository.delete(post);
     }
 

@@ -12,4 +12,6 @@ public interface DiscussionCommentRepository extends JpaRepository<DiscussionCom
     List<DiscussionCommentEntity> findByPostIdOrderByCommentIdAsc(Long postId);
 
     long countByPostId(Long postId);
+
+    void deleteByPostId(Long postId);
 }

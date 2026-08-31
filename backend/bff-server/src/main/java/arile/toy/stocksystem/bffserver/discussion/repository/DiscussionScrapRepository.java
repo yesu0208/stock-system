@@ -16,4 +16,6 @@ public interface DiscussionScrapRepository extends JpaRepository<DiscussionScrap
     long countByPostId(Long postId);
 
     void deleteByPostIdAndUserId(Long postId, String userId);
+
+    void deleteByPostId(Long postId);
 }
