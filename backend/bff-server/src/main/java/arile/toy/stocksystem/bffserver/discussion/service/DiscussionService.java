@@ -6,6 +6,7 @@ import arile.toy.stocksystem.bffserver.discussion.repository.DiscussionCommentRe
 import arile.toy.stocksystem.bffserver.discussion.repository.DiscussionPostRepository;
 import arile.toy.stocksystem.bffserver.discussion.repository.DiscussionReactionRepository;
 import arile.toy.stocksystem.bffserver.discussion.repository.DiscussionScrapRepository;
+import arile.toy.stocksystem.bffserver.exception.discussion.DiscussionCommentNotFoundException;
 import arile.toy.stocksystem.bffserver.exception.discussion.DiscussionForbiddenException;
 import arile.toy.stocksystem.bffserver.exception.discussion.DiscussionPostNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -84,9 +85,48 @@ public class DiscussionService {
         return toCursorPage(posts);
     }
 
+    @Transactional
+    public CommentResponse addComment(String authorId, Long postId, CommentCreateRequest request) {
+        getPostEntity(postId); // 게시글 존재 확인
+
+        var comment = DiscussionCommentEntity.of(postId, authorId, request.content());
+        var saved = commentRepository.save(comment);
+
+        return CommentResponse.of(saved, 0, 0);
+    }
+
+    @Transactional
+    public CommentResponse editComment(String authorId, Long postId, Long commentId, CommentEditRequest request) {
+        var comment = getCommentEntity(postId, commentId);
+        validateAuthor(comment.getAuthorId(), authorId);
+
+        comment.edit(request.content());
+
+        return toCommentResponse(comment);
+    }
+
+    @Transactional
+    public void deleteComment(String authorId, Long postId, Long commentId) {
+        var comment = getCommentEntity(postId, commentId);
+        validateAuthor(comment.getAuthorId(), authorId);
+
+        reactionRepository.deleteByTargetTypeAndTargetIdAndUserId(TargetType.COMMENT, commentId, authorId);
+        commentRepository.delete(comment);
+    }
+
     private DiscussionPostEntity getPostEntity(Long postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new DiscussionPostNotFoundException(postId));
+    }
+
+    private DiscussionCommentEntity getCommentEntity(Long postId, Long commentId) {
+        var comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new DiscussionCommentNotFoundException(commentId));
+
+        if (!comment.getPostId().equals(postId)) {
+            throw new DiscussionCommentNotFoundException(commentId);
+        }
+        return comment;
     }
 
     private void validateAuthor(String actualAuthorId, String requestUserId) {
