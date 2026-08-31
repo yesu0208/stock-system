@@ -7,6 +7,8 @@ import arile.toy.stocksystem.bffserver.stockinfo.dto.GlobalMarketResponse;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.MarketMainResponse;
 import arile.toy.stocksystem.bffserver.stockinfo.repository.GlobalMarketSnapshotRepository;
 import arile.toy.stocksystem.bffserver.stockinfo.repository.MarketMainSnapshotRepository;
+import arile.toy.stocksystem.bffserver.stocktalk.registry.StockTalkSessionRegistry;
+import arile.toy.stocksystem.bffserver.stocktalk.service.StockTalkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -30,6 +32,8 @@ public class UserWebSocketSessionEventListener {
     private final InitialDataService initialDataService;
     private final MarketMainSnapshotRepository marketMainSnapshotRepository;
     private final GlobalMarketSnapshotRepository globalMarketSnapshotRepository;
+    private final StockTalkSessionRegistry stockTalkSessionRegistry;
+    private final StockTalkService stockTalkService;
 
     @EventListener
     public void handleConnect(SessionConnectEvent event) {
@@ -52,6 +56,16 @@ public class UserWebSocketSessionEventListener {
     public void handleDisconnect(SessionDisconnectEvent event) {
         String sessionId = event.getSessionId();
         subscriptionRegistry.disconnect(sessionId);
+
+        StockTalkSessionRegistry.SessionParticipation participation =
+                stockTalkSessionRegistry.removeSession(sessionId);
+
+        if (participation != null) {
+            participation.tickers().forEach(ticker ->
+                    stockTalkService.leave(ticker, participation.username()));
+            log.info("[StockTalk] session disconnected, auto-leave username={}, tickers={}, sessionId={}",
+                    participation.username(), participation.tickers(), sessionId);
+        }
 
         log.info("WS disconnect sessionId={}", sessionId);
     }
