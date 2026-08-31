@@ -114,6 +114,59 @@ public class DiscussionService {
         commentRepository.delete(comment);
     }
 
+    @Transactional
+    public ReactionResponse reactToPost(String userId, Long postId, ReactionRequest request) {
+        getPostEntity(postId);
+        toggleReaction(TargetType.POST, postId, userId, request.reactionType());
+
+        int likes = countReaction(TargetType.POST, postId, ReactionType.LIKE);
+        int dislikes = countReaction(TargetType.POST, postId, ReactionType.DISLIKE);
+        return new ReactionResponse(likes, dislikes);
+    }
+
+    @Transactional
+    public ReactionResponse reactToComment(String userId, Long postId, Long commentId, ReactionRequest request) {
+        getCommentEntity(postId, commentId);
+        toggleReaction(TargetType.COMMENT, commentId, userId, request.reactionType());
+
+        int likes = countReaction(TargetType.COMMENT, commentId, ReactionType.LIKE);
+        int dislikes = countReaction(TargetType.COMMENT, commentId, ReactionType.DISLIKE);
+        return new ReactionResponse(likes, dislikes);
+    }
+
+    private void toggleReaction(TargetType targetType, Long targetId, String userId, ReactionType reactionType) {
+        var existing = reactionRepository.findByTargetTypeAndTargetIdAndUserId(targetType, targetId, userId);
+
+        if (existing.isPresent()) {
+            if (existing.get().getReactionType() == reactionType) {
+                reactionRepository.delete(existing.get()); // 같은 반응 재요청 -> 취소
+            } else {
+                existing.get().changeReactionType(reactionType); // 다른 반응 -> 교체
+            }
+        } else {
+            reactionRepository.save(DiscussionReactionEntity.of(targetType, targetId, userId, reactionType));
+        }
+    }
+
+    @Transactional
+    public ScrapResponse toggleScrap(String userId, Long postId) {
+        getPostEntity(postId);
+
+        boolean scrapped;
+        var existing = scrapRepository.findByPostIdAndUserId(postId, userId);
+
+        if (existing.isPresent()) {
+            scrapRepository.delete(existing.get());
+            scrapped = false;
+        } else {
+            scrapRepository.save(DiscussionScrapEntity.of(postId, userId));
+            scrapped = true;
+        }
+
+        int scraps = (int) scrapRepository.countByPostId(postId);
+        return new ScrapResponse(scraps, scrapped);
+    }
+
     private DiscussionPostEntity getPostEntity(Long postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new DiscussionPostNotFoundException(postId));
