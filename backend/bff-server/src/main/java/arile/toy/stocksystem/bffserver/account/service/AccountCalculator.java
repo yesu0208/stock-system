@@ -7,6 +7,7 @@ import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSumm
 import arile.toy.stocksystem.bffserver.external.stock.repository.BffServerStockSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -19,6 +20,9 @@ public class AccountCalculator {
 
     private final AccountPullService accountPullService;
     private final BffServerStockSummaryRepository stockSummaryRepository;
+
+    @Value("${account.initial-balance}")
+    private long initialBalance;
 
     public AccountResponse calculate(String username) {
         AccountSnapshot snapshot = accountPullService.getAccountMessage(username);
@@ -63,8 +67,8 @@ public class AccountCalculator {
         double totalProfitRate = 0;
         if (buyValue != 0) totalProfitRate = totalProfit * 100.0 / buyValue;
 
-        long accumulatedProfit = totalValue - 500000000;
-        double accumulatedProfitRate = (double) (totalValue - 500000000) / 500000000 * 100;
+        long accumulatedProfit = totalValue - initialBalance;
+        double accumulatedProfitRate = (double) (totalValue - initialBalance) / initialBalance * 100;
 
         return AccountResponse.of(username, totalValue, totalCash, snapshot.availableCash(),
                 snapshot.reservedCash(), stockValue, buyValue, totalProfit, totalProfitRate, accumulatedProfit, accumulatedProfitRate, snapshot.stocks(), profitRates, profitAmounts, currentPrices);

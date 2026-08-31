@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.accountserver.useraccount.service;
 
+import arile.toy.stocksystem.accountserver.rank.entity.UserRankEntity;
+import arile.toy.stocksystem.accountserver.rank.repository.UserRankRepository;
 import arile.toy.stocksystem.accountserver.useraccount.dto.UserAccountMessage;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
@@ -7,6 +9,7 @@ import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRed
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +23,13 @@ import java.util.Set;
 @Slf4j
 public class UserAccountService {
 
-    private static final long INITIAL_BALANCE = 500_000_000L;
-
     private final UserAccountRepository userAccountRepository;
     private final UserAccountRedisRepository userAccountRedisRepository;
+    private final UserRankRepository userRankRepository;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
+
+    @Value("${account.initial-balance}")
+    private long initialBalance;
 
     @Transactional
     public void createAccountIfAbsent(String username) {
@@ -35,14 +40,15 @@ public class UserAccountService {
         }
 
         var userAccountEntity =
-                UserAccountEntity.of(username, INITIAL_BALANCE);
+                UserAccountEntity.of(username, initialBalance);
 
         userAccountRepository.save(userAccountEntity);
+        userRankRepository.save(UserRankEntity.of(username, initialBalance));
 
-        log.info("UserAccount created. username={}, cash={}", username, INITIAL_BALANCE);
+        log.info("UserAccount created. username={}, cash={}", username, initialBalance);
 
         userAccountRedisRepository.save(userAccountEntity.getUsername(),
-                UserAccountMessage.of(userAccountEntity.getUsername(), INITIAL_BALANCE, 0L,
+                UserAccountMessage.of(userAccountEntity.getUsername(), initialBalance, 0L,
                         new HashMap<>()));
     }
 

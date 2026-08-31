@@ -1,3 +1,6 @@
+account:
+  initial-balance: 1000000000
+
 debug: false
 
 server:
@@ -47,6 +50,9 @@ spring:
         size: 6
 
 ---
+
+account:
+  initial-balance: 1000000000
 
 spring:
   config.activate.on-profile: test
