@@ -1,6 +1,9 @@
 account:
   initial-balance: 1000000000
 
+account-api:
+  base-url: ${ACCOUNT_API_URL}
+
 debug: false
 
 frontend:
@@ -90,6 +93,9 @@ spring:
 
 account:
   initial-balance: 1000000000
+
+account-api:
+  base-url: http://localhost:8082
 
 jwt:
   secret-key: eDlsi387fhsEucu7xhsEehd8fys7ejcSdFeDF92w738lfskc8FejfDB38f==
