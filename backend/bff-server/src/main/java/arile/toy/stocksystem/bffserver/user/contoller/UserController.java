@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.user.contoller;
 
+import arile.toy.stocksystem.bffserver.rank.client.RankApiClient;
 import arile.toy.stocksystem.bffserver.security.repository.RefreshTokenRepository;
 import arile.toy.stocksystem.bffserver.security.service.JwtService;
 import arile.toy.stocksystem.bffserver.user.dto.*;
@@ -26,6 +27,7 @@ public class UserController {
     private final UserService userService;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final RankApiClient rankApiClient;
 
     @PostMapping
     public ResponseEntity<UserDto> signUp(
@@ -95,7 +97,9 @@ public class UserController {
         String username = user.getUsername();
 
         UserDto userDto = userService.getUserByUsername(username);
-        return ResponseEntity.ok(userDto);
+        var rank = rankApiClient.getRank(username);
+
+        return ResponseEntity.ok(userDto.withRank(rank));
     }
 
     @PatchMapping("/password")
