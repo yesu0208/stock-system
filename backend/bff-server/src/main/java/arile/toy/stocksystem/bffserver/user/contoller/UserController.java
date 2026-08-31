@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.user.contoller;
 
 import arile.toy.stocksystem.bffserver.rank.client.RankApiClient;
+import arile.toy.stocksystem.bffserver.rank.dto.RankHistoryResponse;
 import arile.toy.stocksystem.bffserver.security.repository.RefreshTokenRepository;
 import arile.toy.stocksystem.bffserver.security.service.JwtService;
 import arile.toy.stocksystem.bffserver.user.dto.*;
@@ -100,6 +101,27 @@ public class UserController {
         var rank = rankApiClient.getRank(username);
 
         return ResponseEntity.ok(userDto.withRank(rank));
+    }
+
+    @GetMapping("/rank/history")
+    public ResponseEntity<RankHistoryResponse> getRankHistory(
+            @AuthenticationPrincipal UserDetails user,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        int zeroBasedPage = Math.max(page - 1, 0);
+
+        RankHistoryResponse response = rankApiClient.getRankHistory(user.getUsername(), zeroBasedPage, size);
+
+        if (response == null) {
+            return ResponseEntity.internalServerError().build();
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/password")
