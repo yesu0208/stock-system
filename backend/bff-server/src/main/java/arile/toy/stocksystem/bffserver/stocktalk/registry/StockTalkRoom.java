@@ -5,22 +5,17 @@ import lombok.Getter;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * 종목별 톡방 (인메모리).
- * - participants : 현재 참여 중인 username 집합
- * - messages     : 누적 메시지 (최대 MAX_HISTORY 건 유지)
- */
 @Getter
 public class StockTalkRoom {
 
     private static final int MAX_HISTORY = 200;
 
     private final String ticker;
-    private final Set<String> participants = ConcurrentHashMap.newKeySet();
+    private final ConcurrentHashMap<String, AtomicInteger> participantRefCounts = new ConcurrentHashMap<>();
     private final List<StockTalkMessage> messages = new CopyOnWriteArrayList<>();
 
     public StockTalkRoom(String ticker) {
@@ -28,19 +23,40 @@ public class StockTalkRoom {
     }
 
     public boolean join(String username) {
-        return participants.add(username);
+        AtomicInteger[] isNewHolder = new AtomicInteger[1];
+
+        participantRefCounts.compute(username, (user, count) -> {
+            if (count == null) {
+                isNewHolder[0] = new AtomicInteger(1);
+                return new AtomicInteger(1);
+            }
+            count.incrementAndGet();
+            return count;
+        });
+
+        return isNewHolder[0] != null;
     }
 
     public boolean leave(String username) {
-        return participants.remove(username);
+        boolean[] fullyLeftHolder = new boolean[1];
+
+        participantRefCounts.computeIfPresent(username, (user, count) -> {
+            if (count.decrementAndGet() <= 0) {
+                fullyLeftHolder[0] = true;
+                return null;
+            }
+            return count;
+        });
+
+        return fullyLeftHolder[0];
     }
 
     public boolean isParticipant(String username) {
-        return participants.contains(username);
+        return participantRefCounts.containsKey(username);
     }
 
     public int participantCount() {
-        return participants.size();
+        return participantRefCounts.size();
     }
 
     public void addMessage(StockTalkMessage message) {
@@ -50,7 +66,6 @@ public class StockTalkRoom {
         }
     }
 
-    /** 최근 n 건 반환 */
     public List<StockTalkMessage> getRecentMessages(int n) {
         int size = messages.size();
         int from = Math.max(0, size - n);
