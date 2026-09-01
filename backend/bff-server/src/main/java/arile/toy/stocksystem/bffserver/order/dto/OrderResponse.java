@@ -5,6 +5,7 @@ public record OrderResponse(
         String stockCode,
         OrderType orderType,
         Integer orderPrice,
-        Integer orderQuantity
+        Integer orderQuantity,
+        LeverageRatio leverageRatio
 ) {
 }

@@ -8,6 +8,11 @@ public record OrderRequest(
         @NotEmpty String stockCode,
         @NotNull OrderType orderType,
         @NotNull @Positive Integer orderPrice,
-        @NotNull @Positive Integer orderQuantity
+        @NotNull @Positive Integer orderQuantity,
+        LeverageRatio leverageRatio
 ) {
+    /** leverageRatio가 null이면 spot으로 간주 */
+    public LeverageRatio leverageRatioOrDefault() {
+        return leverageRatio == null ? LeverageRatio.SPOT : leverageRatio;
+    }
 }
