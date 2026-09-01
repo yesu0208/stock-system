@@ -3,7 +3,6 @@ package arile.toy.stocksystem.accountserver.config;
 import arile.toy.stocksystem.accountserver.leverage.event.LiquidationExecutedEvent;
 import arile.toy.stocksystem.accountserver.leverage.event.MarginCallEvent;
 import arile.toy.stocksystem.accountserver.stockprice.dto.StockSummaryTickMessage;
-import arile.toy.stocksystem.accountserver.useraccount.dto.UserAccountMessage;
 import arile.toy.stocksystem.accountserver.useraccount.event.AccountUpdateEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
