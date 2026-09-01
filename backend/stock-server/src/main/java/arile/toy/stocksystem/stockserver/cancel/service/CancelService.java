@@ -6,6 +6,7 @@ import arile.toy.stocksystem.stockserver.cancel.event.CancelRequestEvent;
 import arile.toy.stocksystem.stockserver.cancel.event.CancelResponseEvent;
 import arile.toy.stocksystem.stockserver.cancel.event.publisher.CancelResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.cancel.repository.CancelRepository;
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.order.dto.OrderQueueRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.order.dto.UpdateOrderStatusResult;
@@ -86,14 +87,14 @@ public class CancelService {
     private void cancelInternal(OrderEntity orderEntity) {
 
         boolean refunded;
+        LeverageRatio leverageRatio = orderEntity.getLeverageRatio();
 
         if (orderEntity.getOrderType() == OrderType.BUY) {
 
-            refunded = accountApiClient.refundReservedCash(
-                    orderEntity.getUsername(),
-                    (long) orderEntity.getOrderPrice()
-                            * orderEntity.getRemainingQuantity()
-            );
+            long orderAmount = (long) orderEntity.getOrderPrice() * orderEntity.getRemainingQuantity();
+            long refundAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+
+            refunded = accountApiClient.refundReservedCash(orderEntity.getUsername(), refundAmount);
 
             if (!refunded) {
                 log.error("Redis cash refund failed. orderId={}, username={}",
@@ -105,11 +106,10 @@ public class CancelService {
 
         } else {
 
-            refunded = accountApiClient.refundReservedStock(
-                    orderEntity.getUsername(),
-                    orderEntity.getStockCode(),
-                    orderEntity.getRemainingQuantity()
-            );
+            refunded = leverageRatio.isSpot()
+                    ? accountApiClient.refundReservedStock(orderEntity.getUsername(), orderEntity.getStockCode(), orderEntity.getRemainingQuantity())
+                    : accountApiClient.refundReservedLeverageStock(orderEntity.getUsername(), orderEntity.getStockCode(),
+                    leverageRatio.name(), orderEntity.getRemainingQuantity());
 
             if (!refunded) {
                 log.error("Redis stock refund failed. orderId={}, username={}",
