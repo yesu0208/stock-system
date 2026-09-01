@@ -4,7 +4,7 @@ import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
 import arile.toy.stocksystem.bffserver.order.dto.OrderRequest;
 import arile.toy.stocksystem.bffserver.order.dto.OrderResponse;
-import arile.toy.stocksystem.bffserver.order.service.LeverageAccessValidator;
+import arile.toy.stocksystem.bffserver.leverage.service.LeverageAccessValidator;
 import arile.toy.stocksystem.bffserver.order.service.OrderIngressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

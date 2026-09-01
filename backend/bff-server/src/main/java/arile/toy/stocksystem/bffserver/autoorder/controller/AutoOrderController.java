@@ -5,7 +5,7 @@ import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResponse;
 import arile.toy.stocksystem.bffserver.autoorder.service.AutoOrderIngressService;
 import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
-import arile.toy.stocksystem.bffserver.order.service.LeverageAccessValidator;
+import arile.toy.stocksystem.bffserver.leverage.service.LeverageAccessValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

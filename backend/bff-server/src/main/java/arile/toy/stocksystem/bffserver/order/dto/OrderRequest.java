@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.order.dto;
 
+import arile.toy.stocksystem.bffserver.leverage.dto.LeverageRatio;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

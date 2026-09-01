@@ -1,7 +1,7 @@
-package arile.toy.stocksystem.bffserver.order.service;
+package arile.toy.stocksystem.bffserver.leverage.service;
 
 import arile.toy.stocksystem.bffserver.exception.leverage.LeverageNotAllowedException;
-import arile.toy.stocksystem.bffserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.bffserver.leverage.dto.LeverageRatio;
 import arile.toy.stocksystem.bffserver.rank.client.RankApiClient;
 import arile.toy.stocksystem.bffserver.rank.dto.RankResponse;
 import lombok.RequiredArgsConstructor;

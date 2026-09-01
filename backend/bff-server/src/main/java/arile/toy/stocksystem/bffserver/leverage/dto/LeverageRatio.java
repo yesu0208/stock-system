@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.bffserver.order.dto;
+package arile.toy.stocksystem.bffserver.leverage.dto;
 
 import arile.toy.stocksystem.bffserver.rank.dto.RankTier;
 

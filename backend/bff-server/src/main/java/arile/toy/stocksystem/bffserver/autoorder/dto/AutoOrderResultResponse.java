@@ -1,7 +1,7 @@
 package arile.toy.stocksystem.bffserver.autoorder.dto;
 
 import arile.toy.stocksystem.bffserver.ResponseType;
-import arile.toy.stocksystem.bffserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.bffserver.leverage.dto.LeverageRatio;
 
 import java.time.Instant;
 
