@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.accountserver.leverage.service;
 
+import arile.toy.stocksystem.accountserver.leverage.dto.MarginStatus;
 import arile.toy.stocksystem.accountserver.leverage.entity.LeveragePositionEntity;
 import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,12 @@ public class LeverageDailyBatchService {
     private final LeveragePositionRedisSyncer redisSyncer;
     private final LeverageMarginCallService leverageMarginCallService;
     private final LeverageLiquidationService leverageLiquidationService;
+    private final NegativeBalanceResolutionService negativeBalanceResolutionService;
 
+    /**
+     * 매일 15:55 실행되는 레버리지 배치의 전체 파이프라인
+     * 이자누적 -> 담보비율재계산/마진콜판정 -> 반대매매(청산) -> ④마이너스계좌 유예판정/영구정지
+     */
     public void runDailyLeverageBatch() {
 
         List<LeveragePositionEntity> allPositions = leveragePositionRepository.findAll();
@@ -32,16 +38,18 @@ public class LeverageDailyBatchService {
         log.info("[LeverageDailyBatch] margin call evaluation completed. newMarginCalls={}, recovered={}, queuedForLiquidation={}",
                 marginCallResult.newMarginCalls(), marginCallResult.recovered(), marginCallResult.queuedForLiquidation());
 
-        // evaluatePositions에서 이번 배치에 LIQUIDATION_PENDING으로 새로 전환된 것만 청산하면 되므로
-        // 이전 배치에서 밀린 것까지 포함해 전체 목록을 다시 조회한다 (가격 조회 실패로 연기된 건 포함)
-        List<LeveragePositionEntity> pendingLiquidations = leveragePositionRepository
-                .findByMarginStatus(arile.toy.stocksystem.accountserver.leverage.dto.MarginStatus.LIQUIDATION_PENDING);
+        List<LeveragePositionEntity> pendingLiquidations =
+                leveragePositionRepository.findByMarginStatus(MarginStatus.LIQUIDATION_PENDING);
 
         var liquidationResult = leverageLiquidationService.liquidatePendingPositions(pendingLiquidations);
         log.info("[LeverageDailyBatch] liquidation completed. liquidated={}, withShortfall={}",
                 liquidationResult.liquidated(), liquidationResult.shortfallCount());
 
-        // TODO: 마이너스 계좌 유예 만료 판정 + 영구정지 전환
+        var resolutionResult = negativeBalanceResolutionService.resolveNegativeAccounts();
+        log.info("[LeverageDailyBatch] negative balance resolution completed. recovered={}, suspended={}",
+                resolutionResult.recovered(), resolutionResult.suspended());
+
+        log.info("[LeverageDailyBatch] all steps completed.");
     }
 
     @Transactional
