@@ -12,6 +12,7 @@ import arile.toy.stocksystem.stockserver.autoorder.dto.UpdateAutoOrderStatusResu
 import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderService;
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,14 +84,14 @@ public class AutoCancelService {
     private void cancelInternal(AutoOrderEntity autoOrderEntity) {
 
         boolean refunded;
+        LeverageRatio leverageRatio = autoOrderEntity.getLeverageRatio();
 
         if (autoOrderEntity.getAutoOrderType() == AutoOrderType.BUY) {
 
-            refunded = accountApiClient.refundReservedCash(
-                    autoOrderEntity.getUsername(),
-                    (long) autoOrderEntity.getOrderPrice()
-                            * autoOrderEntity.getOrderQuantity()
-            );
+            long orderAmount = (long) autoOrderEntity.getOrderPrice() * autoOrderEntity.getOrderQuantity();
+            long refundAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+
+            refunded = accountApiClient.refundReservedCash(autoOrderEntity.getUsername(), refundAmount);
 
             if (!refunded) {
                 log.error("Redis cash refund failed. autoOrderId={}, username={}",
@@ -102,11 +103,10 @@ public class AutoCancelService {
 
         } else {
 
-            refunded = accountApiClient.refundReservedStock(
-                    autoOrderEntity.getUsername(),
-                    autoOrderEntity.getStockCode(),
-                    autoOrderEntity.getOrderQuantity()
-            );
+            refunded = leverageRatio.isSpot()
+                    ? accountApiClient.refundReservedStock(autoOrderEntity.getUsername(), autoOrderEntity.getStockCode(), autoOrderEntity.getOrderQuantity())
+                    : accountApiClient.refundReservedLeverageStock(autoOrderEntity.getUsername(), autoOrderEntity.getStockCode(),
+                    leverageRatio.name(), autoOrderEntity.getOrderQuantity());
 
             if (!refunded) {
                 log.error("Redis stock refund failed. autoOrderId={}, username={}",
