@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.accountserver.trade.service;
 
+import arile.toy.stocksystem.accountserver.leverage.dto.LeverageRatio;
+import arile.toy.stocksystem.accountserver.leverage.service.LeveragePositionApplyService;
 import arile.toy.stocksystem.accountserver.rank.dto.RankLevel;
 import arile.toy.stocksystem.accountserver.rank.entity.UserRankEntity;
 import arile.toy.stocksystem.accountserver.rank.repository.UserRankRepository;
@@ -26,13 +28,25 @@ public class TradeExecutionApplyService {
     private final TradeCommand tradeCommand;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
     private final UserRankRepository userRankRepository;
+    private final LeveragePositionApplyService leveragePositionApplyService;
 
     @Transactional
     public void apply(TradeExecutedEvent event) {
-        if (event.tradeType() == TradeType.BUY) {
-            applyBuy(event);
+
+        LeverageRatio leverageRatio = event.leverageRatio() == null ? LeverageRatio.SPOT : event.leverageRatio();
+
+        if (leverageRatio.isSpot()) {
+            if (event.tradeType() == TradeType.BUY) {
+                applyBuy(event);
+            } else {
+                applySell(event);
+            }
         } else {
-            applySell(event);
+            if (event.tradeType() == TradeType.BUY) {
+                leveragePositionApplyService.applyLeverageBuy(event, leverageRatio);
+            } else {
+                leveragePositionApplyService.applyLeverageSell(event, leverageRatio);
+            }
         }
 
         long tradeAmount = (long) event.tradePrice() * event.tradeQuantity();
