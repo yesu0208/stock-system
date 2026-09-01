@@ -31,9 +31,8 @@ public class OrderResponsePushService {
                     orderResponseEvent.username(),
                     "/sub/order/result",
                     OrderResultResponse.of(ResponseType.ERROR, null, orderResponseEvent.username(),
-                            orderResponseEvent.stockCode(), orderResponseEvent.orderType(),
+                            orderResponseEvent.stockCode(), orderResponseEvent.orderType(), orderResponseEvent.leverageRatio(),
                             orderResponseEvent.orderPrice(), orderResponseEvent.orderQuantity(), null, errorMessage
-
                     )
             );
         } else {
@@ -45,9 +44,8 @@ public class OrderResponsePushService {
                     orderResponseEvent.username(),
                     "/sub/order/result",
                     OrderResultResponse.of(ResponseType.SUCCESS, orderResponseEvent.orderId(), orderResponseEvent.username(),
-                            orderResponseEvent.stockCode(), orderResponseEvent.orderType(),
+                            orderResponseEvent.stockCode(), orderResponseEvent.orderType(), orderResponseEvent.leverageRatio(),
                             orderResponseEvent.orderPrice(), orderResponseEvent.orderQuantity(), orderResponseEvent.orderTime(), null
-
                     )
             );
 

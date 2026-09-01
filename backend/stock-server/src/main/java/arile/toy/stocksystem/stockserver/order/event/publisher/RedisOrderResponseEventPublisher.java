@@ -35,7 +35,7 @@ public class RedisOrderResponseEventPublisher implements OrderResponseEventPubli
         try {
             OrderResponseEvent event = OrderResponseEvent.of(
                     null, orderRequestEvent.username(), orderRequestEvent.stockCode(),
-                    orderRequestEvent.orderType(), orderRequestEvent.orderPrice(),
+                    orderRequestEvent.orderType(), orderRequestEvent.leverageRatio(), orderRequestEvent.orderPrice(),
                     orderRequestEvent.orderQuantity(), null, false,
                     orderErrorCode
             );

@@ -7,6 +7,7 @@ public record OrderResponseMessage(
         String username,
         String stockCode,
         OrderType orderType,
+        LeverageRatio leverageRatio,
         Integer orderPrice,
         Integer orderQuantity,
         Integer remainingQuantity,
