@@ -8,6 +8,7 @@ import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionR
 import arile.toy.stocksystem.accountserver.trade.event.TradeExecutedEvent;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
+import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class LeveragePositionApplyService {
     private final UserAccountRepository userAccountRepository;
     private final LeveragePositionRepository leveragePositionRepository;
     private final LeverageAccountRedisRepository leverageAccountRedisRepository;
+    private final AccountBalanceCommand accountBalanceCommand;
 
     /**
      * 레버리지 매수 체결 반영.
@@ -38,7 +40,7 @@ public class LeveragePositionApplyService {
         long tradeAmount = (long) event.tradePrice() * executable;          // 실제 체결된 매수금액(포지션 전체 크기)
         long orderMarginAmount = leverageRatio.calculateMarginDeposit((long) event.orderPrice() * executable); // 예약 당시 증거금
         long tradeMarginAmount = leverageRatio.calculateMarginDeposit(tradeAmount); // 체결가 기준 증거금
-        long marginDifference = orderMarginAmount - tradeMarginAmount;      // 지정가보다 유리하게 체결된 경우 환급할 증거금 차액
+        long marginRefund = orderMarginAmount - tradeMarginAmount;      // 지정가보다 유리하게 체결된 경우 환급할 증거금 차액
 
         UserAccountEntity account = userAccountRepository
                 .findByUsernameForUpdate(event.username())
@@ -60,13 +62,17 @@ public class LeveragePositionApplyService {
         position.addPurchase(executable, tradeAmount, additionalLoanAmount);
         leveragePositionRepository.save(position);
 
-        // TODO: Redis에 레버리지 포지션 캐시 반영 (계좌 Redis 조회용) — 별도 Lua 스크립트 필요
-        // TODO: marginDifference 만큼 reservedCash에서 availableCash로 환급하는 Redis 반영 필요
-        // 현재 leverage position만 redis에 반영
         syncPositionToRedis(event.username(), event.stockCode(), leverageRatio, position);
 
-        log.info("Leverage buy applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, marginCharged={}",
-                event.username(), event.stockCode(), leverageRatio, tradeAmount, tradeMarginAmount);
+        // TODO: Redis에 계좌 정보 캐시 반영 (계좌 Redis 조회용) — 별도 Lua 스크립트 필요
+        // 현재 leverage position만 redis에 반영 + 환불만 됨
+
+        if (marginRefund > 0) {
+            accountBalanceCommand.refundReservedCash(event.username(), marginRefund);
+        }
+
+        log.info("Leverage buy applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, marginCharged={}, marginRefundPending={}",
+                event.username(), event.stockCode(), leverageRatio, tradeAmount, tradeMarginAmount, marginRefund);
     }
 
     /**
