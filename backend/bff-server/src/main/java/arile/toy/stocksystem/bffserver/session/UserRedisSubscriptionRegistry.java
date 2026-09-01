@@ -4,6 +4,8 @@ import arile.toy.stocksystem.bffserver.account.event.subscriber.RedisAccountUpda
 import arile.toy.stocksystem.bffserver.autocancel.event.subscriber.RedisAutoCancelResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.autoorder.event.subscriber.RedisAutoOrderResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.cancel.event.subscriber.RedisCancelResponseEventSubscriber;
+import arile.toy.stocksystem.bffserver.leverage.event.subscriber.RedisLiquidationEventSubscriber;
+import arile.toy.stocksystem.bffserver.leverage.event.subscriber.RedisMarginCallEventSubscriber;
 import arile.toy.stocksystem.bffserver.order.event.subscriber.RedisOrderResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.trade.event.subscriber.RedisTradeResponseEventSubscriber;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,8 @@ public class UserRedisSubscriptionRegistry {
     private final RedisCancelResponseEventSubscriber cancelSubscriber;
     private final RedisAutoCancelResponseEventSubscriber autoCancelSubscriber;
     private final RedisAccountUpdateEventSubscriber accountSubscriber;
+    private final RedisMarginCallEventSubscriber marginCallSubscriber;
+    private final RedisLiquidationEventSubscriber liquidationSubscriber;
 
     private final ConcurrentHashMap<String, AtomicInteger> userRefCount = new ConcurrentHashMap<>();
 
@@ -150,6 +154,20 @@ public class UserRedisSubscriptionRegistry {
                 new RedisSubscription(
                         new ChannelTopic(UserEventType.AUTO_CANCEL.channel(username)),
                         autoCancelSubscriber
+                )
+        );
+
+        map.put(UserEventType.MARGIN_CALL,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.MARGIN_CALL.channel(username)),
+                        marginCallSubscriber
+                )
+        );
+
+        map.put(UserEventType.LIQUIDATION,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.LIQUIDATION.channel(username)),
+                        liquidationSubscriber
                 )
         );
 

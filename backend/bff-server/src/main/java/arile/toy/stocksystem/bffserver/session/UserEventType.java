@@ -37,6 +37,18 @@ public enum UserEventType {
         public String channel(String username) {
             return "user:auto:cancel." + username + ":event";
         }
+    },
+    MARGIN_CALL {
+        @Override
+        public String channel(String username) {
+            return "user:margincall." + username + ":event";
+        }
+    },
+    LIQUIDATION {
+        @Override
+        public String channel(String username) {
+            return "user:liquidation." + username + ":event";
+        }
     };
 
     public abstract String channel(String username);
