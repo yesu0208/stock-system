@@ -114,10 +114,15 @@ public class AutoOrderTriggerService {
 
         if (autoOrderDto.autoOrderType() == AutoOrderType.BUY) {
             long orderAmount = (long) autoOrderDto.orderPrice() * autoOrderDto.orderQuantity();
-            refunded = accountApiClient.refundReservedCash(autoOrderDto.username(), orderAmount);
+            long refundAmount = autoOrderDto.leverageRatio().isSpot()
+                    ? orderAmount
+                    : autoOrderDto.leverageRatio().calculateMarginDeposit(orderAmount);
+            refunded = accountApiClient.refundReservedCash(autoOrderDto.username(), refundAmount);
         } else {
-            refunded = accountApiClient.refundReservedStock(
-                    autoOrderDto.username(), autoOrderDto.stockCode(), autoOrderDto.orderQuantity());
+            refunded = autoOrderDto.leverageRatio().isSpot()
+                    ? accountApiClient.refundReservedStock(autoOrderDto.username(), autoOrderDto.stockCode(), autoOrderDto.orderQuantity())
+                    : accountApiClient.refundReservedLeverageStock(autoOrderDto.username(), autoOrderDto.stockCode(),
+                    autoOrderDto.leverageRatio().name(), autoOrderDto.orderQuantity());
         }
 
         if (!refunded) {
