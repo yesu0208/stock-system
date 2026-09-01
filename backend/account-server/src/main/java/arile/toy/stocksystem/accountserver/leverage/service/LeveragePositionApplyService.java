@@ -1,15 +1,21 @@
 package arile.toy.stocksystem.accountserver.leverage.service;
 
+import arile.toy.stocksystem.accountserver.leverage.dto.LeveragePositionInfo;
 import arile.toy.stocksystem.accountserver.leverage.dto.LeverageRatio;
 import arile.toy.stocksystem.accountserver.leverage.entity.LeveragePositionEntity;
+import arile.toy.stocksystem.accountserver.leverage.repository.LeverageAccountRedisRepository;
 import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionRepository;
 import arile.toy.stocksystem.accountserver.trade.event.TradeExecutedEvent;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
+import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +24,7 @@ public class LeveragePositionApplyService {
 
     private final UserAccountRepository userAccountRepository;
     private final LeveragePositionRepository leveragePositionRepository;
+    private final LeverageAccountRedisRepository leverageAccountRedisRepository;
 
     /**
      * 레버리지 매수 체결 반영.
@@ -55,6 +62,8 @@ public class LeveragePositionApplyService {
 
         // TODO: Redis에 레버리지 포지션 캐시 반영 (계좌 Redis 조회용) — 별도 Lua 스크립트 필요
         // TODO: marginDifference 만큼 reservedCash에서 availableCash로 환급하는 Redis 반영 필요
+        // 현재 leverage position만 redis에 반영
+        syncPositionToRedis(event.username(), event.stockCode(), leverageRatio, position);
 
         log.info("Leverage buy applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, marginCharged={}",
                 event.username(), event.stockCode(), leverageRatio, tradeAmount, tradeMarginAmount);
@@ -100,15 +109,71 @@ public class LeveragePositionApplyService {
 
         if (position.isEmpty()) {
             leveragePositionRepository.delete(position);
+            removePositionFromRedis(event.username(), event.stockCode(), leverageRatio);
         } else {
             leveragePositionRepository.save(position);
+            syncPositionToRedis(event.username(), event.stockCode(), leverageRatio, position);
         }
 
-        // TODO: 여기도 Lua 스크립트 필요
+        // TODO: Redis에 계좌 정보 캐시 반영 (계좌 Redis 조회용) — 별도 Lua 스크립트 필요
+        // 현재 leverage position만 redis에 반영
 
         log.info("Leverage sell applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, " +
                         "repaidLoan={}, netProceeds={}, positionRemaining={}",
                 event.username(), event.stockCode(), leverageRatio, tradeAmount, repaidLoanAmount, netProceeds,
                 position.getQuantity());
+    }
+
+    /** 매도 주문 접수 시 availableQuantity만 선차감 (체결 전 예약) — reserveLeverageStock에서 호출 */
+    @Transactional
+    public boolean reserveLeverageStock(String username, String stockCode, LeverageRatio leverageRatio, int quantity) {
+
+        LeveragePositionEntity position = leveragePositionRepository
+                .findByUsernameAndStockCodeAndLeverageRatioForUpdate(username, stockCode, leverageRatio)
+                .orElse(null);
+
+        if (position == null || position.getAvailableQuantity() < quantity) {
+            return false;
+        }
+
+        position.setAvailableQuantity(position.getAvailableQuantity() - quantity);
+        leveragePositionRepository.save(position);
+
+        syncPositionToRedis(username, stockCode, leverageRatio, position);
+        return true;
+    }
+
+    @Transactional
+    public boolean refundReservedLeverageStock(String username, String stockCode, LeverageRatio leverageRatio, int quantity) {
+
+        LeveragePositionEntity position = leveragePositionRepository
+                .findByUsernameAndStockCodeAndLeverageRatioForUpdate(username, stockCode, leverageRatio)
+                .orElse(null);
+
+        if (position == null) {
+            return false;
+        }
+
+        position.setAvailableQuantity(position.getAvailableQuantity() + quantity);
+        leveragePositionRepository.save(position);
+
+        syncPositionToRedis(username, stockCode, leverageRatio, position);
+        return true;
+    }
+
+    private void syncPositionToRedis(String username, String stockCode, LeverageRatio leverageRatio, LeveragePositionEntity position) {
+        Map<String, LeveragePositionInfo> positions = leverageAccountRedisRepository.getPositions(username);
+        positions.put(
+                LeverageAccountRedisRepository.positionKey(stockCode, leverageRatio),
+                LeveragePositionInfo.of(position.getQuantity(), position.getAvailableQuantity(),
+                        position.getPurchaseAmount(), position.getLoanAmount())
+        );
+        leverageAccountRedisRepository.savePositions(username, positions);
+    }
+
+    private void removePositionFromRedis(String username, String stockCode, LeverageRatio leverageRatio) {
+        Map<String, LeveragePositionInfo> positions = leverageAccountRedisRepository.getPositions(username);
+        positions.remove(LeverageAccountRedisRepository.positionKey(stockCode, leverageRatio));
+        leverageAccountRedisRepository.savePositions(username, positions);
     }
 }
