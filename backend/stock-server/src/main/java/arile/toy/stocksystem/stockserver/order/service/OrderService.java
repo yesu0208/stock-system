@@ -26,17 +26,23 @@ public class OrderService {
     public void registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
 
         long orderAmount = (long) request.orderPrice() * request.orderQuantity();
+        LeverageRatio leverageRatio = request.leverageRatio() == null ? LeverageRatio.SPOT : request.leverageRatio();
+
+        // 레버리지 매수 시 실제 예약해야 할 현금은 "매수금액 전체"가 아니라 "개시증거금"만큼
+        long reserveAmount = resolveReserveAmount(request.orderType(), leverageRatio, orderAmount);
 
         if (!fromAutoOrder && request.orderType() == OrderType.BUY) {
             boolean reserved = accountApiClient
-                    .reserveCash(request.username(), orderAmount);
+                    .reserveCash(request.username(), reserveAmount);
             if (!reserved) {
                 orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_BALANCE);
                 return;
             }
-        }  else if (!fromAutoOrder && request.orderType() == OrderType.SELL){
-            boolean reserved = accountApiClient
-                    .reserveStock(request.username(), request.stockCode(), request.orderQuantity());
+        } else if (!fromAutoOrder && request.orderType() == OrderType.SELL) {
+            // 레버리지 매도는 현물 재고가 아니라 레버리지 포지션 수량을 검증해야 하므로 별도 분기
+            boolean reserved = leverageRatio.isSpot()
+                    ? accountApiClient.reserveStock(request.username(), request.stockCode(), request.orderQuantity())
+                    : accountApiClient.reserveLeverageStock(request.username(), request.stockCode(), leverageRatio.name(), request.orderQuantity());
 
             if (!reserved) {
                 orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_STOCK);
@@ -51,7 +57,7 @@ public class OrderService {
                     request.username(),
                     request.stockCode(),
                     request.orderType(),
-                    request.leverageRatio(),
+                    leverageRatio,
                     request.orderPrice(),
                     request.orderQuantity(),
                     OrderStatus.OPEN,
@@ -65,10 +71,15 @@ public class OrderService {
         } catch (Exception e) {
             if (!fromAutoOrder) {
                 if (request.orderType() == OrderType.BUY) {
-                    accountApiClient.refundReservedCash(request.username(), orderAmount);
+                    accountApiClient.refundReservedCash(request.username(), reserveAmount);
                 } else {
-                    accountApiClient.refundReservedStock(
-                            request.username(), request.stockCode(), request.orderQuantity());
+                    if (leverageRatio.isSpot()) {
+                        accountApiClient.refundReservedStock(
+                                request.username(), request.stockCode(), request.orderQuantity());
+                    } else {
+                        accountApiClient.refundReservedLeverageStock(
+                                request.username(), request.stockCode(), leverageRatio.name(), request.orderQuantity());
+                    }
                 }
             }
             orderResponseEventPublisher.publishError(request, OrderErrorCode.INTERNAL_ERROR);
@@ -77,12 +88,20 @@ public class OrderService {
 
         var orderResponseMessage = new StockServerOrderResponseMessage(savedOrder.getOrderId(),
                 savedOrder.getUsername(), savedOrder.getStockCode(),
-                savedOrder.getOrderType(), savedOrder.getOrderPrice(),
+                savedOrder.getOrderType(), savedOrder.getLeverageRatio(), savedOrder.getOrderPrice(),
                 savedOrder.getOrderQuantity(), savedOrder.getRemainingQuantity(),
                 savedOrder.getOrderTime());
 
         stockServerOrderResponseRepository.save(orderResponseMessage);
         orderResponseEventPublisher.publish(orderResponseMessage);
+    }
+
+    /** 레버리지 매수 시 예약해야 할 실제 현금(개시증거금)을 계산 */
+    private long resolveReserveAmount(OrderType orderType, LeverageRatio leverageRatio, long orderAmount) {
+        if (orderType != OrderType.BUY || leverageRatio.isSpot()) {
+            return orderAmount;
+        }
+        return leverageRatio.calculateMarginDeposit(orderAmount);
     }
 
     @Transactional
