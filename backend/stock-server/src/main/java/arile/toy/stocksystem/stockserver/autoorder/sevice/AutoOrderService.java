@@ -6,6 +6,7 @@ import arile.toy.stocksystem.stockserver.autoorder.event.StockServerAutoOrderReq
 import arile.toy.stocksystem.stockserver.autoorder.event.publisher.AutoOrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.autoorder.repository.AutoOrderRepository;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,18 +27,21 @@ public class AutoOrderService {
     public void registerAutoOrder(StockServerAutoOrderRequestEvent request) {
 
         long orderAmount = (long) request.orderPrice() * request.orderQuantity();
+        LeverageRatio leverageRatio = request.leverageRatio() == null ? LeverageRatio.SPOT : request.leverageRatio();
+        long reserveAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
 
         if (request.autoOrderType() == AutoOrderType.BUY) {
             boolean reserved = accountApiClient
-                    .reserveCash(request.username(), orderAmount);
+                    .reserveCash(request.username(), reserveAmount);
 
             if (!reserved) {
                 autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_BALANCE);
                 return;
             }
         } else {
-            boolean reserved = accountApiClient
-                    .reserveStock(request.username(), request.stockCode(), request.orderQuantity());
+            boolean reserved = leverageRatio.isSpot()
+                    ? accountApiClient.reserveStock(request.username(), request.stockCode(), request.orderQuantity())
+                    : accountApiClient.reserveLeverageStock(request.username(), request.stockCode(), leverageRatio.name(), request.orderQuantity());
 
             if (!reserved) {
                 autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INSUFFICIENT_STOCK);
@@ -52,7 +56,7 @@ public class AutoOrderService {
                     request.username(),
                     request.stockCode(),
                     request.autoOrderType(),
-                    request.leverageRatio(),
+                    leverageRatio,
                     request.triggerPrice(),
                     request.orderPrice(),
                     request.orderQuantity(),
@@ -65,10 +69,15 @@ public class AutoOrderService {
 
         } catch (Exception e) {
             if (request.autoOrderType() == AutoOrderType.BUY) {
-                accountApiClient.refundReservedCash(request.username(), orderAmount);
+                accountApiClient.refundReservedCash(request.username(), reserveAmount);
             } else {
-                accountApiClient.refundReservedStock(
-                        request.username(), request.stockCode(), request.orderQuantity());
+                if (leverageRatio.isSpot()) {
+                    accountApiClient.refundReservedStock(
+                            request.username(), request.stockCode(), request.orderQuantity());
+                } else {
+                    accountApiClient.refundReservedLeverageStock(
+                            request.username(), request.stockCode(), leverageRatio.name(), request.orderQuantity());
+                }
             }
             autoOrderResponseEventPublisher.publishError(request, AutoOrderResultCode.INTERNAL_ERROR);
             throw e;
@@ -76,7 +85,7 @@ public class AutoOrderService {
 
         var autoOrderResponseMessage = new StockServerAutoOrderResponseMessage(savedAutoOrder.getAutoOrderId(),
                 savedAutoOrder.getUsername(), savedAutoOrder.getStockCode(),
-                savedAutoOrder.getAutoOrderType(), savedAutoOrder.getTriggerPrice(),
+                savedAutoOrder.getAutoOrderType(), savedAutoOrder.getLeverageRatio(), savedAutoOrder.getTriggerPrice(),
                 savedAutoOrder.getOrderPrice(), savedAutoOrder.getOrderQuantity(),
                 savedAutoOrder.getOrderTime());
 
