@@ -7,4 +7,15 @@ public record RankResponse(
         Long rp,
         String highestTierReached
 ) {
+    public RankTier currentRankTier() {
+        try {
+            return RankTier.valueOf(this.tier);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return RankTier.UNRANKED;
+        }
+    }
+
+    public boolean isAtLeast(RankTier requiredTier) {
+        return currentRankTier().ordinal() >= requiredTier.ordinal();
+    }
 }
