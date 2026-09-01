@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.autoorder.dto;
 
 import arile.toy.stocksystem.bffserver.ResponseType;
+import arile.toy.stocksystem.bffserver.order.dto.LeverageRatio;
 
 import java.time.Instant;
 
@@ -10,6 +11,7 @@ public record AutoOrderResultResponse(
         String username,
         String stockCode,
         AutoOrderType autoOrderType,
+        LeverageRatio leverageRatio,
         Integer triggerPrice,
         Integer orderPrice,
         Integer orderQuantity,
@@ -17,9 +19,10 @@ public record AutoOrderResultResponse(
         String errorMessage
 ) {
     public static AutoOrderResultResponse of(ResponseType responseType, Long autoOrderId, String username, String stockCode,
-                                             AutoOrderType autoOrderType, Integer triggerPrice, Integer orderPrice, Integer orderQuantity, Instant orderTime,
+                                             AutoOrderType autoOrderType, LeverageRatio leverageRatio,
+                                             Integer triggerPrice, Integer orderPrice, Integer orderQuantity, Instant orderTime,
                                              String errorMessage) {
-        return new AutoOrderResultResponse(responseType, autoOrderId, username, stockCode, autoOrderType, triggerPrice,
+        return new AutoOrderResultResponse(responseType, autoOrderId, username, stockCode, autoOrderType, leverageRatio, triggerPrice,
                 orderPrice, orderQuantity, orderTime, errorMessage);
     }
 }
