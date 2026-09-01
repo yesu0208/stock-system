@@ -29,7 +29,8 @@ public class RedisAutoOrderRequestEventPublisher implements AutoOrderRequestEven
                 "autoOrderType", String.valueOf(event.autoOrderType()),
                 "triggerPrice", String.valueOf(event.triggerPrice()),
                 "orderPrice", String.valueOf(event.orderPrice()),
-                "orderQuantity", String.valueOf(event.orderQuantity())
+                "orderQuantity", String.valueOf(event.orderQuantity()),
+                "leverageRatio", String.valueOf(event.leverageRatio())
         );
 
         RecordId recordId = streamRedisTemplate.opsForStream().add(

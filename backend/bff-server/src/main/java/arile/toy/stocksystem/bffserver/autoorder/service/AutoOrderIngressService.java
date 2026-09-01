@@ -15,18 +15,21 @@ public class AutoOrderIngressService {
 
     public AutoOrderResponse receive(String username, AutoOrderRequest request) {
 
+        var leverageRatio = request.leverageRatioOrDefault();
+
         AutoOrderRequestEvent event = new AutoOrderRequestEvent(
                 username,
                 request.stockCode(),
                 request.autoOrderType(),
                 request.triggerPrice(),
                 request.orderPrice(),
-                request.orderQuantity()
+                request.orderQuantity(),
+                leverageRatio
         );
 
         publisher.publishAutoOrder(event);
 
         return new AutoOrderResponse(username, request.stockCode(),  request.autoOrderType(),
-                request.triggerPrice(), request.orderPrice(), request.orderQuantity());
+                request.triggerPrice(), request.orderPrice(), request.orderQuantity(), leverageRatio);
     }
 }
