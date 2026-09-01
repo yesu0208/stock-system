@@ -51,6 +51,7 @@ public class OrderService {
                     request.username(),
                     request.stockCode(),
                     request.orderType(),
+                    request.leverageRatio(),
                     request.orderPrice(),
                     request.orderQuantity(),
                     OrderStatus.OPEN,

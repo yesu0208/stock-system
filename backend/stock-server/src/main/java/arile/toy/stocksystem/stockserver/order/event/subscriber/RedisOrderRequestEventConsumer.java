@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.stockserver.order.event.subscriber;
 
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
@@ -205,6 +206,17 @@ public class RedisOrderRequestEventConsumer {
             return;
         }
 
+        LeverageRatio leverageRatio;
+        String leverageRatioStr = (String) value.get("leverageRatio");
+        try {
+            leverageRatio = leverageRatioStr == null
+                    ? LeverageRatio.SPOT
+                    : LeverageRatio.valueOf(leverageRatioStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid leverageRatio: {}", leverageRatioStr);
+            return;
+        }
+
         Object rawOrderPrice = value.get("orderPrice");
         Integer orderPrice = null;
 
@@ -226,7 +238,7 @@ public class RedisOrderRequestEventConsumer {
         log.info("Processing order username: {} for stock {}", username, stockCode);
 
         orderService.registerOrder(StockServerOrderRequestEvent
-                .of(username, stockCode, orderType, orderPrice, orderQuantity), false);
+                .of(username, stockCode, orderType, orderPrice, orderQuantity, leverageRatio), false);
     }
 
     private String retryKey(RecordId id) {

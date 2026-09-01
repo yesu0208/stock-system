@@ -169,6 +169,7 @@ public class TradeMatchingService {
                             order.username(),
                             order.stockCode(),
                             order.orderType(),
+                            order.leverageRatio(),
                             order.orderPrice(),
                             order.orderQuantity(),
                             remainingQuantity,

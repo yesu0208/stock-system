@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.stockserver.order.event;
 
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderDto;
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 
 public record StockServerOrderRequestEvent(
@@ -8,10 +9,12 @@ public record StockServerOrderRequestEvent(
         String stockCode,
         OrderType orderType,
         Integer orderPrice,
-        Integer orderQuantity
+        Integer orderQuantity,
+        LeverageRatio leverageRatio
 ) {
-    public static StockServerOrderRequestEvent of(String username, String stockCode, OrderType orderType, Integer orderPrice, Integer orderQuantity) {
-        return new StockServerOrderRequestEvent(username, stockCode, orderType, orderPrice, orderQuantity);
+    public static StockServerOrderRequestEvent of(String username, String stockCode, OrderType orderType,
+                                                  Integer orderPrice, Integer orderQuantity, LeverageRatio leverageRatio) {
+        return new StockServerOrderRequestEvent(username, stockCode, orderType, orderPrice, orderQuantity, leverageRatio);
     }
 
     public static StockServerOrderRequestEvent fromAutoOrderDto(AutoOrderDto autoOrderDto) {
@@ -19,8 +22,9 @@ public record StockServerOrderRequestEvent(
                 autoOrderDto.username(),
                 autoOrderDto.stockCode(),
                 autoOrderDto.autoOrderType().toOrderType(),
-        autoOrderDto.orderPrice(),
-                autoOrderDto.orderQuantity()
+                autoOrderDto.orderPrice(),
+                autoOrderDto.orderQuantity(),
+                autoOrderDto.leverageRatio()
         );
     }
 }
