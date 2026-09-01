@@ -136,6 +136,11 @@ public class LeveragePositionApplyService {
             return false;
         }
 
+        // 청산 확정 포지션은 유저 매도 불가
+        if (position.getMarginStatus() == arile.toy.stocksystem.accountserver.leverage.dto.MarginStatus.LIQUIDATION_PENDING) {
+            return false;
+        }
+
         position.setAvailableQuantity(position.getAvailableQuantity() - quantity);
         leveragePositionRepository.save(position);
 
