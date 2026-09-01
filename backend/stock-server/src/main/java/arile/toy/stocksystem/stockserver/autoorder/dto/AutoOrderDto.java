@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.stockserver.autoorder.dto;
 
 import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 
 import java.time.Instant;
 
@@ -9,6 +10,7 @@ public record AutoOrderDto(
         String username,
         String stockCode,
         AutoOrderType autoOrderType,
+        LeverageRatio leverageRatio,
         Integer triggerPrice,
         Integer orderPrice,
         Integer orderQuantity,
@@ -19,6 +21,7 @@ public record AutoOrderDto(
                 autoOrderEntity.getUsername(),
                 autoOrderEntity.getStockCode(),
                 autoOrderEntity.getAutoOrderType(),
+                autoOrderEntity.getLeverageRatio(),
                 autoOrderEntity.getTriggerPrice(),
                 autoOrderEntity.getOrderPrice(),
                 autoOrderEntity.getOrderQuantity(),

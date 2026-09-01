@@ -52,6 +52,7 @@ public class AutoOrderService {
                     request.username(),
                     request.stockCode(),
                     request.autoOrderType(),
+                    request.leverageRatio(),
                     request.triggerPrice(),
                     request.orderPrice(),
                     request.orderQuantity(),

@@ -4,6 +4,7 @@ import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderType;
 import arile.toy.stocksystem.stockserver.autoorder.event.StockServerAutoOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderService;
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -206,6 +207,17 @@ public class RedisAutoOrderRequestEventConsumer {
             return;
         }
 
+        LeverageRatio leverageRatio;
+        String leverageRatioStr = (String) value.get("leverageRatio");
+        try {
+            leverageRatio = leverageRatioStr == null
+                    ? LeverageRatio.SPOT
+                    : LeverageRatio.valueOf(leverageRatioStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid leverageRatio: {}", leverageRatioStr);
+            return;
+        }
+
         Object rawOrderPrice = value.get("orderPrice");
         Integer orderPrice = null;
 
@@ -236,7 +248,7 @@ public class RedisAutoOrderRequestEventConsumer {
         log.info("Processing order username: {} for stock {}", username, stockCode);
 
         autoOrderService.registerAutoOrder(StockServerAutoOrderRequestEvent
-                .of(username, stockCode, autoOrderType, triggerPrice, orderPrice, orderQuantity));
+                .of(username, stockCode, autoOrderType, triggerPrice, orderPrice, orderQuantity, leverageRatio));
     }
 
     private String retryKey(RecordId id) {
