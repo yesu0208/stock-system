@@ -1,9 +1,8 @@
 package arile.toy.stocksystem.accountserver.useraccount.controller;
 
-import arile.toy.stocksystem.accountserver.useraccount.dto.BalanceCommandResponse;
-import arile.toy.stocksystem.accountserver.useraccount.dto.RefundStockRequest;
-import arile.toy.stocksystem.accountserver.useraccount.dto.ReserveCashRequest;
-import arile.toy.stocksystem.accountserver.useraccount.dto.ReserveStockRequest;
+import arile.toy.stocksystem.accountserver.leverage.dto.LeverageRatio;
+import arile.toy.stocksystem.accountserver.leverage.service.LeveragePositionApplyService;
+import arile.toy.stocksystem.accountserver.useraccount.dto.*;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +15,7 @@ public class AccountBalanceController {
 
     private final AccountBalanceCommand accountBalanceCommand;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
+    private final LeveragePositionApplyService leveragePositionApplyService;
 
     @PostMapping("/{username}/reserve-cash")
     public BalanceCommandResponse reserveCash(
@@ -55,6 +55,28 @@ public class AccountBalanceController {
     ) {
         boolean success = accountBalanceCommand.refundReservedStock(
                 username, request.stockCode(), request.quantity());
+        publishIfSuccess(username, success);
+        return BalanceCommandResponse.of(success);
+    }
+
+    @PostMapping("/{username}/reserve-leverage-stock")
+    public BalanceCommandResponse reserveLeverageStock(
+            @PathVariable String username,
+            @RequestBody ReserveLeverageStockRequest request
+    ) {
+        boolean success = leveragePositionApplyService.reserveLeverageStock(
+                username, request.stockCode(), LeverageRatio.valueOf(request.leverageRatio()), request.quantity());
+        publishIfSuccess(username, success);
+        return BalanceCommandResponse.of(success);
+    }
+
+    @PostMapping("/{username}/refund-leverage-stock")
+    public BalanceCommandResponse refundLeverageStock(
+            @PathVariable String username,
+            @RequestBody ReserveLeverageStockRequest request
+    ) {
+        boolean success = leveragePositionApplyService.refundReservedLeverageStock(
+                username, request.stockCode(), LeverageRatio.valueOf(request.leverageRatio()), request.quantity());
         publishIfSuccess(username, success);
         return BalanceCommandResponse.of(success);
     }
