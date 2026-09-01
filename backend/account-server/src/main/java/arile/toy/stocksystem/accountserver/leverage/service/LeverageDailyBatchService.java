@@ -6,7 +6,6 @@ import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionR
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,8 +15,7 @@ import java.util.List;
 public class LeverageDailyBatchService {
 
     private final LeveragePositionRepository leveragePositionRepository;
-    private final LeverageInterestCalculator interestCalculator;
-    private final LeveragePositionRedisSyncer redisSyncer;
+    private final LeverageInterestService leverageInterestService;
     private final LeverageMarginCallService leverageMarginCallService;
     private final LeverageLiquidationService leverageLiquidationService;
     private final NegativeBalanceResolutionService negativeBalanceResolutionService;
@@ -30,9 +28,9 @@ public class LeverageDailyBatchService {
 
         List<LeveragePositionEntity> allPositions = leveragePositionRepository.findAll();
 
-        int accrued = accrueInterestForAllPositions(allPositions);
-        log.info("[LeverageDailyBatch] interest accrual completed. totalPositions={}, accrued={}",
-                allPositions.size(), accrued);
+        int charged = leverageInterestService.chargeInterestForAllPositions(allPositions);
+        log.info("[LeverageDailyBatch] interest charge completed. totalPositions={}, charged={}",
+                allPositions.size(), charged);
 
         var marginCallResult = leverageMarginCallService.evaluatePositions(allPositions);
         log.info("[LeverageDailyBatch] margin call evaluation completed. newMarginCalls={}, recovered={}, queuedForLiquidation={}",
@@ -50,38 +48,5 @@ public class LeverageDailyBatchService {
                 resolutionResult.recovered(), resolutionResult.suspended());
 
         log.info("[LeverageDailyBatch] all steps completed.");
-    }
-
-    @Transactional
-    public int accrueInterestForAllPositions(List<LeveragePositionEntity> positions) {
-
-        int accrued = 0;
-
-        for (LeveragePositionEntity position : positions) {
-
-            if (position.getLoanAmount() <= 0) {
-                continue;
-            }
-
-            try {
-                long dailyInterest = interestCalculator.calculateDailyInterest(position.getLoanAmount());
-
-                if (dailyInterest <= 0) {
-                    continue;
-                }
-
-                position.accrueInterest(dailyInterest);
-                leveragePositionRepository.save(position);
-                redisSyncer.sync(position);
-
-                accrued++;
-
-            } catch (Exception e) {
-                log.error("[LeverageDailyBatch] interest accrual failed for positionId={}, username={}, stockCode={}",
-                        position.getLeveragePositionId(), position.getUsername(), position.getStockCode(), e);
-            }
-        }
-
-        return accrued;
     }
 }

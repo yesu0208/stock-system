@@ -95,10 +95,6 @@ public class LeveragePositionEntity {
         return repaidLoanAmount;
     }
 
-    public void accrueInterest(long dailyInterest) {
-        this.loanAmount += dailyInterest;
-    }
-
     public void changeMarginStatus(MarginStatus status, LocalDate marginCallDate) {
         this.marginStatus = status;
         this.marginCallDate = marginCallDate;

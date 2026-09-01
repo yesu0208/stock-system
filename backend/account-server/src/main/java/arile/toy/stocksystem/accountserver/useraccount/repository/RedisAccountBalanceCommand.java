@@ -18,6 +18,7 @@ public class RedisAccountBalanceCommand implements AccountBalanceCommand {
     private final DefaultRedisScript<Long> refundStockScript;
     private final DefaultRedisScript<Long> settleLeverageBuyScript;
     private final DefaultRedisScript<Long> creditAvailableCashScript;
+    private final DefaultRedisScript<Long> debitAvailableCashScript;
 
     public boolean reserveCash(String username, long amount) {
         return execute(reserveCashScript, username, amount);
@@ -51,6 +52,13 @@ public class RedisAccountBalanceCommand implements AccountBalanceCommand {
                 List.of(key(username)),
                 String.valueOf(amount)
         );
+        return result != null && result == 1L;
+    }
+
+    @Override
+    public boolean debitAvailableCash(String username, long amount) {
+        Long result = redisTemplate.execute(
+                debitAvailableCashScript, List.of(key(username)), String.valueOf(amount));
         return result != null && result == 1L;
     }
 

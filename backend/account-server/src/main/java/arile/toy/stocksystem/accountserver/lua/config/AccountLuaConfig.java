@@ -200,4 +200,13 @@ public class AccountLuaConfig {
             return 1
         """, Long.class);
     }
+
+    @Bean
+    public DefaultRedisScript<Long> debitAvailableCashScript() {
+        return new DefaultRedisScript<>("""
+            local amount = tonumber(ARGV[1])
+            redis.call('HINCRBY', KEYS[1], 'availableCash', -amount)
+            return 1
+        """, Long.class);
+    }
 }
