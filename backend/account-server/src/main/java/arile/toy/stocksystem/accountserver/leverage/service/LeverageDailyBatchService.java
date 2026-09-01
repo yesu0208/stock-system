@@ -18,6 +18,7 @@ public class LeverageDailyBatchService {
     private final LeverageInterestCalculator interestCalculator;
     private final LeveragePositionRedisSyncer redisSyncer;
     private final LeverageMarginCallService leverageMarginCallService;
+    private final LeverageLiquidationService leverageLiquidationService;
 
     public void runDailyLeverageBatch() {
 
@@ -27,13 +28,20 @@ public class LeverageDailyBatchService {
         log.info("[LeverageDailyBatch] interest accrual completed. totalPositions={}, accrued={}",
                 allPositions.size(), accrued);
 
-        // 이자 누적으로 loanAmount가 갱신되었으므로, 담보비율 재계산은 갱신된 엔티티를 다시 사용해야 함
         var marginCallResult = leverageMarginCallService.evaluatePositions(allPositions);
         log.info("[LeverageDailyBatch] margin call evaluation completed. newMarginCalls={}, recovered={}, queuedForLiquidation={}",
                 marginCallResult.newMarginCalls(), marginCallResult.recovered(), marginCallResult.queuedForLiquidation());
 
-        // TODO: LIQUIDATION_PENDING 포지션 반대매매 실행
-        // TODO: 마이너스 계좌 처리
+        // evaluatePositions에서 이번 배치에 LIQUIDATION_PENDING으로 새로 전환된 것만 청산하면 되므로
+        // 이전 배치에서 밀린 것까지 포함해 전체 목록을 다시 조회한다 (가격 조회 실패로 연기된 건 포함)
+        List<LeveragePositionEntity> pendingLiquidations = leveragePositionRepository
+                .findByMarginStatus(arile.toy.stocksystem.accountserver.leverage.dto.MarginStatus.LIQUIDATION_PENDING);
+
+        var liquidationResult = leverageLiquidationService.liquidatePendingPositions(pendingLiquidations);
+        log.info("[LeverageDailyBatch] liquidation completed. liquidated={}, withShortfall={}",
+                liquidationResult.liquidated(), liquidationResult.shortfallCount());
+
+        // TODO: 마이너스 계좌 유예 만료 판정 + 영구정지 전환
     }
 
     @Transactional
