@@ -58,11 +58,16 @@ public class LeveragePositionApplyService {
 
         redisSyncer.sync(position);
 
-        // TODO: Redis에 계좌 정보 캐시 반영 (계좌 Redis 조회용) — 별도 Lua 스크립트 필요
-        // 현재 leverage position만 redis에 반영 + 환불만 됨
-
-        if (marginRefund > 0) {
-            accountBalanceCommand.refundReservedCash(event.username(), marginRefund);
+        // reservedCash에서 예약분(orderMarginAmount) 전체를 해제하고, 그중 차액(marginRefund)만 availableCash로 반환한다.
+        // marginRefund == 0(지정가 그대로 체결)이어도 반드시 호출해야 한다 — reservedCash에 tradeMarginAmount가
+        // 영구히 남는 것을 막기 위함 (DB balance는 이미 tradeMarginAmount만큼만 차감되었으므로 그만큼은 Redis에서도 소멸해야 함).
+        boolean settled = accountBalanceCommand.settleLeverageBuy(event.username(), orderMarginAmount, marginRefund);
+        if (!settled) {
+            log.error("Redis reservedCash settlement failed for leverage buy. username={}, stockCode={}, orderMarginAmount={}",
+                    event.username(), event.stockCode(), orderMarginAmount);
+            throw new IllegalStateException(
+                    "Redis leverage buy settlement failed. username=%s, stockCode=%s"
+                            .formatted(event.username(), event.stockCode()));
         }
 
         log.info("Leverage buy applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, marginCharged={}",
@@ -115,8 +120,16 @@ public class LeveragePositionApplyService {
             redisSyncer.sync(position);
         }
 
-        // TODO: Redis에 계좌 정보 캐시 반영 (계좌 Redis 조회용) — 별도 Lua 스크립트 필요
-        // 현재 leverage position만 redis에 반영
+        // 매도는 사전에 현금을 예약하지 않으므로(수량만 reserveLeverageStock으로 예약) reservedCash는 건드릴 필요 없이
+        // DB balance 증가분(netProceeds)을 availableCash에 그대로 반영하면 된다.
+        boolean credited = accountBalanceCommand.creditAvailableCash(event.username(), netProceeds);
+        if (!credited) {
+            log.error("Redis availableCash credit failed for leverage sell. username={}, stockCode={}, netProceeds={}",
+                    event.username(), event.stockCode(), netProceeds);
+            throw new IllegalStateException(
+                    "Redis leverage sell credit failed. username=%s, stockCode=%s"
+                            .formatted(event.username(), event.stockCode()));
+        }
 
         log.info("Leverage sell applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, " +
                         "repaidLoan={}, netProceeds={}, positionRemaining={}",

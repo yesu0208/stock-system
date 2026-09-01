@@ -16,6 +16,8 @@ public class RedisAccountBalanceCommand implements AccountBalanceCommand {
     private final DefaultRedisScript<Long> refundCashScript;
     private final DefaultRedisScript<Long> reserveStockScript;
     private final DefaultRedisScript<Long> refundStockScript;
+    private final DefaultRedisScript<Long> settleLeverageBuyScript;
+    private final DefaultRedisScript<Long> creditAvailableCashScript;
 
     public boolean reserveCash(String username, long amount) {
         return execute(reserveCashScript, username, amount);
@@ -33,27 +35,34 @@ public class RedisAccountBalanceCommand implements AccountBalanceCommand {
         return execute(refundStockScript, username, quantity, stockCode);
     }
 
-    private boolean execute(DefaultRedisScript<Long> script,
-                            String username,
-                            int quantity,
-                            String stockCode) {
+    public boolean settleLeverageBuy(String username, long reservedDecrease, long availableIncrease) {
         Long result = redisTemplate.execute(
-                script,
+                settleLeverageBuyScript,
                 List.of(key(username)),
-                String.valueOf(quantity),
-                stockCode
+                String.valueOf(reservedDecrease),
+                String.valueOf(availableIncrease)
         );
         return result != null && result == 1L;
     }
 
-    private boolean execute(DefaultRedisScript<Long> script,
-                            String username,
-                            long amount) {
+    public boolean creditAvailableCash(String username, long amount) {
         Long result = redisTemplate.execute(
-                script,
+                creditAvailableCashScript,
                 List.of(key(username)),
                 String.valueOf(amount)
         );
+        return result != null && result == 1L;
+    }
+
+    private boolean execute(DefaultRedisScript<Long> script, String username, int quantity, String stockCode) {
+        Long result = redisTemplate.execute(
+                script, List.of(key(username)), String.valueOf(quantity), stockCode);
+        return result != null && result == 1L;
+    }
+
+    private boolean execute(DefaultRedisScript<Long> script, String username, long amount) {
+        Long result = redisTemplate.execute(
+                script, List.of(key(username)), String.valueOf(amount));
         return result != null && result == 1L;
     }
 
