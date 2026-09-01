@@ -4,6 +4,7 @@ import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
 import arile.toy.stocksystem.bffserver.order.dto.OrderRequest;
 import arile.toy.stocksystem.bffserver.order.dto.OrderResponse;
+import arile.toy.stocksystem.bffserver.order.service.LeverageAccessValidator;
 import arile.toy.stocksystem.bffserver.order.service.OrderIngressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class OrderController {
 
     private final OrderIngressService orderIngressService;
     private final BffServerMarketPhaseRegistry bffServerMarketPhaseRegistry;
+    private final LeverageAccessValidator leverageAccessValidator;
 
     @PostMapping
     public ResponseEntity<OrderResponse> order(
@@ -38,7 +40,10 @@ public class OrderController {
         if (bffServerMarketPhaseRegistry.isClosed(stockCode)) {
             throw new MarketClosedException();
         }
+
         String username = user.getUsername();
+
+        leverageAccessValidator.validate(username, orderRequest.leverageRatioOrDefault());
 
         OrderResponse orderResponse =
                 orderIngressService.receive(username, orderRequest);
