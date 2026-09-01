@@ -17,18 +17,22 @@ public class LeverageDailyBatchService {
     private final LeveragePositionRepository leveragePositionRepository;
     private final LeverageInterestCalculator interestCalculator;
     private final LeveragePositionRedisSyncer redisSyncer;
+    private final LeverageMarginCallService leverageMarginCallService;
 
     public void runDailyLeverageBatch() {
 
         List<LeveragePositionEntity> allPositions = leveragePositionRepository.findAll();
 
         int accrued = accrueInterestForAllPositions(allPositions);
-
         log.info("[LeverageDailyBatch] interest accrual completed. totalPositions={}, accrued={}",
                 allPositions.size(), accrued);
 
-        // TODO: 담보비율 재계산 + 마진콜 판정
-        // TODO: 반대매매 실행
+        // 이자 누적으로 loanAmount가 갱신되었으므로, 담보비율 재계산은 갱신된 엔티티를 다시 사용해야 함
+        var marginCallResult = leverageMarginCallService.evaluatePositions(allPositions);
+        log.info("[LeverageDailyBatch] margin call evaluation completed. newMarginCalls={}, recovered={}, queuedForLiquidation={}",
+                marginCallResult.newMarginCalls(), marginCallResult.recovered(), marginCallResult.queuedForLiquidation());
+
+        // TODO: LIQUIDATION_PENDING 포지션 반대매매 실행
         // TODO: 마이너스 계좌 처리
     }
 
