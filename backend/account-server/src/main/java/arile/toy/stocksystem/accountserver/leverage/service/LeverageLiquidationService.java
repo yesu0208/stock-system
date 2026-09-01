@@ -10,6 +10,7 @@ import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionR
 import arile.toy.stocksystem.accountserver.stockprice.repository.StockSummaryRedisRepository;
 import arile.toy.stocksystem.accountserver.useraccount.dto.AccountStatus;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
+import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class LeverageLiquidationService {
     private final StockSummaryRedisRepository stockSummaryRedisRepository;
     private final LeveragePositionRedisSyncer redisSyncer;
     private final LiquidationEventPublisher liquidationEventPublisher;
+    private final AccountBalanceCommand accountBalanceCommand;
 
     /**
      * 반대매매~청산상환+부족분 마이너스 전환 단계.
@@ -99,13 +101,15 @@ public class LeverageLiquidationService {
         UserAccountEntity account = userAccountRepository.findByUsernameForUpdate(position.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found. username=" + position.getUsername()));
 
-        // netAfterRepay가 음수여도 그대로 반영 — 계좌가 마이너스로 전환되는 것이 의도된 동작
         account.setBalance(account.getBalance() + netAfterRepay);
 
-        if (shortfall > 0 && account.getAccountStatus() == AccountStatus.NORMAL) {
+        // NEGATIVE 전환 기준은 "이 포지션의 shortfall 발생 여부"가 아니라 "청산 반영 후 계좌 전체 잔고"여야 한다.
+        // shortfall > 0이어도 다른 현금이 충분하면 계좌 전체는 플러스일 수 있고, 그 경우 NEGATIVE로 전환하면 안 된다.
+        boolean wasNormal = account.getAccountStatus() == AccountStatus.NORMAL;
+        if (account.getBalance() < 0 && wasNormal) {
             account.changeAccountStatus(AccountStatus.NEGATIVE, LocalDate.now());
-            log.warn("[Liquidation] Account converted to NEGATIVE. username={}, shortfall={}",
-                    position.getUsername(), shortfall);
+            log.warn("[Liquidation] Account converted to NEGATIVE. username={}, balanceAfter={}",
+                    position.getUsername(), account.getBalance());
         }
 
         userAccountRepository.save(account);
@@ -123,12 +127,21 @@ public class LeverageLiquidationService {
         leveragePositionRepository.delete(position);
         redisSyncer.remove(username, stockCode, leverageRatio);
 
+        // Redis availableCash에도 netAfterRepay를 반영해야 한다 (아래 별도로 짚음)
+        boolean credited = accountBalanceCommand.creditAvailableCash(username, netAfterRepay);
+        if (!credited) {
+            log.error("Redis availableCash credit failed for liquidation. username={}, stockCode={}, netAfterRepay={}",
+                    username, stockCode, netAfterRepay);
+            throw new IllegalStateException(
+                    "Redis liquidation credit failed. username=%s, stockCode=%s".formatted(username, stockCode));
+        }
+
         liquidationEventPublisher.publish(
                 LiquidationExecutedEvent.of(username, stockCode, leverageRatio, quantity, settlementPrice, shortfall));
 
         log.warn("[Liquidation] executed. username={}, stockCode={}, leverageRatio={}, quantity={}, " +
-                        "settlementPrice={}, proceeds={}, repaidLoan={}, shortfall={}",
-                username, stockCode, leverageRatio, quantity, settlementPrice, proceeds, loanAmount, shortfall);
+                        "settlementPrice={}, proceeds={}, repaidLoan={}, shortfall={}, balanceAfter={}",
+                username, stockCode, leverageRatio, quantity, settlementPrice, proceeds, loanAmount, shortfall, account.getBalance());
 
         return shortfall > 0;
     }
