@@ -15,16 +15,20 @@ public class OrderIngressService {
 
     public OrderResponse receive(String username, OrderRequest request) {
 
+        var leverageRatio = request.leverageRatioOrDefault();
+
         OrderRequestEvent event = new OrderRequestEvent(
                 username,
                 request.stockCode(),
                 request.orderType(),
                 request.orderPrice(),
-                request.orderQuantity()
+                request.orderQuantity(),
+                leverageRatio
         );
 
         orderRequestEventPublisher.publishOrder(event);
 
-        return new OrderResponse(username, request.stockCode(),  request.orderType(), request.orderPrice(), request.orderQuantity());
+        return new OrderResponse(username, request.stockCode(), request.orderType(),
+                request.orderPrice(), request.orderQuantity(), leverageRatio);
     }
 }

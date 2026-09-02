@@ -2,6 +2,7 @@ package arile.toy.stocksystem.stockserver.autoorder.entity;
 
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderStatus;
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderType;
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -31,6 +32,10 @@ public class AutoOrderEntity {
     private AutoOrderType autoOrderType;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private LeverageRatio leverageRatio;
+
+    @Column(nullable = false)
     private Integer triggerPrice;
 
     @Column(nullable = false)
@@ -46,13 +51,14 @@ public class AutoOrderEntity {
     @Column(nullable = false)
     private Instant orderTime;
 
-    public static AutoOrderEntity of(String username, String stockCode, AutoOrderType autoOrderType,
+    public static AutoOrderEntity of(String username, String stockCode, AutoOrderType autoOrderType, LeverageRatio leverageRatio,
                                      Integer triggerPrice, Integer orderPrice, Integer orderQuantity,
                                      AutoOrderStatus autoOrderStatus) {
         var autoOrderEntity = new AutoOrderEntity();
         autoOrderEntity.setUsername(username);
         autoOrderEntity.setStockCode(stockCode);
         autoOrderEntity.setAutoOrderType(autoOrderType);
+        autoOrderEntity.setLeverageRatio(leverageRatio);
         autoOrderEntity.setTriggerPrice(triggerPrice);
         autoOrderEntity.setOrderPrice(orderPrice);
         autoOrderEntity.setOrderQuantity(orderQuantity);

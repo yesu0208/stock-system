@@ -1,7 +1,8 @@
 package arile.toy.stocksystem.accountserver.config;
 
+import arile.toy.stocksystem.accountserver.leverage.event.LiquidationExecutedEvent;
+import arile.toy.stocksystem.accountserver.leverage.event.MarginCallEvent;
 import arile.toy.stocksystem.accountserver.stockprice.dto.StockSummaryTickMessage;
-import arile.toy.stocksystem.accountserver.useraccount.dto.UserAccountMessage;
 import arile.toy.stocksystem.accountserver.useraccount.event.AccountUpdateEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -58,6 +59,26 @@ public class AccountRedisConfig {
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockSummaryTickMessage.class));
         template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, MarginCallEvent> marginCallEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, MarginCallEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(MarginCallEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, LiquidationExecutedEvent> liquidationExecutedEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, LiquidationExecutedEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(LiquidationExecutedEvent.class));
         return template;
     }
 }

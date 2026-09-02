@@ -36,7 +36,7 @@ public class RedisAutoOrderResponseEventPublisher implements AutoOrderResponseEv
         try {
             AutoOrderResponseEvent event = AutoOrderResponseEvent.of(
                     null, orderRequestEvent.username(), orderRequestEvent.stockCode(),
-                    orderRequestEvent.autoOrderType(), orderRequestEvent.triggerPrice(),
+                    orderRequestEvent.autoOrderType(), orderRequestEvent.leverageRatio(), orderRequestEvent.triggerPrice(),
                     orderRequestEvent.orderPrice(), orderRequestEvent.orderQuantity(), null, false,
                     orderErrorCode
             );
@@ -56,7 +56,7 @@ public class RedisAutoOrderResponseEventPublisher implements AutoOrderResponseEv
             AutoOrderResponseEvent event = AutoOrderResponseEvent.of(
                     null, username, null,
                     null, null,
-                    null, null, null, true,
+                    null, null, null, null,true,
                     AutoOrderResultCode.TRIGGERED
             );
 
@@ -78,6 +78,7 @@ public class RedisAutoOrderResponseEventPublisher implements AutoOrderResponseEv
                     autoOrderDto.username(),
                     autoOrderDto.stockCode(),
                     autoOrderDto.autoOrderType(),
+                    autoOrderDto.leverageRatio(),
                     autoOrderDto.triggerPrice(),
                     autoOrderDto.orderPrice(),
                     autoOrderDto.orderQuantity(),

@@ -32,8 +32,9 @@ public class AutoOrderResponsePushService {
                     autoOrderResponseEvent.username(),
                     "/sub/auto/order/result",
                     AutoOrderResultResponse.of(ResponseType.ERROR, null, autoOrderResponseEvent.username(),
-                            autoOrderResponseEvent.stockCode(), autoOrderResponseEvent.autoOrderType(), autoOrderResponseEvent.triggerPrice(),
-                            autoOrderResponseEvent.orderPrice(), autoOrderResponseEvent.orderQuantity(), null, errorMessage
+                            autoOrderResponseEvent.stockCode(), autoOrderResponseEvent.autoOrderType(), autoOrderResponseEvent.leverageRatio(),
+                            autoOrderResponseEvent.triggerPrice(), autoOrderResponseEvent.orderPrice(), autoOrderResponseEvent.orderQuantity(),
+                            null, errorMessage
 
                     )
             );
@@ -57,8 +58,9 @@ public class AutoOrderResponsePushService {
                     autoOrderResponseEvent.username(),
                     "/sub/auto/order/result",
                     AutoOrderResultResponse.of(ResponseType.SUCCESS, autoOrderResponseEvent.autoOrderId(), autoOrderResponseEvent.username(),
-                            autoOrderResponseEvent.stockCode(), autoOrderResponseEvent.autoOrderType(), autoOrderResponseEvent.triggerPrice(),
-                            autoOrderResponseEvent.orderPrice(), autoOrderResponseEvent.orderQuantity(), autoOrderResponseEvent.orderTime(), null
+                            autoOrderResponseEvent.stockCode(), autoOrderResponseEvent.autoOrderType(), autoOrderResponseEvent.leverageRatio(),
+                            autoOrderResponseEvent.triggerPrice(), autoOrderResponseEvent.orderPrice(), autoOrderResponseEvent.orderQuantity(),
+                            autoOrderResponseEvent.orderTime(), null
 
                     )
             );

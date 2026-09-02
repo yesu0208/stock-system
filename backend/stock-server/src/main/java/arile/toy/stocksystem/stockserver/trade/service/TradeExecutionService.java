@@ -59,7 +59,8 @@ public class TradeExecutionService {
         tradeOutboxRecorder.record(
                 TradeExecutedEvent.of(
                         tradeEntity.getTradeId(), orderDto.orderId(), orderDto.username(),
-                        orderDto.stockCode(), tradeType, orderDto.orderPrice(), tradePrice, executable
+                        orderDto.stockCode(), tradeType, orderDto.leverageRatio(),
+                        orderDto.orderPrice(), tradePrice, executable
                 )
         );
 

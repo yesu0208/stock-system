@@ -1,11 +1,11 @@
 package arile.toy.stocksystem.accountserver.useraccount.controller;
 
-import arile.toy.stocksystem.accountserver.useraccount.dto.BalanceCommandResponse;
-import arile.toy.stocksystem.accountserver.useraccount.dto.RefundStockRequest;
-import arile.toy.stocksystem.accountserver.useraccount.dto.ReserveCashRequest;
-import arile.toy.stocksystem.accountserver.useraccount.dto.ReserveStockRequest;
+import arile.toy.stocksystem.accountserver.leverage.dto.LeverageRatio;
+import arile.toy.stocksystem.accountserver.leverage.service.LeveragePositionApplyService;
+import arile.toy.stocksystem.accountserver.useraccount.dto.*;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
+import arile.toy.stocksystem.accountserver.useraccount.service.AccountStatusGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,12 +16,18 @@ public class AccountBalanceController {
 
     private final AccountBalanceCommand accountBalanceCommand;
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
+    private final LeveragePositionApplyService leveragePositionApplyService;
+    private final AccountStatusGuard accountStatusGuard;
 
     @PostMapping("/{username}/reserve-cash")
     public BalanceCommandResponse reserveCash(
             @PathVariable String username,
             @RequestBody ReserveCashRequest request
     ) {
+        if (!accountStatusGuard.allowBuy(username)) {
+            return BalanceCommandResponse.of(false);
+        }
+
         boolean success = accountBalanceCommand.reserveCash(username, request.amount());
         publishIfSuccess(username, success);
         return BalanceCommandResponse.of(success);
@@ -42,6 +48,10 @@ public class AccountBalanceController {
             @PathVariable String username,
             @RequestBody ReserveStockRequest request
     ) {
+        if (!accountStatusGuard.allowSell(username)) {
+            return BalanceCommandResponse.of(false);
+        }
+
         boolean success = accountBalanceCommand.reserveStock(
                 username, request.stockCode(), request.quantity());
         publishIfSuccess(username, success);
@@ -55,6 +65,32 @@ public class AccountBalanceController {
     ) {
         boolean success = accountBalanceCommand.refundReservedStock(
                 username, request.stockCode(), request.quantity());
+        publishIfSuccess(username, success);
+        return BalanceCommandResponse.of(success);
+    }
+
+    @PostMapping("/{username}/reserve-leverage-stock")
+    public BalanceCommandResponse reserveLeverageStock(
+            @PathVariable String username,
+            @RequestBody ReserveLeverageStockRequest request
+    ) {
+        if (!accountStatusGuard.allowSell(username)) {
+            return BalanceCommandResponse.of(false);
+        }
+
+        boolean success = leveragePositionApplyService.reserveLeverageStock(
+                username, request.stockCode(), LeverageRatio.valueOf(request.leverageRatio()), request.quantity());
+        publishIfSuccess(username, success);
+        return BalanceCommandResponse.of(success);
+    }
+
+    @PostMapping("/{username}/refund-leverage-stock")
+    public BalanceCommandResponse refundLeverageStock(
+            @PathVariable String username,
+            @RequestBody ReserveLeverageStockRequest request
+    ) {
+        boolean success = leveragePositionApplyService.refundReservedLeverageStock(
+                username, request.stockCode(), LeverageRatio.valueOf(request.leverageRatio()), request.quantity());
         publishIfSuccess(username, success);
         return BalanceCommandResponse.of(success);
     }

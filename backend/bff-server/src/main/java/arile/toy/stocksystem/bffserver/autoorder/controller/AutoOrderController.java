@@ -4,6 +4,7 @@ import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderRequest;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResponse;
 import arile.toy.stocksystem.bffserver.autoorder.service.AutoOrderIngressService;
 import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
+import arile.toy.stocksystem.bffserver.leverage.service.LeverageAccessValidator;
 import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class AutoOrderController {
 
     private final AutoOrderIngressService autoOrderIngressService;
     private final BffServerMarketPhaseRegistry bffServerMarketPhaseRegistry;
+    private final LeverageAccessValidator leverageAccessValidator;
 
     @PostMapping
     public ResponseEntity<AutoOrderResponse> autoOrder(
@@ -40,6 +42,8 @@ public class AutoOrderController {
         }
 
         String username = user.getUsername();
+
+        leverageAccessValidator.validate(username, autoOrderRequest.leverageRatioOrDefault());
 
         AutoOrderResponse autoOrderResponse =
                 autoOrderIngressService.receive(username, autoOrderRequest);

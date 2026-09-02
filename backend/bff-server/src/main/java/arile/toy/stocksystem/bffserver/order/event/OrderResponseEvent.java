@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.order.event;
 
+import arile.toy.stocksystem.bffserver.leverage.dto.LeverageRatio;
 import arile.toy.stocksystem.bffserver.order.dto.OrderErrorCode;
 import arile.toy.stocksystem.bffserver.order.dto.OrderType;
 
@@ -10,6 +11,7 @@ public record OrderResponseEvent(
         String username,
         String stockCode,
         OrderType orderType,
+        LeverageRatio leverageRatio,
         Integer orderPrice,
         Integer orderQuantity,
         Instant orderTime,

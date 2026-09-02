@@ -174,4 +174,39 @@ public class AccountLuaConfig {
                 Long.class
         );
     }
+
+    @Bean
+    public DefaultRedisScript<Long> settleLeverageBuyScript() {
+        return new DefaultRedisScript<>("""
+            local reservedDecrease = tonumber(ARGV[1])
+            local availableIncrease = tonumber(ARGV[2])
+
+            local reserved = tonumber(redis.call('HGET', KEYS[1], 'reservedCash') or '0')
+            if reserved < reservedDecrease then
+                return 0
+            end
+
+            redis.call('HINCRBY', KEYS[1], 'reservedCash', -reservedDecrease)
+            redis.call('HINCRBY', KEYS[1], 'availableCash', availableIncrease)
+            return 1
+        """, Long.class);
+    }
+
+    @Bean
+    public DefaultRedisScript<Long> creditAvailableCashScript() {
+        return new DefaultRedisScript<>("""
+            local amount = tonumber(ARGV[1])
+            redis.call('HINCRBY', KEYS[1], 'availableCash', amount)
+            return 1
+        """, Long.class);
+    }
+
+    @Bean
+    public DefaultRedisScript<Long> debitAvailableCashScript() {
+        return new DefaultRedisScript<>("""
+            local amount = tonumber(ARGV[1])
+            redis.call('HINCRBY', KEYS[1], 'availableCash', -amount)
+            return 1
+        """, Long.class);
+    }
 }

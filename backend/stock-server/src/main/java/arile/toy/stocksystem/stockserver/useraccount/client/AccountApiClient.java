@@ -52,6 +52,16 @@ public class AccountApiClient {
         }
     }
 
+    public boolean reserveLeverageStock(String username, String stockCode, String leverageRatio, int quantity) {
+        return post("/internal/accounts/" + username + "/reserve-leverage-stock",
+                Map.of("stockCode", stockCode, "leverageRatio", leverageRatio, "quantity", quantity));
+    }
+
+    public boolean refundReservedLeverageStock(String username, String stockCode, String leverageRatio, int quantity) {
+        return post("/internal/accounts/" + username + "/refund-leverage-stock",
+                Map.of("stockCode", stockCode, "leverageRatio", leverageRatio, "quantity", quantity));
+    }
+
     public void settleAll() {
         try {
             restClient.post()

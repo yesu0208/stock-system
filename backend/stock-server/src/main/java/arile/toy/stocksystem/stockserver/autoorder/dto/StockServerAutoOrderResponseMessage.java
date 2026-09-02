@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.stockserver.autoorder.dto;
 
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+
 import java.time.Instant;
 
 public record StockServerAutoOrderResponseMessage(
@@ -7,6 +9,7 @@ public record StockServerAutoOrderResponseMessage(
         String username,
         String stockCode,
         AutoOrderType autoOrderType,
+        LeverageRatio leverageRatio,
         Integer triggerPrice,
         Integer orderPrice,
         Integer orderQuantity,
@@ -18,6 +21,7 @@ public record StockServerAutoOrderResponseMessage(
             String stockCode,
             AutoOrderType autoOrderType,
             Integer triggerPrice,
+            LeverageRatio leverageRatio,
             Integer orderPrice,
             Integer orderQuantity,
             Instant orderTime
@@ -27,6 +31,7 @@ public record StockServerAutoOrderResponseMessage(
                 username,
                 stockCode,
                 autoOrderType,
+                leverageRatio,
                 triggerPrice,
                 orderPrice,
                 orderQuantity,
