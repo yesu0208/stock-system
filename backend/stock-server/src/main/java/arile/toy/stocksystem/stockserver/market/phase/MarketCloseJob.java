@@ -7,6 +7,9 @@ import arile.toy.stocksystem.stockserver.cancel.service.CancelService;
 import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockProperties;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.trailingstop.entity.TrailingStopEntity;
+import arile.toy.stocksystem.stockserver.trailingstop.service.TrailingStopService;
+import arile.toy.stocksystem.stockserver.trailingstopcancel.service.TrailingStopCancelService;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,8 @@ public class MarketCloseJob {
     private final CancelService cancelService;
     private final AutoOrderService autoOrderService;
     private final AutoCancelService autoCancelService;
+    private final TrailingStopService trailingStopService;
+    private final TrailingStopCancelService trailingStopCancelService;
     private final AccountApiClient accountApiClient;
     private final MarketClosePublisher marketClosePublisher;
     private final ExternalStockProperties externalStockProperties;
@@ -56,6 +61,14 @@ public class MarketCloseJob {
             }
 
             log.info("[MarketCloseJob] cancel finished for this group. stockCodes={}", myStockCodes);
+
+            List<TrailingStopEntity> untriggeredTrailingStops = trailingStopService.findAllUntriggeredTrailingStops(myStockCodes);
+
+            for (TrailingStopEntity trailingStop : untriggeredTrailingStops) {
+                trailingStopCancelService.forceCancelTrailingStop(trailingStop.getTrailingStopId());
+            }
+
+            log.info("[MarketCloseJob] trailing-stop cancel finished for this group. stockCodes={}", myStockCodes);
 
             boolean isLast = marketCloseCoordinator.markDoneAndCheckLast();
 

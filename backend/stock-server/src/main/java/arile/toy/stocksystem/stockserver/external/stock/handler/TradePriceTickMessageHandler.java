@@ -10,6 +10,7 @@ import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMe
 import arile.toy.stocksystem.stockserver.external.stock.repository.StockServerRedisTradePriceRepository;
 import arile.toy.stocksystem.stockserver.market.phase.MarketPhaseService;
 import arile.toy.stocksystem.stockserver.trade.service.TradeMatchingService;
+import arile.toy.stocksystem.stockserver.trailingstop.service.TrailingStopTriggerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ public class TradePriceTickMessageHandler {
     private final StockServerRedisTradePriceRepository stockServerTradePriceRepository;
     private final TradeMatchingService tradeMatchingService;
     private final AutoOrderTriggerService autoOrderTriggerService;
+    private final TrailingStopTriggerService trailingStopTriggerService;
     private final MarketPhaseService marketPhaseService;
     private final LiveDailyCandleService liveDailyCandleService;
     private final LiveMinuteCandleService liveMinuteCandleService;
@@ -82,6 +84,7 @@ public class TradePriceTickMessageHandler {
                     TradePriceTickEvent.fromMessage(tradePriceTickMessage));
 
             autoOrderTriggerService.getExternalTickMessageAndTrigger(tradePriceTickMessage);
+            trailingStopTriggerService.getExternalTickMessageAndTrail(tradePriceTickMessage);
             tradeMatchingService.getExternalTickMessageAndTrade(tradePriceTickMessage);
 
             marketPhaseService.closeMarketAfterClosingCall(tradePriceTickMessage.stockCode(),

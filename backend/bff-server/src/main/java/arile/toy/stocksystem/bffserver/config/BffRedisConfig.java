@@ -5,6 +5,7 @@ import arile.toy.stocksystem.bffserver.external.stock.message.BffServerBidAskPri
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSummaryTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceTickMessage;
 import arile.toy.stocksystem.bffserver.order.dto.OrderResponseMessage;
+import arile.toy.stocksystem.bffserver.trailingstop.dto.TrailingStopResponseMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -96,6 +97,19 @@ public class BffRedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(AutoOrderResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, TrailingStopResponseMessage> trailingStopResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, TrailingStopResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(TrailingStopResponseMessage.class));
         template.afterPropertiesSet();
         return template;
     }
