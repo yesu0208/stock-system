@@ -8,6 +8,8 @@ import arile.toy.stocksystem.bffserver.leverage.event.subscriber.RedisLiquidatio
 import arile.toy.stocksystem.bffserver.leverage.event.subscriber.RedisMarginCallEventSubscriber;
 import arile.toy.stocksystem.bffserver.order.event.subscriber.RedisOrderResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.trade.event.subscriber.RedisTradeResponseEventSubscriber;
+import arile.toy.stocksystem.bffserver.trailingstop.event.subscriber.RedisTrailingStopResponseEventSubscriber;
+import arile.toy.stocksystem.bffserver.trailingstopcancel.event.subscriber.RedisTrailingStopCancelResponseEventSubscriber;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -36,6 +38,8 @@ public class UserRedisSubscriptionRegistry {
     private final RedisAccountUpdateEventSubscriber accountSubscriber;
     private final RedisMarginCallEventSubscriber marginCallSubscriber;
     private final RedisLiquidationEventSubscriber liquidationSubscriber;
+    private final RedisTrailingStopResponseEventSubscriber trailingStopSubscriber;
+    private final RedisTrailingStopCancelResponseEventSubscriber trailingStopCancelSubscriber;
 
     private final ConcurrentHashMap<String, AtomicInteger> userRefCount = new ConcurrentHashMap<>();
 
@@ -168,6 +172,20 @@ public class UserRedisSubscriptionRegistry {
                 new RedisSubscription(
                         new ChannelTopic(UserEventType.LIQUIDATION.channel(username)),
                         liquidationSubscriber
+                )
+        );
+
+        map.put(UserEventType.TRAILING_STOP,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.TRAILING_STOP.channel(username)),
+                        trailingStopSubscriber
+                )
+        );
+
+        map.put(UserEventType.TRAILING_STOP_CANCEL,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.TRAILING_STOP_CANCEL.channel(username)),
+                        trailingStopCancelSubscriber
                 )
         );
 
