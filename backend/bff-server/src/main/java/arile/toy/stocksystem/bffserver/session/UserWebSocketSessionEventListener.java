@@ -104,6 +104,10 @@ public class UserWebSocketSessionEventListener {
             initialDataService.getAutoOrderData(username)
                     .ifPresent(data -> messagingTemplate.convertAndSendToUser(
                             username, "/sub/auto/order", data));
+        } else if ("/user/sub/trailing-stop".equals(destination)) {
+            initialDataService.getTrailingStopData(username)
+                    .ifPresent(data -> messagingTemplate.convertAndSendToUser(
+                            username, "/sub/trailing-stop", data));
         } else if (destination.startsWith("/sub/stock/")) {
             String stockCode = destination.substring("/sub/stock/".length());
 
