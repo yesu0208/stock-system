@@ -16,6 +16,8 @@ import arile.toy.stocksystem.bffserver.order.dto.OrderResponseMessage;
 import arile.toy.stocksystem.bffserver.order.repository.BffServerOrderResponseRepository;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.StockDetailTickMessage;
 import arile.toy.stocksystem.bffserver.stockinfo.repository.StockDetailSnapshotRepository;
+import arile.toy.stocksystem.bffserver.trailingstop.dto.TrailingStopResponseMessage;
+import arile.toy.stocksystem.bffserver.trailingstop.repository.BffServerTrailingStopResponseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ public class InitialDataService {
     private final BffServerBidAskPriceRepository bffServerBidAskPriceRepository;
     private final StockDetailSnapshotRepository stockDetailSnapshotRepository;
     private final ChartSnapshotRepository chartSnapshotRepository;
+    private final BffServerTrailingStopResponseRepository bffServerTrailingStopResponseRepository;
 
     public Optional<AccountResponse> getAccountData(String username) {
 
@@ -78,6 +81,20 @@ public class InitialDataService {
 
         } catch (Exception e) {
             log.error("Unexpected error while getting auto order data for username={}", username, e);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<List<TrailingStopResponseMessage>> getTrailingStopData(String username) {
+
+        try {
+            List<TrailingStopResponseMessage> responses =
+                    bffServerTrailingStopResponseRepository.findAll(username);
+
+            return Optional.ofNullable(responses);
+
+        } catch (Exception e) {
+            log.error("Unexpected error while getting trailing stop data for username={}", username, e);
             return Optional.empty();
         }
     }
