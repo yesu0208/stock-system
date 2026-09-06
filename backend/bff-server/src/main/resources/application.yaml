@@ -55,6 +55,12 @@ redis:
     trailing-stop-cancel:
       prefix: trailing-stop-cancel-events
 
+    otoco:
+      prefix: otoco-events
+
+    otoco-cancel:
+      prefix: otoco-cancel-events
+
 stock-groups:
   groups:
     A:

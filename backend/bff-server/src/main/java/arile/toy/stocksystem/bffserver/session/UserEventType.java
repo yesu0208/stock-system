@@ -50,6 +50,18 @@ public enum UserEventType {
             return "user:trailing:stop:cancel." + username + ":event";
         }
     },
+    OTOCO {
+        @Override
+        public String channel(String username) {
+            return "user:otoco." + username + ":event";
+        }
+    },
+    OTOCO_CANCEL {
+        @Override
+        public String channel(String username) {
+            return "user:otoco:cancel." + username + ":event";
+        }
+    },
     MARGIN_CALL {
         @Override
         public String channel(String username) {

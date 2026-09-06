@@ -7,6 +7,9 @@ import arile.toy.stocksystem.stockserver.cancel.service.CancelService;
 import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockProperties;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity;
+import arile.toy.stocksystem.stockserver.otoco.service.OtocoService;
+import arile.toy.stocksystem.stockserver.otococancel.service.OtocoCancelService;
 import arile.toy.stocksystem.stockserver.trailingstop.entity.TrailingStopEntity;
 import arile.toy.stocksystem.stockserver.trailingstop.service.TrailingStopService;
 import arile.toy.stocksystem.stockserver.trailingstopcancel.service.TrailingStopCancelService;
@@ -30,6 +33,8 @@ public class MarketCloseJob {
     private final AutoCancelService autoCancelService;
     private final TrailingStopService trailingStopService;
     private final TrailingStopCancelService trailingStopCancelService;
+    private final OtocoService otocoService;
+    private final OtocoCancelService otocoCancelService;
     private final AccountApiClient accountApiClient;
     private final MarketClosePublisher marketClosePublisher;
     private final ExternalStockProperties externalStockProperties;
@@ -69,6 +74,14 @@ public class MarketCloseJob {
             }
 
             log.info("[MarketCloseJob] trailing-stop cancel finished for this group. stockCodes={}", myStockCodes);
+
+            List<OtocoEntity> unfinishedOtocos = otocoService.findAllUnfinishedOtocos(myStockCodes);
+
+            for (OtocoEntity otoco : unfinishedOtocos) {
+                otocoCancelService.forceCancelOtoco(otoco.getOtocoId());
+            }
+
+            log.info("[MarketCloseJob] otoco cancel finished for this group. stockCodes={}", myStockCodes);
 
             boolean isLast = marketCloseCoordinator.markDoneAndCheckLast();
 

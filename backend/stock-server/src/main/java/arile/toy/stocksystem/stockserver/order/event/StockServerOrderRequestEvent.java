@@ -3,6 +3,7 @@ package arile.toy.stocksystem.stockserver.order.event;
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderDto;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoDto;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.TrailingStopDto;
 
 public record StockServerOrderRequestEvent(
@@ -37,6 +38,28 @@ public record StockServerOrderRequestEvent(
                 trailingStopDto.triggerPrice(),
                 trailingStopDto.orderQuantity(),
                 trailingStopDto.leverageRatio()
+        );
+    }
+
+    public static StockServerOrderRequestEvent fromOtocoEntry(OtocoDto otocoDto) {
+        return new StockServerOrderRequestEvent(
+                otocoDto.username(),
+                otocoDto.stockCode(),
+                OrderType.BUY,
+                otocoDto.entryTriggerPrice(),
+                otocoDto.orderQuantity(),
+                otocoDto.leverageRatio()
+        );
+    }
+
+    public static StockServerOrderRequestEvent fromOtocoExit(OtocoDto otocoDto, Integer exitPrice) {
+        return new StockServerOrderRequestEvent(
+                otocoDto.username(),
+                otocoDto.stockCode(),
+                OrderType.SELL,
+                exitPrice,
+                otocoDto.orderQuantity(),
+                otocoDto.leverageRatio()
         );
     }
 }

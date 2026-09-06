@@ -108,6 +108,10 @@ public class UserWebSocketSessionEventListener {
             initialDataService.getTrailingStopData(username)
                     .ifPresent(data -> messagingTemplate.convertAndSendToUser(
                             username, "/sub/trailing-stop", data));
+        } else if ("/user/sub/otoco".equals(destination)) {
+            initialDataService.getOtocoData(username)
+                    .ifPresent(data -> messagingTemplate.convertAndSendToUser(
+                            username, "/sub/otoco", data));
         } else if (destination.startsWith("/sub/stock/")) {
             String stockCode = destination.substring("/sub/stock/".length());
 

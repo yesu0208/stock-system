@@ -7,6 +7,8 @@ import arile.toy.stocksystem.bffserver.cancel.event.subscriber.RedisCancelRespon
 import arile.toy.stocksystem.bffserver.leverage.event.subscriber.RedisLiquidationEventSubscriber;
 import arile.toy.stocksystem.bffserver.leverage.event.subscriber.RedisMarginCallEventSubscriber;
 import arile.toy.stocksystem.bffserver.order.event.subscriber.RedisOrderResponseEventSubscriber;
+import arile.toy.stocksystem.bffserver.otoco.event.subscriber.RedisOtocoResponseEventSubscriber;
+import arile.toy.stocksystem.bffserver.otococancel.event.subscriber.RedisOtocoCancelResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.trade.event.subscriber.RedisTradeResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.trailingstop.event.subscriber.RedisTrailingStopResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.trailingstopcancel.event.subscriber.RedisTrailingStopCancelResponseEventSubscriber;
@@ -40,6 +42,8 @@ public class UserRedisSubscriptionRegistry {
     private final RedisLiquidationEventSubscriber liquidationSubscriber;
     private final RedisTrailingStopResponseEventSubscriber trailingStopSubscriber;
     private final RedisTrailingStopCancelResponseEventSubscriber trailingStopCancelSubscriber;
+    private final RedisOtocoResponseEventSubscriber otocoSubscriber;
+    private final RedisOtocoCancelResponseEventSubscriber otocoCancelSubscriber;
 
     private final ConcurrentHashMap<String, AtomicInteger> userRefCount = new ConcurrentHashMap<>();
 
@@ -186,6 +190,20 @@ public class UserRedisSubscriptionRegistry {
                 new RedisSubscription(
                         new ChannelTopic(UserEventType.TRAILING_STOP_CANCEL.channel(username)),
                         trailingStopCancelSubscriber
+                )
+        );
+
+        map.put(UserEventType.OTOCO,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.OTOCO.channel(username)),
+                        otocoSubscriber
+                )
+        );
+
+        map.put(UserEventType.OTOCO_CANCEL,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.OTOCO_CANCEL.channel(username)),
+                        otocoCancelSubscriber
                 )
         );
 

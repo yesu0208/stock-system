@@ -57,6 +57,14 @@ redis:
       prefix: trailing-stop-cancel-events
       consumer-group: stock-group
 
+    otoco:
+      prefix: otoco-events
+      consumer-group: stock-group
+
+    otoco-cancel:
+      prefix: otoco-cancel-events
+      consumer-group: stock-group
+
     trade-executed:
       key: trade-executed-events
 
