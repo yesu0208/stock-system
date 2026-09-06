@@ -10,6 +10,7 @@ import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMe
 import arile.toy.stocksystem.stockserver.external.stock.repository.StockServerRedisTradePriceRepository;
 import arile.toy.stocksystem.stockserver.market.phase.MarketPhaseService;
 import arile.toy.stocksystem.stockserver.otoco.service.OtocoEntryTriggerService;
+import arile.toy.stocksystem.stockserver.otoco.service.OtocoExitTriggerService;
 import arile.toy.stocksystem.stockserver.trade.service.TradeMatchingService;
 import arile.toy.stocksystem.stockserver.trailingstop.service.TrailingStopTriggerService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class TradePriceTickMessageHandler {
     private final AutoOrderTriggerService autoOrderTriggerService;
     private final TrailingStopTriggerService trailingStopTriggerService;
     private final OtocoEntryTriggerService otocoEntryTriggerService;
+    private final OtocoExitTriggerService otocoExitTriggerService;
     private final MarketPhaseService marketPhaseService;
     private final LiveDailyCandleService liveDailyCandleService;
     private final LiveMinuteCandleService liveMinuteCandleService;
@@ -88,6 +90,7 @@ public class TradePriceTickMessageHandler {
             autoOrderTriggerService.getExternalTickMessageAndTrigger(tradePriceTickMessage);
             trailingStopTriggerService.getExternalTickMessageAndTrail(tradePriceTickMessage);
             otocoEntryTriggerService.getExternalTickMessageAndTriggerEntry(tradePriceTickMessage);
+            otocoExitTriggerService.getExternalTickMessageAndSettleExit(tradePriceTickMessage);
             tradeMatchingService.getExternalTickMessageAndTrade(tradePriceTickMessage);
 
             marketPhaseService.closeMarketAfterClosingCall(tradePriceTickMessage.stockCode(),
