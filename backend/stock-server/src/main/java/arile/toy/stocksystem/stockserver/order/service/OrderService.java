@@ -23,7 +23,7 @@ public class OrderService {
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final AccountApiClient accountApiClient;
 
-    public void registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
+    public OrderEntity registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
 
         long orderAmount = (long) request.orderPrice() * request.orderQuantity();
         LeverageRatio leverageRatio = request.leverageRatio() == null ? LeverageRatio.SPOT : request.leverageRatio();
@@ -36,7 +36,7 @@ public class OrderService {
                     .reserveCash(request.username(), reserveAmount);
             if (!reserved) {
                 orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_BALANCE);
-                return;
+                return null;
             }
         } else if (!fromAutoOrder && request.orderType() == OrderType.SELL) {
             // 레버리지 매도는 현물 재고가 아니라 레버리지 포지션 수량을 검증해야 하므로 별도 분기
@@ -46,7 +46,7 @@ public class OrderService {
 
             if (!reserved) {
                 orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_STOCK);
-                return;
+                return null;
             }
         }
 
@@ -94,6 +94,8 @@ public class OrderService {
 
         stockServerOrderResponseRepository.save(orderResponseMessage);
         orderResponseEventPublisher.publish(orderResponseMessage);
+
+        return savedOrder;
     }
 
     /** 레버리지 매수 시 예약해야 할 실제 현금(개시증거금)을 계산 */
