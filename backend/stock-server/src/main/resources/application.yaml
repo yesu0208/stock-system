@@ -49,6 +49,10 @@ redis:
       prefix: auto-cancel-events
       consumer-group: stock-group
 
+    trailing-stop:
+      prefix: trailing-stop-events
+      consumer-group: stock-group
+
     trade-executed:
       key: trade-executed-events
 
