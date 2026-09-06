@@ -15,6 +15,9 @@ import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMe
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.event.OrderResponseEvent;
 import arile.toy.stocksystem.stockserver.trade.event.TradeResponseEvent;
+import arile.toy.stocksystem.stockserver.trailingstop.dto.StockServerTrailingStopResponseMessage;
+import arile.toy.stocksystem.stockserver.trailingstop.event.TrailingStopResponseEvent;
+import arile.toy.stocksystem.stockserver.trailingstopcancel.event.TrailingStopCancelResponseEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -208,6 +211,39 @@ public class StockRedisConfig {
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new JacksonJsonRedisSerializer<>(MinuteCandleUpdateEvent.class));
+        return template;
+    }
+    
+    @Bean
+    public RedisTemplate<String, TrailingStopResponseEvent> trailingStopResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, TrailingStopResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(TrailingStopResponseEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, TrailingStopCancelResponseEvent> trailingStopCancelResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, TrailingStopCancelResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(TrailingStopCancelResponseEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, StockServerTrailingStopResponseMessage> stockServerTrailingStopResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, StockServerTrailingStopResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerTrailingStopResponseMessage.class));
+        template.afterPropertiesSet();
         return template;
     }
 }
