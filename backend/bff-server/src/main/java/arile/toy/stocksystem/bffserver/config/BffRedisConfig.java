@@ -5,6 +5,7 @@ import arile.toy.stocksystem.bffserver.external.stock.message.BffServerBidAskPri
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSummaryTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerTradePriceTickMessage;
 import arile.toy.stocksystem.bffserver.order.dto.OrderResponseMessage;
+import arile.toy.stocksystem.bffserver.otoco.dto.OtocoResponseMessage;
 import arile.toy.stocksystem.bffserver.trailingstop.dto.TrailingStopResponseMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -110,6 +111,19 @@ public class BffRedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(TrailingStopResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, OtocoResponseMessage> otocoResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, OtocoResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(OtocoResponseMessage.class));
         template.afterPropertiesSet();
         return template;
     }
