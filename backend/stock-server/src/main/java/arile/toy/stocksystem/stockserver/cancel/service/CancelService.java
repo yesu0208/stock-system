@@ -13,6 +13,7 @@ import arile.toy.stocksystem.stockserver.order.dto.UpdateOrderStatusResult;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.otoco.service.OtocoOrderLifecycleListener;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class CancelService {
     private final CancelResponseEventPublisher cancelResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final AccountApiClient accountApiClient;
+    private final OtocoOrderLifecycleListener otocoOrderLifecycleListener;
 
     @Transactional
     public void registerCancel(CancelRequestEvent request) {
@@ -128,6 +130,8 @@ public class CancelService {
                 orderEntity.getOrderId(),
                 orderEntity.getStockCode()
         );
+        
+        otocoOrderLifecycleListener.onOrderCanceled(orderEntity.getOrderId());
     }
 
     private void publishSuccess(OrderEntity orderEntity) {
