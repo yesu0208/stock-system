@@ -4,6 +4,7 @@ import arile.toy.stocksystem.stockserver.order.dto.OrderDto;
 import arile.toy.stocksystem.stockserver.order.dto.OrderStatus;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.repository.OrderRepository;
+import arile.toy.stocksystem.stockserver.otoco.service.OtocoOrderLifecycleListener;
 import arile.toy.stocksystem.stockserver.trade.dto.TradeResult;
 import arile.toy.stocksystem.stockserver.trade.dto.TradeType;
 import arile.toy.stocksystem.stockserver.trade.entity.TradeEntity;
@@ -25,6 +26,7 @@ public class TradeExecutionService {
     private final OrderRepository orderRepository;
     private final TradeResponseEventPublisher tradeResponseEventPublisher;
     private final TradeOutboxRecorder tradeOutboxRecorder;
+    private final OtocoOrderLifecycleListener otocoOrderLifecycleListener;
 
     @Transactional
     public TradeResult executeBuyTrade(OrderDto buyOrderDto, int tradePrice, int executable) {
@@ -55,6 +57,10 @@ public class TradeExecutionService {
         orderEntity.setOrderStatus(remainingQuantity > 0 ? OrderStatus.PARTIAL : OrderStatus.FILLED);
         orderEntity.setRemainingQuantity(remainingQuantity);
         orderRepository.save(orderEntity);
+        
+        if (orderEntity.getOrderStatus() == OrderStatus.FILLED) {
+            otocoOrderLifecycleListener.onOrderFilled(orderEntity.getOrderId());
+        }
 
         tradeOutboxRecorder.record(
                 TradeExecutedEvent.of(
