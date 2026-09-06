@@ -49,6 +49,12 @@ redis:
     auto-cancel:
       prefix: auto-cancel-events
 
+    trailing-stop:
+      prefix: trailing-stop-events
+
+    trailing-stop-cancel:
+      prefix: trailing-stop-cancel-events
+
 stock-groups:
   groups:
     A:
