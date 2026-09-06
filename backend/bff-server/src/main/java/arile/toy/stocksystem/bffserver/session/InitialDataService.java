@@ -14,6 +14,8 @@ import arile.toy.stocksystem.bffserver.external.stock.repository.BffServerBidAsk
 import arile.toy.stocksystem.bffserver.external.stock.repository.BffServerTradePriceRepository;
 import arile.toy.stocksystem.bffserver.order.dto.OrderResponseMessage;
 import arile.toy.stocksystem.bffserver.order.repository.BffServerOrderResponseRepository;
+import arile.toy.stocksystem.bffserver.otoco.dto.OtocoResponseMessage;
+import arile.toy.stocksystem.bffserver.otoco.repository.BffServerOtocoResponseRepository;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.StockDetailTickMessage;
 import arile.toy.stocksystem.bffserver.stockinfo.repository.StockDetailSnapshotRepository;
 import arile.toy.stocksystem.bffserver.trailingstop.dto.TrailingStopResponseMessage;
@@ -38,6 +40,7 @@ public class InitialDataService {
     private final StockDetailSnapshotRepository stockDetailSnapshotRepository;
     private final ChartSnapshotRepository chartSnapshotRepository;
     private final BffServerTrailingStopResponseRepository bffServerTrailingStopResponseRepository;
+    private final BffServerOtocoResponseRepository bffServerOtocoResponseRepository;
 
     public Optional<AccountResponse> getAccountData(String username) {
 
@@ -95,6 +98,20 @@ public class InitialDataService {
 
         } catch (Exception e) {
             log.error("Unexpected error while getting trailing stop data for username={}", username, e);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<List<OtocoResponseMessage>> getOtocoData(String username) {
+
+        try {
+            List<OtocoResponseMessage> responses =
+                    bffServerOtocoResponseRepository.findAll(username);
+
+            return Optional.ofNullable(responses);
+
+        } catch (Exception e) {
+            log.error("Unexpected error while getting otoco data for username={}", username, e);
             return Optional.empty();
         }
     }
