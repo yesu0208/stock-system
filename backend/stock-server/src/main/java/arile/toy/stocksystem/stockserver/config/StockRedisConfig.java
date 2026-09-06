@@ -14,6 +14,9 @@ import arile.toy.stocksystem.stockserver.external.stock.message.StockSummaryTick
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.event.OrderResponseEvent;
+import arile.toy.stocksystem.stockserver.otoco.dto.StockServerOtocoResponseMessage;
+import arile.toy.stocksystem.stockserver.otoco.event.OtocoResponseEvent;
+import arile.toy.stocksystem.stockserver.otococancel.event.OtocoCancelResponseEvent;
 import arile.toy.stocksystem.stockserver.trade.event.TradeResponseEvent;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.StockServerTrailingStopResponseMessage;
 import arile.toy.stocksystem.stockserver.trailingstop.event.TrailingStopResponseEvent;
@@ -243,6 +246,39 @@ public class StockRedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerTrailingStopResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, OtocoResponseEvent> otocoResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, OtocoResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(OtocoResponseEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, OtocoCancelResponseEvent> otocoCancelResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, OtocoCancelResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(OtocoCancelResponseEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, StockServerOtocoResponseMessage> stockServerOtocoResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, StockServerOtocoResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerOtocoResponseMessage.class));
         template.afterPropertiesSet();
         return template;
     }
