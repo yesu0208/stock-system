@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.config;
 
+import arile.toy.stocksystem.bffserver.alert.dto.AlertResponseMessage;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResponseMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerBidAskPriceTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSummaryTickMessage;
@@ -124,6 +125,19 @@ public class BffRedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(OtocoResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, AlertResponseMessage> alertResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, AlertResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(AlertResponseMessage.class));
         template.afterPropertiesSet();
         return template;
     }
