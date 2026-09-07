@@ -112,6 +112,10 @@ public class UserWebSocketSessionEventListener {
             initialDataService.getOtocoData(username)
                     .ifPresent(data -> messagingTemplate.convertAndSendToUser(
                             username, "/sub/otoco", data));
+        } else if ("/user/sub/alert".equals(destination)) {
+            initialDataService.getAlertData(username)
+                    .ifPresent(data -> messagingTemplate.convertAndSendToUser(
+                            username, "/sub/alert", data));
         } else if (destination.startsWith("/sub/stock/")) {
             String stockCode = destination.substring("/sub/stock/".length());
 
