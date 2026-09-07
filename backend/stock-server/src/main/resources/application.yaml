@@ -65,6 +65,14 @@ redis:
       prefix: otoco-cancel-events
       consumer-group: stock-group
 
+    alert:
+      prefix: alert-events
+      consumer-group: stock-group
+
+    alert-cancel:
+      prefix: alert-cancel-events
+      consumer-group: stock-group
+
     trade-executed:
       key: trade-executed-events
 

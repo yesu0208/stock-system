@@ -1,6 +1,9 @@
 package arile.toy.stocksystem.bffserver.session;
 
 import arile.toy.stocksystem.bffserver.account.event.subscriber.RedisAccountUpdateEventSubscriber;
+import arile.toy.stocksystem.bffserver.alert.event.subscriber.RedisAlertFiredEventSubscriber;
+import arile.toy.stocksystem.bffserver.alert.event.subscriber.RedisAlertResponseEventSubscriber;
+import arile.toy.stocksystem.bffserver.alertcancel.event.subscriber.RedisAlertCancelResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.autocancel.event.subscriber.RedisAutoCancelResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.autoorder.event.subscriber.RedisAutoOrderResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.cancel.event.subscriber.RedisCancelResponseEventSubscriber;
@@ -44,6 +47,9 @@ public class UserRedisSubscriptionRegistry {
     private final RedisTrailingStopCancelResponseEventSubscriber trailingStopCancelSubscriber;
     private final RedisOtocoResponseEventSubscriber otocoSubscriber;
     private final RedisOtocoCancelResponseEventSubscriber otocoCancelSubscriber;
+    private final RedisAlertResponseEventSubscriber alertSubscriber;
+    private final RedisAlertCancelResponseEventSubscriber alertCancelSubscriber;
+    private final RedisAlertFiredEventSubscriber alertFiredSubscriber;
 
     private final ConcurrentHashMap<String, AtomicInteger> userRefCount = new ConcurrentHashMap<>();
 
@@ -204,6 +210,27 @@ public class UserRedisSubscriptionRegistry {
                 new RedisSubscription(
                         new ChannelTopic(UserEventType.OTOCO_CANCEL.channel(username)),
                         otocoCancelSubscriber
+                )
+        );
+
+        map.put(UserEventType.ALERT,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.ALERT.channel(username)),
+                        alertSubscriber
+                )
+        );
+
+        map.put(UserEventType.ALERT_CANCEL,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.ALERT_CANCEL.channel(username)),
+                        alertCancelSubscriber
+                )
+        );
+
+        map.put(UserEventType.ALERT_FIRED,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.ALERT_FIRED.channel(username)),
+                        alertFiredSubscriber
                 )
         );
 

@@ -62,6 +62,24 @@ public enum UserEventType {
             return "user:otoco:cancel." + username + ":event";
         }
     },
+    ALERT {
+        @Override
+        public String channel(String username) {
+            return "user:alert." + username + ":event";
+        }
+    },
+    ALERT_CANCEL {
+        @Override
+        public String channel(String username) {
+            return "user:alert:cancel." + username + ":event";
+        }
+    },
+    ALERT_FIRED {
+        @Override
+        public String channel(String username) {
+            return "user:alert:fired." + username + ":event";
+        }
+    },
     MARGIN_CALL {
         @Override
         public String channel(String username) {

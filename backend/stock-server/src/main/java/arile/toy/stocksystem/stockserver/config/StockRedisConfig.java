@@ -1,5 +1,9 @@
 package arile.toy.stocksystem.stockserver.config;
 
+import arile.toy.stocksystem.stockserver.alert.dto.StockServerAlertResponseMessage;
+import arile.toy.stocksystem.stockserver.alert.event.AlertFiredEvent;
+import arile.toy.stocksystem.stockserver.alert.event.AlertResponseEvent;
+import arile.toy.stocksystem.stockserver.alertcancel.event.AlertCancelResponseEvent;
 import arile.toy.stocksystem.stockserver.autocancel.event.AutoCancelResponseEvent;
 import arile.toy.stocksystem.stockserver.autoorder.dto.StockServerAutoOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.autoorder.event.AutoOrderResponseEvent;
@@ -279,6 +283,49 @@ public class StockRedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerOtocoResponseMessage.class));
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, AlertResponseEvent> alertResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, AlertResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(AlertResponseEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, AlertFiredEvent> alertFiredEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, AlertFiredEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(AlertFiredEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, AlertCancelResponseEvent> alertCancelResponseEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, AlertCancelResponseEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(AlertCancelResponseEvent.class));
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, StockServerAlertResponseMessage> stockServerAlertResponseMessageRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory
+    ) {
+        var template = new RedisTemplate<String, StockServerAlertResponseMessage>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerAlertResponseMessage.class));
         template.afterPropertiesSet();
         return template;
     }

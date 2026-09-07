@@ -63,6 +63,18 @@ public class RedisStreamGroupInitializer {
     @Value("${redis.streams.otoco-cancel.consumer-group}")
     private String otocoCancelConsumerGroup;
 
+    @Value("${redis.streams.alert.prefix}")
+    private String alertPrefix;
+
+    @Value("${redis.streams.alert.consumer-group}")
+    private String alertConsumerGroup;
+
+    @Value("${redis.streams.alert-cancel.prefix}")
+    private String alertCancelPrefix;
+
+    @Value("${redis.streams.alert-cancel.consumer-group}")
+    private String alertCancelConsumerGroup;
+
     @Value("${server.group}")
     private String stockGroup;
 
@@ -76,6 +88,8 @@ public class RedisStreamGroupInitializer {
         createGroup(trailingStopCancelPrefix + "-" + stockGroup, trailingStopCancelConsumerGroup);
         createGroup(otocoPrefix + "-" + stockGroup, otocoConsumerGroup);
         createGroup(otocoCancelPrefix + "-" + stockGroup, otocoCancelConsumerGroup);
+        createGroup(alertPrefix + "-" + stockGroup, alertConsumerGroup);
+        createGroup(alertCancelPrefix + "-" + stockGroup, alertCancelConsumerGroup);
     }
 
     private void createGroup(String streamKey, String consumerGroup) {

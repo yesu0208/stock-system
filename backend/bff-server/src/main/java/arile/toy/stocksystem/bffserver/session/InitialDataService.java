@@ -2,6 +2,8 @@ package arile.toy.stocksystem.bffserver.session;
 
 import arile.toy.stocksystem.bffserver.account.dto.AccountResponse;
 import arile.toy.stocksystem.bffserver.account.service.AccountCalculator;
+import arile.toy.stocksystem.bffserver.alert.dto.AlertResponseMessage;
+import arile.toy.stocksystem.bffserver.alert.repository.BffServerAlertResponseRepository;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderResponseMessage;
 import arile.toy.stocksystem.bffserver.autoorder.repository.BffServerAutoOrderResponseRepository;
 import arile.toy.stocksystem.bffserver.chart.dto.CandleData;
@@ -41,6 +43,7 @@ public class InitialDataService {
     private final ChartSnapshotRepository chartSnapshotRepository;
     private final BffServerTrailingStopResponseRepository bffServerTrailingStopResponseRepository;
     private final BffServerOtocoResponseRepository bffServerOtocoResponseRepository;
+    private final BffServerAlertResponseRepository bffServerAlertResponseRepository;
 
     public Optional<AccountResponse> getAccountData(String username) {
 
@@ -116,6 +119,19 @@ public class InitialDataService {
         }
     }
 
+    public Optional<List<AlertResponseMessage>> getAlertData(String username) {
+
+        try {
+            List<AlertResponseMessage> alerts =
+                    bffServerAlertResponseRepository.findAll(username);
+
+            return Optional.ofNullable(alerts);
+
+        } catch (Exception e) {
+            log.error("Unexpected error while getting alert data for username={}", username, e);
+            return Optional.empty();
+        }
+    }
 
     public Optional<BffServerTradePriceTickMessage> getTradePriceData(String stockCode) {
 
