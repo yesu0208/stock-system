@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.external.stock.handler;
 
+import arile.toy.stocksystem.stockserver.alert.service.AlertTriggerService;
 import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderTriggerService;
 import arile.toy.stocksystem.stockserver.chart.service.LiveDailyCandleService;
 import arile.toy.stocksystem.stockserver.chart.service.LiveMinuteCandleService;
@@ -29,6 +30,7 @@ public class TradePriceTickMessageHandler {
     private final TrailingStopTriggerService trailingStopTriggerService;
     private final OtocoEntryTriggerService otocoEntryTriggerService;
     private final OtocoExitTriggerService otocoExitTriggerService;
+    private final AlertTriggerService alertTriggerService;
     private final MarketPhaseService marketPhaseService;
     private final LiveDailyCandleService liveDailyCandleService;
     private final LiveMinuteCandleService liveMinuteCandleService;
@@ -92,6 +94,7 @@ public class TradePriceTickMessageHandler {
             otocoEntryTriggerService.getExternalTickMessageAndTriggerEntry(tradePriceTickMessage);
             otocoExitTriggerService.getExternalTickMessageAndSettleExit(tradePriceTickMessage);
             tradeMatchingService.getExternalTickMessageAndTrade(tradePriceTickMessage);
+            alertTriggerService.getExternalTickMessageAndCheckAlerts(tradePriceTickMessage);
 
             marketPhaseService.closeMarketAfterClosingCall(tradePriceTickMessage.stockCode(),
                     tradePriceTickMessage.tradeTime());
