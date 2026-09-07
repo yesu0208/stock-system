@@ -61,6 +61,12 @@ redis:
     otoco-cancel:
       prefix: otoco-cancel-events
 
+    alert:
+      prefix: alert-events
+
+    alert-cancel:
+      prefix: alert-cancel-events
+
 stock-groups:
   groups:
     A:
