@@ -4,6 +4,8 @@ import arile.toy.stocksystem.bffserver.stocktalk.dto.StockTalkJoinResponse;
 import arile.toy.stocksystem.bffserver.stocktalk.dto.StockTalkMessage;
 import arile.toy.stocksystem.bffserver.stocktalk.registry.StockTalkRoom;
 import arile.toy.stocksystem.bffserver.stocktalk.registry.StockTalkRoomRegistry;
+import arile.toy.stocksystem.bffserver.user.dto.UserProfile;
+import arile.toy.stocksystem.bffserver.user.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -21,6 +23,7 @@ public class StockTalkService {
 
     private final StockTalkRoomRegistry roomRegistry;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserProfileService userProfileService;
 
     public void join(String ticker, String username, String sessionId) {
         StockTalkRoom room = roomRegistry.getOrCreate(ticker);
@@ -35,7 +38,9 @@ public class StockTalkService {
         sendToSession(username, sessionId, response);
 
         if (isNew) {
-            StockTalkMessage enterMsg = StockTalkMessage.enter(ticker, username, room.participantCount());
+            UserProfile profile = userProfileService.getProfile(username);
+            StockTalkMessage enterMsg = StockTalkMessage.enter(
+                    ticker, username, profile.nickname(), profile.profileImageUrl(), room.participantCount());
             room.addMessage(enterMsg);
             broadcast(ticker, enterMsg);
             log.info("[StockTalk] {} joined {}, participants={}", username, ticker, room.participantCount());
@@ -47,7 +52,9 @@ public class StockTalkService {
         boolean wasIn = room.leave(username);
 
         if (wasIn) {
-            StockTalkMessage leaveMsg = StockTalkMessage.leave(ticker, username, room.participantCount());
+            UserProfile profile = userProfileService.getProfile(username);
+            StockTalkMessage leaveMsg = StockTalkMessage.leave(
+                    ticker, username, profile.nickname(), profile.profileImageUrl(), room.participantCount());
             room.addMessage(leaveMsg);
             broadcast(ticker, leaveMsg);
             log.info("[StockTalk] {} left {}, participants={}", username, ticker, room.participantCount());
@@ -62,7 +69,9 @@ public class StockTalkService {
             return;
         }
 
-        StockTalkMessage msg = StockTalkMessage.chat(ticker, username, content, room.participantCount());
+        UserProfile profile = userProfileService.getProfile(username);
+        StockTalkMessage msg = StockTalkMessage.chat(
+                ticker, username, profile.nickname(), profile.profileImageUrl(), content, room.participantCount());
         room.addMessage(msg);
         broadcast(ticker, msg);
     }
