@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.order.controller;
 
+import arile.toy.stocksystem.bffserver.admin.service.AdminAccessService;
 import arile.toy.stocksystem.bffserver.history.dto.HistoryPageResponse;
 import arile.toy.stocksystem.bffserver.order.client.OrderHistoryApiClient;
 import arile.toy.stocksystem.bffserver.order.dto.OrderHistoryItem;
@@ -23,10 +24,12 @@ import java.time.Instant;
 public class OrderHistoryController {
 
     private final OrderHistoryApiClient orderHistoryApiClient;
+    private final AdminAccessService adminAccessService;
 
     @GetMapping("/history")
     public ResponseEntity<HistoryPageResponse<OrderHistoryItem>> getHistory(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -35,13 +38,16 @@ public class OrderHistoryController {
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        var response = orderHistoryApiClient.getHistory(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+
+        var response = orderHistoryApiClient.getHistory(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/cancels")
     public ResponseEntity<HistoryPageResponse<OrderHistoryItem>> getCancels(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -50,13 +56,16 @@ public class OrderHistoryController {
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        var response = orderHistoryApiClient.getCancels(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+
+        var response = orderHistoryApiClient.getCancels(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/unfilled")
     public ResponseEntity<HistoryPageResponse<OrderHistoryItem>> getUnfilled(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -65,13 +74,16 @@ public class OrderHistoryController {
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        var response = orderHistoryApiClient.getUnfilled(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+
+        var response = orderHistoryApiClient.getUnfilled(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/trades")
     public ResponseEntity<HistoryPageResponse<TradeHistoryItem>> getTrades(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -80,7 +92,9 @@ public class OrderHistoryController {
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        var response = orderHistoryApiClient.getTrades(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+
+        var response = orderHistoryApiClient.getTrades(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 }
