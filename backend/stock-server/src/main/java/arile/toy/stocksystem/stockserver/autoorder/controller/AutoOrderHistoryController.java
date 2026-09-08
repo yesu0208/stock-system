@@ -1,7 +1,7 @@
 package arile.toy.stocksystem.stockserver.autoorder.controller;
 
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderHistoryItem;
-import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderHistoryQueryService;
+import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderHistoryQueryService;
 import arile.toy.stocksystem.stockserver.history.dto.HistoryPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

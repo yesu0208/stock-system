@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.stockserver.autoorder.sevice;
+package arile.toy.stocksystem.stockserver.autoorder.service;
 
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderHistoryItem;
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderStatus;

@@ -2,7 +2,7 @@ package arile.toy.stocksystem.stockserver.market.phase;
 
 import arile.toy.stocksystem.stockserver.autocancel.service.AutoCancelService;
 import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
-import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderService;
+import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderService;
 import arile.toy.stocksystem.stockserver.cancel.service.CancelService;
 import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockProperties;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;

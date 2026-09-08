@@ -11,7 +11,7 @@ import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderType;
 import arile.toy.stocksystem.stockserver.autoorder.dto.UpdateAutoOrderStatusResult;
 import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
-import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderService;
+import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderService;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
