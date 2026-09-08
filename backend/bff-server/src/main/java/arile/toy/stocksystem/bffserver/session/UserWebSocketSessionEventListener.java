@@ -96,6 +96,10 @@ public class UserWebSocketSessionEventListener {
             initialDataService.getAccountData(username)
                     .ifPresent(data -> messagingTemplate.convertAndSendToUser(
                             username, "/sub/account", data));
+        } else if ("/user/sub/portfolio".equals(destination)) {
+            initialDataService.getPortfolioData(username)
+                    .ifPresent(data -> messagingTemplate.convertAndSendToUser(
+                            username, "/sub/portfolio", data));
         } else if ("/user/sub/order".equals(destination)) {
             initialDataService.getOrderData(username)
                     .ifPresent(data -> messagingTemplate.convertAndSendToUser(

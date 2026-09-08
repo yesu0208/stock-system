@@ -18,6 +18,8 @@ import arile.toy.stocksystem.bffserver.order.dto.OrderResponseMessage;
 import arile.toy.stocksystem.bffserver.order.repository.BffServerOrderResponseRepository;
 import arile.toy.stocksystem.bffserver.otoco.dto.OtocoResponseMessage;
 import arile.toy.stocksystem.bffserver.otoco.repository.BffServerOtocoResponseRepository;
+import arile.toy.stocksystem.bffserver.portfolio.dto.PortfolioResponse;
+import arile.toy.stocksystem.bffserver.portfolio.service.PortfolioCalculator;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.StockDetailTickMessage;
 import arile.toy.stocksystem.bffserver.stockinfo.repository.StockDetailSnapshotRepository;
 import arile.toy.stocksystem.bffserver.trailingstop.dto.TrailingStopResponseMessage;
@@ -35,6 +37,7 @@ import java.util.Optional;
 public class InitialDataService {
 
     private final AccountCalculator accountCalculator;
+    private final PortfolioCalculator portfolioCalculator;
     private final BffServerOrderResponseRepository bffServerOrderResponseRepository;
     private final BffServerAutoOrderResponseRepository bffServerAutoOrderResponseRepository;
     private final BffServerTradePriceRepository bffServerTradePriceRepository;
@@ -184,6 +187,22 @@ public class InitialDataService {
             return Optional.ofNullable(chartSnapshotRepository.getMinute(stockCode));
         } catch (Exception e) {
             log.error("Unexpected error while getting minute chart data for stockCode={}", stockCode, e);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<PortfolioResponse> getPortfolioData(String username) {
+
+        try {
+            var portfolioResponse = portfolioCalculator.calculate(username);
+            return Optional.ofNullable(portfolioResponse);
+
+        } catch (RedisAccountNotFoundException e) {
+            log.debug("No account data found for username={}", username);
+            return Optional.empty();
+
+        } catch (Exception e) {
+            log.error("Unexpected error while getting portfolio data for username={}", username, e);
             return Optional.empty();
         }
     }

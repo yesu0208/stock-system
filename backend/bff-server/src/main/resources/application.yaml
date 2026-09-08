@@ -84,6 +84,20 @@ stock-groups:
     CLOSE:
       - "125020"
 
+stock-sectors:
+  groups:
+    반도체:
+      - "005930"
+      - "000660"
+      - "005935"
+    2차전지:
+      - "373220"
+      - "247540"
+    자동차:
+      - "005380"
+    바이오:
+      - "196170"
+
 spring:
   application.name: bff-server
   servlet:
