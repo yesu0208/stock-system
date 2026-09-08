@@ -9,6 +9,8 @@ import arile.toy.stocksystem.bffserver.discussion.repository.DiscussionScrapRepo
 import arile.toy.stocksystem.bffserver.exception.discussion.DiscussionCommentNotFoundException;
 import arile.toy.stocksystem.bffserver.exception.discussion.DiscussionForbiddenException;
 import arile.toy.stocksystem.bffserver.exception.discussion.DiscussionPostNotFoundException;
+import arile.toy.stocksystem.bffserver.user.dto.UserProfile;
+import arile.toy.stocksystem.bffserver.user.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +30,7 @@ public class DiscussionService {
     private static final int PAGE_SIZE = 20;
 
     private final DiscussionPostRepository postRepository;
+    private final UserProfileService userProfileService;
     private final DiscussionCommentRepository commentRepository;
     private final DiscussionReactionRepository reactionRepository;
     private final DiscussionScrapRepository scrapRepository;
@@ -108,7 +112,8 @@ public class DiscussionService {
         var comment = DiscussionCommentEntity.of(postId, authorId, request.content());
         var saved = commentRepository.save(comment);
 
-        return CommentResponse.of(saved, 0, 0);
+        UserProfile authorProfile = userProfileService.getProfile(authorId);
+        return CommentResponse.of(saved, authorProfile, 0, 0);
     }
 
     @Transactional
@@ -231,9 +236,16 @@ public class DiscussionService {
                         }
                     });
 
+            Set<String> commentAuthorIds = commentEntities.stream()
+                    .map(DiscussionCommentEntity::getAuthorId)
+                    .collect(Collectors.toSet());
+            Map<String, UserProfile> commentAuthorProfiles = userProfileService.getProfiles(commentAuthorIds);
+
             comments = commentEntities.stream()
                     .map(comment -> CommentResponse.of(
                             comment,
+                            commentAuthorProfiles.getOrDefault(
+                                    comment.getAuthorId(), UserProfile.empty(comment.getAuthorId())),
                             likeMap.getOrDefault(comment.getCommentId(), 0),
                             dislikeMap.getOrDefault(comment.getCommentId(), 0)))
                     .toList();
@@ -243,13 +255,16 @@ public class DiscussionService {
         int dislikes = countReaction(TargetType.POST, post.getPostId(), ReactionType.DISLIKE);
         int scraps = (int) scrapRepository.countByPostId(post.getPostId());
 
-        return PostDetail.of(post, likes, dislikes, scraps, comments);
+        UserProfile postAuthorProfile = userProfileService.getProfile(post.getAuthorId());
+
+        return PostDetail.of(post, postAuthorProfile, likes, dislikes, scraps, comments);
     }
 
     private CommentResponse toCommentResponse(DiscussionCommentEntity comment) {
         int likes = countReaction(TargetType.COMMENT, comment.getCommentId(), ReactionType.LIKE);
         int dislikes = countReaction(TargetType.COMMENT, comment.getCommentId(), ReactionType.DISLIKE);
-        return CommentResponse.of(comment, likes, dislikes);
+        UserProfile authorProfile = userProfileService.getProfile(comment.getAuthorId());
+        return CommentResponse.of(comment, authorProfile, likes, dislikes);
     }
 
     private CursorPage<PostSummary> toCursorPage(List<DiscussionPostEntity> posts) {
@@ -283,9 +298,15 @@ public class DiscussionService {
                         DiscussionCommentRepository.CommentCountRow::getPostId,
                         row -> (int) row.getCnt()));
 
+        Set<String> authorIds = page.stream()
+                .map(DiscussionPostEntity::getAuthorId)
+                .collect(Collectors.toSet());
+        Map<String, UserProfile> authorProfiles = userProfileService.getProfiles(authorIds);
+
         List<PostSummary> items = page.stream()
                 .map(post -> PostSummary.of(
                         post,
+                        authorProfiles.getOrDefault(post.getAuthorId(), UserProfile.empty(post.getAuthorId())),
                         likeMap.getOrDefault(post.getPostId(), 0),
                         dislikeMap.getOrDefault(post.getPostId(), 0),
                         commentCountMap.getOrDefault(post.getPostId(), 0),
