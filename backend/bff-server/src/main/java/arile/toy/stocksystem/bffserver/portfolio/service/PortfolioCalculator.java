@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.portfolio.service;
 
 import arile.toy.stocksystem.bffserver.account.dto.AccountSnapshot;
+import arile.toy.stocksystem.bffserver.account.dto.LeveragePositionInfo;
 import arile.toy.stocksystem.bffserver.account.dto.StockInfo;
 import arile.toy.stocksystem.bffserver.account.service.AccountPullService;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerStockSummaryTickMessage;
@@ -32,6 +33,7 @@ public class PortfolioCalculator {
         Map<String, StockAmount> mergedByStock = new LinkedHashMap<>();
 
         accumulateSpot(snapshot.stocks(), priceCache, mergedByStock);
+        accumulateLeverage(snapshot.leveragePositions(), priceCache, mergedByStock);
     }
 
     /** 현물 보유 종목의 평가금액을 stockCode 기준으로 누적 */
@@ -56,6 +58,40 @@ public class PortfolioCalculator {
 
             mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
                     .addSpot(evaluationAmount);
+        }
+    }
+
+    /**
+     * 레버리지 포지션의 평가금액을 stockCode 기준으로 누적
+     * 대출금(loanAmount)은 차감하지 않고 quantity × curPrice 그대로 반영
+     * 포지션 key는 "stockCode:leverageRatio" 형식이며, 동일 종목의 여러 배율 포지션은 합산
+     */
+    private void accumulateLeverage(
+            Map<String, LeveragePositionInfo> leveragePositions,
+            Map<String, Integer> priceCache,
+            Map<String, StockAmount> mergedByStock
+    ) {
+        if (leveragePositions == null) return;
+
+        for (Map.Entry<String, LeveragePositionInfo> entry : leveragePositions.entrySet()) {
+            String[] parts = entry.getKey().split(":", 2);
+            if (parts.length != 2) {
+                log.warn("Malformed leverage position key: {}", entry.getKey());
+                continue;
+            }
+            String stockCode = parts[0];
+            LeveragePositionInfo info = entry.getValue();
+
+            Integer curPrice = resolvePrice(stockCode, priceCache);
+            if (curPrice == null) {
+                log.warn("No stock summary for leverage position stockCode={}. Skip.", stockCode);
+                continue;
+            }
+
+            long evaluationAmount = (long) info.quantity() * curPrice;
+
+            mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
+                    .addLeverage(evaluationAmount);
         }
     }
 
