@@ -1,7 +1,10 @@
 package arile.toy.stocksystem.stockserver.otoco.event;
 
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
-import arile.toy.stocksystem.stockserver.otoco.dto.*;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoEntryDirection;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoResultCode;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoStatus;
+import arile.toy.stocksystem.stockserver.otoco.dto.StockServerOtocoResponseMessage;
 
 import java.time.Instant;
 

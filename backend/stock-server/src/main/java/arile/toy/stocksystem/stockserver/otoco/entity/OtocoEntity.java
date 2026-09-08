@@ -1,7 +1,10 @@
 package arile.toy.stocksystem.stockserver.otoco.entity;
 
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
-import arile.toy.stocksystem.stockserver.otoco.dto.*;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoEntryDirection;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoExitMode;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoLeg;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoStatus;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

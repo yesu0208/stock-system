@@ -3,12 +3,15 @@ package arile.toy.stocksystem.stockserver.otoco.repository;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoStatus;
 import arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -32,4 +35,21 @@ public interface OtocoRepository extends JpaRepository<OtocoEntity, Long> {
     }
 
     List<OtocoEntity> findAllByOtocoStatusInAndStockCodeIn(List<OtocoStatus> statuses, List<String> stockCodes);
+
+    @Query("""
+            select o from OtocoEntity o
+            where o.username = :username
+            and (:stockCode is null or o.stockCode = :stockCode)
+            and (:statuses is null or o.otocoStatus in :statuses)
+            and (:from is null or o.orderTime >= :from)
+            and (:to is null or o.orderTime <= :to)
+            order by o.orderTime desc
+            """)
+    Page<OtocoEntity> search(
+            @Param("username") String username,
+            @Param("stockCode") String stockCode,
+            @Param("statuses") List<OtocoStatus> statuses,
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            Pageable pageable);
 }

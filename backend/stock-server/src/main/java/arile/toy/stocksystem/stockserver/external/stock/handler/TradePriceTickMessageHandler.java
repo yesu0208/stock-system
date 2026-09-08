@@ -1,7 +1,7 @@
 package arile.toy.stocksystem.stockserver.external.stock.handler;
 
 import arile.toy.stocksystem.stockserver.alert.service.AlertTriggerService;
-import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderTriggerService;
+import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderTriggerService;
 import arile.toy.stocksystem.stockserver.chart.service.LiveDailyCandleService;
 import arile.toy.stocksystem.stockserver.chart.service.LiveMinuteCandleService;
 import arile.toy.stocksystem.stockserver.external.stock.event.TradePriceTickEvent;

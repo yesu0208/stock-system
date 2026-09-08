@@ -2,7 +2,7 @@ package arile.toy.stocksystem.stockserver.autoorder.event.subscriber;
 
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderType;
 import arile.toy.stocksystem.stockserver.autoorder.event.StockServerAutoOrderRequestEvent;
-import arile.toy.stocksystem.stockserver.autoorder.sevice.AutoOrderService;
+import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderService;
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import lombok.RequiredArgsConstructor;
