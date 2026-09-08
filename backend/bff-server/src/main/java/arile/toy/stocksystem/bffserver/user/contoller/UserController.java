@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.user.contoller;
 
+import arile.toy.stocksystem.bffserver.admin.service.AdminAccessService;
 import arile.toy.stocksystem.bffserver.rank.client.RankApiClient;
 import arile.toy.stocksystem.bffserver.rank.dto.RankHistoryResponse;
 import arile.toy.stocksystem.bffserver.security.repository.RefreshTokenRepository;
@@ -27,6 +28,7 @@ public class UserController {
 
     private final UserService userService;
     private final JwtService jwtService;
+    private final AdminAccessService adminAccessService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final RankApiClient rankApiClient;
 
@@ -106,6 +108,7 @@ public class UserController {
     @GetMapping("/rank/history")
     public ResponseEntity<RankHistoryResponse> getRankHistory(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
@@ -113,9 +116,11 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+
         int zeroBasedPage = Math.max(page - 1, 0);
 
-        RankHistoryResponse response = rankApiClient.getRankHistory(user.getUsername(), zeroBasedPage, size);
+        RankHistoryResponse response = rankApiClient.getRankHistory(targetUsername, zeroBasedPage, size);
 
         if (response == null) {
             return ResponseEntity.internalServerError().build();
