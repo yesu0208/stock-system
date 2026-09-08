@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.trailingstop.controller;
 
+import arile.toy.stocksystem.bffserver.admin.service.AdminAccessService;
 import arile.toy.stocksystem.bffserver.history.dto.HistoryPageResponse;
 import arile.toy.stocksystem.bffserver.trailingstop.client.TrailingStopHistoryApiClient;
 import arile.toy.stocksystem.bffserver.trailingstop.dto.TrailingStopHistoryItem;
@@ -22,10 +23,12 @@ import java.time.Instant;
 public class TrailingStopHistoryController {
 
     private final TrailingStopHistoryApiClient trailingStopHistoryApiClient;
+    private final AdminAccessService adminAccessService;
 
     @GetMapping("/history")
     public ResponseEntity<HistoryPageResponse<TrailingStopHistoryItem>> getHistory(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -33,13 +36,15 @@ public class TrailingStopHistoryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        var response = trailingStopHistoryApiClient.getHistory(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+        var response = trailingStopHistoryApiClient.getHistory(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/cancels")
     public ResponseEntity<HistoryPageResponse<TrailingStopHistoryItem>> getCancels(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -47,13 +52,15 @@ public class TrailingStopHistoryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        var response = trailingStopHistoryApiClient.getCancels(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+        var response = trailingStopHistoryApiClient.getCancels(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/unfilled")
     public ResponseEntity<HistoryPageResponse<TrailingStopHistoryItem>> getUnfilled(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -61,13 +68,15 @@ public class TrailingStopHistoryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        var response = trailingStopHistoryApiClient.getUnfilled(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+        var response = trailingStopHistoryApiClient.getUnfilled(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/triggered")
     public ResponseEntity<HistoryPageResponse<TrailingStopHistoryItem>> getTriggered(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -75,7 +84,8 @@ public class TrailingStopHistoryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        var response = trailingStopHistoryApiClient.getTriggered(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+        var response = trailingStopHistoryApiClient.getTriggered(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 }

@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.dailyreturn.controller;
 
+import arile.toy.stocksystem.bffserver.admin.service.AdminAccessService;
 import arile.toy.stocksystem.bffserver.dailyreturn.client.DailyReturnApiClient;
 import arile.toy.stocksystem.bffserver.dailyreturn.dto.DailyReturnHistoryResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +22,12 @@ import java.time.LocalDate;
 public class DailyReturnController {
 
     private final DailyReturnApiClient dailyReturnApiClient;
+    private final AdminAccessService adminAccessService;
 
     @GetMapping("/history")
     public ResponseEntity<DailyReturnHistoryResponse> getHistory(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
@@ -34,7 +37,9 @@ public class DailyReturnController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        var response = dailyReturnApiClient.getHistory(user.getUsername(), from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+
+        var response = dailyReturnApiClient.getHistory(targetUsername, from, to, page, size);
 
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }

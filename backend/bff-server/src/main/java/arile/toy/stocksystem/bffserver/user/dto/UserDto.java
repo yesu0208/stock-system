@@ -10,14 +10,15 @@ public record UserDto(
         String username,
         String nickname,
         Instant createdDateTime,
+        Role role,
         RankResponse rank
 ) {
     public static UserDto fromEntity(UserEntity userEntity) {
         return new UserDto(userEntity.getUserId(), userEntity.getUsername(), userEntity.getNickname(),
-                userEntity.getCreatedDateTime(), null);
+                userEntity.getCreatedDateTime(), userEntity.getRole(), null);
     }
 
     public UserDto withRank(RankResponse rank) {
-        return new UserDto(this.userId, this.username, this.nickname, this.createdDateTime, rank);
+        return new UserDto(this.userId, this.username, this.nickname, this.createdDateTime, this.role, rank);
     }
 }

@@ -1,6 +1,6 @@
-// File: bffserver/autoorder/controller/AutoOrderHistoryController.java
 package arile.toy.stocksystem.bffserver.autoorder.controller;
 
+import arile.toy.stocksystem.bffserver.admin.service.AdminAccessService;
 import arile.toy.stocksystem.bffserver.autoorder.client.AutoOrderHistoryApiClient;
 import arile.toy.stocksystem.bffserver.autoorder.dto.AutoOrderHistoryItem;
 import arile.toy.stocksystem.bffserver.history.dto.HistoryPageResponse;
@@ -23,10 +23,12 @@ import java.time.Instant;
 public class AutoOrderHistoryController {
 
     private final AutoOrderHistoryApiClient autoOrderHistoryApiClient;
+    private final AdminAccessService adminAccessService;
 
     @GetMapping("/history")
     public ResponseEntity<HistoryPageResponse<AutoOrderHistoryItem>> getHistory(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -34,13 +36,15 @@ public class AutoOrderHistoryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        var response = autoOrderHistoryApiClient.getHistory(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+        var response = autoOrderHistoryApiClient.getHistory(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/cancels")
     public ResponseEntity<HistoryPageResponse<AutoOrderHistoryItem>> getCancels(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -48,13 +52,15 @@ public class AutoOrderHistoryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        var response = autoOrderHistoryApiClient.getCancels(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+        var response = autoOrderHistoryApiClient.getCancels(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/unfilled")
     public ResponseEntity<HistoryPageResponse<AutoOrderHistoryItem>> getUnfilled(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -62,13 +68,15 @@ public class AutoOrderHistoryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        var response = autoOrderHistoryApiClient.getUnfilled(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+        var response = autoOrderHistoryApiClient.getUnfilled(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 
     @GetMapping("/triggered")
     public ResponseEntity<HistoryPageResponse<AutoOrderHistoryItem>> getTriggered(
             @AuthenticationPrincipal UserDetails user,
+            @RequestParam(required = false) String username,
             @RequestParam(required = false) String stockCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -76,7 +84,8 @@ public class AutoOrderHistoryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        var response = autoOrderHistoryApiClient.getTriggered(user.getUsername(), stockCode, from, to, page, size);
+        String targetUsername = adminAccessService.resolveTargetUsername(user, username);
+        var response = autoOrderHistoryApiClient.getTriggered(targetUsername, stockCode, from, to, page, size);
         return response != null ? ResponseEntity.ok(response) : ResponseEntity.internalServerError().build();
     }
 }
