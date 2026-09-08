@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.accountserver.rank.service;
 
+import arile.toy.stocksystem.accountserver.dailyreturn.service.DailyReturnRecorder;
 import arile.toy.stocksystem.accountserver.rank.entity.RankHistoryEntity;
 import arile.toy.stocksystem.accountserver.rank.entity.UserRankEntity;
 import arile.toy.stocksystem.accountserver.rank.repository.RankHistoryRepository;
@@ -25,6 +26,7 @@ public class DailyRankBatchService {
     private final TotalAssetCalculator totalAssetCalculator;
     private final RankScoreCalculator rankScoreCalculator;
     private final RankDecisionService rankDecisionService;
+    private final DailyReturnRecorder dailyReturnRecorder;
 
     @Transactional
     public void runDailyBatch() {
@@ -52,6 +54,10 @@ public class DailyRankBatchService {
 
             if (!rank.getEntered()) {
                 long todayAsset = totalAssetCalculator.calculate(username, account.getBalance());
+
+                dailyReturnRecorder.record(username, today,
+                        rank.getPreviousDayTotalAsset(), todayAsset, rank.getDailyTradeAmount());
+
                 rank.setPreviousDayTotalAsset(todayAsset);
                 rank.setDailyTradeAmount(0L);
                 userRankRepository.save(rank);
@@ -62,6 +68,9 @@ public class DailyRankBatchService {
                 long todayTotalAsset = totalAssetCalculator.calculate(username, account.getBalance());
 
                 double delta = rankScoreCalculator.calculateDailyDelta(
+                        rank.getPreviousDayTotalAsset(), todayTotalAsset, rank.getDailyTradeAmount());
+
+                dailyReturnRecorder.record(username, today,
                         rank.getPreviousDayTotalAsset(), todayTotalAsset, rank.getDailyTradeAmount());
 
                 long rpBefore = rank.getRp();
