@@ -70,6 +70,8 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/users/all")
                                 .hasRole("ADMIN")
+                                .requestMatchers("/api/*/admin/**")
+                                .hasRole("ADMIN")
                                 .anyRequest()
                                 .authenticated())
                 .sessionManagement(
