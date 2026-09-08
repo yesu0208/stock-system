@@ -2,6 +2,7 @@ package arile.toy.stocksystem.bffserver.account.event.subscriber;
 
 import arile.toy.stocksystem.bffserver.account.event.AccountUpdateEvent;
 import arile.toy.stocksystem.bffserver.account.service.AccountPushService;
+import arile.toy.stocksystem.bffserver.portfolio.service.PortfolioPushService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ public class RedisAccountUpdateEventSubscriber implements MessageListener {
 
     private final ObjectMapper objectMapper;
     private final AccountPushService accountPushService;
+    private final PortfolioPushService portfolioPushService;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -34,6 +36,7 @@ public class RedisAccountUpdateEventSubscriber implements MessageListener {
                     );
 
             accountPushService.push(event.username());
+            portfolioPushService.push(event.username());
         } catch (Exception e) {
             log.warn("AccountUpdateEvent:readValue error", e);
         }
