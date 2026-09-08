@@ -4,6 +4,11 @@ account:
 account-api:
   base-url: ${ACCOUNT_API_URL}
 
+admin:
+  username: ${ADMIN_USERNAME:admin}
+  password: ${ADMIN_PASSWORD}
+  nickname: ${ADMIN_NICKNAME:관리자}
+
 stock-api:
   base-url: ${STOCK_API_URL}
 
@@ -131,6 +136,11 @@ account:
 
 account-api:
   base-url: http://localhost:8082
+
+admin:
+  username: admin
+  password: test!admin!password!1
+  nickname: 관리자
 
 stock-api:
   base-url: http://localhost:8081
