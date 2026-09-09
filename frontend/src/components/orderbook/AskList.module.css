@@ -1,0 +1,95 @@
+:root {
+    --cell-width: 105px;
+}
+
+.container {
+    display: block;
+}
+
+.row {
+    display: flex;
+    height: 36px;
+    background-color: #0B1A2B;
+    color: #FFF;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.left {
+    position: relative;
+    width: var(--cell-width);
+    background-color: #0B1A2B;
+    box-sizing: border-box;
+    padding-right: 4px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-top: 0.1px solid #000;
+    border-bottom: 0.1px solid #000;
+}
+.price {
+    width: 90px;
+    height: 36px;
+    line-height: 36px;
+    text-align: center;
+    border-left: 1px solid #333;
+    border-right: 1px solid #333;
+    border-top: 0.1px solid #000;
+    border-bottom: 0.1px solid #000;
+    box-sizing: border-box;
+    position: relative;
+    font-weight: bold;
+}
+
+.price:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.right {
+    width: var(--cell-width);
+    padding: 2px 4px;
+    background-color: #111111;
+    box-sizing: border-box;
+    border-top: 0.1px solid #000;
+    border-bottom: 0.1px solid #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.smallRow {
+    height: 14px;
+    line-height: 14px;
+    font-size: 10px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+}
+
+.smallRowLeft {
+    flex: 1;
+    text-align: left;
+}
+
+.smallRowRight {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+.bar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: #2E3B50;
+    z-index: 0;
+    height: 100%;
+}
+
+.quantityText {
+    position: relative;
+    z-index: 1;
+    vertical-align: middle;
+    font-size: 11px;
+}
