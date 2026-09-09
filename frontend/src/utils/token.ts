@@ -26,7 +26,6 @@ export const tokenStorage = {
     },
 }
 
-// BroadcastChannel 수신
 channel.onmessage = (event) => {
     const { type, token } = event.data
     if (type === 'login') {
@@ -38,7 +37,6 @@ channel.onmessage = (event) => {
     }
 }
 
-// storage 이벤트 (크로스 브라우저)
 window.addEventListener('storage', (event) => {
     if (event.key === TOKEN_KEY) {
         listeners.forEach(cb => cb(event.newValue))
