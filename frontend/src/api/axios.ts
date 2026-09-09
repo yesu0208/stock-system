@@ -2,7 +2,6 @@ import axios from 'axios'
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { tokenStorage } from '../utils/token'
 import { disconnectStomp } from './stompClient'
-// import { reconnectStomp } from './stompClient'
 
 interface CustomAxiosRequestConfig extends AxiosRequestConfig {
     _retry?: boolean
@@ -23,17 +22,13 @@ let refreshQueue: {
 instance.interceptors.request.use(config => {
     if (!config.url?.includes('/auth/refresh')) {
         const token = tokenStorage.get()
-
-        if (token && token !== "undefined") {
+        if (token && token !== 'undefined') {
             config.headers = config.headers ?? {}
             config.headers.Authorization = `Bearer ${token}`
-        } else {
-            if (config.headers) {
-                delete config.headers.Authorization
-            }
+        } else if (config.headers) {
+            delete config.headers.Authorization
         }
     }
-
     return config
 })
 
@@ -42,16 +37,14 @@ instance.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as CustomAxiosRequestConfig
 
-        // refresh 자체가 401 → 세션 만료
         if (
             error.response?.status === 401 &&
             originalRequest?.url?.includes('/auth/refresh')
         ) {
-            setTimeout(() => tokenStorage.clear(), 0) // microtask로 MainLayout가 바로 감지
+            setTimeout(() => tokenStorage.clear(), 0)
             return Promise.reject(error)
         }
 
-        // 일반 요청 401 → refresh 시도
         if (
             error.response?.status === 401 &&
             originalRequest &&
@@ -79,13 +72,8 @@ instance.interceptors.response.use(
                     '/auth/refresh',
                     {}
                 )
-
                 const newAccessToken = refreshRes.data.accessToken
                 tokenStorage.set(newAccessToken)
-
-                // // 🔥 WebSocket 재연결 (새 JWT로 CONNECT)
-                // await reconnectStomp()
-                // window.location.reload()
 
                 refreshQueue.forEach(p => p.resolve(newAccessToken))
                 refreshQueue = []
@@ -97,11 +85,10 @@ instance.interceptors.response.use(
             } catch (refreshError) {
                 setTimeout(() => {
                     tokenStorage.clear()
-                    disconnectStomp() // 여기서 STOMP도 종료
-                }, 0) // microtask로 MainLayout가 바로 감지
+                    disconnectStomp()
+                }, 0)
                 refreshQueue.forEach(p => p.reject(refreshError))
                 refreshQueue = []
-
                 return Promise.reject(refreshError)
             } finally {
                 isRefreshing = false
