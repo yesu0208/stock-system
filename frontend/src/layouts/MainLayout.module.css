@@ -1,0 +1,64 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #121212;
+    color: #FFF;
+}
+
+.header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #333;
+    position: relative;
+}
+
+.title {
+    margin: 0;
+    font-size: 24px;
+}
+
+.logoutButton {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 6px 14px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background-color: #333333;
+    color: #FFF;
+    font-weight: 500;
+}
+
+.main {
+    flex: 1;
+    display: flex;
+    padding: 20px;
+    gap: 20px;
+}
+
+.footer {
+    padding: 12px;
+    text-align: center;
+    border-top: 1px solid #333;
+    font-size: 12px;
+    color: #AAAAAA;
+}
+
+.modalContent {
+    text-align: center;
+    color: #FFF;
+}
+
+.modalButton {
+    margin-top: 16px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    background-color: #4F9DFF;
+    color: #FFF;
+    cursor: pointer;
+}
