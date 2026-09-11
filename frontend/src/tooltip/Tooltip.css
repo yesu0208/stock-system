@@ -1,0 +1,86 @@
+.tt-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.tt-box {
+    position: fixed;
+    z-index: 9999;
+    white-space: nowrap;
+
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 9px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+}
+
+.tt-top    { transform: translateX(-50%) translateY(-100%); animation: tt-fade-top 0.15s ease; }
+.tt-bottom { transform: translateX(-50%); animation: tt-fade-bottom 0.15s ease; }
+.tt-left   { transform: translateX(-100%) translateY(-50%); animation: tt-fade-left 0.15s ease; }
+.tt-right  { transform: translateY(-50%); animation: tt-fade-right 0.15s ease; }
+
+@keyframes tt-fade-top {
+    from { opacity: 0; transform: translateX(-50%) translateY(calc(-100% + 4px)); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(-100%); }
+}
+
+@keyframes tt-fade-bottom {
+    from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes tt-fade-left {
+    from { opacity: 0; transform: translateX(calc(-100% + 4px)) translateY(-50%); }
+    to   { opacity: 1; transform: translateX(-100%) translateY(-50%); }
+}
+
+@keyframes tt-fade-right {
+    from { opacity: 0; transform: translateX(4px) translateY(-50%); }
+    to   { opacity: 1; transform: translateX(0) translateY(-50%); }
+}
+
+.tt-arrow {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tt-top .tt-arrow {
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    border-top: none;
+    border-left: none;
+}
+
+.tt-bottom .tt-arrow {
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    border-bottom: none;
+    border-right: none;
+}
+
+.tt-left .tt-arrow {
+    right: -4px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    border-bottom: none;
+    border-left: none;
+}
+
+.tt-right .tt-arrow {
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    border-top: none;
+    border-right: none;
+}
