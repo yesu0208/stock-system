@@ -58,6 +58,9 @@ export default function TradePanel({
     const [orderQuantity, setOrderQuantity] = useState<number>(1)
 
     const [orderPrice, setOrderPrice] = useState<number>(0)
+    // 레버리지 배율. 'SPOT'은 일반 주문(백엔드에는 leverageRatio: null로 전송)
+    const [orderLeverageRatio, setOrderLeverageRatio] =
+        useState<'SPOT' | 'X1_5' | 'X2' | 'X2_5'>('SPOT')
     const initializedRef = useRef(false)
     const triggerInitializedRef = useRef(false)
 
@@ -84,6 +87,7 @@ export default function TradePanel({
         triggerPrice: number
         orderPrice: number
         orderQuantity: number
+        leverageRatio: 'SPOT' | 'X1_5' | 'X2' | 'X2_5'
     } | null>(null)
 
     // 상태 추가
@@ -104,6 +108,7 @@ export default function TradePanel({
         stockName: string
         orderPrice: number
         orderQuantity: number
+        leverageRatio: 'SPOT' | 'X1_5' | 'X2' | 'X2_5'
     } | null>(null)
 
     const toastTimerRef = useRef<number | null>(null)
@@ -115,6 +120,11 @@ export default function TradePanel({
     useEffect(() => {
         initializedRef.current = false
         triggerInitializedRef.current = false
+    }, [stockCode])
+
+    // 종목을 바꾸면 레버리지 선택도 SPOT으로 초기화
+    useEffect(() => {
+        setOrderLeverageRatio('SPOT')
     }, [stockCode])
 
     useEffect(() => {
@@ -569,7 +579,7 @@ export default function TradePanel({
 
 
 
-    // 자동주문 버튼 클릭 시 → 모달 띄우기
+    // 주문 버튼 클릭 시 -> 모달 띄우기
     const onClickOrderButton = (type: 'BUY' | 'SELL') => {
         setConfirmOrderModal({
             type,
@@ -577,6 +587,7 @@ export default function TradePanel({
             stockName,
             orderPrice: adjustPrice(orderPrice),
             orderQuantity,
+            leverageRatio: orderLeverageRatio,
         })
     }
 
@@ -591,8 +602,13 @@ export default function TradePanel({
                 orderType: confirmOrderModal.type,
                 orderPrice: confirmOrderModal.orderPrice,
                 orderQuantity: confirmOrderModal.orderQuantity,
+                // 백엔드 OrderRequest.leverageRatioOrDefault() 규칙에 맞춰
+                // SPOT은 null로 전송 (null이면 일반 주문으로 처리됨)
+                leverageRatio:
+                    confirmOrderModal.leverageRatio === 'SPOT'
+                        ? null
+                        : confirmOrderModal.leverageRatio,
             })
-
             const data = res.data
 
             setHttpResponseModal({
@@ -611,6 +627,12 @@ export default function TradePanel({
                                 <td style={styles.modalLabel}>주문구분</td>
                                 <td>{data.orderType === 'BUY' ? '매수' : '매도'}</td>
                             </tr>
+                            {confirmOrderModal.leverageRatio !== 'SPOT' && (
+                                <tr>
+                                    <td style={styles.modalLabel}>레버리지</td>
+                                    <td>{confirmOrderModal.leverageRatio.replace('X', '').replace('_', '.')}배</td>
+                                </tr>
+                            )}
                             <tr>
                                 <td style={styles.modalLabel}>주문가격</td>
                                 <td>{data.orderPrice.toLocaleString()}원</td>
@@ -679,6 +701,7 @@ export default function TradePanel({
             triggerPrice: adjustPrice(triggerPrice),
             orderPrice: adjustPrice(orderPrice),
             orderQuantity,
+            leverageRatio: orderLeverageRatio,
         })
     }
 
@@ -694,8 +717,12 @@ export default function TradePanel({
                 triggerPrice: confirmAutoOrderModal.triggerPrice,
                 orderPrice: confirmAutoOrderModal.orderPrice,
                 orderQuantity: confirmAutoOrderModal.orderQuantity,
+                // SPOT은 null로 전송
+                leverageRatio:
+                    confirmAutoOrderModal.leverageRatio === 'SPOT'
+                        ? null
+                        : confirmAutoOrderModal.leverageRatio,
             })
-
             const data = res.data
 
             setHttpResponseModal({
@@ -714,6 +741,12 @@ export default function TradePanel({
                                 <td style={styles.modalLabel}>주문구분</td>
                                 <td>{data.autoOrderType === 'BUY' ? '매수' : '매도'}</td>
                             </tr>
+                            {confirmAutoOrderModal.leverageRatio !== 'SPOT' && (
+                                <tr>
+                                    <td style={styles.modalLabel}>레버리지</td>
+                                    <td>{confirmAutoOrderModal.leverageRatio.replace('X', '').replace('_', '.')}배</td>
+                                </tr>
+                            )}
                             <tr>
                                 <td style={styles.modalLabel}>트리거 가격</td>
                                 <td>{data.triggerPrice.toLocaleString()}원</td>
@@ -1518,6 +1551,38 @@ export default function TradePanel({
                                         <button onClick={() => setOrderQuantity(q => q + 1)} style={styles.smallButton}>+</button>
                                     </div>
 
+                                    {/* 레버리지 배율 선택 */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ color: '#AAA', minWidth: '40px', textAlign: 'center' }}>레버리지</span>
+                                        {(['SPOT', 'X1_5', 'X2', 'X2_5'] as const).map(ratio => (
+                                            <button
+                                                key={ratio}
+                                                onClick={() => setOrderLeverageRatio(ratio)}
+                                                style={{
+                                                    ...styles.percentButton,
+                                                    ...(orderLeverageRatio === ratio
+                                                        ? { backgroundColor: '#4F9DFF', borderColor: '#4F9DFF' }
+                                                        : {}),
+                                                }}
+                                            >
+                                                {ratio === 'SPOT' ? '없음' : `${ratio.replace('X', '').replace('_', '.')}배`}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {orderLeverageRatio !== 'SPOT' && (
+                                        <div style={{ fontSize: '11px', color: '#888', textAlign: 'center', maxWidth: '260px' }}>
+                                            {(() => {
+                                                const myPosition = accountInfo?.leveragePositions?.find(
+                                                    p => p.stockCode === stockCode && p.leverageRatio === orderLeverageRatio
+                                                )
+                                                return myPosition
+                                                    ? `보유 중: ${myPosition.availableQuantity}주 (매도 가능)`
+                                                    : '매도 시 동일 배율의 보유 포지션이 필요합니다.'
+                                            })()}
+                                        </div>
+                                    )}
+
                                     {/* 매도/매수 버튼 */}
                                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '8px' }}>
                                         <button onClick={() => handleOrderClick('SELL')} style={styles.button}>매도</button>
@@ -1779,6 +1844,37 @@ export default function TradePanel({
                                             +
                                         </button>
                                     </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ color: '#AAA', minWidth: '40px', textAlign: 'center' }}>레버리지</span>
+                                        {(['SPOT', 'X1_5', 'X2', 'X2_5'] as const).map(ratio => (
+                                            <button
+                                                key={ratio}
+                                                onClick={() => setOrderLeverageRatio(ratio)}
+                                                style={{
+                                                    ...styles.percentButton,
+                                                    ...(orderLeverageRatio === ratio
+                                                        ? { backgroundColor: '#4F9DFF', borderColor: '#4F9DFF' }
+                                                        : {}),
+                                                }}
+                                            >
+                                                {ratio === 'SPOT' ? '없음' : `${ratio.replace('X', '').replace('_', '.')}배`}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {orderLeverageRatio !== 'SPOT' && (
+                                        <div style={{ fontSize: '11px', color: '#888', textAlign: 'center', maxWidth: '260px' }}>
+                                            {(() => {
+                                                const myPosition = accountInfo?.leveragePositions?.find(
+                                                    p => p.stockCode === stockCode && p.leverageRatio === orderLeverageRatio
+                                                )
+                                                return myPosition
+                                                    ? `보유 중: ${myPosition.availableQuantity}주 (매도 가능)`
+                                                    : '매도 시 동일 배율의 보유 포지션이 필요합니다.'
+                                            })()}
+                                        </div>
+                                    )}
 
                                     {/* 매도/매수 버튼 */}
                                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '8px' }}>
