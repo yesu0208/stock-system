@@ -1,0 +1,31 @@
+export interface HistoryPageResponse<T> {
+    items: T[]
+    page: number
+    size: number
+    totalElements: number
+    hasNext: boolean
+}
+
+export type OrderStatus = 'OPEN' | 'PARTIAL' | 'FILLED' | 'CANCELED'
+
+export interface OrderHistoryItem {
+    orderId: number
+    stockCode: string
+    orderType: 'BUY' | 'SELL'
+    leverageRatio: 'SPOT' | 'X1_5' | 'X2' | 'X2_5' | null
+    orderPrice: number
+    orderQuantity: number
+    remainingQuantity: number
+    orderStatus: OrderStatus
+    orderTime: string
+}
+
+export interface TradeHistoryItem {
+    tradeId: number
+    orderId: number
+    stockCode: string
+    tradeType: 'BUY' | 'SELL'
+    tradePrice: number
+    tradeQuantity: number
+    executedAt: string
+}
