@@ -3,6 +3,8 @@ import { useRealtime } from '../../main/context/RealtimeContext'
 import { calcStockStats, isRealtimeStock } from '../../utils/stockUtils'
 import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
 import AlertModal from '../../main/components/AlertModal'
+import WatchListModal from '../../main/components/WatchListModal'
+import { useWatchList } from '../../main/context/WatchListContext'
 import styles from './StockInfoPanel.module.css'
 
 interface Props {
@@ -13,7 +15,16 @@ interface Props {
 export default function StockInfoPanel({ stockCode, stockName }: Props) {
     const { subscribeStock } = useRealtime()
     const [priceTick, setPriceTick] = useState<TradePriceTickMessage | null>(null)
-    const [showAlertModal, setShowAlertModal] = useState(false)   // [12단계 신규]
+    const [showAlertModal, setShowAlertModal] = useState(false)
+    const [showWatchListModal, setShowWatchListModal] = useState(false)
+
+    const { isWatched, addStock, removeStock } = useWatchList()
+    const watched = isWatched(stockCode)
+
+    const handleToggleWatch = () => {
+        if (watched) removeStock(stockCode)
+        else addStock(stockCode, stockName)
+    }
 
     useEffect(() => {
         setPriceTick(null)
@@ -29,7 +40,13 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
             <div className={styles.container}>
                 <div className={styles.titleRow}>
                     <span className={styles.title}>{stockName}</span>
-                    <button onClick={() => setShowAlertModal(true)} className={styles.alertButton}>🔔 알림</button>
+                    <div className={styles.buttonGroup}>
+                        <button onClick={handleToggleWatch} className={styles.alertButton}>
+                            {watched ? '★ 관심' : '☆ 관심'}
+                        </button>
+                        <button onClick={() => setShowWatchListModal(true)} className={styles.alertButton}>목록</button>
+                        <button onClick={() => setShowAlertModal(true)} className={styles.alertButton}>🔔 알림</button>
+                    </div>
                 </div>
                 <div className={styles.notice}>실시간 미지원 종목입니다.</div>
                 <AlertModal
@@ -37,6 +54,10 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
                     onClose={() => setShowAlertModal(false)}
                     stockCode={stockCode}
                     stockName={stockName}
+                />
+                <WatchListModal
+                    show={showWatchListModal}
+                    onClose={() => setShowWatchListModal(false)}
                 />
             </div>
         )
@@ -48,7 +69,13 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
         <div className={styles.container}>
             <div className={styles.titleRow}>
                 <span className={styles.title}>{stockName}</span>
-                <button onClick={() => setShowAlertModal(true)} className={styles.alertButton}>🔔 알림</button>
+                <div className={styles.buttonGroup}>
+                    <button onClick={handleToggleWatch} className={styles.alertButton}>
+                        {watched ? '★ 관심' : '☆ 관심'}
+                    </button>
+                    <button onClick={() => setShowWatchListModal(true)} className={styles.alertButton}>목록</button>
+                    <button onClick={() => setShowAlertModal(true)} className={styles.alertButton}>🔔 알림</button>
+                </div>
             </div>
             {!stats ? (
                 <div className={styles.notice}>시세 수신 대기중...</div>
@@ -67,6 +94,10 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
                 stockCode={stockCode}
                 stockName={stockName}
                 curPrice={priceTick?.curPrice}
+            />
+            <WatchListModal
+                show={showWatchListModal}
+                onClose={() => setShowWatchListModal(false)}
             />
         </div>
     )
