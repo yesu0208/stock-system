@@ -50,3 +50,24 @@ export interface OtocoResponseMessage {
     otocoStatus: OtocoStatus
     orderTime: string
 }
+
+export interface OtocoCancelRequest {
+    otocoId: number
+    stockCode: string
+}
+
+export interface OtocoCancelResponse {
+    otocoId: number
+    stockCode: string
+}
+
+export interface OtocoCancelResultResponse {
+    responseType: 'SUCCESS' | 'ERROR'
+    otocoId: number
+    username: string
+    stockCode: string
+    entryDirection: OtocoEntryDirection
+    entryTriggerPrice: number
+    orderQuantity: number
+    errorMessage: string | null
+}
