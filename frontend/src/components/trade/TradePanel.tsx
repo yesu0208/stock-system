@@ -87,6 +87,7 @@ export default function TradePanel({
         triggerPrice: number
         orderPrice: number
         orderQuantity: number
+        leverageRatio: 'SPOT' | 'X1_5' | 'X2' | 'X2_5'
     } | null>(null)
 
     // 상태 추가
@@ -700,6 +701,7 @@ export default function TradePanel({
             triggerPrice: adjustPrice(triggerPrice),
             orderPrice: adjustPrice(orderPrice),
             orderQuantity,
+            leverageRatio: orderLeverageRatio,
         })
     }
 
@@ -715,8 +717,12 @@ export default function TradePanel({
                 triggerPrice: confirmAutoOrderModal.triggerPrice,
                 orderPrice: confirmAutoOrderModal.orderPrice,
                 orderQuantity: confirmAutoOrderModal.orderQuantity,
+                // SPOT은 null로 전송
+                leverageRatio:
+                    confirmAutoOrderModal.leverageRatio === 'SPOT'
+                        ? null
+                        : confirmAutoOrderModal.leverageRatio,
             })
-
             const data = res.data
 
             setHttpResponseModal({
@@ -735,6 +741,12 @@ export default function TradePanel({
                                 <td style={styles.modalLabel}>주문구분</td>
                                 <td>{data.autoOrderType === 'BUY' ? '매수' : '매도'}</td>
                             </tr>
+                            {confirmAutoOrderModal.leverageRatio !== 'SPOT' && (
+                                <tr>
+                                    <td style={styles.modalLabel}>레버리지</td>
+                                    <td>{confirmAutoOrderModal.leverageRatio.replace('X', '').replace('_', '.')}배</td>
+                                </tr>
+                            )}
                             <tr>
                                 <td style={styles.modalLabel}>트리거 가격</td>
                                 <td>{data.triggerPrice.toLocaleString()}원</td>
