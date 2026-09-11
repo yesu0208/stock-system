@@ -1323,6 +1323,25 @@ export default function TradePanel({
             </span>
                                     </div>
                                 </div>
+
+                                {/* 5행 — 레버리지 순자산/대출금 (레버리지 이용 중일 때만 표시) */}
+                                {accountInfo.leverageNetValue !== null && (
+                                    <div style={styles.summaryRow}>
+                                        <div style={styles.summaryGroup}>
+                                            <span>레버리지 순자산</span>
+                                            <span style={styles.summaryValue}>
+                    {(accountInfo.leverageNetValue ?? 0).toLocaleString()}원
+                </span>
+                                        </div>
+
+                                        <div style={styles.summaryGroup}>
+                                            <span>레버리지 대출금</span>
+                                            <span style={{ ...styles.summaryValue, color: '#FF8A80' }}>
+                    {(accountInfo.leverageLoanTotal ?? 0).toLocaleString()}원
+                </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div style={styles.divider} />
