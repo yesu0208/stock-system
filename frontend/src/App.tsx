@@ -11,6 +11,7 @@ import { AccountProvider } from './main/context/AccountContext'
 import { MarketDataProvider } from './main/context/MarketDataContext'
 import { AlertProvider } from './main/context/AlertContext'
 import { WatchListProvider } from './main/context/WatchListContext'
+import { ChartDataProvider } from './main/context/ChartDataContext'
 
 /**
  * react-router(Routes/Route/Navigate/PrivateRoute)를 완전히
@@ -47,15 +48,17 @@ export default function App() {
         <RealtimeProvider>
             <StockProvider>
                 <AccountProvider>
-                    <MarketDataProvider>
-                        <AlertProvider>
-                            <WatchListProvider>
-                                <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
-                                    <TradePage />
-                                </MainLayout>
-                            </WatchListProvider>
-                        </AlertProvider>
-                    </MarketDataProvider>
+                    <ChartDataProvider>
+                        <MarketDataProvider>
+                            <AlertProvider>
+                                <WatchListProvider>
+                                    <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
+                                        <TradePage />
+                                    </MainLayout>
+                                </WatchListProvider>
+                            </AlertProvider>
+                        </MarketDataProvider>
+                    </ChartDataProvider>
                 </AccountProvider>
             </StockProvider>
         </RealtimeProvider>
