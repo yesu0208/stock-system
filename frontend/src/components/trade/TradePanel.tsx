@@ -1431,6 +1431,56 @@ export default function TradePanel({
                                     )}
                                 </div>
                             )}
+
+                            {/* 레버리지 포지션 */}
+                            <div style={styles.divider} />
+
+                            <h4 style={{ color: '#AAA', margin: '12px 0 6px 0' }}>
+                                레버리지 포지션
+                            </h4>
+
+                            {(accountInfo.leveragePositions ?? []).length === 0 ? (
+                                <div style={{ color: '#666', fontSize: '13px', textAlign: 'center' }}>
+                                    보유 레버리지 포지션 없음
+                                </div>
+                            ) : (
+                                <div style={styles.stockTable}>
+                                    <div style={{ ...styles.stockTableHeader, gridTemplateColumns: '1.2fr 0.7fr 0.7fr 0.7fr 1fr 1fr 0.8fr' }}>
+                                        <span>종목명</span>
+                                        <span>배율</span>
+                                        <span>수량</span>
+                                        <span>가능수량</span>
+                                        <span>대출금</span>
+                                        <span>순자산</span>
+                                        <span>수익률</span>
+                                    </div>
+
+                                    {(accountInfo.leveragePositions ?? []).map(pos => (
+                                        <div
+                                            key={`${pos.stockCode}-${pos.leverageRatio}`}
+                                            style={{ ...styles.stockTableRow, gridTemplateColumns: '1.2fr 0.7fr 0.7fr 0.7fr 1fr 1fr 0.8fr' }}
+                                            className="stockRow"
+                                        >
+                                            <span>{stockNameMap[pos.stockCode] ?? pos.stockCode}</span>
+                                            <span>{pos.leverageRatio.replace('X', '').replace('_', '.')}배</span>
+                                            <span>{pos.quantity}주</span>
+                                            <span>{pos.availableQuantity}주</span>
+                                            <span style={{ color: '#FF8A80' }}>{pos.loanAmount.toLocaleString()}원</span>
+                                            <span>{pos.netValue.toLocaleString()}원</span>
+                                            <span
+                                                style={{
+                                                    color:
+                                                        pos.profitRate > 0 ? '#FF6347'
+                                                            : pos.profitRate < 0 ? '#4F9DFF'
+                                                                : '#FFFFFF',
+                                                }}
+                                            >
+                                                {pos.profitRate.toFixed(2)}%
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </>
                     ) : (
                         <div style={styles.loadingCenter}>
