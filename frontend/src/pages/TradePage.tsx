@@ -5,6 +5,7 @@ import AccountInfoPanel from '../components/information/AccountInfoPanel.tsx'
 import type { StockSummaryTickMessage } from '../types/stockSummary'
 import StockSummaryPanel from '../components/information/StockSummaryPanel.tsx'
 import { motion } from 'framer-motion'
+import styles from './TradePage.module.css'
 
 import type { TradePriceTickMessage } from '../types/tradePriceTickMessage'
 import { useRealtime } from '../main/context/RealtimeContext'
@@ -167,101 +168,93 @@ export default function TradePage() {
     const isOrderBookReady = isBidAskReady && isTradeReady
 
     return (
+        <motion.div
+            className={styles.tradeContainer}
+            initial={{opacity: 0}}
+            animate={{opacity: 1}}
+            transition={{duration: 0.6, ease: 'easeInOut'}}
+        >
             <motion.div
-                style={{ ...styles.tradeContainer }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, ease: 'easeInOut' }}
+                className={styles.orderBookContainer}
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
+                transition={{duration: 0.5, delay: 0.1}}
             >
-                <motion.div
-                    style={styles.orderBookContainer}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                >
-                    <div style={styles.stockSelector}>
-                        <label style={styles.label}>종목 선택:</label>
+                <div className={styles.stockSelector}>
+                    <label className={styles.label}>종목 선택:</label>
 
-                        <select
-                            style={styles.select}
-                            value={selectedStock}
-                            onChange={(e) => {
-                                setSelectedStock(e.target.value)
-                                setAsks([])
-                                setBids([])
-                                setTradeTicks([])
-                                setTradePrice(null)
-                                setPrevClosePrice(0)
-                                setIsBidAskReady(false)
-                                setIsTradeReady(false)
-                            }}
-                        >
-                            {STOCKS.map(stock => (
-                                <option key={stock.code} value={stock.code}>
-                                    {stock.name} ({stock.code})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <select
+                        className={styles.select}
+                        value={selectedStock}
+                        onChange={(e) => {
+                            setSelectedStock(e.target.value)
+                            setAsks([])
+                            setBids([])
+                            setTradeTicks([])
+                            setTradePrice(null)
+                            setPrevClosePrice(0)
+                            setIsBidAskReady(false)
+                            setIsTradeReady(false)
+                        }}
+                    >
+                        {STOCKS.map(stock => (
+                            <option key={stock.code} value={stock.code}>
+                                {stock.name} ({stock.code})
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-                    <OrderBook
-                        stockName={stockName}
-                        asks={asks}
-                        bids={bids}
-                        tradeTicks={tradeTicks}
-                        prevClosePrice={prevClosePrice}
-                        isReady={isOrderBookReady}
-                    />
-                </motion.div>
-
-                <motion.div
-                    style={{ flex: 1, minWidth: 0 }}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                    <TradePanel
-                        stockCode={selectedStock}
-                        stockName={stockName}
-                        isPriceReady={isBidAskReady}
-                        curPrice={tradePrice?.curPrice}
-                        orderResult={orderResult}
-                        cancelResult={cancelResult}
-                        tradeResult={tradeResult}
-                        orders={orders}
-                        autoOrders={autoOrders}
-                        autoOrderResult={autoOrderResult}
-                        autoCancelResult={autoCancelResult}
-                        accountInfo={accountInfo}
-                    />
-                </motion.div>
-
-                <motion.div
-                    style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                    <AccountInfoPanel
-                        account={accountInfo}
-                        user={userInfo}
-                    />
-
-                    <StockSummaryPanel
-                        summaries={stockSummaries.map(s => ({
-                            ...s,
-                            stockName: STOCKS.find(st => st.code === s.stockCode)?.name ?? s.stockCode
-                        }))}
-                    />
-                </motion.div>
+                <OrderBook
+                    stockName={stockName}
+                    asks={asks}
+                    bids={bids}
+                    tradeTicks={tradeTicks}
+                    prevClosePrice={prevClosePrice}
+                    isReady={isOrderBookReady}
+                />
             </motion.div>
+
+            <motion.div
+                className={styles.tradePanelWrapper}
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
+                transition={{duration: 0.5, delay: 0.2}}
+            >
+                <TradePanel
+                    stockCode={selectedStock}
+                    stockName={stockName}
+                    isPriceReady={isBidAskReady}
+                    curPrice={tradePrice?.curPrice}
+                    orderResult={orderResult}
+                    cancelResult={cancelResult}
+                    tradeResult={tradeResult}
+                    orders={orders}
+                    autoOrders={autoOrders}
+                    autoOrderResult={autoOrderResult}
+                    autoCancelResult={autoCancelResult}
+                    accountInfo={accountInfo}
+                />
+            </motion.div>
+
+            <motion.div
+                className={styles.infoColumn}
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
+                transition={{duration: 0.5, delay: 0.3}}
+            >
+                <AccountInfoPanel
+                    account={accountInfo}
+                    user={userInfo}
+                />
+
+                <StockSummaryPanel
+                    summaries={stockSummaries.map(s => ({
+                        ...s,
+                        stockName: STOCKS.find(st => st.code === s.stockCode)?.name ?? s.stockCode
+                    }))}
+                />
+            </motion.div>
+        </motion.div>
     )
 }
-
-const styles = {
-    tradeContainer: { display: 'flex', gap: '20px', width: '100%', minHeight: '100vh', flexWrap: 'wrap' },
-    orderBookContainer: { display: 'flex', flexDirection: 'column', gap: '12px', width: '350px', height: '912px' },
-    stockSelector: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' },
-    label: { fontSize: '14px', color: '#AAA' },
-    select: { padding: '6px 12px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#1E1E1E', color: '#FFF' },
-} as const

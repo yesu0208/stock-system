@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../components/Modal'
 import { logout } from '../api/auth'
 import { disconnectStomp } from '../api/stompClient'
+import styles from './MainLayout.module.css'
 
 interface Props {
     children: ReactNode
@@ -44,56 +45,37 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
     }
 
     return (
-        <div style={styles.container}>
-            <header style={styles.header}>
-                <h1 style={styles.title}>모의투자 서비스</h1>
-                <button style={styles.logoutButton} onClick={handleLogout}>로그아웃</button>
+        <div className={styles.container}>
+            <header className={styles.header}>
+                <h1 className={styles.title}>모의투자 서비스</h1>
+                <button className={styles.logoutButton} onClick={handleLogout}>로그아웃</button>
             </header>
 
-            <main style={styles.main}>{children}</main>
+            <main className={styles.main}>{children}</main>
 
-            <footer style={styles.footer}>
+            <footer className={styles.footer}>
                 <p>© 2026 Arile. All rights reserved.</p>
             </footer>
 
             {logoutReason === 'manual' && (
                 <Modal show={true} onClose={handleModalClose}>
-                    <div style={modalStyle}>
+                    <div className={styles.modalContent}>
                         <h3>로그아웃되었습니다.</h3>
                         <p>정상적으로 로그아웃 처리되었습니다.</p>
-                        <button style={buttonStyle} onClick={handleModalClose}>확인</button>
+                        <button className={styles.modalButton} onClick={handleModalClose}>확인</button>
                     </div>
                 </Modal>
             )}
 
             {logoutReason === 'expired' && (
                 <Modal show={true} onClose={handleModalClose}>
-                    <div style={modalStyle}>
+                    <div className={styles.modalContent}>
                         <h3>세션이 만료되었습니다.</h3>
                         <p>다시 로그인해주세요.</p>
-                        <button style={buttonStyle} onClick={handleModalClose}>로그인 페이지로 이동</button>
+                        <button className={styles.modalButton} onClick={handleModalClose}>로그인 페이지로 이동</button>
                     </div>
                 </Modal>
             )}
         </div>
     )
-}
-
-const modalStyle = { textAlign: 'center' as const, color: '#FFF' }
-const buttonStyle = {
-    marginTop: '16px',
-    padding: '10px 20px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: '#4F9DFF',
-    color: '#FFF',
-    cursor: 'pointer',
-}
-const styles = {
-    container: { minHeight: '100vh', display: 'flex', flexDirection: 'column' as const, backgroundColor: '#121212', color: '#FFF' },
-    header: { padding: '20px', textAlign: 'center' as const, borderBottom: '1px solid #333', position: 'relative' as const },
-    title: { margin: 0, fontSize: '24px' },
-    logoutButton: { position: 'absolute' as const, right: '20px', top: '50%', transform: 'translateY(-50%)', padding: '6px 14px', fontSize: '14px', borderRadius: '6px', border: 'none', cursor: 'pointer', backgroundColor: '#333333', color: '#FFF', fontWeight: 500 },
-    main: { flex: 1, display: 'flex', padding: '20px', gap: '20px' },
-    footer: { padding: '12px', textAlign: 'center' as const, borderTop: '1px solid #333', fontSize: '12px', color: '#AAAAAA' },
 }

@@ -1,0 +1,46 @@
+.tradeContainer {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    min-height: 100vh;
+    flex-wrap: wrap;
+}
+
+.orderBookContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 350px;
+    height: 912px;
+}
+
+.stockSelector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.label {
+    font-size: 14px;
+    color: #AAA;
+}
+
+.select {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background-color: #1E1E1E;
+    color: #FFF;
+}
+
+.tradePanelWrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+.infoColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}

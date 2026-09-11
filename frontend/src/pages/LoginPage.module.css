@@ -1,0 +1,75 @@
+.card {
+    width: 360px;
+    padding: 40px;
+    border-radius: 12px;
+    background-color: #1E1E1E;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.welcome {
+    color: #4F9DFF;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.input {
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background-color: #2A2A2A;
+    color: #FFF;
+}
+
+.button {
+    padding: 12px;
+    font-size: 15px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background-color: #4F9DFF;
+    color: #FFF;
+    font-weight: 500;
+}
+
+.signupText {
+    text-align: center;
+    font-size: 13px;
+    color: #AAA;
+}
+
+.signupLink {
+    color: #4F9DFF;
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+.modalContent {
+    text-align: center;
+}
+
+.modalMessage {
+    font-size: 14px;
+    color: #FFFFFF;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.modalButton {
+    padding: 10px 20px;
+    background-color: #4F9DFF;
+    color: #FFF;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
