@@ -1,17 +1,18 @@
 import type { ReactNode } from 'react'
 import { tokenStorage } from '../utils/token'
-import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Modal from '../components/Modal'
 import { logout } from '../api/auth'
 import { disconnectStomp } from '../api/stompClient'
 
-interface Props { children: ReactNode }
+interface Props {
+    children: ReactNode
+    onLoggedOut: () => void
+}
 
 type LogoutReason = 'manual' | 'expired' | null
 
-export default function MainLayout({ children }: Props) {
-    const navigate = useNavigate()
+export default function MainLayout({ children, onLoggedOut }: Props) {
     const [logoutReason, setLogoutReason] = useState<LogoutReason>(null)
 
     const handleLogout = async () => {
@@ -23,7 +24,7 @@ export default function MainLayout({ children }: Props) {
 
         setLogoutReason('manual')
         tokenStorage.clear()
-        disconnectStomp() // 추가
+        disconnectStomp()
     }
 
     // 다른 탭 로그아웃 or refresh 실패 감지
@@ -36,9 +37,10 @@ export default function MainLayout({ children }: Props) {
         return () => unsubscribe()
     }, [])
 
+    // [5단계 변경] navigate('/login', { replace: true }) → onLoggedOut()
     const handleModalClose = () => {
         setLogoutReason(null)
-        setTimeout(() => navigate('/login', { replace: true }), 0)
+        setTimeout(() => onLoggedOut(), 0)
     }
 
     return (
@@ -77,10 +79,7 @@ export default function MainLayout({ children }: Props) {
     )
 }
 
-const modalStyle = {
-    textAlign: 'center' as const,
-    color: '#FFF'
-}
+const modalStyle = { textAlign: 'center' as const, color: '#FFF' }
 const buttonStyle = {
     marginTop: '16px',
     padding: '10px 20px',
@@ -88,51 +87,13 @@ const buttonStyle = {
     border: 'none',
     backgroundColor: '#4F9DFF',
     color: '#FFF',
-    cursor: 'pointer'
+    cursor: 'pointer',
 }
 const styles = {
-    container: {
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column' as const,
-        backgroundColor: '#121212',
-        color: '#FFF'
-    },
-    header: {
-        padding: '20px',
-        textAlign: 'center' as const,
-        borderBottom: '1px solid #333',
-        position: 'relative' as const
-    },
-    title: {
-        margin: 0,
-        fontSize: '24px'
-    },
-    logoutButton: {
-        position: 'absolute' as const,
-        right: '20px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        padding: '6px 14px',
-        fontSize: '14px',
-        borderRadius: '6px',
-        border: 'none',
-        cursor: 'pointer',
-        backgroundColor: '#333333',
-        color: '#FFF',
-        fontWeight: 500
-    },
-    main: {
-        flex: 1,
-        display: 'flex',
-        padding: '20px',
-        gap: '20px'
-    },
-    footer: {
-        padding: '12px',
-        textAlign: 'center' as const,
-        borderTop: '1px solid #333',
-        fontSize: '12px',
-        color: '#AAAAAA'
-    },
+    container: { minHeight: '100vh', display: 'flex', flexDirection: 'column' as const, backgroundColor: '#121212', color: '#FFF' },
+    header: { padding: '20px', textAlign: 'center' as const, borderBottom: '1px solid #333', position: 'relative' as const },
+    title: { margin: 0, fontSize: '24px' },
+    logoutButton: { position: 'absolute' as const, right: '20px', top: '50%', transform: 'translateY(-50%)', padding: '6px 14px', fontSize: '14px', borderRadius: '6px', border: 'none', cursor: 'pointer', backgroundColor: '#333333', color: '#FFF', fontWeight: 500 },
+    main: { flex: 1, display: 'flex', padding: '20px', gap: '20px' },
+    footer: { padding: '12px', textAlign: 'center' as const, borderTop: '1px solid #333', fontSize: '12px', color: '#AAAAAA' },
 }
