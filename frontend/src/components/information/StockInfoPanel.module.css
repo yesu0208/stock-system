@@ -1,0 +1,37 @@
+.container {
+    padding: 12px 16px;
+    background-color: #1A1A1A;
+    border-radius: 8px;
+    color: #FFF;
+}
+
+.title {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.notice {
+    font-size: 13px;
+    color: #888;
+}
+
+.grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+.label {
+    color: #AAA;
+}
+
+.value {
+    color: #FFF;
+}

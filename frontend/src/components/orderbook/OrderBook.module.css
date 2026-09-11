@@ -1,0 +1,79 @@
+.wrapper {
+    padding: 16px;
+    background-color: #1A1A1A;
+    border-radius: 8px;
+    width: 350px;
+    height: 870px;
+    min-height: 870px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    width: 300px;
+    background-color: #121212;
+    border-radius: 8px;
+    padding: 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.stockName {
+    color: #FFF;
+    margin: 0;
+}
+
+.priceInfo {
+    display: flex;
+    gap: 8px;
+    font-size: 16px;
+    margin-top: 4px;
+}
+
+.latestPrice {
+    font-weight: bold;
+    color: #FFF;
+}
+
+.change {
+    font-weight: bold;
+}
+
+.changeUp {
+    color: #FF6347;
+}
+
+.changeDown {
+    color: #4F9DFF;
+}
+
+.changeFlat {
+    color: #FFF;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    color: #FFF;
+    margin-top: 4px;
+}
+
+.loading {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 14px;
+    text-align: center;
+    padding: 0 12px;
+}

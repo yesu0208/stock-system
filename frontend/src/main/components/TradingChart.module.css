@@ -1,0 +1,211 @@
+.wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 2px;
+}
+
+.headerTitle {
+    color: #d1d5db;
+    font-size: 15px;
+    font-weight: bold;
+    white-space: nowrap;
+
+    padding-left: 5px;
+}
+
+.maLegend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    user-select: none;
+    margin-left: auto;
+}
+
+.maLegendLabel {
+    color: #d1d5db;
+}
+
+.headerButtons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btnBase {
+    padding: 4px 8px;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btnInactive {
+    background: #374151;
+}
+
+.btnActive {
+    background: #2563eb;
+}
+
+.btnAvgActive {
+    background: #22c55e;
+}
+
+.chartArea {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
+.chartContainer {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.extremeMax {
+    position: absolute;
+    color: #FF6347;
+    font-size: 10px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 20;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.extremeMin {
+    position: absolute;
+    color: #4F9DFF;
+    font-size: 10px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 20;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.extremeTime {
+    font-size: 10px;
+    color: #d1d5db;
+    font-weight: normal;
+}
+
+.tooltip {
+    position: fixed;
+    background: rgba(17, 24, 39, 0.5);
+    color: white;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 9999;
+    white-space: nowrap;
+    min-width: 220px;
+
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tooltipTime {
+    color: #9ca3af;
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+.tooltipDivider {
+    border-top: 1px solid #374151;
+    margin-bottom: 6px;
+}
+
+.tooltipRows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tooltipRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.tooltipLabel {
+    display: inline-block;
+    width: 28px;
+}
+
+.tooltipVolumeLeft {
+    display: flex;
+    flex: 1;
+    align-items: center;
+}
+
+.tooltipVolumeLabel {
+    display: inline-block;
+    width: 40px;
+}
+
+.tooltipVolumeValue {
+    color: #ffffff;
+    margin-left: auto;
+}
+
+.tooltipMaSection {
+    border-top: 1px solid #374151;
+    margin-top: 6px;
+    padding-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tooltipMaLabel {
+    display: inline-block;
+    width: 50px;
+}
+
+.unsupportedOverlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.unsupportedMsg {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8d929b;
+    text-align: center;
+    line-height: 1.7;
+}
+
+.wrapperUnsupported {
+    border: 1px solid #2e3138;
+    border-radius: 10px;
+}

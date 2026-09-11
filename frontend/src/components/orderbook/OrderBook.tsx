@@ -1,6 +1,7 @@
 import AskList from './AskList'
 import BidList from './BidList'
 import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
+import styles from './OrderBook.module.css'
 
 interface PriceLevel {
     price: number
@@ -14,6 +15,7 @@ interface OrderBookProps {
     tradeTicks?: TradePriceTickMessage[]
     prevClosePrice?: number
     isReady: boolean
+    isRealtimeSupported?: boolean
 }
 
 export default function OrderBook({
@@ -23,6 +25,7 @@ export default function OrderBook({
                                       tradeTicks = [],
                                       prevClosePrice = 0,
                                       isReady,
+                                      isRealtimeSupported = true,
                                   }: OrderBookProps) {
 
     const totalAsk = asks.reduce((sum, a) => sum + a.quantity, 0)
@@ -32,8 +35,8 @@ export default function OrderBook({
     const change = latestPrice - prevClosePrice
     const changePercent = prevClosePrice ? (change / prevClosePrice) * 100 : 0
 
-    const changeColor =
-        change > 0 ? '#FF6347' : change < 0 ? '#4F9DFF' : '#FFF'
+    const changeClass =
+        change > 0 ? styles.changeUp : change < 0 ? styles.changeDown : styles.changeFlat
 
     const maxQty = Math.max(
         1,
@@ -42,23 +45,28 @@ export default function OrderBook({
     )
 
     return (
-        <div style={styles.wrapper}>
-            {!isReady ? (
-                <div style={styles.loading}>
+        <div className={styles.wrapper}>
+            {/* 실시간 미지원 종목이면 무한 로딩 대신 명확한 안내 */}
+            {!isRealtimeSupported ? (
+                <div className={styles.loading}>
+                    실시간 미지원 종목입니다. 호가창을 제공하지 않습니다.
+                </div>
+            ) : !isReady ? (
+                <div className={styles.loading}>
                     호가창 생성중...
                 </div>
             ) : (
-                <div style={styles.container}>
-                    <div style={styles.header}>
-                        <h2 style={styles.stockName}>{stockName}</h2>
-                        <div style={styles.priceInfo}>
-                            <span style={styles.latestPrice}>
-                                {latestPrice.toLocaleString()}
-                            </span>
-                            <span style={{ ...styles.change, color: changeColor }}>
-                                {change > 0 ? '+' : ''}
+                <div className={styles.container}>
+                    <div className={styles.header}>
+                        <h2 className={styles.stockName}>{stockName}</h2>
+                        <div className={styles.priceInfo}>
+                        <span className={styles.latestPrice}>
+                            {latestPrice.toLocaleString()}
+                        </span>
+                            <span className={`${styles.change} ${changeClass}`}>
+                            {change > 0 ? '+' : ''}
                                 {change.toLocaleString()} ({changePercent.toFixed(2)}%)
-                            </span>
+                        </span>
                         </div>
                     </div>
 
@@ -76,7 +84,7 @@ export default function OrderBook({
                         maxQty={maxQty}
                     />
 
-                    <div style={styles.footer}>
+                    <div className={styles.footer}>
                         <span>{totalAsk}</span>
                         <span>총 잔량</span>
                         <span>{totalBid}</span>
@@ -86,63 +94,3 @@ export default function OrderBook({
         </div>
     )
 }
-
-const styles = {
-    wrapper: {
-        padding: '16px',
-        backgroundColor: '#1A1A1A',
-        borderRadius: '8px',
-        width: '350px',
-        height: '870px',
-        minHeight: '870px',
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    container: {
-        width: '300px',
-        backgroundColor: '#121212',
-        borderRadius: '8px',
-        padding: '8px',
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    header: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        marginBottom: '8px',
-    },
-    stockName: {
-        color: '#FFF',
-        margin: 0,
-    },
-    priceInfo: {
-        display: 'flex',
-        gap: '8px',
-        fontSize: '16px',
-        marginTop: '4px',
-    },
-    latestPrice: {
-        fontWeight: 'bold',
-        color: '#FFF',
-    },
-    change: {
-        fontWeight: 'bold',
-    },
-    footer: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        color: '#FFF',
-        marginTop: '4px',
-    },
-    loading: {
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#888',
-        fontSize: '14px',
-    },
-} as const

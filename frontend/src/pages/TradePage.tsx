@@ -4,6 +4,11 @@ import TradePanel from '../components/trade/TradePanel'
 import AccountInfoPanel from '../components/information/AccountInfoPanel.tsx'
 import type { StockSummaryTickMessage } from '../types/stockSummary'
 import StockSummaryPanel from '../components/information/StockSummaryPanel.tsx'
+import StockInfoPanel from '../components/information/StockInfoPanel'
+import TradingChart from '../main/components/TradingChart'
+import { isRealtimeStock } from '../utils/stockUtils'
+import { useStock } from '../main/context/StockContext'
+import { STOCKS as FULL_STOCKS } from '../main/data/stocks'
 import { motion } from 'framer-motion'
 import styles from './TradePage.module.css'
 
@@ -83,6 +88,7 @@ export default function TradePage() {
      */
     const { subscribeDestination } = useRealtime()
     const { account: accountInfo } = useAccount()
+    const { setSelectedStock: setGlobalSelectedStock } = useStock()
 
     const [userInfo, setUserInfo] = useState<import('../types/user.ts').UserDto | null>(null)
 
@@ -187,7 +193,13 @@ export default function TradePage() {
                         className={styles.select}
                         value={selectedStock}
                         onChange={(e) => {
-                            setSelectedStock(e.target.value)
+                            const code = e.target.value
+                            setSelectedStock(code)
+
+                            // 전체 카탈로그에서 찾아 StockContext에도 반영 (TradingChart가 이 Context를 구독)
+                            const full = FULL_STOCKS.find(s => s.code === code)
+                            if (full) setGlobalSelectedStock(full)
+
                             setAsks([])
                             setBids([])
                             setTradeTicks([])
@@ -212,14 +224,27 @@ export default function TradePage() {
                     tradeTicks={tradeTicks}
                     prevClosePrice={prevClosePrice}
                     isReady={isOrderBookReady}
+                    isRealtimeSupported={isRealtimeStock(selectedStock)}
                 />
             </motion.div>
 
             <motion.div
-                className={styles.tradePanelWrapper}
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.5, delay: 0.2}}
+                style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '480px' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+            >
+                <StockInfoPanel stockCode={selectedStock} stockName={stockName} />
+                <div style={{ height: '420px' }}>
+                    <TradingChart />
+                </div>
+            </motion.div>
+
+            <motion.div
+                style={{ flex: 1, minWidth: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
             >
                 <TradePanel
                     stockCode={selectedStock}
