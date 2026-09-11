@@ -4,6 +4,7 @@ import TradePanel from '../components/trade/TradePanel'
 import AccountInfoPanel from '../components/information/AccountInfoPanel.tsx'
 import type { StockSummaryTickMessage } from '../types/stockSummary'
 import type { OtocoResponseMessage, OtocoResultResponse, OtocoCancelResultResponse } from '../types/otoco'
+import type { TrailingStopResponseMessage, TrailingStopResultResponse, TrailingStopCancelResultResponse } from '../types/trailingStop'
 import StockSummaryPanel from '../components/information/StockSummaryPanel.tsx'
 import StockInfoPanel from '../components/information/StockInfoPanel'
 import TradingChart from '../main/components/TradingChart'
@@ -78,6 +79,10 @@ export default function TradePage() {
     const [otocoOrders, setOtocoOrders] = useState<OtocoResponseMessage[]>([])
     const [otocoResult, setOtocoResult] = useState<OtocoResultResponse | null>(null)
     const [otocoCancelResult, setOtocoCancelResult] = useState<OtocoCancelResultResponse | null>(null)
+
+    const [trailingStops, setTrailingStops] = useState<TrailingStopResponseMessage[]>([])
+    const [trailingStopResult, setTrailingStopResult] = useState<TrailingStopResultResponse | null>(null)
+    const [trailingStopCancelResult, setTrailingStopCancelResult] = useState<TrailingStopCancelResultResponse | null>(null)
 
     /*
      * - userInfo는 UserContext 도입 이전까지 임시로 이 화면에서 직접
@@ -172,6 +177,25 @@ export default function TradePage() {
             setOtocoCancelResult(data)
         })
 
+        const unsubTrailingResult = subscribeDestination('/user/sub/trailing-stop/result', (data: TrailingStopResultResponse) => {
+            setTrailingStopResult(data)
+        })
+
+        const unsubTrailingList = subscribeDestination('/user/sub/trailing-stop', (data: TrailingStopResponseMessage[]) => {
+            setTrailingStops(data)
+        })
+
+        // 단건 갱신(감시가가 시세를 따라 움직임) -> 목록에서 해당 id만 upsert
+        const unsubTrailingUpdate = subscribeDestination('/user/sub/trailing-stop/update', (data: TrailingStopResponseMessage) => {
+            setTrailingStops(prev =>
+                prev.map(t => (t.trailingStopId === data.trailingStopId ? data : t))
+            )
+        })
+
+        const unsubTrailingCancelResult = subscribeDestination('/user/sub/trailing-stop/cancel', (data: TrailingStopCancelResultResponse) => {
+            setTrailingStopCancelResult(data)
+        })
+
         return () => {
             unsubStock()
             unsubOrderResult()
@@ -186,6 +210,10 @@ export default function TradePage() {
             unsubOtocoResult()
             unsubOtocoList()
             unsubOtocoCancelResult()
+            unsubTrailingResult()
+            unsubTrailingList()
+            unsubTrailingUpdate()
+            unsubTrailingCancelResult()
         }
     }, [selectedStock, subscribeDestination])
 
@@ -283,6 +311,9 @@ export default function TradePage() {
                     otocoOrders={otocoOrders}
                     otocoResult={otocoResult}
                     otocoCancelResult={otocoCancelResult}
+                    trailingStops={trailingStops}
+                    trailingStopResult={trailingStopResult}
+                    trailingStopCancelResult={trailingStopCancelResult}
                 />
             </motion.div>
 

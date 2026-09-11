@@ -15,6 +15,8 @@ import type {
     AutoOrderResponse
 } from '../../types/autoOrder'
 import type {AutoCancelResultResponse} from "../../types/autoCancel.ts";
+import TrailingStopPanel from '../../main/components/TrailingStopPanel'
+import type { TrailingStopResponseMessage, TrailingStopResultResponse, TrailingStopCancelResultResponse } from '../../types/trailingStop'
 import api from '../../lib/api' // axios instance
 import OtocoPanel from '../../main/components/OtocoPanel'
 import type { OtocoResponseMessage, OtocoResultResponse, OtocoCancelResultResponse } from '../../types/otoco'
@@ -37,9 +39,12 @@ interface Props {
     otocoOrders: OtocoResponseMessage[]
     otocoResult: OtocoResultResponse | null
     otocoCancelResult: OtocoCancelResultResponse | null
+    trailingStops: TrailingStopResponseMessage[]
+    trailingStopResult: TrailingStopResultResponse | null
+    trailingStopCancelResult: TrailingStopCancelResultResponse | null
 }
 
-type TabType = 'ORDER' | 'AUTO' | 'OTOCO' | 'ACCOUNT'
+type TabType = 'ORDER' | 'AUTO' | 'OTOCO' | 'TRAILING' | 'ACCOUNT'
 
 type ToastPayload = {
     responseType: 'SUCCESS' | 'ERROR'
@@ -62,6 +67,9 @@ export default function TradePanel({
                                        otocoOrders,
                                        otocoResult,
                                        otocoCancelResult,
+                                       trailingStops,
+                                       trailingStopResult,
+                                       trailingStopCancelResult,
                                    }: Props) {
     const [orderQuantity, setOrderQuantity] = useState<number>(1)
 
@@ -1167,6 +1175,15 @@ export default function TradePanel({
                     >
                         OTOCO
                     </button>
+                    <button
+                        onClick={() => setActiveTab('TRAILING')}
+                        style={{
+                            ...styles.tab,
+                            ...(activeTab === 'TRAILING' ? styles.activeTab : {}),
+                        }}
+                    >
+                        트레일링 스탑
+                    </button>
                 </div>
 
                 <div style={{ marginLeft: 'auto' }}>
@@ -1522,6 +1539,19 @@ export default function TradePanel({
                                 otocoOrders={otocoOrders}
                                 otocoResult={otocoResult}
                                 otocoCancelResult={otocoCancelResult}
+                            />
+                        )}
+
+                        {/* ===== 트레일링 스탑 탭 ===== */}
+                        {activeTab === 'TRAILING' && (
+                            <TrailingStopPanel
+                                stockCode={stockCode}
+                                stockName={stockName}
+                                curPrice={curPrice}
+                                leverageRatio={orderLeverageRatio}
+                                trailingStops={trailingStops}
+                                trailingStopResult={trailingStopResult}
+                                trailingStopCancelResult={trailingStopCancelResult}
                             />
                         )}
 
