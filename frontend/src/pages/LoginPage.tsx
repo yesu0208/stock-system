@@ -1,45 +1,30 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { tokenStorage } from '../utils/token'
 import { login } from '../api/auth'
-import { getStockClient, getOrderClient } from '../api/stompClient'
 import Modal from '../components/Modal'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function LoginPage() {
-    const navigate = useNavigate()
+interface Props {
+    onLoginSuccess: () => void
+    onNavigateToSignup: () => void
+}
+
+export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props) {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [errorModal, setErrorModal] = useState(false)
 
-    // STOMP 연결 함수
-    const connectStomp = () => {
-        const stockClient = getStockClient()
-        stockClient.onConnect = () => {
-            console.log('STOCK connected')
-            stockClient.subscribe('/topic/stock-updates', (msg) => {
-                console.log('Stock update:', JSON.parse(msg.body))
-            })
-        }
-        stockClient.activate()
-
-        const orderClient = getOrderClient()
-        orderClient.onConnect = () => {
-            console.log('ORDER connected')
-            orderClient.subscribe('/user/queue/orders', (msg) => {
-                console.log('My order update:', JSON.parse(msg.body))
-            })
-        }
-        orderClient.activate()
-    }
-
-    // 자동 로그인: 기존 토큰 있으면 바로 TradePage
+    // 자동 로그인: 기존 토큰 있으면 바로 메인 화면
+    // 여기 있던 connectStomp() 호출 제거.
+    // 원래 /topic/stock-updates, /user/queue/orders 같은 실제로는
+    // 어디서도 쓰이지 않는 디버그용 토픽을 구독하던 죽은 코드였고,
+    // 지금은 App.tsx에서 로그인 상태가 되면 RealtimeProvider가
+    // STOMP 연결을 알아서 소유함.
     useEffect(() => {
         const token = tokenStorage.get()
         if (token) {
-            connectStomp()
-            navigate('/trade', { replace: true })
+            onLoginSuccess()
         }
     }, [])
 
@@ -47,11 +32,10 @@ export default function LoginPage() {
         if (!username || !password) return setErrorModal(true)
         try {
             await login({ username, password })
-            connectStomp()
-            navigate('/trade', { replace: true })
+            onLoginSuccess()
         } catch (error) {
-                console.error('Login failed:', error)
-                setErrorModal(true)
+            console.error('Login failed:', error)
+            setErrorModal(true)
         }
     }
 
@@ -69,7 +53,8 @@ export default function LoginPage() {
                 <input style={styles.input} type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)} />
                 <button style={styles.button} onClick={handleLogin}>로그인</button>
                 <p style={styles.signupText}>
-                    계정이 없으신가요? <Link to="/signup" style={styles.signupLink}>회원가입</Link>
+                    계정이 없으신가요?{' '}
+                    <button style={styles.signupLink} onClick={onNavigateToSignup}>회원가입</button>
                 </p>
 
                 <AnimatePresence>
@@ -97,5 +82,13 @@ const styles = {
     input: { padding: '12px', fontSize: '14px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#2A2A2A', color: '#FFF' },
     button: { padding: '12px', fontSize: '15px', borderRadius: '6px', border: 'none', cursor: 'pointer', backgroundColor: '#4F9DFF', color: '#FFF', fontWeight: 500 },
     signupText: { textAlign: 'center' as const, fontSize: '13px', color: '#AAA' },
-    signupLink: { color: '#4F9DFF', textDecoration: 'none' },
+    signupLink: {
+        color: '#4F9DFF',
+        textDecoration: 'none',
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        font: 'inherit',
+        cursor: 'pointer',
+    },
 }
