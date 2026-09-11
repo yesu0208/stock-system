@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../components/Modal'
 import { logout } from '../api/auth'
 import { disconnectStomp } from '../api/stompClient'
+import NoticeModal from '../main/components/NoticeModal'
 import styles from './MainLayout.module.css'
 
 interface Props {
@@ -15,6 +16,7 @@ type LogoutReason = 'manual' | 'expired' | null
 
 export default function MainLayout({ children, onLoggedOut }: Props) {
     const [logoutReason, setLogoutReason] = useState<LogoutReason>(null)
+    const [showNoticeModal, setShowNoticeModal] = useState(false)
 
     const handleLogout = async () => {
         try {
@@ -48,6 +50,7 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
         <div className={styles.container}>
             <header className={styles.header}>
                 <h1 className={styles.title}>모의투자 서비스</h1>
+                <button className={styles.noticeButton} onClick={() => setShowNoticeModal(true)}>공지사항</button>
                 <button className={styles.logoutButton} onClick={handleLogout}>로그아웃</button>
             </header>
 
@@ -76,6 +79,8 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
                     </div>
                 </Modal>
             )}
+
+            <NoticeModal show={showNoticeModal} onClose={() => setShowNoticeModal(false)} />
         </div>
     )
 }
