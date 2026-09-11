@@ -12,6 +12,11 @@
     margin-bottom: 8px;
 }
 
+.buttonGroup {
+    display: flex;
+    gap: 4px;
+}
+
 .title {
     font-size: 14px;
     font-weight: bold;
