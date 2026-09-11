@@ -1539,6 +1539,25 @@ export default function TradePanel({
                                         <button onClick={() => setOrderQuantity(q => q + 1)} style={styles.smallButton}>+</button>
                                     </div>
 
+                                    {/* 레버리지 배율 선택 */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ color: '#AAA', minWidth: '40px', textAlign: 'center' }}>레버리지</span>
+                                        {(['SPOT', 'X1_5', 'X2', 'X2_5'] as const).map(ratio => (
+                                            <button
+                                                key={ratio}
+                                                onClick={() => setOrderLeverageRatio(ratio)}
+                                                style={{
+                                                    ...styles.percentButton,
+                                                    ...(orderLeverageRatio === ratio
+                                                        ? { backgroundColor: '#4F9DFF', borderColor: '#4F9DFF' }
+                                                        : {}),
+                                                }}
+                                            >
+                                                {ratio === 'SPOT' ? '없음' : `${ratio.replace('X', '').replace('_', '.')}배`}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     {/* 매도/매수 버튼 */}
                                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '8px' }}>
                                         <button onClick={() => handleOrderClick('SELL')} style={styles.button}>매도</button>
