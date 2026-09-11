@@ -13,6 +13,8 @@ interface RealtimeContextValue {
     subscribeDestination: (destination: string, onMessage: (body: any) => void) => () => void
     /** /sub/stock/{code} 전용 편의 함수 */
     subscribeStock: (code: string, onTick: (tick: StockTickMessage) => void) => () => void
+    /** 클라이언트 -> 서버로 STOMP 메시지를 보낸다 (예: 종목톡 입장/퇴장/전송) */
+    publish: (destination: string, body: unknown) => void
     connected: boolean
 }
 
@@ -81,8 +83,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         [subscribeDestination]
     )
 
+    const publish = useCallback((destination: string, body: unknown) => {
+        const client = getStockClient()
+        if (!client.connected) return
+        client.publish({ destination, body: JSON.stringify(body ?? {}) })
+    }, [])
+
     return (
-        <RealtimeContext.Provider value={{ subscribeDestination, subscribeStock, connected }}>
+        <RealtimeContext.Provider value={{ subscribeDestination, subscribeStock, publish, connected }}>
             {children}
         </RealtimeContext.Provider>
     )

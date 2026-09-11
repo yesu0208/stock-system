@@ -5,6 +5,7 @@ import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
 import AlertModal from '../../main/components/AlertModal'
 import WatchListModal from '../../main/components/WatchListModal'
 import DiscussionModal from '../../main/components/DiscussionModal'
+import StockTalkModal from '../../main/components/StockTalkModal'
 import { useWatchList } from '../../main/context/WatchListContext'
 import styles from './StockInfoPanel.module.css'
 
@@ -19,6 +20,7 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
     const [showAlertModal, setShowAlertModal] = useState(false)
     const [showWatchListModal, setShowWatchListModal] = useState(false)
     const [showDiscussionModal, setShowDiscussionModal] = useState(false)
+    const [showStockTalkModal, setShowStockTalkModal] = useState(false)
 
     const { isWatched, addStock, removeStock } = useWatchList()
     const watched = isWatched(stockCode)
@@ -49,6 +51,7 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
                         <button onClick={() => setShowWatchListModal(true)} className={styles.alertButton}>목록</button>
                         <button onClick={() => setShowAlertModal(true)} className={styles.alertButton}>🔔 알림</button>
                         <button onClick={() => setShowDiscussionModal(true)} className={styles.alertButton}>💬 토론</button>
+                        <button onClick={() => setShowStockTalkModal(true)} className={styles.alertButton}>💭 종목톡</button>
                     </div>
                 </div>
                 <div className={styles.notice}>실시간 미지원 종목입니다.</div>
@@ -65,6 +68,12 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
                 <DiscussionModal
                     show={showDiscussionModal}
                     onClose={() => setShowDiscussionModal(false)}
+                    stockCode={stockCode}
+                    stockName={stockName}
+                />
+                <StockTalkModal
+                    show={showStockTalkModal}
+                    onClose={() => setShowStockTalkModal(false)}
                     stockCode={stockCode}
                     stockName={stockName}
                 />
@@ -85,6 +94,7 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
                     <button onClick={() => setShowWatchListModal(true)} className={styles.alertButton}>목록</button>
                     <button onClick={() => setShowAlertModal(true)} className={styles.alertButton}>🔔 알림</button>
                     <button onClick={() => setShowDiscussionModal(true)} className={styles.alertButton}>💬 토론</button>
+                    <button onClick={() => setShowStockTalkModal(true)} className={styles.alertButton}>💭 종목톡</button>
                 </div>
             </div>
             {!stats ? (
@@ -112,6 +122,12 @@ export default function StockInfoPanel({ stockCode, stockName }: Props) {
             <DiscussionModal
                 show={showDiscussionModal}
                 onClose={() => setShowDiscussionModal(false)}
+                stockCode={stockCode}
+                stockName={stockName}
+            />
+            <StockTalkModal
+                show={showStockTalkModal}
+                onClose={() => setShowStockTalkModal(false)}
                 stockCode={stockCode}
                 stockName={stockName}
             />
