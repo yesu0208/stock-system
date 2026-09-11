@@ -1,8 +1,4 @@
-export interface CursorPage<T> {
-    items: T[]
-    nextCursor: number | null
-    hasNext: boolean
-}
+export type { CursorPage } from './cursorPage'
 
 export type ReactionType = 'LIKE' | 'DISLIKE'
 
