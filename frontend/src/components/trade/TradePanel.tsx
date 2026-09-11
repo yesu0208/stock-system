@@ -1570,6 +1570,19 @@ export default function TradePanel({
                                         ))}
                                     </div>
 
+                                    {orderLeverageRatio !== 'SPOT' && (
+                                        <div style={{ fontSize: '11px', color: '#888', textAlign: 'center', maxWidth: '260px' }}>
+                                            {(() => {
+                                                const myPosition = accountInfo?.leveragePositions?.find(
+                                                    p => p.stockCode === stockCode && p.leverageRatio === orderLeverageRatio
+                                                )
+                                                return myPosition
+                                                    ? `보유 중: ${myPosition.availableQuantity}주 (매도 가능)`
+                                                    : '매도 시 동일 배율의 보유 포지션이 필요합니다.'
+                                            })()}
+                                        </div>
+                                    )}
+
                                     {/* 매도/매수 버튼 */}
                                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '8px' }}>
                                         <button onClick={() => handleOrderClick('SELL')} style={styles.button}>매도</button>
