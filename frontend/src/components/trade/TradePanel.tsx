@@ -16,6 +16,8 @@ import type {
 } from '../../types/autoOrder'
 import type {AutoCancelResultResponse} from "../../types/autoCancel.ts";
 import api from '../../lib/api' // axios instance
+import OtocoPanel from '../../main/components/OtocoPanel'
+import type { OtocoResponseMessage, OtocoResultResponse, OtocoCancelResultResponse } from '../../types/otoco'
 import Modal from '../Modal.tsx'
 import {tokenStorage} from "../../utils/token.ts";
 
@@ -32,9 +34,12 @@ interface Props {
     autoOrderResult: AutoOrderResultResponse | null
     accountInfo: AccountResponse | null
     autoCancelResult: AutoCancelResultResponse | null
+    otocoOrders: OtocoResponseMessage[]
+    otocoResult: OtocoResultResponse | null
+    otocoCancelResult: OtocoCancelResultResponse | null
 }
 
-type TabType = 'ORDER' | 'AUTO' | 'ACCOUNT'
+type TabType = 'ORDER' | 'AUTO' | 'OTOCO' | 'ACCOUNT'
 
 type ToastPayload = {
     responseType: 'SUCCESS' | 'ERROR'
@@ -54,6 +59,9 @@ export default function TradePanel({
                                        autoOrderResult,
                                        autoCancelResult,
                                        accountInfo,
+                                       otocoOrders,
+                                       otocoResult,
+                                       otocoCancelResult,
                                    }: Props) {
     const [orderQuantity, setOrderQuantity] = useState<number>(1)
 
@@ -1150,6 +1158,15 @@ export default function TradePanel({
                     >
                         자동주문
                     </button>
+                    <button
+                        onClick={() => setActiveTab('OTOCO')}
+                        style={{
+                            ...styles.tab,
+                            ...(activeTab === 'OTOCO' ? styles.activeTab : {}),
+                        }}
+                    >
+                        OTOCO
+                    </button>
                 </div>
 
                 <div style={{ marginLeft: 'auto' }}>
@@ -1495,6 +1512,19 @@ export default function TradePanel({
                     <div style={styles.loading}>주문 시스템 생성중...</div>
                 ) : (
                     <>
+                        {/* ===== OTOCO 탭 ===== */}
+                        {activeTab === 'OTOCO' && (
+                            <OtocoPanel
+                                stockCode={stockCode}
+                                stockName={stockName}
+                                curPrice={curPrice}
+                                leverageRatio={orderLeverageRatio}
+                                otocoOrders={otocoOrders}
+                                otocoResult={otocoResult}
+                                otocoCancelResult={otocoCancelResult}
+                            />
+                        )}
+
                         {/* ===== 주문 탭 ===== */}
                         {activeTab === 'ORDER' && (
                             <>
