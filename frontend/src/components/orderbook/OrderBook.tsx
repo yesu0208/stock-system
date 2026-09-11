@@ -14,6 +14,7 @@ interface OrderBookProps {
     tradeTicks?: TradePriceTickMessage[]
     prevClosePrice?: number
     isReady: boolean
+    isRealtimeSupported?: boolean
 }
 
 export default function OrderBook({
@@ -23,6 +24,7 @@ export default function OrderBook({
                                       tradeTicks = [],
                                       prevClosePrice = 0,
                                       isReady,
+                                      isRealtimeSupported = true,
                                   }: OrderBookProps) {
 
     const totalAsk = asks.reduce((sum, a) => sum + a.quantity, 0)
@@ -43,7 +45,12 @@ export default function OrderBook({
 
     return (
         <div style={styles.wrapper}>
-            {!isReady ? (
+            {/* 실시간 미지원 종목이면 무한 로딩 대신 명확한 안내 */}
+            {!isRealtimeSupported ? (
+                <div style={styles.loading}>
+                    실시간 미지원 종목입니다. 호가창을 제공하지 않습니다.
+                </div>
+            ) : !isReady ? (
                 <div style={styles.loading}>
                     호가창 생성중...
                 </div>
@@ -108,41 +115,11 @@ const styles = {
         display: 'flex',
         flexDirection: 'column',
     },
-    header: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        marginBottom: '8px',
-    },
-    stockName: {
-        color: '#FFF',
-        margin: 0,
-    },
-    priceInfo: {
-        display: 'flex',
-        gap: '8px',
-        fontSize: '16px',
-        marginTop: '4px',
-    },
-    latestPrice: {
-        fontWeight: 'bold',
-        color: '#FFF',
-    },
-    change: {
-        fontWeight: 'bold',
-    },
-    footer: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        color: '#FFF',
-        marginTop: '4px',
-    },
-    loading: {
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#888',
-        fontSize: '14px',
-    },
+    header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '8px' },
+    stockName: { color: '#FFF', margin: 0 },
+    priceInfo: { display: 'flex', gap: '8px', fontSize: '16px', marginTop: '4px' },
+    latestPrice: { fontWeight: 'bold', color: '#FFF' },
+    change: { fontWeight: 'bold' },
+    footer: { display: 'flex', justifyContent: 'space-between', color: '#FFF', marginTop: '4px' },
+    loading: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: '14px', textAlign: 'center' as const, padding: '0 12px' },
 } as const
