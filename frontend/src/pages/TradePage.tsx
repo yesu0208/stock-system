@@ -3,6 +3,7 @@ import OrderBook from '../components/orderbook/OrderBook'
 import TradePanel from '../components/trade/TradePanel'
 import AccountInfoPanel from '../components/information/AccountInfoPanel.tsx'
 import type { StockSummaryTickMessage } from '../types/stockSummary'
+import type { OtocoResponseMessage, OtocoResultResponse, OtocoCancelResultResponse } from '../types/otoco'
 import StockSummaryPanel from '../components/information/StockSummaryPanel.tsx'
 import StockInfoPanel from '../components/information/StockInfoPanel'
 import TradingChart from '../main/components/TradingChart'
@@ -73,6 +74,10 @@ export default function TradePage() {
 
     const [autoOrders, setAutoOrders] =
         useState<AutoOrderResponseMessage[]>([])
+
+    const [otocoOrders, setOtocoOrders] = useState<OtocoResponseMessage[]>([])
+    const [otocoResult, setOtocoResult] = useState<OtocoResultResponse | null>(null)
+    const [otocoCancelResult, setOtocoCancelResult] = useState<OtocoCancelResultResponse | null>(null)
 
     /*
      * - userInfo는 UserContext 도입 이전까지 임시로 이 화면에서 직접
@@ -155,6 +160,18 @@ export default function TradePage() {
             setAutoCancelResult(data)
         })
 
+        const unsubOtocoResult = subscribeDestination('/user/sub/otoco/result', (data: OtocoResultResponse) => {
+            setOtocoResult(data)
+        })
+
+        const unsubOtocoList = subscribeDestination('/user/sub/otoco', (data: OtocoResponseMessage[]) => {
+            setOtocoOrders(data)
+        })
+
+        const unsubOtocoCancelResult = subscribeDestination('/user/sub/otoco/cancel', (data: OtocoCancelResultResponse) => {
+            setOtocoCancelResult(data)
+        })
+
         return () => {
             unsubStock()
             unsubOrderResult()
@@ -165,6 +182,10 @@ export default function TradePage() {
             unsubAutoOrderList()
             unsubSummary()
             unsubAutoCancelResult()
+            unsubAutoCancelResult()
+            unsubOtocoResult()
+            unsubOtocoList()
+            unsubOtocoCancelResult()
         }
     }, [selectedStock, subscribeDestination])
 
@@ -259,6 +280,9 @@ export default function TradePage() {
                     autoOrderResult={autoOrderResult}
                     autoCancelResult={autoCancelResult}
                     accountInfo={accountInfo}
+                    otocoOrders={otocoOrders}
+                    otocoResult={otocoResult}
+                    otocoCancelResult={otocoCancelResult}
                 />
             </motion.div>
 
