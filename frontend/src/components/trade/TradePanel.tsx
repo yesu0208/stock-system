@@ -107,6 +107,7 @@ export default function TradePanel({
         stockName: string
         orderPrice: number
         orderQuantity: number
+        leverageRatio: 'SPOT' | 'X1_5' | 'X2' | 'X2_5'
     } | null>(null)
 
     const toastTimerRef = useRef<number | null>(null)
@@ -577,7 +578,7 @@ export default function TradePanel({
 
 
 
-    // 자동주문 버튼 클릭 시 → 모달 띄우기
+    // 주문 버튼 클릭 시 -> 모달 띄우기
     const onClickOrderButton = (type: 'BUY' | 'SELL') => {
         setConfirmOrderModal({
             type,
@@ -585,6 +586,7 @@ export default function TradePanel({
             stockName,
             orderPrice: adjustPrice(orderPrice),
             orderQuantity,
+            leverageRatio: orderLeverageRatio,
         })
     }
 
@@ -599,8 +601,13 @@ export default function TradePanel({
                 orderType: confirmOrderModal.type,
                 orderPrice: confirmOrderModal.orderPrice,
                 orderQuantity: confirmOrderModal.orderQuantity,
+                // 백엔드 OrderRequest.leverageRatioOrDefault() 규칙에 맞춰
+                // SPOT은 null로 전송 (null이면 일반 주문으로 처리됨)
+                leverageRatio:
+                    confirmOrderModal.leverageRatio === 'SPOT'
+                        ? null
+                        : confirmOrderModal.leverageRatio,
             })
-
             const data = res.data
 
             setHttpResponseModal({
@@ -619,6 +626,12 @@ export default function TradePanel({
                                 <td style={styles.modalLabel}>주문구분</td>
                                 <td>{data.orderType === 'BUY' ? '매수' : '매도'}</td>
                             </tr>
+                            {confirmOrderModal.leverageRatio !== 'SPOT' && (
+                                <tr>
+                                    <td style={styles.modalLabel}>레버리지</td>
+                                    <td>{confirmOrderModal.leverageRatio.replace('X', '').replace('_', '.')}배</td>
+                                </tr>
+                            )}
                             <tr>
                                 <td style={styles.modalLabel}>주문가격</td>
                                 <td>{data.orderPrice.toLocaleString()}원</td>
