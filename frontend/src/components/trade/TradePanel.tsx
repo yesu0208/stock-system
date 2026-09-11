@@ -58,6 +58,9 @@ export default function TradePanel({
     const [orderQuantity, setOrderQuantity] = useState<number>(1)
 
     const [orderPrice, setOrderPrice] = useState<number>(0)
+    // 레버리지 배율. 'SPOT'은 일반 주문(백엔드에는 leverageRatio: null로 전송)
+    const [orderLeverageRatio, setOrderLeverageRatio] =
+        useState<'SPOT' | 'X1_5' | 'X2' | 'X2_5'>('SPOT')
     const initializedRef = useRef(false)
     const triggerInitializedRef = useRef(false)
 
@@ -115,6 +118,11 @@ export default function TradePanel({
     useEffect(() => {
         initializedRef.current = false
         triggerInitializedRef.current = false
+    }, [stockCode])
+
+    // 종목을 바꾸면 레버리지 선택도 SPOT으로 초기화
+    useEffect(() => {
+        setOrderLeverageRatio('SPOT')
     }, [stockCode])
 
     useEffect(() => {
