@@ -16,6 +16,7 @@ import type {
 } from '../../types/autoOrder'
 import type {AutoCancelResultResponse} from "../../types/autoCancel.ts";
 import TrailingStopPanel from '../../main/components/TrailingStopPanel'
+import OrderHistoryModal from '../../main/components/OrderHistoryModal'
 import type { TrailingStopResponseMessage, TrailingStopResultResponse, TrailingStopCancelResultResponse } from '../../types/trailingStop'
 import api from '../../lib/api' // axios instance
 import OtocoPanel from '../../main/components/OtocoPanel'
@@ -86,6 +87,7 @@ export default function TradePanel({
     const [activeTab, setActiveTab] = useState<TabType>('ORDER')
     const [triggerPrice, setTriggerPrice] = useState<number>(0)
     const [loading, setLoading] = useState(false);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
 
     const orderAmount = orderPrice * orderQuantity;
 
@@ -986,6 +988,10 @@ export default function TradePanel({
                     )}
                 </Modal>
             )}
+
+            {/* 주문/체결 내역 모달 */}
+            <OrderHistoryModal show={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
+
             {/* 토스트 / 시계 + 전체 글래스 */}
             <div
                 style={{
@@ -1721,9 +1727,14 @@ export default function TradePanel({
 
                                 <div style={styles.divider} />
 
-                                <h4 style={{ color: '#AAA', marginTop: '0px', marginBottom: '8px' }}>
-                                    실시간 주문 목록
-                                </h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0px', marginBottom: '8px' }}>
+                                    <h4 style={{ color: '#AAA', margin: 0 }}>
+                                        실시간 주문 목록
+                                    </h4>
+                                    <button onClick={() => setShowHistoryModal(true)} style={styles.smallButton}>
+                                        전체 내역
+                                    </button>
+                                </div>
 
                                 {/* 주문 목록 */}
                                 <div className="ordersSection" style={styles.ordersSection}>
