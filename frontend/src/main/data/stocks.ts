@@ -1,4 +1,4 @@
-import type { StockInfo } from "../../types/stock";
+import type { StockInfo } from "../types/stock.ts";
 
 export const STOCKS: StockInfo[] = [
     { code: "005930", name: "삼성전자", realtimeSupported: true },
@@ -300,7 +300,7 @@ export const STOCKS: StockInfo[] = [
     { code: "005305", name: "롯데칠성우", realtimeSupported: false },
     { code: "005320", name: "온타이드", realtimeSupported: false },
     { code: "005360", name: "모나미", realtimeSupported: false },
-    { code: "005380", name: "현대차", realtimeSupported: false },
+    { code: "005380", name: "현대차", realtimeSupported: true },
     { code: "005385", name: "현대차우", realtimeSupported: false },
     { code: "005387", name: "현대차2우B", realtimeSupported: false },
     { code: "005389", name: "현대차3우B", realtimeSupported: false },
