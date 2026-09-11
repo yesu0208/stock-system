@@ -10,6 +10,7 @@ import StockInfoPanel from '../components/information/StockInfoPanel'
 import TradingChart from '../main/components/TradingChart'
 import { isRealtimeStock } from '../utils/stockUtils'
 import { useStock } from '../main/context/StockContext'
+import { useUser } from '../main/context/UserContext'
 import { STOCKS as FULL_STOCKS } from '../main/data/stocks'
 import { motion } from 'framer-motion'
 import styles from './TradePage.module.css'
@@ -98,23 +99,8 @@ export default function TradePage() {
      */
     const { subscribeDestination } = useRealtime()
     const { account: accountInfo } = useAccount()
+    const { user: userInfo } = useUser()
     const { setSelectedStock: setGlobalSelectedStock } = useStock()
-
-    const [userInfo, setUserInfo] = useState<import('../types/user.ts').UserDto | null>(null)
-
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const instance = (await import('../api/axios')).default
-                const res = await instance.get('/users/user')
-                setUserInfo(res.data)
-            } catch (err) {
-                console.error('유저 조회 실패:', err)
-            }
-        }
-
-        fetchUser()
-    }, [])
 
     useEffect(() => {
         const unsubStock = subscribeDestination(`/sub/stock/${selectedStock}`, (data: any) => {

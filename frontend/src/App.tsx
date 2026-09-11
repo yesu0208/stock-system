@@ -11,6 +11,7 @@ import { AccountProvider } from './main/context/AccountContext'
 import { MarketDataProvider } from './main/context/MarketDataContext'
 import { AlertProvider } from './main/context/AlertContext'
 import { WatchListProvider } from './main/context/WatchListContext'
+import { UserProvider } from './main/context/UserContext'
 import { ChartDataProvider } from './main/context/ChartDataContext'
 
 /**
@@ -46,21 +47,23 @@ export default function App() {
 
     return (
         <RealtimeProvider>
-            <StockProvider>
-                <AccountProvider>
-                    <ChartDataProvider>
-                        <MarketDataProvider>
-                            <AlertProvider>
-                                <WatchListProvider>
-                                    <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
-                                        <TradePage />
-                                    </MainLayout>
-                                </WatchListProvider>
-                            </AlertProvider>
-                        </MarketDataProvider>
-                    </ChartDataProvider>
-                </AccountProvider>
-            </StockProvider>
+            <UserProvider>
+                <StockProvider>
+                    <AccountProvider>
+                        <ChartDataProvider>
+                            <MarketDataProvider>
+                                <AlertProvider>
+                                    <WatchListProvider>
+                                        <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
+                                            <TradePage />
+                                        </MainLayout>
+                                    </WatchListProvider>
+                                </AlertProvider>
+                            </MarketDataProvider>
+                        </ChartDataProvider>
+                    </AccountProvider>
+                </StockProvider>
+        </UserProvider>
         </RealtimeProvider>
     )
 }
