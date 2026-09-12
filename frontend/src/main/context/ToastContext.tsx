@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import './Toast.css'
@@ -13,6 +13,9 @@ interface ToastItem {
 
 interface ToastContextValue {
     showToast: (message: string, variant?: ToastVariant) => void
+    isVisible: boolean
+    toggleVisible: () => void
+    toastCount: number // 알림 창이 꺼져 있는 동안 쌓인 "안 읽은" 누적 개수
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -21,36 +24,59 @@ let toastSeq = 0
 
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<ToastItem[]>([])
+    const [isVisible, setIsVisible] = useState(true)
+    const [unreadCount, setUnreadCount] = useState(0)
+
+    const isVisibleRef = useRef(isVisible)
+    isVisibleRef.current = isVisible
 
     const showToast = useCallback((message: string, variant: ToastVariant = 'info') => {
         const id = ++toastSeq
         setToasts(prev => [...prev, { id, message, variant }])
+
+        if (!isVisibleRef.current) {
+            setUnreadCount(prev => prev + 1)
+        }
 
         window.setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id))
         }, 3000)
     }, [])
 
+    const toggleVisible = useCallback(() => {
+        setIsVisible(prev => {
+            const next = !prev
+            if (next) {
+                setUnreadCount(0)
+            }
+            return next
+        })
+    }, [])
+
     return (
-        <ToastContext.Provider value={{ showToast }}>
+        <ToastContext.Provider
+            value={{ showToast, isVisible, toggleVisible, toastCount: unreadCount }}
+        >
             {children}
 
-            <div className="toast-stack">
-                <AnimatePresence>
-                    {toasts.map(t => (
-                        <motion.div
-                            key={t.id}
-                            className={`toast-item toast-${t.variant}`}
-                            initial={{ opacity: 0, y: -12, scale: 0.96 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, x: 40, transition: { duration: 0.2 } }}
-                            transition={{ duration: 0.25, ease: 'easeOut' }}
-                        >
-                            {t.message}
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
+            {isVisible && (
+                <div className="toast-stack">
+                    <AnimatePresence>
+                        {toasts.map(t => (
+                            <motion.div
+                                key={t.id}
+                                className={`toast-item toast-${t.variant}`}
+                                initial={{ opacity: 0, y: -12, scale: 0.96 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, x: 40, transition: { duration: 0.2 } }}
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                            >
+                                {t.message}
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+            )}
         </ToastContext.Provider>
     )
 }
