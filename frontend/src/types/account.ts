@@ -1,4 +1,5 @@
 export type MarginStatus = 'NORMAL' | 'MARGIN_CALL' | 'LIQUIDATION_PENDING'
+export type AccountStatus = 'NORMAL' | 'NEGATIVE' | 'SUSPENDED'
 
 export interface StockInfo {
     quantity: number
@@ -39,4 +40,5 @@ export interface AccountResponse {
     leverageLoanTotal: number | null
     leveragePositions: LeveragePositionView[]
     marginStatus: MarginStatus
+    accountStatus: AccountStatus
 }
