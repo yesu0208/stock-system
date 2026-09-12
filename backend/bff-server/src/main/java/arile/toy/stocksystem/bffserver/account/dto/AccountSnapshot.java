@@ -7,10 +7,12 @@ public record AccountSnapshot(
         Long reservedCash,
         Map<String, StockInfo> stocks,
         Map<String, LeveragePositionInfo> leveragePositions,
-        String marginStatus
+        String marginStatus,
+        String accountStatus
 ) {
     public static AccountSnapshot of(Long availableCash, Long reservedCash, Map<String, StockInfo> stocks,
-                                     Map<String, LeveragePositionInfo> leveragePositions, String marginStatus) {
-        return new AccountSnapshot(availableCash, reservedCash, stocks, leveragePositions, marginStatus);
+                                     Map<String, LeveragePositionInfo> leveragePositions, String marginStatus,
+                                     String accountStatus) {
+        return new AccountSnapshot(availableCash, reservedCash, stocks, leveragePositions, marginStatus, accountStatus);
     }
 }

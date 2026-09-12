@@ -76,7 +76,7 @@ public class AccountCalculator {
                 snapshot.reservedCash(), stockValue, buyValue, totalProfit, totalProfitRate, accumulatedProfit,
                 accumulatedProfitRate, snapshot.stocks(), profitRates, profitAmounts, currentPrices,
                 leverageResult.netValue(), leverageResult.loanTotal(), leverageResult.views(),
-                snapshot.marginStatus());
+                snapshot.marginStatus(), snapshot.accountStatus());
     }
 
     /**

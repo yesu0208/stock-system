@@ -42,7 +42,9 @@ public class AccountPullService {
         Map<String, LeveragePositionInfo> leveragePositions = getLeveragePositions(username);
         String marginStatus = getMarginStatus(username);
 
-        return AccountSnapshot.of(availableCash, reservedCash, stocks, leveragePositions, marginStatus);
+        String accountStatus = (String) accountMap.getOrDefault("accountStatus", "NORMAL");
+
+        return AccountSnapshot.of(availableCash, reservedCash, stocks, leveragePositions, marginStatus, accountStatus);
     }
 
     private Map<String, LeveragePositionInfo> getLeveragePositions(String username) {
