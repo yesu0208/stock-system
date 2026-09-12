@@ -1,0 +1,610 @@
+.signup-wrapper {
+    position: relative;
+
+    width: 100%;
+    height: 100vh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    background: #0f172a;
+
+    transition: opacity .5s ease, filter .5s ease;
+}
+
+.signup-wrapper.is-entering {
+    opacity: 0;
+    filter: blur(6px);
+}
+
+.signup-wrapper.is-exiting {
+    opacity: 0;
+    filter: blur(6px);
+    pointer-events: none;
+}
+
+.signup-box {
+    width: 320px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 32px;
+
+    transition: transform .5s cubic-bezier(.4,0,.2,1);
+}
+
+.signup-wrapper.is-exiting .signup-box {
+    transform: scale(1.04);
+}
+
+.signup-title {
+    color: white;
+    font-size: 22px;
+    font-weight: 600;
+    text-align: center;
+    margin: 0 0 8px 0;
+}
+
+.signup-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.signup-field label {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.signup-field input {
+    box-sizing: border-box;
+    height: 40px;
+    padding: 0 12px;
+
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+
+    color: white;
+    font-size: 14px;
+
+    outline: none;
+
+    transition: opacity .3s ease, border-color .2s ease;
+}
+
+.signup-field input:focus {
+    border-color: #61dafb;
+}
+
+.signup-field input.is-invalid {
+    border-color: #f87171;
+}
+
+.signup-field input.is-invalid:focus {
+    border-color: #f87171;
+}
+
+.signup-field input:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.signup-error {
+    margin: 0;
+    color: #f87171;
+    font-size: 13px;
+    text-align: center;
+    white-space: pre-line;
+
+    animation: signup-error-fade-in .3s ease .1s both;
+}
+
+@keyframes signup-error-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.signup-error-wrap {
+    overflow: hidden;
+
+    margin-top: -16px;
+    height: 0;
+
+    transition:
+            height .35s cubic-bezier(.65, 0, .35, 1),
+            margin-top .35s cubic-bezier(.65, 0, .35, 1);
+}
+
+.signup-error-wrap[data-visible="true"] {
+    margin-top: 0;
+}
+
+.signup-error-wrap__inner {
+    min-height: 0;
+}
+
+.signup-back-text {
+    margin: 0;
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+    transition: opacity .2s ease, height .2s ease, margin-top .2s ease;
+    overflow: hidden;
+}
+
+.signup-back-link {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: 4px;
+
+    color: #61dafb;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    transition: color .2s ease;
+}
+
+.signup-back-link:hover:not(:disabled) {
+    color: #7fe3ff;
+    text-decoration: underline;
+}
+
+.signup-back-link:disabled {
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+.signup-back-text[data-state="loading"],
+.signup-back-text[data-state="success"],
+.signup-back-text[data-state="exiting"],
+.signup-back-text[data-state="failure"] {
+    opacity: 0;
+    height: 0;
+    margin-top: -13px;
+    pointer-events: none;
+}
+
+.signup-submit-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.signup-submit {
+    position: relative;
+    width: 100%;
+    height: 48px;
+    margin: 0 auto;
+
+    background: linear-gradient(135deg, #61dafb, #38bdf8);
+    border: none;
+    border-radius: 10px;
+
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 600;
+
+    cursor: pointer;
+    overflow: visible;
+
+    box-shadow: 0 8px 20px -8px rgba(97, 218, 251, .5);
+    transition:
+            width .45s cubic-bezier(.65,0,.35,1),
+            border-radius .45s cubic-bezier(.65,0,.35,1),
+            background .4s ease,
+            box-shadow .4s ease;
+}
+
+.signup-submit:hover:not(:disabled) {
+    background: linear-gradient(135deg, #7fe3ff, #61dafb);
+}
+
+.signup-submit:disabled {
+    cursor: default;
+}
+
+.signup-submit[data-state="loading"],
+.signup-submit[data-state="success"],
+.signup-submit[data-state="exiting"],
+.signup-submit[data-state="failure"] {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.signup-submit[data-state="success"],
+.signup-submit[data-state="exiting"] {
+    background: linear-gradient(135deg, #34d399, #22c55e);
+    box-shadow: 0 8px 24px -6px rgba(34, 197, 94, .55);
+}
+
+.signup-submit__label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity .25s ease, transform .3s ease;
+}
+
+.signup-submit[data-state="loading"] .signup-submit__label,
+.signup-submit[data-state="success"] .signup-submit__label,
+.signup-submit[data-state="exiting"] .signup-submit__label,
+.signup-submit[data-state="failure"] .signup-submit__label {
+    opacity: 0;
+    transform: scale(.6);
+}
+
+.signup-submit__spinner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(.5);
+    transition: opacity .25s ease .1s, transform .3s ease .1s;
+}
+
+.signup-submit[data-state="loading"] .signup-submit__spinner {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.signup-submit__spinner svg {
+    width: 22px;
+    height: 22px;
+    animation: signup-spin .8s linear infinite;
+}
+
+.signup-submit__spinner-track {
+    fill: none;
+    stroke: rgba(15, 23, 42, .18);
+    stroke-width: 4;
+}
+
+.signup-submit__spinner-arc {
+    fill: none;
+    stroke: #0f172a;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 113;
+    stroke-dashoffset: 85;
+}
+
+@keyframes signup-spin {
+    to { transform: rotate(360deg); }
+}
+
+.signup-submit__check {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(.4);
+    transition: opacity .3s ease, transform .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+.signup-submit[data-state="success"] .signup-submit__check,
+.signup-submit[data-state="exiting"] .signup-submit__check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.signup-submit__check svg {
+    width: 28px;
+    height: 28px;
+}
+
+.signup-submit__check-mark {
+    fill: none;
+    stroke: white;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 27;
+    stroke-dashoffset: 27;
+    transition: stroke-dashoffset .4s ease .15s;
+}
+
+.signup-submit[data-state="success"] .signup-submit__check-mark,
+.signup-submit[data-state="exiting"] .signup-submit__check-mark {
+    stroke-dashoffset: 0;
+}
+
+.signup-status {
+    margin: 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: #94a3b8;
+
+    height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .3s ease, transform .3s ease, height .3s ease, margin-top .3s ease;
+}
+
+.signup-status[data-state="loading"],
+.signup-status[data-state="success"],
+.signup-status[data-state="exiting"],
+.signup-status[data-state="failure"] {
+    height: 16px;
+    margin-top: 10px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.signup-status[data-state="success"],
+.signup-status[data-state="exiting"] {
+    color: #34d399;
+}
+
+.signup-status[data-state="failure"] {
+    color: #f87171;
+}
+
+.signup-fields {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows .45s cubic-bezier(.65, 0, .35, 1);
+}
+
+.signup-fields[data-state="loading"],
+.signup-fields[data-state="success"],
+.signup-fields[data-state="exiting"],
+.signup-fields[data-state="failure"] {
+    grid-template-rows: 0fr;
+}
+
+.signup-fields__inner {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+
+    opacity: 1;
+    transition: opacity .2s ease;
+}
+
+.signup-fields[data-state="loading"] .signup-fields__inner,
+.signup-fields[data-state="success"] .signup-fields__inner,
+.signup-fields[data-state="exiting"] .signup-fields__inner,
+.signup-fields[data-state="failure"] .signup-fields__inner {
+    opacity: 0;
+}
+
+.signup-submit[data-state="failure"] {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    box-shadow: 0 8px 24px -6px rgba(239, 68, 68, .55);
+}
+
+.signup-submit__cross {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(.4);
+    transition: opacity .3s ease, transform .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+.signup-submit[data-state="failure"] .signup-submit__cross {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.signup-submit__cross svg {
+    width: 26px;
+    height: 26px;
+}
+
+.signup-submit__cross-line {
+    fill: none;
+    stroke: white;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 20;
+    stroke-dashoffset: 20;
+    transition: stroke-dashoffset .3s ease .15s;
+}
+
+.signup-submit[data-state="failure"] .signup-submit__cross-line--1 {
+    stroke-dashoffset: 0;
+}
+
+.signup-submit[data-state="failure"] .signup-submit__cross-line--2 {
+    stroke-dashoffset: 0;
+    transition-delay: .25s;
+}
+
+.signup-box[data-state="failure"] {
+    animation: signup-shake .4s ease;
+}
+
+@keyframes signup-shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+}
+
+.signup-field__input-wrap {
+    position: relative;
+}
+
+.signup-field__input-wrap input {
+    width: 100%;
+    padding-right: 40px;
+}
+
+.signup-field__toggle-pw {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 24px;
+    height: 24px;
+
+    background: transparent;
+    border: none;
+
+    color: #94a3b8;
+    cursor: pointer;
+
+    transition: color .2s ease;
+}
+
+.signup-field__toggle-pw:hover:not(:disabled) {
+    color: #e2e8f0;
+}
+
+.signup-field__toggle-pw:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.signup-layout {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.signup-rules-panel {
+    width: 240px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 24px 20px;
+
+    opacity: 1;
+    overflow: hidden;
+    transition:
+            opacity .2s ease,
+            width .35s cubic-bezier(.65, 0, .35, 1),
+            padding .35s cubic-bezier(.65, 0, .35, 1),
+            margin-left .35s cubic-bezier(.65, 0, .35, 1);
+}
+
+.signup-rules-panel[data-state="loading"],
+.signup-rules-panel[data-state="success"],
+.signup-rules-panel[data-state="exiting"],
+.signup-rules-panel[data-state="failure"] {
+    opacity: 0;
+    width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: calc(-20px);
+    pointer-events: none;
+}
+
+.signup-rules-panel__title {
+    margin: 0;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.signup-rules-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.signup-rules-group__label {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+.signup-rules-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.signup-rule {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 13px;
+    color: #64748b;
+
+    transition: color .2s ease;
+}
+
+.signup-rule__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.signup-rule[data-state="ok"] {
+    color: #e2e8f0;
+}
+
+.signup-rule[data-state="ok"] .signup-rule__icon {
+    color: #34d399;
+}
+
+.signup-rule[data-state="fail"] .signup-rule__icon {
+    color: #f87171;
+}
+
+.signup-rule[data-state="pending"] .signup-rule__icon {
+    color: #94a3b8;
+}
+
+.signup-rule__icon-spin {
+    animation: signup-rule-spin .8s linear infinite;
+}
+
+@keyframes signup-rule-spin {
+    to { transform: rotate(360deg); }
+}

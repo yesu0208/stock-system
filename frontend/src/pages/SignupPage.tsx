@@ -1,291 +1,447 @@
-import { useState, useEffect } from 'react'
-import AuthLayout from '../layouts/AuthLayout'
-import { signUp, checkUsernameAPI, checkNicknameAPI } from '../api/auth'
-import Modal from '../components/Modal'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { FiEye, FiEyeOff, FiCheck, FiX, FiLoader } from 'react-icons/fi'
 import axios from 'axios'
-import styles from './SignupPage.module.css'
+import './SignupPage.css'
+import LoginBackground from './LoginBackground'
+import { signUp, checkUsernameAPI, checkNicknameAPI } from '../api/auth'
 
 interface Props {
     onNavigateToLogin: () => void
 }
 
-interface ConditionProps {
-    met: boolean
-    text: string
-}
+type SignupState = 'idle' | 'loading' | 'success' | 'exiting' | 'failure'
+type AvailabilityState = 'idle' | 'checking' | 'available' | 'taken'
 
-function Condition({ met, text }: ConditionProps) {
+function SignupRuleItem({
+                            ok,
+                            pending,
+                            children,
+                        }: {
+    ok: boolean
+    pending?: boolean
+    children: React.ReactNode
+}) {
     return (
-        <li className={met ? styles.conditionMet : styles.conditionUnmet}>
-            {met ? '✔' : '✖'} {text}
+        <li className="signup-rule" data-state={pending ? 'pending' : ok ? 'ok' : 'fail'}>
+            <span className="signup-rule__icon" aria-hidden="true">
+                {pending ? (
+                    <FiLoader size={14} className="signup-rule__icon-spin" />
+                ) : ok ? (
+                    <FiCheck size={14} />
+                ) : (
+                    <FiX size={14} />
+                )}
+            </span>
+            <span>{children}</span>
         </li>
     )
 }
 
 export default function SignupPage({ onNavigateToLogin }: Props) {
-    const [username, setUsername] = useState('')
+    const [id, setId] = useState('')
     const [nickname, setNickname] = useState('')
-    const [password, setPassword] = useState('')
-    const [passwordConfirm, setPasswordConfirm] = useState('')
+    const [pw, setPw] = useState('')
+    const [pwConfirm, setPwConfirm] = useState('')
     const [error, setError] = useState('')
+    const [state, setState] = useState<SignupState>('idle')
 
-    const [showModal, setShowModal] = useState(false)
-    const [fadeOut, setFadeOut] = useState(false)
+    const [showPw, setShowPw] = useState(false)
+    const [showPwConfirm, setShowPwConfirm] = useState(false)
 
-    const openModal = () => setShowModal(true)
+    const [idInvalid, setIdInvalid] = useState(false)
+    const [nicknameInvalid, setNicknameInvalid] = useState(false)
+    const [pwInvalid, setPwInvalid] = useState(false)
+    const [pwConfirmInvalid, setPwConfirmInvalid] = useState(false)
 
-    const closeModal = () => {
-        setShowModal(false)
-        setFadeOut(true)
-    }
+    const [idAvailability, setIdAvailability] = useState<AvailabilityState>('idle')
+    const [nicknameAvailability, setNicknameAvailability] = useState<AvailabilityState>('idle')
 
-    // 페이지 fade-out 후 이동
-    // [5단계 변경] navigate('/login') → onNavigateToLogin()
+    const [isEntering, setIsEntering] = useState(true)
+
     useEffect(() => {
-        if (fadeOut) {
-            const timer = setTimeout(() => {
-                onNavigateToLogin()
-            }, 300)
-            return () => clearTimeout(timer)
+        const timer = window.setTimeout(() => setIsEntering(false), 20)
+        return () => window.clearTimeout(timer)
+    }, [])
+
+    // 에러 메시지 높이를 실측해서 부드럽게 펼쳐지도록 처리
+    const errorInnerRef = useRef<HTMLDivElement>(null)
+    const [errorWrapHeight, setErrorWrapHeight] = useState(0)
+
+    useEffect(() => {
+        if (error && errorInnerRef.current) {
+            setErrorWrapHeight(errorInnerRef.current.scrollHeight)
+        } else {
+            setErrorWrapHeight(0)
         }
-    }, [fadeOut, onNavigateToLogin])
+    }, [error])
 
-    const [usernameLength, setUsernameLength] = useState(false)
-    const [usernameChars, setUsernameChars] = useState(false)
-    const [usernameExists, setUsernameExists] = useState(false)
+    const idLengthOk = id.length >= 4 && id.length <= 20
+    const idFormatOk = /^[a-z0-9]+$/.test(id)
 
-    const [nicknameLength, setNicknameLength] = useState(false)
-    const [nicknameChars, setNicknameChars] = useState(false)
-    const [nicknameExists, setNicknameExists] = useState(false)
+    const nicknameLengthOk = nickname.length >= 2 && nickname.length <= 10
+    const nicknameFormatOk = /^[a-z0-9가-힣]+$/.test(nickname)
 
-    const [passLength, setPassLength] = useState(false)
-    const [passLower, setPassLower] = useState(false)
-    const [passNumber, setPassNumber] = useState(false)
-    const [passSpecial, setPassSpecial] = useState(false)
-    const [passwordsMatch, setPasswordsMatch] = useState(false)
+    const pwLengthOk = pw.length >= 8
+    const pwLowerOk = /[a-z]/.test(pw)
+    const pwNumberOk = /[0-9]/.test(pw)
+    const pwSpecialOk = /[!@#$%^&*]/.test(pw)
 
-    const lowerRegex = /[a-z]/
-    const numberRegex = /[0-9]/
-    const specialRegex = /[!@#$%^&*]/
-    const allowedUsernameRegex = /^[a-z0-9]+$/
-    const allowedNicknameRegex = /^[a-z0-9가-힣]+$/
+    const pwConfirmMatchOk = pwConfirm.length > 0 && pw === pwConfirm
 
-    const handleUsernameChange = (value: string) => {
-        const filtered = value.replace(/[^a-z0-9]/g, '')
-        setUsername(filtered)
-        setUsernameLength(filtered.length >= 4 && filtered.length <= 20)
-        setUsernameChars(allowedUsernameRegex.test(filtered))
-    }
-
-    const handleNicknameChange = (value: string) => {
-        const filtered = value.replace(/[^a-z0-9가-힣]/g, '')
-        setNickname(filtered)
-        setNicknameLength(filtered.length >= 2 && filtered.length <= 10)
-        setNicknameChars(allowedNicknameRegex.test(filtered))
-    }
-
-    const handlePasswordChange = (value: string) => {
-        const filtered = value.replace(/[^a-z0-9!@#$%^&*]/g, '')
-        setPassword(filtered)
-        setPassLength(filtered.length >= 8)
-        setPassLower(lowerRegex.test(filtered))
-        setPassNumber(numberRegex.test(filtered))
-        setPassSpecial(specialRegex.test(filtered))
-        setPasswordsMatch(filtered === passwordConfirm)
-    }
-
-    const handlePasswordConfirmChange = (value: string) => {
-        const filtered = value.replace(/[^a-z0-9!@#$%^&*]/g, '')
-        setPasswordConfirm(filtered)
-        setPasswordsMatch(password === filtered)
-    }
-
-    const usernameValid = usernameLength && usernameChars
-    const nicknameValid = nicknameLength && nicknameChars
-    const passwordValid = passLength && passLower && passNumber && passSpecial
-
+    // 아이디 중복 확인 — 형식이 유효할 때만 디바운스 후 실제 API 호출
     useEffect(() => {
-        if (!username || !usernameValid) {
-            setTimeout(() => setUsernameExists(false), 0)
+        if (!idLengthOk || !idFormatOk) {
+            setIdAvailability('idle')
             return
         }
 
-        const handler = setTimeout(async () => {
+        setIdAvailability('checking')
+
+        const timer = window.setTimeout(async () => {
             try {
-                const res = await checkUsernameAPI(username)
-                setUsernameExists(res.exists)
+                const res = await checkUsernameAPI(id)
+                setIdAvailability(res.exists ? 'taken' : 'available')
             } catch {
-                setUsernameExists(false)
+                setIdAvailability('idle')
             }
         }, 500)
 
-        return () => clearTimeout(handler)
-    }, [username, usernameValid])
+        return () => window.clearTimeout(timer)
+    }, [id, idLengthOk, idFormatOk])
 
+    // 닉네임 중복 확인 — 동일한 방식
     useEffect(() => {
-        if (!nickname || !nicknameValid) {
-            setTimeout(() => setNicknameExists(false), 0)
+        if (!nicknameLengthOk || !nicknameFormatOk) {
+            setNicknameAvailability('idle')
             return
         }
 
-        const handler = setTimeout(async () => {
+        setNicknameAvailability('checking')
+
+        const timer = window.setTimeout(async () => {
             try {
                 const res = await checkNicknameAPI(nickname)
-                setNicknameExists(res.exists)
+                setNicknameAvailability(res.exists ? 'taken' : 'available')
             } catch {
-                setNicknameExists(false)
+                setNicknameAvailability('idle')
             }
         }, 500)
 
-        return () => clearTimeout(handler)
-    }, [nickname, nicknameValid])
+        return () => window.clearTimeout(timer)
+    }, [nickname, nicknameLengthOk, nicknameFormatOk])
 
-    const handleSignup = async () => {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (state !== 'idle') return
+
+        const isIdEmpty = !id.trim()
+        const isNicknameEmpty = !nickname.trim()
+        const isPwEmpty = !pw.trim()
+        const isPwConfirmEmpty = !pwConfirm.trim()
+        const isPwMismatch = !isPwEmpty && !isPwConfirmEmpty && pw !== pwConfirm
+
+        setIdInvalid(isIdEmpty)
+        setNicknameInvalid(isNicknameEmpty)
+        setPwInvalid(isPwEmpty)
+        setPwConfirmInvalid(isPwConfirmEmpty || isPwMismatch)
+
+        if (isIdEmpty || isNicknameEmpty || isPwEmpty || isPwConfirmEmpty) {
+            setError('모든 항목을 입력해주세요.')
+            return
+        }
+
+        if (isPwMismatch) {
+            setError('비밀번호가 일치하지 않습니다.')
+            return
+        }
+
+        if (!idLengthOk || !idFormatOk) {
+            setIdInvalid(true)
+            setError('아이디 형식을 확인해주세요. \n(4~20자, 영어 소문자/숫자)')
+            return
+        }
+
+        if (!nicknameLengthOk || !nicknameFormatOk) {
+            setNicknameInvalid(true)
+            setError('닉네임 형식을 확인해주세요. \n(2~10자, 영어 소문자/한글/숫자)')
+            return
+        }
+
+        if (!pwLengthOk || !pwLowerOk || !pwNumberOk || !pwSpecialOk) {
+            setPwInvalid(true)
+            setError('비밀번호 조건을 확인해주세요. \n(8자 이상, 소문자/숫자/특수문자 포함)')
+            return
+        }
+
+        if (idAvailability !== 'available') {
+            setIdInvalid(true)
+            setError(
+                idAvailability === 'taken'
+                    ? '이미 사용 중인 아이디입니다.'
+                    : '아이디 중복 확인이 필요합니다.'
+            )
+            return
+        }
+
+        if (nicknameAvailability !== 'available') {
+            setNicknameInvalid(true)
+            setError(
+                nicknameAvailability === 'taken'
+                    ? '이미 사용 중인 닉네임입니다.'
+                    : '닉네임 중복 확인이 필요합니다.'
+            )
+            return
+        }
+
         setError('')
-
-        if (!username || !nickname || !password || !passwordConfirm)
-            return setError('아이디, 닉네임, 비밀번호를 입력하세요.')
-
-        if (!usernameValid)
-            return setError('아이디 조건을 확인하세요.')
-
-        if (usernameExists)
-            return setError('이미 존재하는 아이디입니다.')
-
-        if (!nicknameValid)
-            return setError('닉네임 조건을 확인하세요.')
-
-        if (nicknameExists)
-            return setError('이미 존재하는 닉네임입니다.')
-
-        if (!passwordValid)
-            return setError('비밀번호 조건을 확인하세요.')
-
-        if (!passwordsMatch)
-            return setError('비밀번호가 일치하지 않습니다.')
+        setState('loading')
 
         try {
-            await signUp({ username, nickname, password })
-            openModal()
+            const MIN_LOADING_MS = 1000 // 최소 로딩 표시 시간
+
+            await Promise.all([
+                signUp({ username: id, nickname, password: pw }),
+                new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
+            ])
+
+            setState('success')
+            window.setTimeout(() => {
+                setState('exiting')
+                window.setTimeout(onNavigateToLogin, 500)
+            }, 1200)
         } catch (err: unknown) {
+            const MIN_LOADING_MS = 1000
+            await new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS))
+
             if (axios.isAxiosError(err)) {
-                setError(
-                    err.response?.data?.message ??
-                    '회원가입 실패: 서버 오류가 발생했습니다.'
-                )
+                setError(err.response?.data?.message ?? '회원가입 실패: 서버 오류가 발생했습니다.')
             } else {
                 setError('회원가입 실패: 알 수 없는 오류가 발생했습니다.')
             }
+            setState('failure')
+
+            window.setTimeout(() => {
+                setState('idle')
+            }, 1800)
         }
     }
 
+    const statusText =
+        state === 'loading' ? '가입 처리 중'
+            : state === 'success' || state === 'exiting' ? '가입 완료'
+                : state === 'failure' ? '가입 실패'
+                    : ''
+
     return (
-        <AuthLayout>
-            <AnimatePresence>
-                {!fadeOut && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className={styles.card}
-                    >
-                        <h2 className={styles.title}>회원가입</h2>
+        <div className={`signup-wrapper${state === 'exiting' ? ' is-exiting' : ''}${isEntering ? ' is-entering' : ''}`}>
+            <LoginBackground />
 
-                        <input
-                            className={styles.input}
-                            placeholder="아이디"
-                            value={username}
-                            onChange={(e) => handleUsernameChange(e.target.value)}
-                        />
-                        <ul className={styles.conditionList}>
-                            <Condition met={usernameLength} text="4~20자" />
-                            <Condition met={usernameChars} text="영어 소문자·숫자만 사용" />
-                            <Condition
-                                met={username.length > 0 && !usernameExists}
-                                text={username.length === 0 ? '아이디 입력' : '중복되지 않은 아이디'}
-                            />
+            <div className="signup-layout">
+                <aside className="signup-rules-panel" data-state={state} aria-label="회원가입 입력 조건">
+                    <div className="signup-rules-group">
+                        <p className="signup-rules-group__label">아이디</p>
+                        <ul className="signup-rules-list">
+                            <SignupRuleItem ok={idLengthOk}>4~20자</SignupRuleItem>
+                            <SignupRuleItem ok={idFormatOk}>영어 소문자, 숫자만 사용</SignupRuleItem>
+                            <SignupRuleItem
+                                ok={idAvailability === 'available'}
+                                pending={idAvailability === 'checking'}
+                            >
+                                사용 가능한 아이디
+                            </SignupRuleItem>
                         </ul>
+                    </div>
 
-                        <input
-                            className={styles.input}
-                            placeholder="닉네임"
-                            value={nickname}
-                            onChange={(e) => handleNicknameChange(e.target.value)}
-                        />
-                        <ul className={styles.conditionList}>
-                            <Condition met={nicknameLength} text="2~10자" />
-                            <Condition met={nicknameChars} text="영어 소문자·한글·숫자만 사용" />
-                            <Condition
-                                met={nickname.length > 0 && !nicknameExists}
-                                text={nickname.length === 0 ? '닉네임 입력' : '중복되지 않은 닉네임'}
-                            />
+                    <div className="signup-rules-group">
+                        <p className="signup-rules-group__label">닉네임</p>
+                        <ul className="signup-rules-list">
+                            <SignupRuleItem ok={nicknameLengthOk}>2~10자</SignupRuleItem>
+                            <SignupRuleItem ok={nicknameFormatOk}>영어 소문자, 한글, 숫자만 사용</SignupRuleItem>
+                            <SignupRuleItem
+                                ok={nicknameAvailability === 'available'}
+                                pending={nicknameAvailability === 'checking'}
+                            >
+                                사용 가능한 닉네임
+                            </SignupRuleItem>
                         </ul>
+                    </div>
 
-                        <input
-                            className={styles.input}
-                            type="password"
-                            placeholder="비밀번호"
-                            value={password}
-                            onChange={(e) => handlePasswordChange(e.target.value)}
-                        />
-                        <ul className={styles.conditionList}>
-                            <Condition met={passLength} text="8자 이상" />
-                            <Condition met={passLower} text="소문자 포함" />
-                            <Condition met={passNumber} text="숫자 포함" />
-                            <Condition met={passSpecial} text="특수문자 포함 (!@#$%^&*)" />
+                    <div className="signup-rules-group">
+                        <p className="signup-rules-group__label">비밀번호</p>
+                        <ul className="signup-rules-list">
+                            <SignupRuleItem ok={pwLengthOk}>8자 이상</SignupRuleItem>
+                            <SignupRuleItem ok={pwLowerOk}>영어 소문자 포함</SignupRuleItem>
+                            <SignupRuleItem ok={pwNumberOk}>숫자 포함</SignupRuleItem>
+                            <SignupRuleItem ok={pwSpecialOk}>특수문자 포함 (!@#$%^&*)</SignupRuleItem>
                         </ul>
+                    </div>
 
-                        <input
-                            className={styles.input}
-                            type="password"
-                            placeholder="비밀번호 확인"
-                            value={passwordConfirm}
-                            onChange={(e) => handlePasswordConfirmChange(e.target.value)}
-                        />
-                        <ul className={styles.conditionList}>
-                            <Condition
-                                met={passwordConfirm.length > 0 && passwordsMatch}
-                                text={passwordConfirm.length === 0 ? '비밀번호 확인 입력' : '비밀번호 일치'}
-                            />
+                    <div className="signup-rules-group">
+                        <p className="signup-rules-group__label">비밀번호 확인</p>
+                        <ul className="signup-rules-list">
+                            <SignupRuleItem ok={pwConfirmMatchOk}>비밀번호와 일치</SignupRuleItem>
                         </ul>
+                    </div>
+                </aside>
 
-                        {error && <p className={styles.error}>{error}</p>}
+                <form className="signup-box" data-state={state} onSubmit={handleSubmit}>
+                    <h1 className="signup-title">회원가입</h1>
 
+                    <div className="signup-fields" data-state={state}>
+                        <div className="signup-fields__inner">
+                            <div className="signup-field">
+                                <label htmlFor="signup-id">아이디</label>
+                                <input
+                                    id="signup-id"
+                                    type="text"
+                                    value={id}
+                                    onChange={(e) => {
+                                        setId(e.target.value.replace(/[^a-z0-9]/g, ''))
+                                        if (idInvalid) setIdInvalid(false)
+                                    }}
+                                    placeholder="아이디를 입력하세요"
+                                    autoComplete="username"
+                                    disabled={state !== 'idle'}
+                                    className={idInvalid ? 'is-invalid' : ''}
+                                />
+                            </div>
+
+                            <div className="signup-field">
+                                <label htmlFor="signup-nickname">닉네임</label>
+                                <input
+                                    id="signup-nickname"
+                                    type="text"
+                                    value={nickname}
+                                    onChange={(e) => {
+                                        setNickname(e.target.value.replace(/[^a-z0-9가-힣]/g, ''))
+                                        if (nicknameInvalid) setNicknameInvalid(false)
+                                    }}
+                                    placeholder="닉네임을 입력하세요"
+                                    autoComplete="nickname"
+                                    disabled={state !== 'idle'}
+                                    className={nicknameInvalid ? 'is-invalid' : ''}
+                                />
+                            </div>
+
+                            <div className="signup-field">
+                                <label htmlFor="signup-pw">비밀번호</label>
+                                <div className="signup-field__input-wrap">
+                                    <input
+                                        id="signup-pw"
+                                        type={showPw ? 'text' : 'password'}
+                                        value={pw}
+                                        onChange={(e) => {
+                                            setPw(e.target.value.replace(/[^a-z0-9!@#$%^&*]/g, ''))
+                                            if (pwInvalid) setPwInvalid(false)
+                                        }}
+                                        placeholder="비밀번호를 입력하세요"
+                                        autoComplete="new-password"
+                                        disabled={state !== 'idle'}
+                                        className={pwInvalid ? 'is-invalid' : ''}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="signup-field__toggle-pw"
+                                        onClick={() => setShowPw((prev) => !prev)}
+                                        disabled={state !== 'idle'}
+                                        tabIndex={-1}
+                                        aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 표시'}
+                                    >
+                                        {showPw ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="signup-field">
+                                <label htmlFor="signup-pw-confirm">비밀번호 확인</label>
+                                <div className="signup-field__input-wrap">
+                                    <input
+                                        id="signup-pw-confirm"
+                                        type={showPwConfirm ? 'text' : 'password'}
+                                        value={pwConfirm}
+                                        onChange={(e) => {
+                                            setPwConfirm(e.target.value.replace(/[^a-z0-9!@#$%^&*]/g, ''))
+                                            if (pwConfirmInvalid) setPwConfirmInvalid(false)
+                                        }}
+                                        placeholder="비밀번호를 다시 입력하세요"
+                                        autoComplete="new-password"
+                                        disabled={state !== 'idle'}
+                                        className={pwConfirmInvalid ? 'is-invalid' : ''}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="signup-field__toggle-pw"
+                                        onClick={() => setShowPwConfirm((prev) => !prev)}
+                                        disabled={state !== 'idle'}
+                                        tabIndex={-1}
+                                        aria-label={showPwConfirm ? '비밀번호 숨기기' : '비밀번호 표시'}
+                                    >
+                                        {showPwConfirm ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div
+                                className="signup-error-wrap"
+                                data-visible={error ? 'true' : 'false'}
+                                style={{ height: errorWrapHeight }}
+                            >
+                                <div className="signup-error-wrap__inner" ref={errorInnerRef}>
+                                    {error && <p className="signup-error" key={error}>{error}</p>}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="signup-back-text" data-state={state}>
+                        이미 계정이 있으신가요?{' '}
                         <button
-                            className={styles.button}
-                            onClick={handleSignup}
-                            disabled={
-                                !usernameValid || usernameExists ||
-                                !nicknameValid || nicknameExists ||
-                                !passwordValid || !passwordsMatch
-                            }
+                            type="button"
+                            className="signup-back-link"
+                            onClick={onNavigateToLogin}
+                            disabled={state !== 'idle'}
                         >
-                            회원가입
+                            로그인
+                        </button>
+                    </p>
+
+                    <div className="signup-submit-area">
+                        <button
+                            type="submit"
+                            className="signup-submit"
+                            data-state={state}
+                            disabled={state !== 'idle'}
+                        >
+                            <span className="signup-submit__label">가입하기</span>
+
+                            <span className="signup-submit__spinner" aria-hidden="true">
+                                <svg viewBox="0 0 44 44">
+                                    <circle className="signup-submit__spinner-track" cx="22" cy="22" r="18" />
+                                    <circle className="signup-submit__spinner-arc" cx="22" cy="22" r="18" />
+                                </svg>
+                            </span>
+
+                            <span className="signup-submit__check" aria-hidden="true">
+                                <svg viewBox="0 0 44 44">
+                                    <path className="signup-submit__check-mark" d="M13 22.5L19 28.5L31 15.5" />
+                                </svg>
+                            </span>
+
+                            <span className="signup-submit__cross" aria-hidden="true">
+                                <svg viewBox="0 0 44 44">
+                                    <path className="signup-submit__cross-line signup-submit__cross-line--1" d="M15 15L29 29" />
+                                    <path className="signup-submit__cross-line signup-submit__cross-line--2" d="M29 15L15 29" />
+                                </svg>
+                            </span>
                         </button>
 
-                        <p className={styles.loginText}>
-                            이미 계정이 있으신가요?{' '}
-                            <button className={styles.loginLink} onClick={onNavigateToLogin}>로그인</button>
+                        <p className="signup-status" data-state={state}>
+                            {statusText}
                         </p>
-
-                        <Modal show={showModal} onClose={closeModal}>
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                transition={{ duration: 0.25 }}
-                                className={styles.modalContent}
-                            >
-                                <h3>회원가입 성공!</h3>
-                                <p>로그인 화면으로 이동합니다.</p>
-                                <button className={styles.modalButton} onClick={closeModal}>확인</button>
-                            </motion.div>
-                        </Modal>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </AuthLayout>
+                    </div>
+                </form>
+            </div>
+        </div>
     )
 }

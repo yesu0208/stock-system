@@ -11,24 +11,22 @@ let orderClient: Client | null = null
 // 내부 공통 함수
 // -----------------------------
 function createClient(endpoint: string, debugLabel: string): Client {
+    const token = tokenStorage.get()
+
     const client = new Client({
         webSocketFactory: () =>
             new SockJS(`${import.meta.env.VITE_WS_BASE_URL}${endpoint}`),
-        connectHeaders: {
-            Authorization: `Bearer ${tokenStorage.get()}`,
-        },
+        connectHeaders: token
+            ? { Authorization: `Bearer ${token}` }
+            : {}, // 토큰 없으면 익명 연결 (백엔드가 /sub/market/main 등 공개 채널만 허용)
         debug: (str) => console.log(`[${debugLabel}]`, str),
         reconnectDelay: 5000,
     })
 
-    // 🔥 STOMP ERROR 발생 시 refresh 트리거
     client.onStompError = async () => {
         console.log(`[${debugLabel}] STOMP ERROR → refresh 트리거 시도`)
-
         try {
-            // 보호된 API 호출로 refresh 트리거
             await instance.get<UserDto>('/users/user')
-
             console.log(`[${debugLabel}] Refresh 성공 → STOMP 재연결`)
             await reconnectStomp()
         } catch (e) {
