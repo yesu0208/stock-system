@@ -30,6 +30,7 @@ public class LeverageLiquidationService {
     private final UserAccountRepository userAccountRepository;
     private final StockSummaryRedisRepository stockSummaryRedisRepository;
     private final LeveragePositionRedisSyncer redisSyncer;
+    private final AccountMarginStatusSyncer accountMarginStatusSyncer;
     private final LiquidationEventPublisher liquidationEventPublisher;
     private final AccountBalanceCommand accountBalanceCommand;
 
@@ -126,6 +127,7 @@ public class LeverageLiquidationService {
 
         leveragePositionRepository.delete(position);
         redisSyncer.remove(username, stockCode, leverageRatio);
+        accountMarginStatusSyncer.resync(username);
 
         // Redis availableCash에도 netAfterRepay를 반영해야 한다 (아래 별도로 짚음)
         boolean credited = accountBalanceCommand.creditAvailableCash(username, netAfterRepay);

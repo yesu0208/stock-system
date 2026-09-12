@@ -24,6 +24,7 @@ public class LeverageMarginCallService {
     private final StockSummaryRedisRepository stockSummaryRedisRepository;
     private final MarginRatioCalculator marginRatioCalculator;
     private final LeveragePositionRedisSyncer redisSyncer;
+    private final AccountMarginStatusSyncer accountMarginStatusSyncer;
     private final MarginCallEventPublisher marginCallEventPublisher;
 
     /**
@@ -97,33 +98,33 @@ public class LeverageMarginCallService {
         position.changeMarginStatus(MarginStatus.MARGIN_CALL, today);
         leveragePositionRepository.save(position);
         redisSyncer.sync(position);
+        accountMarginStatusSyncer.resync(position.getUsername());
 
         marginCallEventPublisher.publish(
                 MarginCallEvent.of(position.getUsername(), position.getStockCode(),
                         position.getLeverageRatio(), MarginStatus.MARGIN_CALL, ratio));
 
-        log.warn("[MarginCall] triggered. username={}, stockCode={}, leverageRatio={}, ratio={}",
-                position.getUsername(), position.getStockCode(), position.getLeverageRatio(), ratio);
+        log.warn("[MarginCall] triggered. ...");
     }
 
     private void transitionToNormal(LeveragePositionEntity position) {
         position.changeMarginStatus(MarginStatus.NORMAL, null);
         leveragePositionRepository.save(position);
         redisSyncer.sync(position);
+        accountMarginStatusSyncer.resync(position.getUsername());
     }
 
     private void transitionToLiquidationPending(LeveragePositionEntity position, double ratio) {
-        // marginCallDate(D일)는 감사(audit) 기록용으로 그대로 보존
         position.changeMarginStatus(MarginStatus.LIQUIDATION_PENDING, position.getMarginCallDate());
         leveragePositionRepository.save(position);
         redisSyncer.sync(position);
+        accountMarginStatusSyncer.resync(position.getUsername());
 
         marginCallEventPublisher.publish(
                 MarginCallEvent.of(position.getUsername(), position.getStockCode(),
                         position.getLeverageRatio(), MarginStatus.LIQUIDATION_PENDING, ratio));
 
-        log.warn("[MarginCall] grace expired, queued for liquidation. username={}, stockCode={}, leverageRatio={}, ratio={}",
-                position.getUsername(), position.getStockCode(), position.getLeverageRatio(), ratio);
+        log.warn("[MarginCall] grace expired, queued for liquidation. ...");
     }
 
     private void publishRecoveredEvent(LeveragePositionEntity position, double ratio) {
