@@ -1,20 +1,19 @@
 package arile.toy.stocksystem.bffserver.stockinfo.client;
 
 import arile.toy.stocksystem.bffserver.stockinfo.dto.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.core.ParameterizedTypeReference;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.math.RoundingMode;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -22,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
@@ -88,49 +86,6 @@ public class NaverStockCrawlerClient {
         );
     }
 
-    private String getHtml(String code) {
-        return restClient.get()
-                .uri("/item/main.naver?code={code}", code)
-                .retrieve()
-                .body(String.class);
-    }
-
-    private StockInfo parse(String html) {
-        Document doc = Jsoup.parse(html);
-
-        String marketCap = doc.select("#_market_sum").text();
-        String marketCapRank = getValueByTh(doc, "시가총액순위");
-        String listedShares = getValueByTh(doc, "상장주식수");
-
-        String[] parTradingSplit = splitBar(getValueByTh(doc, "액면가l매매단위"));
-        String foreignLimit = getValueByTh(doc, "외국인한도주식수(A)");
-        String foreignOwned = getValueByTh(doc, "외국인보유주식수(B)");
-        String foreignRate = getValueByTh(doc, "외국인소진율(B/A)");
-
-        String[] opinionSplit = splitBar(getValueByTh(doc, "투자의견l목표주가"));
-        String[] highLowSplit = splitBar(getValueByTh(doc, "52주최고l최저"));
-        String[] perEpsSplit = splitBar(getValueByThContains(doc, "PERlEPS"));
-        String[] estimatedSplit = splitBar(getValueByThContains(doc, "추정PERlEPS"));
-        String[] pbrSplit = splitBar(getValueByThContains(doc, "PBRlBPS"));
-
-        String dividendYield = getValueByThContains(doc, "배당수익률");
-        String sameIndustryPer = getValueByTh(doc, "동일업종 PER");
-        String sameIndustryRate = getValueByTh(doc, "동일업종 등락률");
-
-        return new StockInfo(
-                marketCap, marketCapRank, listedShares,
-                parTradingSplit[0], parTradingSplit[1],
-                foreignLimit, foreignOwned, foreignRate,
-                opinionSplit[0], opinionSplit[1],
-                highLowSplit[0], highLowSplit[1],
-                perEpsSplit[0], perEpsSplit[1],
-                estimatedSplit[0], estimatedSplit[1],
-                pbrSplit[0], pbrSplit[1],
-                dividendYield,
-                sameIndustryPer, sameIndustryRate
-        );
-    }
-
     private String getValueByTh(Document doc, String thText) {
         String target = thText.replace(" ", "");
         return findRowValue(doc, thValue -> thValue.contains(target));
@@ -164,8 +119,6 @@ public class NaverStockCrawlerClient {
         }
         return new String[]{split[0].trim(), split[1].trim()};
     }
-
-
 
     private static final int FOREIGN_TRADE_PAGE_SIZE = 10;
 
@@ -252,24 +205,6 @@ public class NaverStockCrawlerClient {
             return bizdate == null ? "" : bizdate;
         }
         return bizdate.substring(0, 4) + "." + bizdate.substring(4, 6) + "." + bizdate.substring(6, 8);
-    }
-
-    private String formatDiff(String upDownGb, String prevChangePriceRaw) {
-
-        long prevChangePrice = parseLongSafely(prevChangePriceRaw);
-        String absValue = formatComma(String.valueOf(Math.abs(prevChangePrice)));
-
-        if (upDownGb == null) {
-            return absValue;
-        }
-
-        return switch (upDownGb) {
-            case "상승" -> "▲ " + absValue;
-            case "하락" -> "▼ " + absValue;
-            case "상한가" -> "⬆" + absValue;
-            case "하한가" -> "⬇" + absValue;
-            default -> "0";
-        };
     }
 
     private String formatRate(String closePriceRaw, String prevChangePriceRaw) {
@@ -383,20 +318,6 @@ public class NaverStockCrawlerClient {
             case "5" -> "DOWN";
             default -> "UNKNOWN";
         };
-    }
-
-    private Document fetchSiseDocument() {
-        try {
-            String html = restClient.get()
-                    .uri("/sise/")
-                    .retrieve()
-                    .body(String.class);
-
-            return Jsoup.parse(html);
-        } catch (RestClientResponseException e) {
-            log.error("Naver market main crawling error. status={}", e.getStatusCode());
-            throw new IllegalStateException("네이버 증시 메인 크롤링 실패", e);
-        }
     }
 
     public MarketMainResponse getMarketIndices() {
@@ -576,32 +497,6 @@ public class NaverStockCrawlerClient {
     ) {
     }
 
-    private String cleanProgramTrade(String text) {
-        return text
-                .replace("비차익 ", "")
-                .replace("차익 ", "")
-                .replace("전체 ", "")
-                .trim();
-    }
-
-    private String[] splitChange(String text) {
-
-        String[] tokens = text.split(" ");
-
-        String value = "";
-        String rate = "";
-
-        for (String token : tokens) {
-            if (token.contains("%")) {
-                rate = token;
-            } else if (token.matches("^[+-]?[0-9.,]+$")) {
-                value = token;
-            }
-        }
-
-        return new String[]{value, rate};
-    }
-
     public UpjongResponse getAllUpjongs() {
 
         NaverIndustryRankingResponse response;
@@ -673,35 +568,6 @@ public class NaverStockCrawlerClient {
         } catch (Exception e) {
             return 0.0;
         }
-    }
-
-    private UpjongInfo mapUpjongInfo(NaverIndustryItem item) {
-
-        long rise = parseLongSafely(item.risingCount());
-        long fall = parseLongSafely(item.fallingCount());
-        long steady = parseLongSafely(item.unchangedCount());
-        long total = rise + fall + steady;
-
-        String graphRatio = total > 0
-                ? String.valueOf(Math.round((rise * 100.0) / total))
-                : "0";
-
-        return new UpjongInfo(
-                item.name(),
-                item.code(),
-                item.changeRate(),
-                String.valueOf(total),
-                item.risingCount(),
-                item.unchangedCount(),
-                item.fallingCount(),
-                graphRatio,
-                item.totalMarketCap(),
-                item.totalTradingVolume(),
-                item.totalTradingValue(),
-                mapTop3(item.topByChangeRate()),
-                mapTop3(item.topByMarketCap()),
-                mapTop3(item.topByTradingValue())
-        );
     }
 
     private List<UpjongRankItem> mapTop3(List<NaverIndustryRankEntry> entries) {
@@ -809,25 +675,6 @@ public class NaverStockCrawlerClient {
         );
     }
 
-    private String formatUpDownChange(String upDownGb, String prevChangePriceRaw) {
-
-        long prevChangePrice = parseLongSafely(prevChangePriceRaw);
-        String absValue = formatComma(String.valueOf(Math.abs(prevChangePrice)));
-
-        if (upDownGb == null) {
-            return absValue;
-        }
-
-        return switch (upDownGb) {
-            case "1" -> "⬆" + absValue;
-            case "2" -> "▲ " + absValue;
-            case "3" -> absValue;
-            case "4" -> "⬇" + absValue;
-            case "5" -> "▼ " + absValue;
-            default -> absValue;
-        };
-    }
-
     private String formatSignedRate(String rawRate) {
         try {
             BigDecimal value = new BigDecimal(rawRate).setScale(2, RoundingMode.HALF_UP);
@@ -851,8 +698,6 @@ public class NaverStockCrawlerClient {
             String marketSum
     ) {
     }
-
-    // 종목 상세 (5초 브로드캐스트용)
 
     public StockDetailTickMessage getStockDetailSummary(String code) {
 
@@ -950,28 +795,6 @@ public class NaverStockCrawlerClient {
         }
     }
 
-    private PriceInfo parsePriceInfo(String text) {
-
-        String direction = "STEADY";
-
-        if (text.contains("상승")) {
-            direction = "UP";
-        } else if (text.contains("하락")) {
-            direction = "DOWN";
-        }
-
-        String currentPrice = text.replaceAll("현재가\\s*([0-9,]+).*", "$1");
-
-        String diffPrice = "0";
-        if (text.matches(".*(상승|하락).*")) {
-            diffPrice = text.replaceAll(".*전일대비\\s*(상승|하락)\\s*([0-9,]+).*", "$2");
-        }
-
-        String diffRate = text.replaceAll(".*([0-9]+\\.[0-9]+)\\s*퍼센트.*", "$1");
-
-        return new PriceInfo(currentPrice, diffPrice, diffRate, direction);
-    }
-
     private record PriceInfo(String currentPrice, String diffPrice, String diffRate, String direction) {
     }
 
@@ -999,9 +822,6 @@ public class NaverStockCrawlerClient {
             String tradeVolume
     ) {
     }
-
-
-    // 종목 상세 (REST 부가정보)
 
     public StockDetailExtraResponse getStockDetailExtra(String code) {
 
@@ -1108,34 +928,6 @@ public class NaverStockCrawlerClient {
         }
     }
 
-    private String extractDirection(Element td) {
-
-        if (td == null) {
-            return "";
-        }
-        if (!td.select(".f_up").isEmpty()) {
-            return "UP";
-        }
-        if (!td.select(".f_down").isEmpty()) {
-            return "DOWN";
-        }
-        return "";
-    }
-
-    private String extractClass(Element element) {
-
-        if (element == null) {
-            return "";
-        }
-        if (element.hasClass("f_up")) {
-            return "UP";
-        }
-        if (element.hasClass("f_down")) {
-            return "DOWN";
-        }
-        return "";
-    }
-
     public List<ExchangeRateDto> getExchangeRates() {
 
         List<NaverMarketIndexItem> items;
@@ -1204,71 +996,6 @@ public class NaverStockCrawlerClient {
             String text,
             String name
     ) {
-    }
-
-    public List<WorldIndexDto> getWorldIndexes() {
-
-        String html;
-        try {
-            html = restClient.get()
-                    .uri("/world/")
-                    .retrieve()
-                    .body(String.class);
-        } catch (RestClientResponseException e) {
-            log.error("Naver 세계증시 크롤링 실패. status={}", e.getStatusCode());
-            throw new IllegalStateException("네이버 세계증시 크롤링 실패", e);
-        }
-
-        Document doc = Jsoup.parse(html);
-        Elements indexes = doc.select(
-                "#worldIndexColumn1 li, #worldIndexColumn2 li, #worldIndexColumn3 li"
-        );
-
-        List<WorldIndexDto> result = new ArrayList<>();
-
-        for (Element index : indexes) {
-
-            Element dl = index.selectFirst("dl");
-            if (dl == null) {
-                continue;
-            }
-
-            Element nameElement = dl.selectFirst("dt span.blind");
-            Element pointStatus = dl.selectFirst("dd.point_status");
-            Element dateElement = dl.selectFirst("dd.date em");
-            Element linkElement = dl.selectFirst("dt a");
-
-            if (nameElement == null || pointStatus == null
-                    || dateElement == null || linkElement == null) {
-                continue;
-            }
-
-            String name = nameElement.text().trim();
-            String currentPrice = pointStatus.selectFirst("strong").text().trim();
-            String diffPrice = pointStatus.selectFirst("em").text().trim();
-
-            Element spanElement = pointStatus.selectFirst("span");
-            String rawChangeText = spanElement != null ? spanElement.text().trim() : "";
-
-            String direction;
-            if (rawChangeText.contains("+")) {
-                direction = "상승";
-            } else if (rawChangeText.contains("-")) {
-                direction = "하락";
-            } else {
-                direction = "보합";
-            }
-
-            String diffRate = rawChangeText.replace("+", "").replace("-", "").trim();
-            String dateTime = dateElement.text().trim();
-            String detailUrl = linkElement.attr("href");
-
-            result.add(new WorldIndexDto(
-                    name, currentPrice, diffPrice, diffRate, direction, dateTime, detailUrl
-            ));
-        }
-
-        return result;
     }
 
     public TrendResponse getInvestorTrend(MarketType market, TrendType type, int page) {
@@ -1348,46 +1075,6 @@ public class NaverStockCrawlerClient {
         );
     }
 
-    private InvestorTrendDto mapInvestorTrend(NaverInvestorTrendContent content) {
-
-        Map<String, Long> amounts = new HashMap<>();
-        if (content.netAmounts() != null) {
-            for (NaverInvestorNetAmount item : content.netAmounts()) {
-                amounts.put(item.investorGubun(), parseLongSafely(item.diffValue()));
-            }
-        }
-
-        long financeInvestment = amounts.getOrDefault("1000", 0L);
-        long insurance = amounts.getOrDefault("2000", 0L);
-        long fund = amounts.getOrDefault("3000", 0L) + amounts.getOrDefault("3100", 0L);
-        long bank = amounts.getOrDefault("4000", 0L);
-        long etcFinance = amounts.getOrDefault("5000", 0L);
-        long pension = amounts.getOrDefault("6000", 0L);
-        long corporation = amounts.getOrDefault("7000", 0L) + amounts.getOrDefault("7100", 0L);
-        long individual = amounts.getOrDefault("8000", 0L);
-        long foreigner = amounts.getOrDefault("9000", 0L) + amounts.getOrDefault("9001", 0L);
-
-        long institution = financeInvestment + insurance + fund + bank + etcFinance + pension;
-
-        String dateOrTime = (content.bizdate() != null && !content.bizdate().isBlank())
-                ? content.bizdate()
-                : content.time();
-
-        return new InvestorTrendDto(
-                dateOrTime,
-                individual,
-                foreigner,
-                institution,
-                financeInvestment,
-                insurance,
-                fund,
-                bank,
-                etcFinance,
-                pension,
-                corporation
-        );
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record NaverInvestorTrendApiResponse(
             List<NaverInvestorTrendContent> content,
@@ -1412,18 +1099,6 @@ public class NaverStockCrawlerClient {
             String buyQuant,
             String buyPrice
     ) {
-    }
-
-    private long parseLong(String value) {
-        if (value == null || value.isBlank()) {
-            return 0L;
-        }
-
-        return Long.parseLong(
-                value.replace(",", "")
-                        .replace("+", "")
-                        .trim()
-        );
     }
 
     private static final int DEAL_RANK_PAGE_SIZE = 50;
@@ -1542,19 +1217,6 @@ public class NaverStockCrawlerClient {
             }
         }
         return -1;
-    }
-
-    private BigDecimal tdNumber(Elements tds, int idx, int fallback) {
-        int target = (idx >= 0 && idx < tds.size()) ? idx : fallback;
-        if (target < 0 || target >= tds.size()) return null;
-        return toDealRankNumber(tds.get(target).text());
-    }
-
-    private String extractDealRankCode(Element anchor) {
-        if (anchor == null) return null;
-        String href = anchor.attr("href");
-        Matcher m = DEAL_RANK_CODE_PATTERN.matcher(href);
-        return m.find() ? m.group(1) : null;
     }
 
     private BigDecimal toDealRankNumber(String raw) {
