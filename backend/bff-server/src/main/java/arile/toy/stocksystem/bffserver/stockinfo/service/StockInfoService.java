@@ -191,11 +191,28 @@ public class StockInfoService {
             }
         }
 
-        UpjongStockResponse response = naverStockCrawlerClient.getUpjongStocks(upjongNo);
+        List<UpjongStock> stocks = naverStockCrawlerClient.getUpjongStocks(upjongNo);
+        String upjongName = resolveUpjongName(upjongNo);
+
+        UpjongStockResponse response = new UpjongStockResponse(upjongName, stocks);
 
         cacheUpjongStocks(cacheKey, response);
 
         return response;
+    }
+
+    private String resolveUpjongName(String upjongNo) {
+        try {
+            UpjongResponse allUpjongs = getAllUpjongs();
+            return allUpjongs.items().stream()
+                    .filter(item -> item.no().equals(upjongNo))
+                    .map(UpjongInfo::name)
+                    .findFirst()
+                    .orElse("");
+        } catch (Exception e) {
+            log.warn("업종명 조회 실패. no={}", upjongNo, e);
+            return "";
+        }
     }
 
     private void cacheUpjongStocks(String cacheKey, UpjongStockResponse response) {

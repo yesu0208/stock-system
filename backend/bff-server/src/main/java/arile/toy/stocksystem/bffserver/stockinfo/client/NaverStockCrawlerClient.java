@@ -632,52 +632,101 @@ public class NaverStockCrawlerClient {
     ) {
     }
 
-    public UpjongStockResponse getUpjongStocks(String upjongNo) {
+    public List<UpjongStock> getUpjongStocks(String upjongNo) {
 
-        String html;
+        List<NaverUpjongStockItem> items;
         try {
-            html = restClient.get()
-                    .uri("/sise/sise_group_detail.naver?type=upjong&no={no}", upjongNo)
+            items = stockApiClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/domestic/market/upjong/{no}/stocklist")
+                            .queryParam("marketType", "ALL")
+                            .queryParam("orderType", "priceTop")
+                            .queryParam("startIdx", 0)
+                            .queryParam("pageSize", 200)
+                            .build(upjongNo))
                     .retrieve()
-                    .body(String.class);
+                    .body(new ParameterizedTypeReference<List<NaverUpjongStockItem>>() {});
         } catch (RestClientResponseException e) {
-            log.error("Naver 업종별 종목 크롤링 실패. status={}, no={}", e.getStatusCode(), upjongNo);
+            log.error("Naver 업종별 종목 API 호출 실패. status={}, no={}", e.getStatusCode(), upjongNo);
             throw new IllegalStateException("네이버 업종별 종목 크롤링 실패", e);
         }
 
-        Document doc = Jsoup.parse(html);
-        List<UpjongStock> result = new ArrayList<>();
-
-        String upjongName = doc.select("h3.sub_tlt").text();
-
-        Elements rows = doc.select("table.type_5 tr");
-
-        for (Element row : rows) {
-            Elements tds = row.select("td");
-            if (tds.size() < 5) {
-                continue;
-            }
-
-            Element a = tds.get(0).selectFirst("a");
-            if (a == null) {
-                continue;
-            }
-
-            String name = a.text();
-
-            String href = a.attr("href");
-            String code = href.contains("code=")
-                    ? href.substring(href.indexOf("code=") + 5)
-                    : "";
-
-            String price = tds.get(1).text().trim();
-            String change = tds.get(2).text().trim();
-            String rate = tds.get(3).text().trim();
-
-            result.add(new UpjongStock(name, code, price, change, rate));
+        if (items == null) {
+            throw new IllegalStateException("네이버 업종별 종목 응답이 비어 있습니다.");
         }
 
-        return new UpjongStockResponse(upjongName, result);
+        List<UpjongStock> result = new ArrayList<>();
+        for (NaverUpjongStockItem item : items) {
+            result.add(mapUpjongStock(item));
+        }
+
+        return result;
+    }
+
+    private UpjongStock mapUpjongStock(NaverUpjongStockItem item) {
+
+        String price = formatComma(item.nowPrice());
+        String change = formatComma(item.prevChangePrice());
+        String direction = mapDirection(item.upDownGb());
+        String rate = formatSignedRate(item.prevChangeRate());
+        String volume = formatComma(item.tradeVolume());
+        String tradingValue = formatComma(item.tradeAmount());
+        String marketCap = formatComma(item.marketSum());
+
+        return new UpjongStock(
+                item.itemname(),
+                item.itemcode(),
+                price,
+                change,
+                direction,
+                rate,
+                volume,
+                tradingValue,
+                marketCap
+        );
+    }
+
+    private String formatUpDownChange(String upDownGb, String prevChangePriceRaw) {
+
+        long prevChangePrice = parseLongSafely(prevChangePriceRaw);
+        String absValue = formatComma(String.valueOf(Math.abs(prevChangePrice)));
+
+        if (upDownGb == null) {
+            return absValue;
+        }
+
+        return switch (upDownGb) {
+            case "1" -> "⬆" + absValue;
+            case "2" -> "▲ " + absValue;
+            case "3" -> absValue;
+            case "4" -> "⬇" + absValue;
+            case "5" -> "▼ " + absValue;
+            default -> absValue;
+        };
+    }
+
+    private String formatSignedRate(String rawRate) {
+        try {
+            BigDecimal value = new BigDecimal(rawRate).setScale(2, RoundingMode.HALF_UP);
+            String sign = value.compareTo(BigDecimal.ZERO) > 0 ? "+" : "";
+            return sign + value + "%";
+        } catch (Exception e) {
+            return rawRate == null ? "" : rawRate;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverUpjongStockItem(
+            String itemcode,
+            String itemname,
+            String nowPrice,
+            String upDownGb,
+            String prevChangePrice,
+            String prevChangeRate,
+            String tradeVolume,
+            String tradeAmount,
+            String marketSum
+    ) {
     }
 
     // 종목 상세 (5초 브로드캐스트용)

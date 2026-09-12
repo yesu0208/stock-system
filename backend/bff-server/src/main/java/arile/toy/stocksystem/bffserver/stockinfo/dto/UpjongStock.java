@@ -5,6 +5,10 @@ public record UpjongStock(
         String code,
         String price,
         String change,
-        String rate
+        String direction,
+        String rate,
+        String volume,
+        String tradingValue,
+        String marketCap
 ) {
 }
