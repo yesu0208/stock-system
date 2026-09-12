@@ -481,53 +481,155 @@ public class NaverStockCrawlerClient {
 
     public UpjongResponse getAllUpjongs() {
 
-        String html;
+        NaverIndustryRankingResponse response;
         try {
-            html = restClient.get()
-                    .uri("/sise/sise_group.naver?type=upjong")
+            response = stockApiClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/stockSecurity/rankings/v2/domestic/industries")
+                            .queryParam("sortType", "changeRate")
+                            .queryParam("size", 100)
+                            .queryParam("period", "daily")
+                            .build())
                     .retrieve()
-                    .body(String.class);
+                    .body(NaverIndustryRankingResponse.class);
         } catch (RestClientResponseException e) {
-            log.error("Naver 업종 목록 크롤링 실패. status={}", e.getStatusCode());
+            log.error("Naver 업종 목록 API 호출 실패. status={}", e.getStatusCode());
             throw new IllegalStateException("네이버 업종 목록 크롤링 실패", e);
         }
 
-        Document doc = Jsoup.parse(html);
+        if (response == null || response.items() == null) {
+            throw new IllegalStateException("네이버 업종 목록 응답이 비어 있습니다.");
+        }
+
+        double maxAbsChangeRate = response.items().stream()
+                .mapToDouble(item -> Math.abs(parseDoubleSafely(item.changeRate())))
+                .max()
+                .orElse(0.0);
+
         List<UpjongInfo> result = new ArrayList<>();
-
-        Elements rows = doc.select("table.type_1 tr");
-
-        for (Element row : rows) {
-            Elements tds = row.select("td");
-            if (tds.isEmpty()) {
-                continue;
-            }
-
-            Element a = tds.get(0).selectFirst("a");
-            if (a == null) {
-                continue;
-            }
-
-            String name = a.text().trim();
-
-            String href = a.attr("href");
-            String no = href.contains("no=")
-                    ? href.substring(href.indexOf("no=") + 3)
-                    : "";
-
-            String changeRate = tds.get(1).text().trim();
-            String total = tds.get(2).text().trim();
-            String rise = tds.get(3).text().trim();
-            String steady = tds.get(4).text().trim();
-            String fall = tds.get(5).text().trim();
-            String graphRatio = tds.get(6).text().trim();
-
-            result.add(new UpjongInfo(
-                    name, no, changeRate, total, rise, steady, fall, graphRatio
-            ));
+        for (NaverIndustryItem item : response.items()) {
+            result.add(mapUpjongInfo(item, maxAbsChangeRate));
         }
 
         return new UpjongResponse(result);
+    }
+
+    private UpjongInfo mapUpjongInfo(NaverIndustryItem item, double maxAbsChangeRate) {
+
+        long rise = parseLongSafely(item.risingCount());
+        long fall = parseLongSafely(item.fallingCount());
+        long steady = parseLongSafely(item.unchangedCount());
+        long total = rise + fall + steady;
+
+        double absChangeRate = Math.abs(parseDoubleSafely(item.changeRate()));
+        String graphRatio = maxAbsChangeRate > 0
+                ? String.valueOf(Math.round((absChangeRate / maxAbsChangeRate) * 100.0))
+                : "0";
+
+        return new UpjongInfo(
+                item.name(),
+                item.code(),
+                item.changeRate(),
+                String.valueOf(total),
+                item.risingCount(),
+                item.unchangedCount(),
+                item.fallingCount(),
+                graphRatio,
+                item.totalMarketCap(),
+                item.totalTradingVolume(),
+                item.totalTradingValue(),
+                mapTop3(item.topByChangeRate()),
+                mapTop3(item.topByMarketCap()),
+                mapTop3(item.topByTradingValue())
+        );
+    }
+
+    private double parseDoubleSafely(String value) {
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
+
+    private UpjongInfo mapUpjongInfo(NaverIndustryItem item) {
+
+        long rise = parseLongSafely(item.risingCount());
+        long fall = parseLongSafely(item.fallingCount());
+        long steady = parseLongSafely(item.unchangedCount());
+        long total = rise + fall + steady;
+
+        String graphRatio = total > 0
+                ? String.valueOf(Math.round((rise * 100.0) / total))
+                : "0";
+
+        return new UpjongInfo(
+                item.name(),
+                item.code(),
+                item.changeRate(),
+                String.valueOf(total),
+                item.risingCount(),
+                item.unchangedCount(),
+                item.fallingCount(),
+                graphRatio,
+                item.totalMarketCap(),
+                item.totalTradingVolume(),
+                item.totalTradingValue(),
+                mapTop3(item.topByChangeRate()),
+                mapTop3(item.topByMarketCap()),
+                mapTop3(item.topByTradingValue())
+        );
+    }
+
+    private List<UpjongRankItem> mapTop3(List<NaverIndustryRankEntry> entries) {
+
+        if (entries == null) {
+            return new ArrayList<>();
+        }
+
+        List<UpjongRankItem> result = new ArrayList<>();
+        for (int i = 0; i < Math.min(3, entries.size()); i++) {
+            NaverIndustryRankEntry e = entries.get(i);
+            result.add(new UpjongRankItem(e.code(), e.name(), e.value(), e.itemLogoUrl()));
+        }
+        return result;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverIndustryRankingResponse(
+            boolean hasNext,
+            List<NaverIndustryItem> items,
+            String cursor
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverIndustryItem(
+            String ranking,
+            String code,
+            String name,
+            String changeRate,
+            String risingCount,
+            String fallingCount,
+            String unchangedCount,
+            String totalMarketCap,
+            String totalTradingVolume,
+            String totalTradingValue,
+            List<NaverIndustryRankEntry> topByChangeRate,
+            List<NaverIndustryRankEntry> topByMarketCap,
+            List<NaverIndustryRankEntry> topByTradingValue,
+            List<NaverIndustryRankEntry> topByTradingVolume,
+            String updatedAt
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverIndustryRankEntry(
+            String code,
+            String name,
+            String value,
+            String itemLogoUrl
+    ) {
     }
 
     public UpjongStockResponse getUpjongStocks(String upjongNo) {
