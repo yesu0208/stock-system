@@ -80,6 +80,30 @@
     color: #AAAAAA;
 }
 
+.footerWidgets {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tickerText {
+    color: #CCC;
+}
+
+.widgetButton {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background-color: #1E1E1E;
+    color: #FFF;
+    cursor: pointer;
+}
+
 .modalContent {
     text-align: center;
     color: #FFF;
