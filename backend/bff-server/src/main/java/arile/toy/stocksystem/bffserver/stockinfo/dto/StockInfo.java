@@ -2,7 +2,6 @@ package arile.toy.stocksystem.bffserver.stockinfo.dto;
 
 public record StockInfo(
         String marketCap,
-        String marketCapRank,
         String listedShares,
 
         String parValue,
@@ -14,6 +13,7 @@ public record StockInfo(
 
         String opinion,
         String targetPrice,
+        String consensusDate,
 
         String high52,
         String low52,

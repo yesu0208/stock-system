@@ -4,9 +4,6 @@ public record ForeignBrokerSummary(
         String name,
         String sellVolume,
         String buyDiff,
-        String buyVolume,
-        String sellClass,
-        String buyDiffClass,
-        String buyVolumeClass
+        String buyVolume
 ) {
 }

@@ -46,13 +46,46 @@ public class NaverStockCrawlerClient {
     }
 
     public StockInfo getStockInfo(String code) {
-        try {
-            String html = getHtml(code);
-            return parse(html);
-        } catch (RestClientResponseException e) {
-            log.error("Naver stock crawling error. status={}, code={}", e.getStatusCode(), code);
-            throw new IllegalStateException("네이버 종목 정보 크롤링 실패", e);
-        }
+
+        NaverStockDetailResponse d = fetchDetail(code);
+        NaverConsensusResponse consensus = fetchConsensus(code);
+
+        String opinion = consensus != null ? consensus.opinion() : "";
+        String targetPrice = consensus != null ? formatComma(consensus.targetPrice()) : "";
+        String consensusDate = consensus != null ? formatBizDate(consensus.date()) : "";
+
+        return new StockInfo(
+                formatComma(d.marketSum()),
+                formatComma(d.listedStockCnt()),
+
+                d.facePrice(),
+                d.unit(),
+
+                formatComma(d.frgnLimitCnt()),
+                formatComma(d.frgnHoldCnt()),
+                formatPercent(d.frgnAcqRatio()),
+
+                opinion,
+                targetPrice,
+                consensusDate,
+
+                formatComma(d.week52HighPrice()),
+                formatComma(d.week52LowPrice()),
+
+                d.per(),
+                d.eps(),
+
+                d.estimatedPer(),
+                d.estimatedEps(),
+
+                d.pbr(),
+                d.bps(),
+
+                formatPercent(d.dividendRate()),
+
+                d.sameIndustryPer(),
+                formatSignedRate(d.sameIndustryChangeRate())
+        );
     }
 
     private String getHtml(String code) {
@@ -823,67 +856,98 @@ public class NaverStockCrawlerClient {
 
     public StockDetailTickMessage getStockDetailSummary(String code) {
 
-        Document doc = fetchDetailDocument(code);
+        NaverStockDetailResponse d = fetchDetail(code);
+        String market = fetchSosok(code);
 
-        Element blind = doc.selectFirst("dl.blind");
-        if (blind == null) {
-            throw new IllegalStateException("네이버 종목 상세 파싱 실패: dl.blind 없음. code=" + code);
-        }
-
-        Elements dds = blind.select("dd");
-        if (dds.size() < 12) {
-            throw new IllegalStateException("네이버 종목 상세 파싱 실패: dd 개수 부족. code=" + code);
-        }
-
-        String baseTime = dds.get(0).text();
-
-        String stockName = extractAfter(dds.get(1).text(), "종목명");
-
-        String codeMarket = dds.get(2).text();
-        String market = codeMarket.contains("코스닥") ? "코스닥" : "코스피";
-
-        PriceInfo priceInfo = parsePriceInfo(dds.get(3).text());
-
-        String prevPrice = extractAfter(dds.get(4).text(), "전일가");
-        String openPrice = extractAfter(dds.get(5).text(), "시가");
-        String highPrice = extractAfter(dds.get(6).text(), "고가");
-        String upperLimit = extractAfter(dds.get(7).text(), "상한가");
-        String lowPrice = extractAfter(dds.get(8).text(), "저가");
-        String lowerLimit = extractAfter(dds.get(9).text(), "하한가");
-        String volume = extractAfter(dds.get(10).text(), "거래량");
-
-        // 백만만 처리 : 1,123백만 -> 1,123,000,000
-        String raw = extractAfter(dds.get(11).text(), "거래대금").trim();
-
-        String numberPart = raw.replaceAll("[^0-9,]", "");
-        String unitPart = raw.replaceAll("[0-9,]", "");
-
-        long value = Long.parseLong(numberPart.replace(",", ""));
-
-        if (unitPart.contains("백만")) {
-            value *= 1_000_000L;
-        }
-
-        String tradingValue = String.format("%,d", value);
+        String direction = mapDirection(d.upDownGb()); // 기존 PopularStock 매핑 재사용
 
         return StockDetailTickMessage.of(
-                code,
-                stockName,
+                d.itemcode(),
+                d.itemname(),
                 market,
-                baseTime,
-                priceInfo.currentPrice(),
-                priceInfo.diffPrice(),
-                priceInfo.diffRate(),
-                priceInfo.direction(),
-                prevPrice,
-                openPrice,
-                highPrice,
-                upperLimit,
-                lowPrice,
-                lowerLimit,
-                volume,
-                tradingValue
+                d.tradeTime(),
+                formatComma(d.nowPrice()),
+                formatComma(d.prevChangePrice()),
+                formatSignedRate(d.prevChangeRate()),
+                direction,
+                formatComma(d.prevClosePrice()),
+                formatComma(d.openPrice()),
+                formatComma(d.highPrice()),
+                formatComma(d.upperLimitPrice()),
+                formatComma(d.lowPrice()),
+                formatComma(d.lowerLimitPrice()),
+                formatComma(d.tradeVolume()),
+                formatComma(d.tradeAmount())
         );
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverSosokResponse(String sosok, String isNxtYn) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverStockDetailResponse(
+            String itemcode, String itemname, String sosok, String upJongName,
+            String tradeTime, String manageStatusGb, String marketAlertType,
+            String nowPrice, String openPrice, String prevClosePrice, String stdPrice,
+            String highPrice, String lowPrice, String upperLimitPrice, String lowerLimitPrice,
+            String upDownGb, String prevChangePrice, String prevChangeRate,
+            String tradeVolume, String tradeAmount, String marketSum,
+            String listedStockCnt, String facePrice, String unit,
+            String frgnLimitCnt, String frgnHoldCnt, String frgnAcqRatio, String frgnHoldRate,
+            String per, String eps, String estimatedPer, String estimatedEps,
+            String pbr, String bps, String dividendRate,
+            String week52HighPrice, String week52LowPrice,
+            String comment1, String comment2, String comment3,
+            String sameIndustryPer, String sameIndustryChangeRate
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverTraderInfoResponse(
+            String sellQuant, String buyQuant, String quant,
+            List<NaverTraderItem> traderList
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverTraderItem(
+            String traderNo, String nameKr, String display_name,
+            String sellQuant, String buyQuant, String quant
+    ) {}
+
+    private String fetchSosok(String code) {
+        try {
+            NaverSosokResponse res = stockApiClient.get()
+                    .uri("/api/domestic/detail/{code}/sosok", code)
+                    .retrieve()
+                    .body(NaverSosokResponse.class);
+            return res != null ? res.sosok() : "";
+        } catch (RestClientResponseException e) {
+            log.warn("sosok 조회 실패. code={}", code);
+            return "";
+        }
+    }
+
+    private NaverStockDetailResponse fetchDetail(String code) {
+        try {
+            return stockApiClient.get()
+                    .uri("/api/domestic/detail/{code}/detail?codeType=KRX", code)
+                    .retrieve()
+                    .body(NaverStockDetailResponse.class);
+        } catch (RestClientResponseException e) {
+            log.error("detail API 호출 실패. status={}, code={}", e.getStatusCode(), code);
+            throw new IllegalStateException("네이버 종목 상세 API 실패", e);
+        }
+    }
+
+    private NaverTraderInfoResponse fetchTraderInfo(String code) {
+        try {
+            return stockApiClient.get()
+                    .uri("/api/domestic/detail/{code}/traderInfo", code)
+                    .retrieve()
+                    .body(NaverTraderInfoResponse.class);
+        } catch (RestClientResponseException e) {
+            log.warn("traderInfo 조회 실패. code={}", code);
+            return null;
+        }
     }
 
     private PriceInfo parsePriceInfo(String text) {
@@ -941,16 +1005,24 @@ public class NaverStockCrawlerClient {
 
     public StockDetailExtraResponse getStockDetailExtra(String code) {
 
-        Document doc = fetchDetailDocument(code);
+        NaverStockDetailResponse d = fetchDetail(code);
+        String market = fetchSosok(code);
+        NaverTraderInfoResponse trader = fetchTraderInfo(code);
 
-        String companySummary = parseCompanySummary(doc);
-        String warningType = parseWarningType(doc);
-        String manage = parseManage(doc);
-        List<BrokerTradeInfo> brokerTrades = parseBrokerTrades(doc);
-        ForeignBrokerSummary foreignBrokerSummary = parseForeignBrokerSummary(doc);
+        String companySummary = String.join("\n",
+                List.of(d.comment1(), d.comment2(), d.comment3()).stream()
+                        .filter(s -> s != null && !s.isBlank())
+                        .toList());
+
+        String warningType = mapWarningType(d.marketAlertType());
+        String manage = mapManageStatus(d.manageStatusGb());
+
+        List<BrokerTradeInfo> brokerTrades = mapBrokerTrades(trader);
+        ForeignBrokerSummary foreignBrokerSummary = mapForeignBrokerSummary(trader);
 
         return new StockDetailExtraResponse(
                 code,
+                market,
                 companySummary,
                 warningType,
                 manage,
@@ -959,96 +1031,81 @@ public class NaverStockCrawlerClient {
         );
     }
 
-    private Document fetchDetailDocument(String code) {
-        try {
-            String html = getHtml(code);
-            return Jsoup.parse(html);
-        } catch (RestClientResponseException e) {
-            log.error("Naver 종목 상세 크롤링 실패. status={}, code={}", e.getStatusCode(), code);
-            throw new IllegalStateException("네이버 종목 상세 크롤링 실패", e);
-        }
+    private String mapWarningType(String marketAlertType) {
+        if (marketAlertType == null) return "";
+        return switch (marketAlertType) {
+            case "00" -> "";
+            case "01" -> "투자주의";
+            case "02" -> "투자경고";
+            case "03" -> "투자위험";
+            default -> "";
+        };
     }
 
-    private String parseCompanySummary(Document doc) {
-
-        Elements ps = doc.select("#summary_info p");
-
-        StringBuilder sb = new StringBuilder();
-
-        for (Element p : ps) {
-            String text = p.text().trim();
-            if (!text.isBlank()) {
-                if (!sb.isEmpty()) {
-                    sb.append("\n");
-                }
-                sb.append(text);
-            }
-        }
-
-        return sb.toString();
+    private String mapManageStatus(String manageStatusGb) {
+        if (manageStatusGb == null || manageStatusGb.equals("0")) return "";
+        return "관리종목";
     }
 
-    private String parseWarningType(Document doc) {
-        for (String cls : List.of("caution", "warning", "danger")) {
-            Element em = doc.selectFirst(".description em." + cls);
+    private List<BrokerTradeInfo> mapBrokerTrades(NaverTraderInfoResponse trader) {
+        if (trader == null || trader.traderList() == null) return new ArrayList<>();
 
-            if (em == null) continue;
+        List<NaverTraderItem> sellTop = trader.traderList().stream()
+                .sorted((a, b) -> Long.compare(parseLongSafely(b.sellQuant()), parseLongSafely(a.sellQuant())))
+                .limit(5).toList();
 
-            Element blind = em.selectFirst("span.blind");
-
-            if (blind != null && !blind.text().isBlank()) {
-                return blind.text().trim();
-            }
-
-            String text = em.text().trim();
-            if (!text.isBlank()) {
-                return text;
-            }
-        }
-        return "";
-    }
-
-    private String parseManage(Document doc) {
-        Element manage = doc.selectFirst(".description em.manage");
-        return manage == null ? "" : manage.text().trim();
-    }
-
-    private List<BrokerTradeInfo> parseBrokerTrades(Document doc) {
+        List<NaverTraderItem> buyTop = trader.traderList().stream()
+                .sorted((a, b) -> Long.compare(parseLongSafely(b.buyQuant()), parseLongSafely(a.buyQuant())))
+                .limit(5).toList();
 
         List<BrokerTradeInfo> result = new ArrayList<>();
+        int size = Math.max(sellTop.size(), buyTop.size());
 
-        Element investTrend = doc.selectFirst("div.invest_trend");
-        if (investTrend == null) {
-            return result;
-        }
-
-        Element table = investTrend.selectFirst("table.tb_type1");
-        if (table == null) {
-            return result;
-        }
-
-        Elements rows = table.select("tbody tr");
-
-        for (Element row : rows) {
-
-            Elements tds = row.select("td");
-            if (tds.size() != 4) {
-                continue;
-            }
+        for (int i = 0; i < size; i++) {
+            NaverTraderItem s = i < sellTop.size() ? sellTop.get(i) : null;
+            NaverTraderItem b = i < buyTop.size() ? buyTop.get(i) : null;
 
             result.add(new BrokerTradeInfo(
-                    tds.get(0).text(),
-                    tds.get(1).text(),
-                    tds.get(2).text(),
-                    tds.get(3).text(),
-                    extractDirection(tds.get(0)),
-                    extractDirection(tds.get(1)),
-                    extractDirection(tds.get(2)),
-                    extractDirection(tds.get(3))
+                    s != null ? s.display_name() : "",
+                    s != null ? formatComma(s.sellQuant()) : "",
+                    b != null ? b.display_name() : "",
+                    b != null ? formatComma(b.buyQuant()) : ""
             ));
         }
-
         return result;
+    }
+
+    private ForeignBrokerSummary mapForeignBrokerSummary(NaverTraderInfoResponse trader) {
+        if (trader == null) return null;
+
+        long quant = parseLongSafely(trader.quant());
+
+        return new ForeignBrokerSummary(
+                "외국계 합계",
+                formatComma(trader.sellQuant()),
+                formatSignedComma(trader.quant()),
+                formatComma(trader.buyQuant())
+        );
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverConsensusResponse(
+            String itemCode,
+            String date,
+            String opinion,
+            String targetPrice
+    ) {}
+
+    private NaverConsensusResponse fetchConsensus(String code) {
+        try {
+            return stockApiClient.get()
+                    .uri("/api/domestic/detail/{code}/consensus", code)
+                    .retrieve()
+                    .body(NaverConsensusResponse.class);
+        } catch (RestClientResponseException e) {
+            log.warn("consensus 조회 실패. code={}", code);
+            return null;
+        }
     }
 
     private String extractDirection(Element td) {
@@ -1065,33 +1122,6 @@ public class NaverStockCrawlerClient {
         return "";
     }
 
-    private ForeignBrokerSummary parseForeignBrokerSummary(Document doc) {
-
-        Element row = doc.selectFirst(".invest_trend table.tb_type1 tfoot tr");
-        if (row == null) {
-            return null;
-        }
-
-        Elements tds = row.select("td");
-        if (tds.size() != 4) {
-            return null;
-        }
-
-        Element sellEm = tds.get(1).selectFirst("em");
-        Element buyDiffEm = tds.get(2).selectFirst("em");
-        Element buyVolEm = tds.get(3).selectFirst("em");
-
-        return new ForeignBrokerSummary(
-                tds.get(0).text(),
-                tds.get(1).text(),
-                tds.get(2).text(),
-                tds.get(3).text(),
-                extractClass(sellEm),
-                extractClass(buyDiffEm),
-                extractClass(buyVolEm)
-        );
-    }
-
     private String extractClass(Element element) {
 
         if (element == null) {
@@ -1104,14 +1134,6 @@ public class NaverStockCrawlerClient {
             return "DOWN";
         }
         return "";
-    }
-
-    private String extractAfter(String text, String prefix) {
-
-        if (text == null) {
-            return "";
-        }
-        return text.replace(prefix, "").trim();
     }
 
     public List<ExchangeRateDto> getExchangeRates() {
