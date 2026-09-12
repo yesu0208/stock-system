@@ -1043,58 +1043,72 @@ public class NaverStockCrawlerClient {
 
     public List<ExchangeRateDto> getExchangeRates() {
 
-        String html;
+        List<NaverMarketIndexItem> items;
         try {
-            html = restClient.get()
-                    .uri("/marketindex/")
+            items = stockApiClient.get()
+                    .uri("/api/securityService/marketindex/majors/rpc")
                     .retrieve()
-                    .body(String.class);
+                    .body(new ParameterizedTypeReference<List<NaverMarketIndexItem>>() {});
         } catch (RestClientResponseException e) {
-            log.error("Naver 환율 크롤링 실패. status={}", e.getStatusCode());
+            log.error("Naver 환율 API 호출 실패. status={}", e.getStatusCode());
             throw new IllegalStateException("네이버 환율 크롤링 실패", e);
         }
 
-        Document doc = Jsoup.parse(html);
-        Elements items = doc.select("#exchangeList li");
+        if (items == null) {
+            return new ArrayList<>();
+        }
 
         List<ExchangeRateDto> result = new ArrayList<>();
-
-        for (Element li : items) {
-
-            Element head = li.selectFirst("a.head");
-            if (head == null) {
+        for (NaverMarketIndexItem item : items) {
+            if (!"exchange".equals(item.categoryType())) {
                 continue;
             }
-
-            String currencyName = head.selectFirst("h3 span.blind").text().trim();
-
-            String currencyCode = head.classNames().stream()
-                    .filter(c -> !c.equals("head"))
-                    .findFirst()
-                    .orElse("");
-
-            Element info = head.selectFirst("div.head_info");
-            String rate = info.selectFirst("span.value").text().trim();
-            String change = info.selectFirst("span.change").text().trim();
-
-            String direction;
-            if (info.hasClass("point_up")) {
-                direction = "상승";
-            } else if (info.hasClass("point_dn")) {
-                direction = "하락";
-            } else {
-                direction = "보합";
-            }
-
-            String time = li.selectFirst("div.graph_info span.time").text().trim();
-            String detailUrl = head.attr("href");
-
-            result.add(new ExchangeRateDto(
-                    currencyName, currencyCode, rate, change, direction, time, detailUrl
-            ));
+            result.add(mapExchangeRate(item));
         }
 
         return result;
+    }
+
+    private ExchangeRateDto mapExchangeRate(NaverMarketIndexItem item) {
+
+        String direction = item.fluctuationsType() != null
+                ? item.fluctuationsType().text()
+                : "보합";
+
+        String time = item.localTradedAt() != null ? item.localTradedAt() : "";
+
+        return new ExchangeRateDto(
+                item.name(),
+                item.symbolCode(),
+                item.closePrice(),
+                item.fluctuations(),
+                direction,
+                time,
+                item.endUrl()
+        );
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverMarketIndexItem(
+            String categoryType,
+            String reutersCode,
+            String symbolCode,
+            String name,
+            String closePrice,
+            String fluctuations,
+            String fluctuationsRatio,
+            NaverFluctuationsType fluctuationsType,
+            String localTradedAt,
+            String endUrl
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverFluctuationsType(
+            String code,
+            String text,
+            String name
+    ) {
     }
 
     public List<WorldIndexDto> getWorldIndexes() {
