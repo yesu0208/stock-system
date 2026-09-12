@@ -12,6 +12,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.core.ParameterizedTypeReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.math.RoundingMode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -131,112 +132,155 @@ public class NaverStockCrawlerClient {
 
 
 
+    private static final int FOREIGN_TRADE_PAGE_SIZE = 10;
+
     public TradePageResponse getForeignInstitutionTrades(String code, int page) {
 
         List<ForeignInstitutionTrade> current = fetchTradePage(code, page);
         List<ForeignInstitutionTrade> next = fetchTradePage(code, page + 1);
 
-        boolean hasNext = !next.isEmpty() && !isSamePage(current, next);
+        boolean hasNext = !next.isEmpty();
 
         return new TradePageResponse(current, hasNext);
     }
 
     private List<ForeignInstitutionTrade> fetchTradePage(String code, int page) {
 
-        String html;
+        int startIdx = page - 1;
+
+        List<NaverForeignTrendItem> items;
         try {
-            html = restClient.get()
-                    .uri("/item/frgn.naver?code={code}&page={page}", code, page)
+            items = stockApiClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/domestic/detail/{code}/trend")
+                            .queryParam("tradeType", "KRX")
+                            .queryParam("startIdx", startIdx)
+                            .queryParam("pageSize", FOREIGN_TRADE_PAGE_SIZE)
+                            .build(code))
                     .retrieve()
-                    .body(String.class);
+                    .body(new ParameterizedTypeReference<List<NaverForeignTrendItem>>() {});
         } catch (RestClientResponseException e) {
-            log.error("Naver foreign trade crawling error. status={}, code={}, page={}",
+            log.error("Naver 외국인/기관 매매동향 API 호출 실패. status={}, code={}, page={}",
                     e.getStatusCode(), code, page);
             throw new IllegalStateException("네이버 외국인/기관 매매동향 크롤링 실패", e);
         }
 
-        Document doc = Jsoup.parse(html);
+        if (items == null) {
+            return new ArrayList<>();
+        }
+
         List<ForeignInstitutionTrade> result = new ArrayList<>();
-
-        Elements rows = doc.select("table.type2 tr");
-
-        for (Element row : rows) {
-
-            if (!row.hasAttr("onmouseover")) {
-                continue;
-            }
-
-            Elements tds = row.select("td");
-
-            if (tds.size() < 9) {
-                continue;
-            }
-
-            String date = tds.get(0).text().trim();
-            
-            if (date.isBlank()) continue;
-
-            result.add(new ForeignInstitutionTrade(
-                    tds.get(0).text(),
-                    tds.get(1).text(),
-                    parseDiff(tds.get(2).text()),
-                    tds.get(3).text(),
-                    tds.get(4).text(),
-                    tds.get(5).text(),
-                    tds.get(6).text(),
-                    tds.get(7).text(),
-                    tds.get(8).text()
-            ));
+        for (NaverForeignTrendItem item : items) {
+            result.add(mapForeignTrend(item));
         }
 
         return result;
     }
 
-    private boolean isSamePage(List<ForeignInstitutionTrade> a, List<ForeignInstitutionTrade> b) {
+    private ForeignInstitutionTrade mapForeignTrend(NaverForeignTrendItem item) {
 
-        if (a.size() != b.size()) {
-            return false;
+        String date = formatBizDate(item.bizdate());
+        String closePrice = formatComma(item.closePrice());
+        String diff = formatDiff(item.upDownGb(), item.prevChangePrice());
+        String rate = formatRate(item.closePrice(), item.prevChangePrice());
+        String volume = formatComma(item.tradeVolume());
+        String institutionNetBuy = formatSignedComma(item.organPureBuyQuant());
+        String individualNetBuy = formatSignedComma(item.individualPureBuyQuant());
+        String foreignNetBuy = formatSignedComma(item.foreignerPureBuyQuant());
+        String foreignHoldings = formatComma(item.frgnStock());
+        String foreignRate = formatPercent(item.frgnHoldRatio());
+
+        return new ForeignInstitutionTrade(
+                date, closePrice, diff, rate,
+                volume, institutionNetBuy, individualNetBuy,
+                foreignNetBuy, foreignHoldings, foreignRate
+        );
+    }
+
+    private String formatBizDate(String bizdate) {
+        if (bizdate == null || bizdate.length() != 8) {
+            return bizdate == null ? "" : bizdate;
+        }
+        return bizdate.substring(0, 4) + "." + bizdate.substring(4, 6) + "." + bizdate.substring(6, 8);
+    }
+
+    private String formatDiff(String upDownGb, String prevChangePriceRaw) {
+
+        long prevChangePrice = parseLongSafely(prevChangePriceRaw);
+        String absValue = formatComma(String.valueOf(Math.abs(prevChangePrice)));
+
+        if (upDownGb == null) {
+            return absValue;
         }
 
-        for (int i = 0; i < a.size(); i++) {
+        return switch (upDownGb) {
+            case "상승" -> "▲ " + absValue;
+            case "하락" -> "▼ " + absValue;
+            case "상한가" -> "⬆" + absValue;
+            case "하한가" -> "⬇" + absValue;
+            default -> "0";
+        };
+    }
 
-            ForeignInstitutionTrade x = a.get(i);
-            ForeignInstitutionTrade y = b.get(i);
+    private String formatRate(String closePriceRaw, String prevChangePriceRaw) {
 
-            if (!x.date().equals(y.date())
-                    || !x.closePrice().equals(y.closePrice())
-                    || !x.volume().equals(y.volume())) {
-                return false;
+        try {
+            BigDecimal closePrice = new BigDecimal(closePriceRaw);
+            BigDecimal prevChangePrice = new BigDecimal(prevChangePriceRaw);
+            BigDecimal prevClosePrice = closePrice.subtract(prevChangePrice);
+
+            if (prevClosePrice.compareTo(BigDecimal.ZERO) == 0) {
+                return "0.00%";
             }
-        }
 
-        return true;
+            BigDecimal rate = prevChangePrice
+                    .divide(prevClosePrice, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            String sign = rate.compareTo(BigDecimal.ZERO) > 0 ? "+" : "";
+            return sign + rate + "%";
+        } catch (Exception e) {
+            log.warn("등락률 계산 실패. closePrice={}, prevChangePrice={}", closePriceRaw, prevChangePriceRaw, e);
+            return "0.00%";
+        }
     }
 
-    private String parseDiff(String text) {
-
-        text = text.replace(",", "").trim();
-
-        if (text.startsWith("상승")) {
-            return "▲ " + text.replace("상승", "").trim();
+    private String formatComma(String rawNumber) {
+        try {
+            long value = Long.parseLong(rawNumber.trim());
+            return String.format("%,d", Math.abs(value));
+        } catch (Exception e) {
+            return rawNumber == null ? "" : rawNumber;
         }
-        if (text.startsWith("하락")) {
-            return "▼ " + text.replace("하락", "").trim();
-        }
-        if (text.startsWith("보합0")) {
-            return "0";
-        }
-        if (text.startsWith("상한가")) {
-            return "⬆" + text.replace("상한가", "").trim();
-        }
-        if (text.startsWith("하한가")) {
-            return "⬇" + text.replace("하한가", "").trim();
-        }
-
-        return text;
     }
 
+    private String formatSignedComma(String rawNumber) {
+        try {
+            long value = Long.parseLong(rawNumber.trim());
+            String formatted = String.format("%,d", Math.abs(value));
+            return value < 0 ? "-" + formatted : formatted;
+        } catch (Exception e) {
+            return rawNumber == null ? "" : rawNumber;
+        }
+    }
 
+    private String formatPercent(String rawPercent) {
+        try {
+            BigDecimal value = new BigDecimal(rawPercent).setScale(2, RoundingMode.HALF_UP);
+            return value + "%";
+        } catch (Exception e) {
+            return rawPercent == null ? "" : rawPercent;
+        }
+    }
+
+    private long parseLongSafely(String value) {
+        try {
+            return Long.parseLong(value.trim());
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
 
     public MarketMainResponse getMarketIndices() {
 
@@ -632,6 +676,22 @@ public class NaverStockCrawlerClient {
             String itemname,
             String nowPrice,
             String upDownGb
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverForeignTrendItem(
+            String itemCode,
+            String bizdate,
+            String organPureBuyQuant,
+            String individualPureBuyQuant,
+            String foreignerPureBuyQuant,
+            String frgnStock,
+            String frgnHoldRatio,
+            String closePrice,
+            String prevChangePrice,
+            String upDownGb,
+            String tradeVolume
     ) {
     }
 

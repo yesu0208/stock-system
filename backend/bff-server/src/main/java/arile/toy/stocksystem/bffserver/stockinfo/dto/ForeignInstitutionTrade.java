@@ -9,6 +9,7 @@ public record ForeignInstitutionTrade(
         String volume,
 
         String institutionNetBuy,
+        String individualNetBuy,
 
         String foreignNetBuy,
         String foreignHoldings,
