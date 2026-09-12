@@ -13,6 +13,22 @@ interface Props {
 
 type LoginState = 'idle' | 'loading' | 'success' | 'exiting' | 'failure'
 
+function formatBaseTime(iso: string): string {
+    try {
+        const d = new Date(iso)
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토']
+        const weekday = weekdays[d.getDay()]
+
+        return `${yyyy}.${mm}.${dd}(${weekday}) 기준`
+    } catch {
+        return iso
+    }
+}
+
 export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props) {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
@@ -134,7 +150,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
                                     실시간 시세
                                 </span>
                                 <span className="login-brand__market-divider" />
-                                <span className="login-brand__market-time">{activeIndex.baseTime}</span>
+                                <span className="login-brand__market-time">{formatBaseTime(activeIndex.baseTime)}</span>
                             </div>
 
                             {/* [수정] KOSPI/KOSDAQ 동시 표시 → marketTab 하나만 표시 */}
