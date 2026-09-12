@@ -29,6 +29,29 @@ function formatBaseTime(iso: string): string {
     }
 }
 
+// Header.tsx와 동일한 로직으로 시간에 따른 시장 상태 판단
+type MarketDot = 'green' | 'yellow' | 'gray'
+
+function getMarketStatus(date: Date): { label: string; dot: MarketDot } {
+    const day = date.getDay() // 0=일, 6=토
+    const minutes = date.getHours() * 60 + date.getMinutes()
+
+    if (day === 0 || day === 6) {
+        return { label: '장마감', dot: 'gray' }
+    } else if (minutes >= 530 && minutes < 540) {
+        // 08:50 ~ 09:00
+        return { label: '동시호가', dot: 'yellow' }
+    } else if (minutes >= 540 && minutes < 920) {
+        // 09:00 ~ 15:20
+        return { label: '개장', dot: 'green' }
+    } else if (minutes >= 920 && minutes < 930) {
+        // 15:20 ~ 15:30
+        return { label: '동시호가', dot: 'yellow' }
+    } else {
+        return { label: '장마감', dot: 'gray' }
+    }
+}
+
 export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props) {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
@@ -42,13 +65,21 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
 
     const { marketMain } = useMarketData()
 
-    // [수정] KOSPI/KOSDAQ을 동시에 보여주지 않고 5초마다 번갈아 표시
+    // KOSPI/KOSDAQ을 동시에 보여주지 않고 5초마다 번갈아 표시
     const [marketTab, setMarketTab] = useState<'KOSPI' | 'KOSDAQ'>('KOSPI')
 
     useEffect(() => {
         const timer = window.setInterval(() => {
             setMarketTab((prev) => (prev === 'KOSPI' ? 'KOSDAQ' : 'KOSPI'))
         }, 5000)
+        return () => window.clearInterval(timer)
+    }, [])
+
+    // 시간에 따른 시장 상태(휴장/동시호가/개장) 갱신용 현재 시각
+    const [now, setNow] = useState(new Date())
+
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(new Date()), 1000)
         return () => window.clearInterval(timer)
     }, [])
 
@@ -115,7 +146,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
                 : state === 'failure' ? '로그인 실패'
                     : ''
 
-    // [수정] marketTab에 해당하는 지수만 뽑아서 렌더링에 사용
+    // marketTab에 해당하는 지수만 뽑아서 렌더링에 사용
     const activeIndex = marketMain
         ? (marketTab === 'KOSPI' ? marketMain.kospi : marketMain.kosdaq)
         : null
@@ -125,6 +156,9 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
             : activeIndex.direction === 'DOWN' ? '#60a5fa'
                 : '#94a3b8'
         : '#94a3b8'
+
+    // 시간 기반 시장 상태
+    const marketStatus = getMarketStatus(now)
 
     return (
         <div className={`login-wrapper${state === 'exiting' ? ' is-exiting' : ''}${isEntering ? ' is-entering' : ''}`}>
@@ -140,20 +174,20 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
                     모의투자를 시작해보세요!
                 </p>
 
-                {/* [수정] features 리스트보다 위로 이동 */}
+                {/* features 리스트보다 위로 이동 */}
                 <div className="login-brand__market">
                     {activeIndex ? (
                         <>
                             <div className="login-brand__market-row">
-                                <span className="login-brand__market-dot login-brand__market-dot--green" />
-                                <span className="login-brand__market-label login-brand__market-label--green">
-                                    실시간 시세
+                                <span className={`login-brand__market-dot login-brand__market-dot--${marketStatus.dot}`} />
+                                <span className={`login-brand__market-label login-brand__market-label--${marketStatus.dot}`}>
+                                    {marketStatus.label}
                                 </span>
                                 <span className="login-brand__market-divider" />
                                 <span className="login-brand__market-time">{formatBaseTime(activeIndex.baseTime)}</span>
                             </div>
 
-                            {/* [수정] KOSPI/KOSDAQ 동시 표시 → marketTab 하나만 표시 */}
+                            {/* KOSPI/KOSDAQ 동시 표시 → marketTab 하나만 표시 */}
                             <div className="login-brand__market-row" key={marketTab}>
                                 <span className="login-brand__market-index">
                                     <span className="login-brand__market-index-name">{marketTab}</span>{' '}
