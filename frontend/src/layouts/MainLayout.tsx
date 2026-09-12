@@ -5,6 +5,7 @@ import Modal from '../components/Modal'
 import { logout } from '../api/auth'
 import { disconnectStomp } from '../api/stompClient'
 import NoticeModal from '../main/components/NoticeModal'
+import MyInfoModal from '../main/components/MyInfoModal'
 import { useUser } from '../main/context/UserContext'
 import RankBadge from '../main/components/RankBadge'
 import styles from './MainLayout.module.css'
@@ -19,8 +20,9 @@ type LogoutReason = 'manual' | 'expired' | null
 export default function MainLayout({ children, onLoggedOut }: Props) {
     const [logoutReason, setLogoutReason] = useState<LogoutReason>(null)
     const [showNoticeModal, setShowNoticeModal] = useState(false)
+    const [showMyInfoModal, setShowMyInfoModal] = useState(false)
     const { user } = useUser()
-    
+
     const handleLogout = async () => {
         try {
             await logout()
@@ -53,10 +55,10 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
         <div className={styles.container}>
             <header className={styles.header}>
                 <h1 className={styles.title}>모의투자 서비스</h1>
-                <div className={styles.userBadge}>
+                <button className={styles.userBadge} onClick={() => setShowMyInfoModal(true)}>
                     <span>{user?.nickname ?? '...'}</span>
                     <RankBadge rank={user?.rank ?? null} size={20} />
-                </div>
+                </button>
                 <button className={styles.noticeButton} onClick={() => setShowNoticeModal(true)}>공지사항</button>
                 <button className={styles.logoutButton} onClick={handleLogout}>로그아웃</button>
             </header>
@@ -88,6 +90,7 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
             )}
 
             <NoticeModal show={showNoticeModal} onClose={() => setShowNoticeModal(false)} />
+            <MyInfoModal show={showMyInfoModal} onClose={() => setShowMyInfoModal(false)} />
         </div>
     )
 }
