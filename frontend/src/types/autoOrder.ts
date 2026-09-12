@@ -1,5 +1,6 @@
 export type AutoOrderType = 'BUY' | 'SELL'
 export type ResponseType = 'SUCCESS' | 'ERROR'
+export type LeverageRatio = 'SPOT' | 'X1_5' | 'X2' | 'X2_5'
 
 export interface AutoOrderResultResponse {
     responseType: ResponseType
@@ -7,6 +8,7 @@ export interface AutoOrderResultResponse {
     username: string
     stockCode: string
     autoOrderType: AutoOrderType
+    leverageRatio: LeverageRatio | null
     triggerPrice: number
     orderPrice: number
     orderQuantity: number
@@ -18,6 +20,7 @@ export interface AutoOrderResponseMessage {
     autoOrderId: number
     stockCode: string
     autoOrderType: AutoOrderType
+    leverageRatio: LeverageRatio | null
     triggerPrice: number
     orderPrice: number
     orderQuantity: number
@@ -31,4 +34,5 @@ export interface AutoOrderResponse {
     triggerPrice: number;
     orderPrice: number;
     orderQuantity: number;
+    leverageRatio: LeverageRatio | null;
 }

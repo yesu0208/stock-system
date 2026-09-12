@@ -6,6 +6,8 @@ import { logout } from '../api/auth'
 import { disconnectStomp } from '../api/stompClient'
 import NoticeModal from '../main/components/NoticeModal'
 import MyInfoModal from '../main/components/MyInfoModal'
+import HelpModal from '../main/components/HelpModal'
+import ManagedModal from '../main/components/ManagedModal'
 import { useUser } from '../main/context/UserContext'
 import RankBadge from '../main/components/RankBadge'
 import styles from './MainLayout.module.css'
@@ -21,6 +23,8 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
     const [logoutReason, setLogoutReason] = useState<LogoutReason>(null)
     const [showNoticeModal, setShowNoticeModal] = useState(false)
     const [showMyInfoModal, setShowMyInfoModal] = useState(false)
+    const [showHelpModal, setShowHelpModal] = useState(false)
+    const [showManagedModal, setShowManagedModal] = useState(false)
     const { user } = useUser()
 
     const handleLogout = async () => {
@@ -35,7 +39,6 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
         disconnectStomp()
     }
 
-    // 다른 탭 로그아웃 or refresh 실패 감지
     useEffect(() => {
         const unsubscribe = tokenStorage.subscribe(token => {
             if (!token) {
@@ -45,7 +48,6 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
         return () => unsubscribe()
     }, [])
 
-    // [5단계 변경] navigate('/login', { replace: true }) → onLoggedOut()
     const handleModalClose = () => {
         setLogoutReason(null)
         setTimeout(() => onLoggedOut(), 0)
@@ -59,8 +61,14 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
                     <span>{user?.nickname ?? '...'}</span>
                     <RankBadge rank={user?.rank ?? null} size={20} />
                 </button>
-                <button className={styles.noticeButton} onClick={() => setShowNoticeModal(true)}>공지사항</button>
-                <button className={styles.logoutButton} onClick={handleLogout}>로그아웃</button>
+                <div className={styles.headerActions}>
+                    <button className={styles.noticeButton} onClick={() => setShowNoticeModal(true)}>공지사항</button>
+                    <button className={styles.noticeButton} onClick={() => setShowHelpModal(true)}>도움말</button>
+                    {user?.role === 'ADMIN' && (
+                        <button className={styles.noticeButton} onClick={() => setShowManagedModal(true)}>관리자</button>
+                    )}
+                    <button className={styles.logoutButton} onClick={handleLogout}>로그아웃</button>
+                </div>
             </header>
 
             <main className={styles.main}>{children}</main>
@@ -91,6 +99,10 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
 
             <NoticeModal show={showNoticeModal} onClose={() => setShowNoticeModal(false)} />
             <MyInfoModal show={showMyInfoModal} onClose={() => setShowMyInfoModal(false)} />
+            <HelpModal show={showHelpModal} onClose={() => setShowHelpModal(false)} />
+            {user?.role === 'ADMIN' && (
+                <ManagedModal show={showManagedModal} onClose={() => setShowManagedModal(false)} />
+            )}
         </div>
     )
 }

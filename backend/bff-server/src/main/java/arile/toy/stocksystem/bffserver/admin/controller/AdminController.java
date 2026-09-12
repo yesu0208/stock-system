@@ -50,7 +50,9 @@ public class AdminController {
     /** 유저 목록 화면 */
     @GetMapping
     public List<UserDto> getAllUsers() {
-        return userService.getAllUsers();
+        return userService.getAllUsers().stream()
+                .map(user -> user.withRank(rankApiClient.getRank(user.username())))
+                .toList();
     }
 
     /** 유저 상세 - 기본 정보 + 랭크 */

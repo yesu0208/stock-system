@@ -1,4 +1,5 @@
 export type OrderType = 'BUY' | 'SELL'
+export type LeverageRatio = 'SPOT' | 'X1_5' | 'X2' | 'X2_5'
 
 export interface OrderResultResponse {
     responseType: 'SUCCESS' | 'ERROR'
@@ -6,6 +7,7 @@ export interface OrderResultResponse {
     username: string
     stockCode: string
     orderType: OrderType
+    leverageRatio: LeverageRatio | null
     orderPrice: number
     orderQuantity: number
     orderTime: string | null
@@ -17,6 +19,7 @@ export interface OrderResponseMessage {
     username: string
     stockCode: string
     orderType: OrderType
+    leverageRatio: LeverageRatio | null
     orderPrice: number
     orderQuantity: number
     remainingQuantity: number
@@ -29,4 +32,5 @@ export interface OrderResponse {
     orderType: OrderType;
     orderPrice: number;
     orderQuantity: number;
+    leverageRatio: LeverageRatio | null;
 }
