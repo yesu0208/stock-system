@@ -1,4 +1,5 @@
 import ReactDOM from 'react-dom/client'
+import './index.css'
 import App from './App'
 import { ToastProvider } from './main/context/ToastContext'
 import { MsgProvider } from './main/context/MsgContext'
