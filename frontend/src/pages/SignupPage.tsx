@@ -198,7 +198,12 @@ export default function SignupPage({ onNavigateToLogin }: Props) {
         setState('loading')
 
         try {
-            await signUp({ username: id, nickname, password: pw })
+            const MIN_LOADING_MS = 1000 // 최소 로딩 표시 시간
+
+            await Promise.all([
+                signUp({ username: id, nickname, password: pw }),
+                new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
+            ])
 
             setState('success')
             window.setTimeout(() => {
@@ -206,6 +211,9 @@ export default function SignupPage({ onNavigateToLogin }: Props) {
                 window.setTimeout(onNavigateToLogin, 500)
             }, 1200)
         } catch (err: unknown) {
+            const MIN_LOADING_MS = 1000
+            await new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS))
+
             if (axios.isAxiosError(err)) {
                 setError(err.response?.data?.message ?? '회원가입 실패: 서버 오류가 발생했습니다.')
             } else {

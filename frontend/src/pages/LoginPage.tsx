@@ -119,7 +119,12 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
         setState('loading')
 
         try {
-            await login({ username, password })
+            const MIN_LOADING_MS = 1000 // 최소 로딩 표시 시간
+
+            await Promise.all([
+                login({ username, password }),
+                new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
+            ])
 
             setState('success')
             window.setTimeout(() => {
@@ -128,6 +133,10 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
             }, 1000)
         } catch (err) {
             console.error('Login failed:', err)
+
+            const MIN_LOADING_MS = 1000
+            await new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS))
+
             setPasswordInvalid(true)
             setError('아이디 또는 비밀번호가 올바르지 않습니다.')
             setState('failure')
