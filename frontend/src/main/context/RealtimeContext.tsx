@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { IMessage, StompSubscription } from '@stomp/stompjs'
-import { getStockClient } from '../../api/stompClient'
+import { getStockClient, reconnectStomp } from '../../api/stompClient'
 import { tokenStorage } from '../../utils/token'
 import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
 import type { BidAskPriceTickMessage } from '../../types/bidAskPriceTickMessage'
@@ -37,8 +37,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     }, [])
 
     useEffect(() => {
-        if (!tokenStorage.get()) return
-
+        // 토큰 유무와 무관하게 연결한다.
+        // 토큰이 없으면 익명 연결(공개 채널만 구독 가능), 있으면 인증 연결.
         const client = getStockClient()
 
         client.onConnect = () => {
@@ -49,7 +49,32 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
         client.activate()
 
+        // 로그인/로그아웃으로 토큰이 바뀌면 연결 상태를 갱신
+        const unsubscribeToken = tokenStorage.subscribe((token) => {
+            setConnected(false)
+
+            if (token) {
+                // 로그인: 기존(익명) 연결에 인증 헤더를 새로 실어 재연결
+                reconnectStomp()
+                return
+            }
+
+            // 로그아웃: api/auth.ts의 logout()이 곧이어 disconnectStomp()를
+            // 호출해 클라이언트를 정리하므로, 한 틱 뒤 새 토큰(없음) 기준으로
+            // 다시 연결해 로그인 화면의 시세 표시를 이어간다.
+            window.setTimeout(() => {
+                const freshClient = getStockClient()
+                freshClient.onConnect = () => {
+                    setConnected(true)
+                    listenersRef.current.forEach((_set, destination) => ensureSubscribed(destination))
+                }
+                freshClient.onWebSocketClose = () => setConnected(false)
+                if (!freshClient.active) freshClient.activate()
+            }, 0)
+        })
+
         return () => {
+            unsubscribeToken()
             subscriptionsRef.current.forEach(sub => sub.unsubscribe())
             subscriptionsRef.current.clear()
             client.deactivate()
