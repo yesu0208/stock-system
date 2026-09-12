@@ -3,7 +3,7 @@ package arile.toy.stocksystem.bffserver.stockinfo.dto;
 public enum TrendType {
 
     TIME("time"),
-    DAY("day");
+    DAY("daily");
 
     private final String path;
 

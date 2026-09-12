@@ -2,9 +2,9 @@ package arile.toy.stocksystem.bffserver.stockinfo.dto;
 
 public enum MarketType {
 
-    KOSPI("01"),
-    KOSDAQ("02"),
-    FUTURES("03");
+    KOSPI("KOSPI"),
+    KOSDAQ("KOSDAQ"),
+    FUTURES("FUT");
 
     private final String code;
 

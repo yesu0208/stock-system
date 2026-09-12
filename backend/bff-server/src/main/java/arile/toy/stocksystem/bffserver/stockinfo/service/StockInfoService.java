@@ -286,31 +286,11 @@ public class StockInfoService {
             }
         }
 
-        List<InvestorTrendDto> current = naverStockCrawlerClient.getInvestorTrend(market, type, page);
-        List<InvestorTrendDto> next = naverStockCrawlerClient.getInvestorTrend(market, type, page + 1);
-
-        boolean hasNext = !next.isEmpty() && !isSamePage(current, next);
-
-        TrendResponse response = new TrendResponse(current, hasNext);
+        TrendResponse response = naverStockCrawlerClient.getInvestorTrend(market, type, page);
 
         cacheInvestorTrend(cacheKey, response);
 
         return response;
-    }
-
-    private <T> boolean isSamePage(List<T> a, List<T> b) {
-
-        if (a.size() != b.size()) {
-            return false;
-        }
-
-        for (int i = 0; i < a.size(); i++) {
-            if (!a.get(i).equals(b.get(i))) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private void cacheInvestorTrend(String cacheKey, TrendResponse response) {

@@ -18,7 +18,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1160,75 +1162,147 @@ public class NaverStockCrawlerClient {
         return result;
     }
 
-    public List<InvestorTrendDto> getInvestorTrend(MarketType market, TrendType type, int page) {
+    public TrendResponse getInvestorTrend(MarketType market, TrendType type, int page) {
 
-        String url = buildInvestorTrendUri(market, type, page);
+        int pageSize = 30;
+        int startIdx = page - 1;
+        String bizDate = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
 
-        String html;
+        NaverInvestorTrendApiResponse response;
         try {
-            html = restClient.get()
-                    .uri(url)
+            response = stockApiClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/domestic/market/trend/{path}")
+                            .queryParam("tradeType", "KRX")
+                            .queryParam("marketType", market.getCode())
+                            .queryParam("bizdate", bizDate)
+                            .queryParam("startIdx", startIdx)
+                            .queryParam("pageSize", pageSize)
+                            .build(type.getPath()))
                     .retrieve()
-                    .body(String.class);
+                    .body(NaverInvestorTrendApiResponse.class);
         } catch (RestClientResponseException e) {
-            log.error("Naver 투자자별 매매동향 크롤링 실패. status={}, market={}, type={}, page={}",
+            log.error("Naver 투자자별 매매동향 API 호출 실패. status={}, market={}, type={}, page={}",
                     e.getStatusCode(), market, type, page);
             throw new IllegalStateException("네이버 투자자별 매매동향 크롤링 실패", e);
         }
 
-        return parseInvestorTrend(html);
-    }
-
-    private String buildInvestorTrendUri(MarketType market, TrendType type, int page) {
-
-        String path = type == TrendType.TIME
-                ? "/sise/investorDealTrendTime.naver"
-                : "/sise/investorDealTrendDay.naver";
-
-        String bizDate = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-
-        String uri = path
-                + "?bizdate=" + bizDate
-                + "&sosok=" + market.getCode();
-
-        if (page > 1) {
-            uri += "&page=" + page;
+        if (response == null || response.content() == null) {
+            return new TrendResponse(new ArrayList<>(), false);
         }
 
-        return uri;
+        List<InvestorTrendDto> data = new ArrayList<>();
+        for (NaverInvestorTrendContent content : response.content()) {
+            data.add(mapInvestorTrend(content, type));
+        }
+
+        boolean hasNext = !response.last();
+
+        return new TrendResponse(data, hasNext);
     }
 
-    private List<InvestorTrendDto> parseInvestorTrend(String html) {
+    private InvestorTrendDto mapInvestorTrend(NaverInvestorTrendContent content, TrendType type) {
 
-        Document doc = Jsoup.parse(html);
-        List<InvestorTrendDto> result = new ArrayList<>();
-
-        Elements rows = doc.select("table.type_1 tr");
-
-        for (Element row : rows) {
-
-            Elements tds = row.select("td");
-
-            if (tds.size() != 11) {
-                continue;
+        Map<String, Long> amounts = new HashMap<>();
+        if (content.netAmounts() != null) {
+            for (NaverInvestorNetAmount item : content.netAmounts()) {
+                amounts.put(item.investorGubun(), parseLongSafely(item.diffValue()));
             }
-
-            result.add(new InvestorTrendDto(
-                    tds.get(0).text(),
-                    parseLong(tds.get(1).text()),
-                    parseLong(tds.get(2).text()),
-                    parseLong(tds.get(3).text()),
-                    parseLong(tds.get(4).text()),
-                    parseLong(tds.get(5).text()),
-                    parseLong(tds.get(6).text()),
-                    parseLong(tds.get(7).text()),
-                    parseLong(tds.get(8).text()),
-                    parseLong(tds.get(9).text()),
-                    parseLong(tds.get(10).text())
-            ));
         }
 
-        return result;
+        long financeInvestment = amounts.getOrDefault("1000", 0L);
+        long insurance = amounts.getOrDefault("2000", 0L);
+        long fund = amounts.getOrDefault("3000", 0L) + amounts.getOrDefault("3100", 0L);
+        long bank = amounts.getOrDefault("4000", 0L);
+        long etcFinance = amounts.getOrDefault("5000", 0L);
+        long pension = amounts.getOrDefault("6000", 0L);
+        long corporation = amounts.getOrDefault("7000", 0L) + amounts.getOrDefault("7100", 0L);
+        long individual = amounts.getOrDefault("8000", 0L);
+        long foreigner = amounts.getOrDefault("9000", 0L) + amounts.getOrDefault("9001", 0L);
+
+        long institution = financeInvestment + insurance + fund + bank + etcFinance + pension;
+
+        String dateOrTime = type == TrendType.TIME ? content.time() : content.bizdate();
+
+        return new InvestorTrendDto(
+                dateOrTime,
+                individual,
+                foreigner,
+                institution,
+                financeInvestment,
+                insurance,
+                fund,
+                bank,
+                etcFinance,
+                pension,
+                corporation
+        );
+    }
+
+    private InvestorTrendDto mapInvestorTrend(NaverInvestorTrendContent content) {
+
+        Map<String, Long> amounts = new HashMap<>();
+        if (content.netAmounts() != null) {
+            for (NaverInvestorNetAmount item : content.netAmounts()) {
+                amounts.put(item.investorGubun(), parseLongSafely(item.diffValue()));
+            }
+        }
+
+        long financeInvestment = amounts.getOrDefault("1000", 0L);
+        long insurance = amounts.getOrDefault("2000", 0L);
+        long fund = amounts.getOrDefault("3000", 0L) + amounts.getOrDefault("3100", 0L);
+        long bank = amounts.getOrDefault("4000", 0L);
+        long etcFinance = amounts.getOrDefault("5000", 0L);
+        long pension = amounts.getOrDefault("6000", 0L);
+        long corporation = amounts.getOrDefault("7000", 0L) + amounts.getOrDefault("7100", 0L);
+        long individual = amounts.getOrDefault("8000", 0L);
+        long foreigner = amounts.getOrDefault("9000", 0L) + amounts.getOrDefault("9001", 0L);
+
+        long institution = financeInvestment + insurance + fund + bank + etcFinance + pension;
+
+        String dateOrTime = (content.bizdate() != null && !content.bizdate().isBlank())
+                ? content.bizdate()
+                : content.time();
+
+        return new InvestorTrendDto(
+                dateOrTime,
+                individual,
+                foreigner,
+                institution,
+                financeInvestment,
+                insurance,
+                fund,
+                bank,
+                etcFinance,
+                pension,
+                corporation
+        );
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverInvestorTrendApiResponse(
+            List<NaverInvestorTrendContent> content,
+            boolean last
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverInvestorTrendContent(
+            String bizdate,
+            String time,
+            List<NaverInvestorNetAmount> netAmounts
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverInvestorNetAmount(
+            String investorGubun,
+            String diffValue,
+            String sellQuant,
+            String sellPrice,
+            String buyQuant,
+            String buyPrice
+    ) {
     }
 
     private long parseLong(String value) {
