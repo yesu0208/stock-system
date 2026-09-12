@@ -219,8 +219,8 @@
 
 .toast-toggle-btn__badge {
     position: absolute;
-    top: -6px;
-    right: -8px;
+    left: 50%;
+    transform: translate(-50%, -50%);
 
     min-width: 16px;
     height: 16px;
