@@ -1,0 +1,240 @@
+.header {
+    height: 50px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 24px;
+
+    background: #18253b;
+    color: white;
+
+    border-bottom: 1px solid #2b3b57;
+
+    flex-shrink: 0;
+}
+
+.header .header__left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 265px;
+    flex-shrink: 0;
+}
+
+.header .header__left h1 {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.header .admin-badge {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 3px 10px;
+
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+
+    color: #ff9800;
+    background: rgba(255, 152, 0, 0.12);
+    border: 1px solid rgba(255, 152, 0, 0.5);
+    border-radius: 12px;
+
+    letter-spacing: 0.3px;
+
+    transform: translateY(1px);
+
+    cursor: pointer;
+    font-family: inherit;
+
+    outline: none;
+}
+
+.header .admin-badge:hover {
+    background: rgba(255, 152, 0, 0.2);
+}
+
+.header .header__center {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+    gap: 12px;
+
+    font-size: 14px;
+}
+
+.header .market-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header .market-status.green {
+    color: #00c853;
+    font-weight: 600;
+}
+
+.header .market-status.yellow {
+    color: #ffd600;
+    font-weight: 600;
+}
+
+.header .market-status.gray {
+    color: #9e9e9e;
+    font-weight: 600;
+}
+
+.header .market-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+
+    transform: translateY(1px);
+}
+
+.header .market-dot.green {
+    background: #00c853;
+}
+
+.header .market-dot.green::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: rgba(0, 200, 83, 0.6);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse-green 1.8s ease-out infinite;
+}
+
+.header .market-dot.yellow {
+    background: #ffd600;
+}
+
+.header .market-dot.yellow::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 214, 0, 0.6);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse-yellow 1.8s ease-out infinite;
+}
+
+.header .market-dot.gray {
+    background: #9e9e9e;
+}
+
+@keyframes pulse-green {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    70% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+    100% { opacity: 0; }
+}
+
+@keyframes pulse-yellow {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    70% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+    100% { opacity: 0; }
+}
+
+.header .current-time {
+    font-weight: 600;
+}
+
+.header .current-date {
+    display: inline-block;
+    transform: translateY(-1px);
+}
+
+.header .header__right {
+    display: flex;
+    align-items: center;
+    gap: 18px; /* [수정] 원하는 버튼 간격을 여기서 통일 관리 */
+}
+
+
+.header .header__right button {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 0;    /* [신규] 브라우저 기본 버튼 padding 제거 */
+    margin: 0;     /* [신규] 혹시 모를 기본 margin도 제거 */
+
+    outline: none;
+}
+
+.header .header__right button:hover {
+    opacity: 0.7;
+}
+
+.header .divider {
+    width: 1px;
+    height: 16px;
+    background-color: rgba(255, 255, 255, 0.3);
+    margin: 0 12px;
+    display: inline-block;
+    vertical-align: middle;
+
+    transform: translateY(3px);
+}
+
+.header .icon {
+    font-size: 15px;
+    transform: translateY(1px);
+}
+
+.toast-toggle-btn {
+    position: relative;
+    padding: 4px 6px;      /* [수정] 다시 좌우 대칭으로 복원 (hover 배경용) */
+    margin: -4px -6px;     /* [신규] padding만큼 음수 margin으로 상쇄
+                               → 시각적 배경 박스는 유지하되,
+                                 flex 레이아웃/gap 계산에는 영향 없음 */
+    border-radius: 6px;
+    transition: background 0.15s;
+    outline: none;
+}
+
+.toast-toggle-btn__icon-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.toast-toggle-btn__badge {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+
+    background: #ef4444;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: center;
+    border-radius: 8px;
+
+    border: 1.5px solid #18253b;
+
+    transition: transform 0.15s ease;
+}
