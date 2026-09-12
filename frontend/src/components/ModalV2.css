@@ -146,3 +146,10 @@
     display: flex;
     flex-direction: column;
 }
+
+.modal-v2-box.managed-modal {
+    width: 560px;
+    height: 620px;
+    display: flex;
+    flex-direction: column;
+}

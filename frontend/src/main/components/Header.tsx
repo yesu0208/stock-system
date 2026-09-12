@@ -161,7 +161,7 @@ export default function Header({ onLogout }: Props) {
             />
 
             {isAdmin && (
-                <ManagedModal show={managedOpen} onClose={() => setManagedOpen(false)} />
+                <ManagedModal open={managedOpen} onClose={() => setManagedOpen(false)} />
             )}
         </>
     );

@@ -42,6 +42,7 @@ function useDraggable(open: boolean) {
 const TITLE_TO_CLASS: Record<string, string> = {
     "로그아웃": "logout-modal",
     "도움말": "help-modal",
+    "관리자": "managed-modal",
 };
 
 export default function ModalV2({
