@@ -299,17 +299,6 @@ public class NaverStockCrawlerClient {
         }
     }
 
-    public MarketMainResponse getMarketIndices() {
-
-        Document doc = fetchSiseDocument();
-
-        MarketIndexInfo kospi = parseMarketIndex(doc, "KOSPI", "코스피", false);
-        MarketIndexInfo kosdaq = parseMarketIndex(doc, "KOSDAQ", "코스닥", false);
-        MarketIndexInfo kospi200 = parseMarketIndex(doc, "KPI200", "코스피200", true);
-
-        return new MarketMainResponse(kospi, kosdaq, kospi200);
-    }
-
     public List<PopularStock> getPopularStocks() {
 
         List<NaverPopularStockItem> items;
@@ -377,97 +366,181 @@ public class NaverStockCrawlerClient {
         }
     }
 
-    private MarketIndexInfo parseMarketIndex(Document doc, String code, String name, boolean isKospi200) {
+    public MarketMainResponse getMarketIndices() {
 
-        String current = doc.select("#" + code + "_now").text();
+        MarketIndexInfo kospi = fetchMarketIndex("KOSPI", "코스피");
+        MarketIndexInfo kosdaq = fetchMarketIndex("KOSDAQ", "코스닥");
+        MarketIndexInfo kospi200 = fetchMarketIndex("KPI200", "코스피200");
 
-        Element changeEl = doc.selectFirst("#" + code + "_change");
-        String changeText = changeEl.text();
+        return new MarketMainResponse(kospi, kosdaq, kospi200);
+    }
 
-        String direction = "";
-        if (!changeEl.select(".nup").isEmpty()) {
-            direction = "UP";
-        } else if (!changeEl.select(".ndown").isEmpty()) {
-            direction = "DOWN";
+    private MarketIndexInfo fetchMarketIndex(String code, String name) {
+
+        NaverIndexBasicResponse basic;
+        NaverIndexIntegrationResponse integration;
+
+        try {
+            basic = stockApiClient.get()
+                    .uri("/api/securityFe/api/index/{code}/basic", code)
+                    .retrieve()
+                    .body(NaverIndexBasicResponse.class);
+
+            integration = stockApiClient.get()
+                    .uri("/api/securityFe/api/index/{code}/integration", code)
+                    .retrieve()
+                    .body(NaverIndexIntegrationResponse.class);
+        } catch (RestClientResponseException e) {
+            log.error("Naver 지수 API 호출 실패. status={}, code={}", e.getStatusCode(), code);
+            throw new IllegalStateException("네이버 지수 크롤링 실패", e);
         }
 
-        String[] split = splitChange(changeText);
-        String changeValue = split[0];
-        
-        String changeRate = split[1].replaceAll("(%).*", "$1").trim();
-
-        String timeId = switch (code) {
-            case "KOSPI" -> "#time1";
-            case "KOSDAQ" -> "#time2";
-            default -> "#time3";
-        };
-
-        String baseTime = doc.select(timeId).text()
-                .replace("장마감", " 장마감")
-                .replace("장중", " 장중");
-
-        MarketBreadth breadth;
-
-        if (isKospi200) {
-            String basis = doc.select("#kpi200_basis").text()
-                    .replace("콘탱고", "")
-                    .replace("백워데이션", "")
-                    .trim();
-
-            breadth = new MarketBreadth(null, null, null, null, null, basis);
-        } else {
-            String panelId = code.equals("KOSPI") ? "#tab_sel1_risefall" : "#tab_sel2_risefall";
-            Elements stockDds = doc.select(panelId + " dl.stock dd");
-
-            breadth = new MarketBreadth(
-                    stockDds.get(0).text(),
-                    stockDds.get(1).text(),
-                    stockDds.get(2).text(),
-                    stockDds.get(3).text(),
-                    stockDds.get(4).text(),
-                    null
-            );
+        if (basic == null || integration == null) {
+            throw new IllegalStateException("네이버 지수 응답이 비어 있습니다. code=" + code);
         }
 
-        String trendId = switch (code) {
-            case "KOSPI" -> "#tab_sel1_risefall";
-            case "KOSDAQ" -> "#tab_sel2_risefall";
-            default -> "#tab_sel3_risefall";
-        };
+        return mapMarketIndex(basic, integration, name);
+    }
 
-        Elements trendDds = doc.select(trendId + " dl.trend dd");
+    private MarketIndexInfo mapMarketIndex(NaverIndexBasicResponse basic, NaverIndexIntegrationResponse integration, String name) {
 
-        ProgramTrade programTrade = new ProgramTrade(
-                cleanProgramTrade(trendDds.get(0).text()),
-                cleanProgramTrade(trendDds.get(1).text()),
-                cleanProgramTrade(trendDds.get(2).text())
-        );
+        Map<String, String> totalInfos = new HashMap<>();
+        if (integration.totalInfos() != null) {
+            for (NaverIndexTotalInfo info : integration.totalInfos()) {
+                totalInfos.put(info.code(), info.value());
+            }
+        }
 
-        String trendSelector = switch (code) {
-            case "KOSPI" -> "#tab_sel1_deal_trend";
-            case "KOSDAQ" -> "#tab_sel2_deal_trend";
-            default -> "#tab_sel3_deal_trend";
-        };
+        String currentIndex = basic.closePrice();
+        String changeValue = basic.compareToPreviousClosePrice();
+        String changeRate = basic.fluctuationsRatio();
+        String direction = basic.compareToPreviousPrice() != null
+                ? mapFluctuationsDirection(basic.compareToPreviousPrice().name())
+                : "";
+        String baseTime = basic.localTradedAt() != null ? basic.localTradedAt() : "";
 
-        Elements investorItems = doc.select(trendSelector + " li");
+        String prevClose = totalInfos.get("lastClosePrice");
+        String openPrice = totalInfos.get("openPrice");
+        String highPrice = totalInfos.get("highPrice");
+        String lowPrice = totalInfos.get("lowPrice");
+        String high52Weeks = totalInfos.get("highPriceOf52Weeks");
+        String low52Weeks = totalInfos.get("lowPriceOf52Weeks");
+        String volume = totalInfos.get("accumulatedTradingVolume");
+        String tradingValue = totalInfos.get("accumulatedTradingValue");
 
-        String personal = investorItems.get(1).select(".val").text();
-        String foreigner = investorItems.get(2).select(".val").text();
-        String institution = investorItems.get(3).select(".val").text();
+        MarketBreadth breadth = integration.upDownStockInfo() != null
+                ? new MarketBreadth(
+                integration.upDownStockInfo().upperCount(),
+                integration.upDownStockInfo().riseCount(),
+                integration.upDownStockInfo().steadyCount(),
+                integration.upDownStockInfo().fallCount(),
+                integration.upDownStockInfo().lowerCount(),
+                null
+        )
+                : null;
 
-        InvestorTrend investorTrend = new InvestorTrend(personal, foreigner, institution);
+        ProgramTrade programTrade = integration.programTrendInfo() != null
+                ? new ProgramTrade(
+                integration.programTrendInfo().indexDifferenceReal(),
+                integration.programTrendInfo().indexBiDifferenceReal(),
+                integration.programTrendInfo().indexTotalReal()
+        )
+                : null;
+
+        InvestorTrend investorTrend = integration.dealTrendInfo() != null
+                ? new InvestorTrend(
+                integration.dealTrendInfo().personalValue(),
+                integration.dealTrendInfo().foreignValue(),
+                integration.dealTrendInfo().institutionalValue()
+        )
+                : null;
 
         return new MarketIndexInfo(
                 name,
-                current,
+                currentIndex,
                 changeValue,
                 changeRate,
                 direction,
                 baseTime,
+                prevClose,
+                openPrice,
+                highPrice,
+                lowPrice,
+                high52Weeks,
+                low52Weeks,
+                volume,
+                tradingValue,
                 breadth,
                 programTrade,
                 investorTrend
         );
+    }
+
+    private String mapFluctuationsDirection(String name) {
+        return switch (name) {
+            case "RISING" -> "UP";
+            case "FALLING" -> "DOWN";
+            default -> "STEADY";
+        };
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverIndexBasicResponse(
+            String itemCode,
+            String stockName,
+            String closePrice,
+            String compareToPreviousClosePrice,
+            NaverFluctuationsType compareToPreviousPrice,
+            String fluctuationsRatio,
+            String localTradedAt
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverIndexIntegrationResponse(
+            String itemCode,
+            String stockName,
+            List<NaverIndexTotalInfo> totalInfos,
+            NaverDealTrendInfo dealTrendInfo,
+            NaverProgramTrendInfo programTrendInfo,
+            NaverUpDownStockInfo upDownStockInfo
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverIndexTotalInfo(
+            String code,
+            String key,
+            String value
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverDealTrendInfo(
+            String bizdate,
+            String personalValue,
+            String foreignValue,
+            String institutionalValue
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverProgramTrendInfo(
+            String bizdate,
+            String indexBiDifferenceReal,
+            String indexTotalReal,
+            String indexDifferenceReal
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverUpDownStockInfo(
+            String upperCount,
+            String riseCount,
+            String lowerCount,
+            String fallCount,
+            String steadyCount
+    ) {
     }
 
     private String cleanProgramTrade(String text) {
