@@ -10,6 +10,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.core.ParameterizedTypeReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,11 +27,18 @@ import java.util.regex.Pattern;
 public class NaverStockCrawlerClient {
 
     private final RestClient restClient;
+    private final RestClient stockApiClient;
 
     public NaverStockCrawlerClient() {
         this.restClient = RestClient.builder()
                 .baseUrl("https://finance.naver.com")
                 .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
+                .build();
+
+        this.stockApiClient = RestClient.builder()
+                .baseUrl("https://stock.naver.com")
+                .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
+                .defaultHeader(HttpHeaders.ACCEPT, "application/json")
                 .build();
     }
 
@@ -242,9 +251,55 @@ public class NaverStockCrawlerClient {
 
     public List<PopularStock> getPopularStocks() {
 
-        Document doc = fetchSiseDocument();
+        List<NaverPopularStockItem> items;
+        try {
+            items = stockApiClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/domestic/market/stock/default")
+                            .queryParam("tradeType", "KRX")
+                            .queryParam("marketType", "ALL")
+                            .queryParam("orderType", "searchTop")
+                            .queryParam("startIdx", 0)
+                            .queryParam("pageSize", 30)
+                            .build())
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<NaverPopularStockItem>>() {});
+        } catch (RestClientResponseException e) {
+            log.error("Naver 인기 종목 API 호출 실패. status={}", e.getStatusCode());
+            throw new IllegalStateException("네이버 인기 종목 조회 실패", e);
+        }
 
-        return parsePopularStocks(doc);
+        if (items == null) {
+            throw new IllegalStateException("네이버 인기 종목 응답이 비어 있습니다.");
+        }
+
+        List<PopularStock> result = new ArrayList<>();
+        int rank = 1;
+        for (NaverPopularStockItem item : items) {
+            result.add(new PopularStock(
+                    rank++,
+                    item.itemcode(),
+                    item.itemname(),
+                    item.nowPrice(),
+                    mapDirection(item.upDownGb())
+            ));
+        }
+
+        return result;
+    }
+
+    private String mapDirection(String upDownGb) {
+        if (upDownGb == null) {
+            return "UNKNOWN";
+        }
+        return switch (upDownGb) {
+            case "1" -> "UPPER_LIMIT";
+            case "2" -> "UP";
+            case "3" -> "STEADY";
+            case "4" -> "LOWER_LIMIT";
+            case "5" -> "DOWN";
+            default -> "UNKNOWN";
+        };
     }
 
     private Document fetchSiseDocument() {
@@ -360,63 +415,6 @@ public class NaverStockCrawlerClient {
                 .replace("차익 ", "")
                 .replace("전체 ", "")
                 .trim();
-    }
-
-    private List<PopularStock> parsePopularStocks(Document doc) {
-
-        List<PopularStock> result = new ArrayList<>();
-
-        Elements items = doc.select("#popularItemList li");
-
-        for (Element item : items) {
-
-            Element rankEl = item.selectFirst("em");
-            Element a = item.selectFirst("a");
-
-            if (rankEl == null || a == null) {
-                continue;
-            }
-
-            int rank = Integer.parseInt(
-                    rankEl.text().replace(".", "")
-            );
-
-            String href = a.attr("href");
-            String code = href.substring(href.indexOf("code=") + 5);
-            String name = a.text();
-
-            Element priceEl = item.selectFirst("span.up, span.dn, span.nv, span.noc");
-
-            if (priceEl == null) {
-                log.warn("인기 종목 price element를 찾을 수 없음. html={}", item.outerHtml());
-                continue;
-            }
-
-            String price = priceEl.text();
-
-            Element blindEl = item.selectFirst("span.blind");
-            String blindText = blindEl != null ? blindEl.text() : "";
-
-            String direction;
-
-            if (blindText.contains("상한가")) {
-                direction = "UPPER_LIMIT";
-            } else if (blindText.contains("하한가")) {
-                direction = "LOWER_LIMIT";
-            } else if (blindText.contains("상승")) {
-                direction = "UP";
-            } else if (blindText.contains("하락")) {
-                direction = "DOWN";
-            } else if (blindText.contains("보합")) {
-                direction = "STEADY";
-            } else {
-                direction = "UNKNOWN";
-            }
-
-            result.add(new PopularStock(rank, code, name, price, direction));
-        }
-
-        return result;
     }
 
     private String[] splitChange(String text) {
@@ -626,6 +624,15 @@ public class NaverStockCrawlerClient {
     }
 
     private record PriceInfo(String currentPrice, String diffPrice, String diffRate, String direction) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverPopularStockItem(
+            String itemcode,
+            String itemname,
+            String nowPrice,
+            String upDownGb
+    ) {
     }
 
 
