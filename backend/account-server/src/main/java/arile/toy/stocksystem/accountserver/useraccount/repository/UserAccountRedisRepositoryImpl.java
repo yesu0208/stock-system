@@ -30,6 +30,7 @@ public class UserAccountRedisRepositoryImpl implements UserAccountRedisRepositor
         map.put("availableCash", String.valueOf(account.availableCash()));
         map.put("reservedCash", String.valueOf(account.reservedCash()));
         map.put("stocks", writeStocksAsJson(account.stocks()));
+        map.put("accountStatus", account.accountStatus());
 
         redisTemplate.opsForHash().putAll(key(username), map);
     }
@@ -47,8 +48,9 @@ public class UserAccountRedisRepositoryImpl implements UserAccountRedisRepositor
         Long availableCash = parseLong(map.get("availableCash"));
         Long reservedCash = parseLong(map.get("reservedCash"));
         Map<String, StockInfo> stocks = readStocksFromJson((String) map.get("stocks"));
+        String accountStatus = map.get("accountStatus") != null ? (String) map.get("accountStatus") : "NORMAL";
 
-        return new UserAccountMessage(username, availableCash, reservedCash, stocks);
+        return new UserAccountMessage(username, availableCash, reservedCash, stocks, accountStatus);
     }
 
     @Override
@@ -75,6 +77,17 @@ public class UserAccountRedisRepositoryImpl implements UserAccountRedisRepositor
         map.put("availableCash", String.valueOf(availableCash));
         map.put("reservedCash", "0");
         redisTemplate.opsForHash().putAll(key(username), map);
+    }
+
+    @Override
+    public void saveAccountStatus(String username, String accountStatus) {
+        redisTemplate.opsForHash().put(key(username), "accountStatus", accountStatus);
+    }
+
+    @Override
+    public String getAccountStatus(String username) {
+        Object value = redisTemplate.opsForHash().get(key(username), "accountStatus");
+        return value != null ? (String) value : "NORMAL";
     }
 
     private String key(String username) {

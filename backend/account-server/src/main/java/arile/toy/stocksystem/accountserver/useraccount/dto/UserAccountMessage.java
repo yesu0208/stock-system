@@ -6,10 +6,11 @@ public record UserAccountMessage(
         String username,
         Long availableCash,
         Long reservedCash,
-        Map<String, StockInfo> stocks
+        Map<String, StockInfo> stocks,
+        String accountStatus
 ) {
-    public static UserAccountMessage of(
-            String username, Long availableCash, Long reservedCash, Map<String, StockInfo> stocks) {
-        return new UserAccountMessage(username, availableCash, reservedCash, stocks);
+    public static UserAccountMessage of(String username, Long availableCash, Long reservedCash,
+                                        Map<String, StockInfo> stocks) {
+        return new UserAccountMessage(username, availableCash, reservedCash, stocks, "NORMAL");
     }
 }

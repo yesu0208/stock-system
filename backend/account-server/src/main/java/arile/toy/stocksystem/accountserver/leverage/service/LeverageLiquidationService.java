@@ -11,6 +11,7 @@ import arile.toy.stocksystem.accountserver.stockprice.repository.StockSummaryRed
 import arile.toy.stocksystem.accountserver.useraccount.dto.AccountStatus;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
+import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRedisRepository;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class LeverageLiquidationService {
     private final LeverageLiquidationRepository leverageLiquidationRepository;
     private final UserAccountRepository userAccountRepository;
     private final StockSummaryRedisRepository stockSummaryRedisRepository;
+    private final UserAccountRedisRepository userAccountRedisRepository;
     private final LeveragePositionRedisSyncer redisSyncer;
     private final AccountMarginStatusSyncer accountMarginStatusSyncer;
     private final LiquidationEventPublisher liquidationEventPublisher;
@@ -109,6 +111,7 @@ public class LeverageLiquidationService {
         boolean wasNormal = account.getAccountStatus() == AccountStatus.NORMAL;
         if (account.getBalance() < 0 && wasNormal) {
             account.changeAccountStatus(AccountStatus.NEGATIVE, LocalDate.now());
+            userAccountRedisRepository.saveAccountStatus(position.getUsername(), AccountStatus.NEGATIVE.name());
             log.warn("[Liquidation] Account converted to NEGATIVE. username={}, balanceAfter={}",
                     position.getUsername(), account.getBalance());
         }
