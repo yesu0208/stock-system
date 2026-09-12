@@ -49,6 +49,8 @@
 
     cursor: pointer;
     font-family: inherit;
+
+    outline: none;
 }
 
 .header .admin-badge:hover {
@@ -156,8 +158,10 @@
 
 .header .header__right {
     display: flex;
-    gap: 12px;
+    align-items: center;
+    gap: 18px; /* [수정] 원하는 버튼 간격을 여기서 통일 관리 */
 }
+
 
 .header .header__right button {
     background: transparent;
@@ -169,6 +173,11 @@
     display: flex;
     align-items: center;
     gap: 6px;
+
+    padding: 0;    /* [신규] 브라우저 기본 버튼 padding 제거 */
+    margin: 0;     /* [신규] 혹시 모를 기본 margin도 제거 */
+
+    outline: none;
 }
 
 .header .header__right button:hover {
@@ -193,13 +202,13 @@
 
 .toast-toggle-btn {
     position: relative;
-    padding: 4px 6px;
+    padding: 4px 6px;      /* [수정] 다시 좌우 대칭으로 복원 (hover 배경용) */
+    margin: -4px -6px;     /* [신규] padding만큼 음수 margin으로 상쇄
+                               → 시각적 배경 박스는 유지하되,
+                                 flex 레이아웃/gap 계산에는 영향 없음 */
     border-radius: 6px;
     transition: background 0.15s;
-}
-
-.toast-toggle-btn--active {
-    background: rgba(255, 255, 255, 0.12) !important;
+    outline: none;
 }
 
 .toast-toggle-btn__icon-wrap {
