@@ -26,6 +26,16 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
 
     const { marketMain } = useMarketData()
 
+    // [수정] KOSPI/KOSDAQ을 동시에 보여주지 않고 5초마다 번갈아 표시
+    const [marketTab, setMarketTab] = useState<'KOSPI' | 'KOSDAQ'>('KOSPI')
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setMarketTab((prev) => (prev === 'KOSPI' ? 'KOSDAQ' : 'KOSPI'))
+        }, 5000)
+        return () => window.clearInterval(timer)
+    }, [])
+
     // 마운트 시 fade-in 트리거
     const [isEntering, setIsEntering] = useState(true)
 
@@ -89,6 +99,17 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
                 : state === 'failure' ? '로그인 실패'
                     : ''
 
+    // [수정] marketTab에 해당하는 지수만 뽑아서 렌더링에 사용
+    const activeIndex = marketMain
+        ? (marketTab === 'KOSPI' ? marketMain.kospi : marketMain.kosdaq)
+        : null
+
+    const activeIndexColor = activeIndex
+        ? activeIndex.direction === 'UP' ? '#f87171'
+            : activeIndex.direction === 'DOWN' ? '#60a5fa'
+                : '#94a3b8'
+        : '#94a3b8'
+
     return (
         <div className={`login-wrapper${state === 'exiting' ? ' is-exiting' : ''}${isEntering ? ' is-entering' : ''}`}>
             <LoginBackground />
@@ -103,82 +124,64 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
                     모의투자를 시작해보세요!
                 </p>
 
-                <ul className="login-brand__features">
-                    <li className="login-brand__feature">
-            <span className="login-brand__feature-text">
-                <strong>종목 정보</strong> - 실시간 시세 정보와 최신 뉴스, 공시를 한눈에 확인할 수 있습니다.
-            </span>
-                    </li>
-                    <li className="login-brand__feature">
-            <span className="login-brand__feature-text">
-                <strong>고급 주문</strong> - 자동주문, OTOCO, 트레일링 스탑으로 정교한 매매 전략을 세울 수 있습니다.
-            </span>
-                    </li>
-                    <li className="login-brand__feature">
-            <span className="login-brand__feature-text">
-                <strong>커뮤니티</strong> - 종목 토론방, 종목톡에서 다른 투자자들과 실시간으로 소통할 수 있습니다.
-            </span>
-                    </li>
-                    <li className="login-brand__feature">
-            <span className="login-brand__feature-text">
-                <strong>랭크 시스템</strong> - 랭킹으로 나의 투자 실력을 확인할 수 있습니다.
-            </span>
-                    </li>
-                </ul>
-
+                {/* [수정] features 리스트보다 위로 이동 */}
                 <div className="login-brand__market">
-                    {marketMain ? (
+                    {activeIndex ? (
                         <>
                             <div className="login-brand__market-row">
                                 <span className="login-brand__market-dot login-brand__market-dot--green" />
                                 <span className="login-brand__market-label login-brand__market-label--green">
-                        실시간 시세
-                    </span>
+                                    실시간 시세
+                                </span>
                                 <span className="login-brand__market-divider" />
-                                <span className="login-brand__market-time">{marketMain.kospi.baseTime}</span>
+                                <span className="login-brand__market-time">{activeIndex.baseTime}</span>
                             </div>
 
-                            <div className="login-brand__market-row">
-                    <span className="login-brand__market-index">
-                        <span className="login-brand__market-index-name">KOSPI</span>{' '}
-                        <span
-                            className="login-brand__market-index-value"
-                            style={{
-                                color: marketMain.kospi.direction === 'UP' ? '#f87171'
-                                    : marketMain.kospi.direction === 'DOWN' ? '#60a5fa'
-                                        : '#94a3b8',
-                            }}
-                        >
-                            {marketMain.kospi.currentIndex} ({marketMain.kospi.changeRate}%)
-                        </span>
-                    </span>
-                            </div>
-
-                            <div className="login-brand__market-row">
-                    <span className="login-brand__market-index">
-                        <span className="login-brand__market-index-name">KOSDAQ</span>{' '}
-                        <span
-                            className="login-brand__market-index-value"
-                            style={{
-                                color: marketMain.kosdaq.direction === 'UP' ? '#f87171'
-                                    : marketMain.kosdaq.direction === 'DOWN' ? '#60a5fa'
-                                        : '#94a3b8',
-                            }}
-                        >
-                            {marketMain.kosdaq.currentIndex} ({marketMain.kosdaq.changeRate}%)
-                        </span>
-                    </span>
+                            {/* [수정] KOSPI/KOSDAQ 동시 표시 → marketTab 하나만 표시 */}
+                            <div className="login-brand__market-row" key={marketTab}>
+                                <span className="login-brand__market-index">
+                                    <span className="login-brand__market-index-name">{marketTab}</span>{' '}
+                                    <span
+                                        className="login-brand__market-index-value"
+                                        style={{ color: activeIndexColor }}
+                                    >
+                                        {activeIndex.currentIndex} ({activeIndex.changeRate}%)
+                                    </span>
+                                </span>
                             </div>
                         </>
                     ) : (
                         <div className="login-brand__market-row">
                             <span className="login-brand__market-dot login-brand__market-dot--gray" />
                             <span className="login-brand__market-label login-brand__market-label--gray">
-                    시세 연결 중...
-                </span>
+                                시세 연결 중...
+                            </span>
                         </div>
                     )}
                 </div>
+
+                <ul className="login-brand__features">
+                    <li className="login-brand__feature">
+                        <span className="login-brand__feature-text">
+                            <strong>종목 정보</strong> - 실시간 시세 정보와 최신 뉴스, 공시를 한눈에 확인할 수 있습니다.
+                        </span>
+                    </li>
+                    <li className="login-brand__feature">
+                        <span className="login-brand__feature-text">
+                            <strong>고급 주문</strong> - 자동주문, OTOCO, 트레일링 스탑으로 정교한 매매 전략을 세울 수 있습니다.
+                        </span>
+                    </li>
+                    <li className="login-brand__feature">
+                        <span className="login-brand__feature-text">
+                            <strong>커뮤니티</strong> - 종목 토론방, 종목톡에서 다른 투자자들과 실시간으로 소통할 수 있습니다.
+                        </span>
+                    </li>
+                    <li className="login-brand__feature">
+                        <span className="login-brand__feature-text">
+                            <strong>랭크 시스템</strong> - 랭킹으로 나의 투자 실력을 확인할 수 있습니다.
+                        </span>
+                    </li>
+                </ul>
             </div>
 
             <form className="login-box" data-state={state} onSubmit={handleSubmit}>

@@ -650,5 +650,14 @@
 .login-brand__market-time { color: #cbd5e1; font-weight: 600; }
 .login-brand__market-date { color: #cbd5e1; font-weight: 500; }
 .login-brand__market-index { font-size: 13px; font-weight: 600; }
-.login-brand__market-index-name { color: #94a3b8; font-weight: 700; }
+.login-brand__market-index-name { color: #94a3b8; font-weight: 700; margin-right: 10px;}
 .login-brand__market-index-value { font-variant-numeric: tabular-nums; }
+
+.login-brand__market-row {
+    animation: login-market-fade .4s ease;
+}
+
+@keyframes login-market-fade {
+    from { opacity: 0; transform: translateY(-2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
