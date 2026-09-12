@@ -139,3 +139,10 @@
     font-size: 18px;
     line-height: 1;
 }
+
+.modal-v2-box.help-modal {
+    width: 600px;
+    height: 640px;
+    display: flex;
+    flex-direction: column;
+}

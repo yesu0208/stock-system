@@ -149,7 +149,7 @@ export default function Header({ onLogout }: Props) {
                 </div>
             </header>
 
-            <HelpModal show={helpOpen} onClose={() => setHelpOpen(false)} />
+            <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
 
             <LogoutModal
                 open={logoutOpen}

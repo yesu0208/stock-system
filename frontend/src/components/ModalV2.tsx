@@ -39,10 +39,9 @@ function useDraggable(open: boolean) {
     return { boxRef, offset, onMouseDown };
 }
 
-// title 문자열 → ModalV2.css의 크기 클래스 매핑.
-// 다른 모달을 ModalV2로 옮길 때마다 이 표에 한 줄씩 추가.
 const TITLE_TO_CLASS: Record<string, string> = {
     "로그아웃": "logout-modal",
+    "도움말": "help-modal",
 };
 
 export default function ModalV2({
