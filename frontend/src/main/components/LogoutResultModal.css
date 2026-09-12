@@ -1,0 +1,57 @@
+.lrm {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    color: #e8eaed;
+
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.lrm__message {
+    font-size: 13px;
+    color: #b0b6c1;
+    text-align: center;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.lrm__footer {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.lrm__btn {
+    height: 34px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+
+    background: #6366f1;
+    color: #fff;
+
+    outline: none;
+    transition: filter 0.15s, transform 0.1s;
+}
+
+.lrm__btn:focus,
+.lrm__btn:focus-visible {
+    outline: none;
+}
+
+.lrm__btn:hover {
+    filter: brightness(1.15);
+}
+
+.lrm__btn:active {
+    transform: scale(0.98);
+}

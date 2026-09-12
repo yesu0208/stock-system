@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { tokenStorage } from '../utils/token'
 import { useEffect, useState } from 'react'
-import Modal from '../components/Modal'
 import { logout } from '../api/auth'
 import { disconnectStomp } from '../api/stompClient'
 import Header from '../main/components/Header'
+import LogoutResultModal from '../main/components/LogoutResultModal'
 import { useMarketData } from '../main/context/MarketDataContext'
 import IndexModal from '../main/components/IndexModal'
 import HotStocksModal from '../main/components/HotStocksModal'
@@ -77,25 +77,7 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
                 <p>© 2026 Arile. All rights reserved.</p>
             </footer>
 
-            {logoutReason === 'manual' && (
-                <Modal show={true} onClose={handleModalClose}>
-                    <div className={styles.modalContent}>
-                        <h3>로그아웃되었습니다.</h3>
-                        <p>정상적으로 로그아웃 처리되었습니다.</p>
-                        <button className={styles.modalButton} onClick={handleModalClose}>확인</button>
-                    </div>
-                </Modal>
-            )}
-
-            {logoutReason === 'expired' && (
-                <Modal show={true} onClose={handleModalClose}>
-                    <div className={styles.modalContent}>
-                        <h3>세션이 만료되었습니다.</h3>
-                        <p>다시 로그인해주세요.</p>
-                        <button className={styles.modalButton} onClick={handleModalClose}>로그인 페이지로 이동</button>
-                    </div>
-                </Modal>
-            )}
+            <LogoutResultModal reason={logoutReason} onConfirm={handleModalClose} />
 
             <IndexModal show={showIndexModal} onClose={() => setShowIndexModal(false)} />
             <HotStocksModal show={showHotStocksModal} onClose={() => setShowHotStocksModal(false)} />
