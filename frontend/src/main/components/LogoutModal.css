@@ -41,6 +41,8 @@
     cursor: pointer;
     transition: filter 0.15s, transform 0.1s;
     font-family: var(--font-base);
+
+    outline: none;
 }
 
 .lom__btn:active {
@@ -60,10 +62,12 @@
     background: var(--color-surface-2);
     color: var(--color-text-secondary);
     border: 1px solid var(--color-border);
-    transition: background 0.15s, color 0.15s;
+    outline: none;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .lom__btn--close:hover {
     background: #3a3d44;
     color: var(--color-text-primary);
+    border-color: #64748b;
 }

@@ -80,6 +80,7 @@
 
 .modal-v2-header {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     padding: 10px 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -92,6 +93,16 @@
     border: none;
     color: #cbd5e1;
     cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+
+    font-size: 16px;
+
+    outline: none;
 }
 
 .modal-v2-drag-handle {
@@ -121,4 +132,10 @@
     height: 140px;
     display: flex;
     flex-direction: column;
+}
+
+.modal-v2-close-icon {
+    font-weight: 900;
+    font-size: 18px;
+    line-height: 1;
 }

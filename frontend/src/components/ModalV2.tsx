@@ -90,7 +90,9 @@ export default function ModalV2({
             >
                 <div className="modal-v2-header modal-v2-drag-handle" onMouseDown={onMouseDown}>
                     <span>{title}</span>
-                    <button onClick={onClose}>✕</button>
+                    <button onClick={onClose}>
+                        <span className="modal-v2-close-icon">✕</span>
+                    </button>
                 </div>
 
                 <div className="modal-v2-body">
