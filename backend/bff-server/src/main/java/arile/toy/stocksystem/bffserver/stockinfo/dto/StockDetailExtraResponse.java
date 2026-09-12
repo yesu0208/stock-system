@@ -4,6 +4,7 @@ import java.util.List;
 
 public record StockDetailExtraResponse(
         String stockCode,
+        String market,
         String companySummary,
         String warningType,
         String manage,

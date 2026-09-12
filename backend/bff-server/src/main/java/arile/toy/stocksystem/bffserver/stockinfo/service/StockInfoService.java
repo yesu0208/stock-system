@@ -191,11 +191,28 @@ public class StockInfoService {
             }
         }
 
-        UpjongStockResponse response = naverStockCrawlerClient.getUpjongStocks(upjongNo);
+        List<UpjongStock> stocks = naverStockCrawlerClient.getUpjongStocks(upjongNo);
+        String upjongName = resolveUpjongName(upjongNo);
+
+        UpjongStockResponse response = new UpjongStockResponse(upjongName, stocks);
 
         cacheUpjongStocks(cacheKey, response);
 
         return response;
+    }
+
+    private String resolveUpjongName(String upjongNo) {
+        try {
+            UpjongResponse allUpjongs = getAllUpjongs();
+            return allUpjongs.items().stream()
+                    .filter(item -> item.no().equals(upjongNo))
+                    .map(UpjongInfo::name)
+                    .findFirst()
+                    .orElse("");
+        } catch (Exception e) {
+            log.warn("업종명 조회 실패. no={}", upjongNo, e);
+            return "";
+        }
     }
 
     private void cacheUpjongStocks(String cacheKey, UpjongStockResponse response) {
@@ -269,31 +286,11 @@ public class StockInfoService {
             }
         }
 
-        List<InvestorTrendDto> current = naverStockCrawlerClient.getInvestorTrend(market, type, page);
-        List<InvestorTrendDto> next = naverStockCrawlerClient.getInvestorTrend(market, type, page + 1);
-
-        boolean hasNext = !next.isEmpty() && !isSamePage(current, next);
-
-        TrendResponse response = new TrendResponse(current, hasNext);
+        TrendResponse response = naverStockCrawlerClient.getInvestorTrend(market, type, page);
 
         cacheInvestorTrend(cacheKey, response);
 
         return response;
-    }
-
-    private <T> boolean isSamePage(List<T> a, List<T> b) {
-
-        if (a.size() != b.size()) {
-            return false;
-        }
-
-        for (int i = 0; i < a.size(); i++) {
-            if (!a.get(i).equals(b.get(i))) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private void cacheInvestorTrend(String cacheKey, TrendResponse response) {
@@ -318,8 +315,8 @@ public class StockInfoService {
         return INVESTOR_TREND_KEY_PREFIX + market.name() + ":" + type.name() + ":" + page;
     }
 
-    public DealRankResponse getDealRank(DealRankMarket market, InvestorType investorType, DealType dealType) {
-        String cacheKey = buildDealRankKey(market, investorType, dealType);
+    public DealRankResponse getDealRank(DealRankMarket market, InvestorType investorType, DealType dealType, PeriodType periodType) {
+        String cacheKey = buildDealRankKey(market, investorType, dealType, periodType);
 
         String cached = redisTemplate.opsForValue().get(cacheKey);
         if (cached != null) {
@@ -329,7 +326,7 @@ public class StockInfoService {
             }
         }
 
-        DealRankResponse response = naverStockCrawlerClient.getDealRank(market, investorType, dealType);
+        DealRankResponse response = naverStockCrawlerClient.getDealRank(market, investorType, dealType, periodType);
 
         cacheDealRank(cacheKey, response);
 
@@ -354,7 +351,7 @@ public class StockInfoService {
         }
     }
 
-    private String buildDealRankKey(DealRankMarket market, InvestorType investorType, DealType dealType) {
-        return DEAL_RANK_KEY_PREFIX + market.name() + ":" + investorType.name() + ":" + dealType.name();
+    private String buildDealRankKey(DealRankMarket market, InvestorType investorType, DealType dealType, PeriodType periodType) {
+        return DEAL_RANK_KEY_PREFIX + market.name() + ":" + investorType.name() + ":" + dealType.name() + ":" + periodType.name();
     }
 }

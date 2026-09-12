@@ -1,14 +1,14 @@
 package arile.toy.stocksystem.bffserver.stockinfo.dto;
 
-public enum MarketType {
-
-    KOSPI("KOSPI"),
-    KOSDAQ("KOSDAQ"),
-    FUTURES("FUT");
+public enum PeriodType {
+    DAY("DAY"),
+    WEEK("WEEK"),
+    MONTH("MONTH"),
+    THREE_MONTH("THREE_MONTH");
 
     private final String code;
 
-    MarketType(String code) {
+    PeriodType(String code) {
         this.code = code;
     }
 
