@@ -181,7 +181,8 @@ public class NaverStockCrawlerClient {
 
         String date = formatBizDate(item.bizdate());
         String closePrice = formatComma(item.closePrice());
-        String diff = formatDiff(item.upDownGb(), item.prevChangePrice());
+        String diff = formatComma(String.valueOf(Math.abs(parseLongSafely(item.prevChangePrice()))));
+        String direction = mapUpDownGbText(item.upDownGb());
         String rate = formatRate(item.closePrice(), item.prevChangePrice());
         String volume = formatComma(item.tradeVolume());
         String institutionNetBuy = formatSignedComma(item.organPureBuyQuant());
@@ -191,10 +192,24 @@ public class NaverStockCrawlerClient {
         String foreignRate = formatPercent(item.frgnHoldRatio());
 
         return new ForeignInstitutionTrade(
-                date, closePrice, diff, rate,
+                date, closePrice, diff, direction, rate,
                 volume, institutionNetBuy, individualNetBuy,
                 foreignNetBuy, foreignHoldings, foreignRate
         );
+    }
+
+    private String mapUpDownGbText(String upDownGb) {
+        if (upDownGb == null) {
+            return "UNKNOWN";
+        }
+        return switch (upDownGb) {
+            case "상한가" -> "UPPER_LIMIT";
+            case "상승" -> "UP";
+            case "보합" -> "STEADY";
+            case "하한가" -> "LOWER_LIMIT";
+            case "하락" -> "DOWN";
+            default -> "UNKNOWN";
+        };
     }
 
     private String formatBizDate(String bizdate) {
