@@ -1,0 +1,69 @@
+.lom {
+    --color-confirm:        #6366f1;
+    --color-surface-2:      #26292e;
+    --color-border:         #2e3138;
+    --color-text-primary:   #e8eaed;
+    --color-text-secondary: #b0b6c1;
+    --radius-md:            8px;
+    --font-base: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-family: var(--font-base);
+    color: var(--color-text-primary);
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.lom__message {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.lom__footer {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+
+.lom__btn {
+    flex: 1;
+    height: 34px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+    font-family: var(--font-base);
+}
+
+.lom__btn:active {
+    transform: scale(0.98);
+}
+
+.lom__btn--confirm {
+    background: var(--color-confirm);
+    color: #fff;
+}
+
+.lom__btn--confirm:hover {
+    filter: brightness(1.15);
+}
+
+.lom__btn--close {
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    transition: background 0.15s, color 0.15s;
+}
+
+.lom__btn--close:hover {
+    background: #3a3d44;
+    color: var(--color-text-primary);
+}
