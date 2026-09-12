@@ -1,0 +1,124 @@
+.modal-v2-box {
+    --drag-x: 0px;
+    --drag-y: 0px;
+
+    width: 420px;
+    background: #0f172a;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    position: relative;
+    translate: var(--drag-x, 0px) var(--drag-y, 0px);
+
+    flex-shrink: 0;
+}
+
+.modal-v2-overlay {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    opacity: 0;
+    visibility: hidden;
+    background: rgba(0, 0, 0, 0);
+
+    overflow: hidden;
+
+    z-index: 9999;
+}
+
+.modal-v2-overlay.show {
+    animation: modalV2OverlayIn 0.2s ease forwards;
+}
+
+.modal-v2-overlay.hide {
+    animation: modalV2OverlayOut 0.2s ease forwards;
+}
+
+.modal-v2-box {
+    width: 420px;
+    background: #0f172a;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    position: relative;
+    translate: var(--drag-x, 0px) var(--drag-y, 0px);
+
+    flex-shrink: 0;
+}
+
+.modal-v2-box.show {
+    animation: modalV2In 0.2s ease forwards;
+}
+
+.modal-v2-box.hide {
+    animation: modalV2Out 0.2s ease forwards;
+}
+
+@keyframes modalV2OverlayIn {
+    from { opacity: 0; background: rgba(0, 0, 0, 0); visibility: visible; }
+    to { opacity: 1; background: rgba(0, 0, 0, 0.7); visibility: visible; }
+}
+
+@keyframes modalV2OverlayOut {
+    from { opacity: 1; background: rgba(0, 0, 0, 0.7); visibility: visible; }
+    to { opacity: 0; background: rgba(0, 0, 0, 0); visibility: hidden; }
+}
+
+@keyframes modalV2In {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modalV2Out {
+    from { opacity: 1; transform: scale(1) translateY(0); }
+    to { opacity: 0; transform: scale(0.95) translateY(10px); }
+}
+
+.modal-v2-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: white;
+    font-weight: 600;
+}
+
+.modal-v2-header button {
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    cursor: pointer;
+}
+
+.modal-v2-drag-handle {
+    cursor: grab;
+    user-select: none;
+}
+
+.modal-v2-drag-handle:active {
+    cursor: grabbing;
+}
+
+.modal-v2-drag-handle button {
+    cursor: pointer;
+}
+
+.modal-v2-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    color: #e2e8f0;
+}
+
+.modal-v2-box.logout-modal {
+    width: 240px;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+}
