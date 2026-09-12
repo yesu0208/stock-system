@@ -10,6 +10,11 @@ import HelpModal from '../main/components/HelpModal'
 import ManagedModal from '../main/components/ManagedModal'
 import { useUser } from '../main/context/UserContext'
 import RankBadge from '../main/components/RankBadge'
+import { useMarketData } from '../main/context/MarketDataContext'
+import IndexModal from '../main/components/IndexModal'
+import HotStocksModal from '../main/components/HotStocksModal'
+import SectorModal from '../main/components/SectorModal'
+import InvestorModal from '../main/components/InvestorModal'
 import styles from './MainLayout.module.css'
 
 interface Props {
@@ -25,7 +30,12 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
     const [showMyInfoModal, setShowMyInfoModal] = useState(false)
     const [showHelpModal, setShowHelpModal] = useState(false)
     const [showManagedModal, setShowManagedModal] = useState(false)
+    const [showIndexModal, setShowIndexModal] = useState(false)
+    const [showHotStocksModal, setShowHotStocksModal] = useState(false)
+    const [showSectorModal, setShowSectorModal] = useState(false)
+    const [showInvestorModal, setShowInvestorModal] = useState(false)
     const { user } = useUser()
+    const { marketMain } = useMarketData()
 
     const handleLogout = async () => {
         try {
@@ -74,6 +84,20 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
             <main className={styles.main}>{children}</main>
 
             <footer className={styles.footer}>
+                <div className={styles.footerWidgets}>
+                    {marketMain && (
+                        <span className={styles.tickerText}>
+                            KOSPI {marketMain.kospi.currentIndex} ({marketMain.kospi.changeRate}) ·{' '}
+                            KOSDAQ {marketMain.kosdaq.currentIndex} ({marketMain.kosdaq.changeRate})
+                        </span>
+                    )}
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                        <button className={styles.widgetButton} onClick={() => setShowIndexModal(true)}>지수</button>
+                        <button className={styles.widgetButton} onClick={() => setShowHotStocksModal(true)}>인기종목</button>
+                        <button className={styles.widgetButton} onClick={() => setShowSectorModal(true)}>업종</button>
+                        <button className={styles.widgetButton} onClick={() => setShowInvestorModal(true)}>투자자동향</button>
+                    </div>
+                </div>
                 <p>© 2026 Arile. All rights reserved.</p>
             </footer>
 
@@ -103,6 +127,10 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
             {user?.role === 'ADMIN' && (
                 <ManagedModal show={showManagedModal} onClose={() => setShowManagedModal(false)} />
             )}
+            <IndexModal show={showIndexModal} onClose={() => setShowIndexModal(false)} />
+            <HotStocksModal show={showHotStocksModal} onClose={() => setShowHotStocksModal(false)} />
+            <SectorModal show={showSectorModal} onClose={() => setShowSectorModal(false)} />
+            <InvestorModal show={showInvestorModal} onClose={() => setShowInvestorModal(false)} />
         </div>
     )
 }
