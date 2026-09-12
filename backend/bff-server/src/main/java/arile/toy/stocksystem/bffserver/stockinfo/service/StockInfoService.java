@@ -315,8 +315,8 @@ public class StockInfoService {
         return INVESTOR_TREND_KEY_PREFIX + market.name() + ":" + type.name() + ":" + page;
     }
 
-    public DealRankResponse getDealRank(DealRankMarket market, InvestorType investorType, DealType dealType) {
-        String cacheKey = buildDealRankKey(market, investorType, dealType);
+    public DealRankResponse getDealRank(DealRankMarket market, InvestorType investorType, DealType dealType, PeriodType periodType) {
+        String cacheKey = buildDealRankKey(market, investorType, dealType, periodType);
 
         String cached = redisTemplate.opsForValue().get(cacheKey);
         if (cached != null) {
@@ -326,7 +326,7 @@ public class StockInfoService {
             }
         }
 
-        DealRankResponse response = naverStockCrawlerClient.getDealRank(market, investorType, dealType);
+        DealRankResponse response = naverStockCrawlerClient.getDealRank(market, investorType, dealType, periodType);
 
         cacheDealRank(cacheKey, response);
 
@@ -351,7 +351,7 @@ public class StockInfoService {
         }
     }
 
-    private String buildDealRankKey(DealRankMarket market, InvestorType investorType, DealType dealType) {
-        return DEAL_RANK_KEY_PREFIX + market.name() + ":" + investorType.name() + ":" + dealType.name();
+    private String buildDealRankKey(DealRankMarket market, InvestorType investorType, DealType dealType, PeriodType periodType) {
+        return DEAL_RANK_KEY_PREFIX + market.name() + ":" + investorType.name() + ":" + dealType.name() + ":" + periodType.name();
     }
 }

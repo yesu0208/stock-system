@@ -6,6 +6,7 @@ public record DealRankResponse(
         String market,
         String investorType,
         String dealType,
+        String periodType,
         List<DealRankDay> days
 ) {
 }

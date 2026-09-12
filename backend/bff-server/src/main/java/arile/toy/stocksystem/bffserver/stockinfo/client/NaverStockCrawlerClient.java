@@ -1317,94 +1317,114 @@ public class NaverStockCrawlerClient {
         );
     }
 
-    public DealRankResponse getDealRank(DealRankMarket market, InvestorType investorType, DealType dealType) {
+    private static final int DEAL_RANK_PAGE_SIZE = 50;
 
-        String html;
+    public DealRankResponse getDealRank(DealRankMarket market, InvestorType investorType, DealType dealType, PeriodType periodType) {
+
+        NaverForeignOrgTrendResponse response;
         try {
-            html = restClient.get()
+            response = stockApiClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/sise/sise_deal_rank_iframe.naver")
-                            .queryParam("sosok", market.getCode())
-                            .queryParam("investor_gubun", investorType.getCode())
-                            .queryParam("type", dealType.getCode())
+                            .path("/api/domestic/market/trend/trendForeignOrg")
+                            .queryParam("investorType", investorType.getCode())
+                            .queryParam("tradeType", "KRX")
+                            .queryParam("marketType", market.getCode())
+                            .queryParam("startIdx", 0)
+                            .queryParam("pageSize", DEAL_RANK_PAGE_SIZE)
+                            .queryParam("periodType", periodType.getCode())
                             .build())
-                    .header(HttpHeaders.REFERER, "https://finance.naver.com/sise/sise_deal_rank.naver")
-                    .header(HttpHeaders.ACCEPT_LANGUAGE, "ko-KR,ko;q=0.9")
                     .retrieve()
-                    .body(String.class);
+                    .body(NaverForeignOrgTrendResponse.class);
         } catch (RestClientResponseException e) {
-            log.error("Naver 수급 순위 크롤링 실패. status={}, market={}, investorType={}, dealType={}",
-                    e.getStatusCode(), market, investorType, dealType);
+            log.error("Naver 수급 순위 API 호출 실패. status={}, market={}, investorType={}, dealType={}, periodType={}",
+                    e.getStatusCode(), market, investorType, dealType, periodType);
             throw new IllegalStateException("네이버 수급 순위 크롤링 실패", e);
         }
 
-        return parseDealRank(html, market, investorType, dealType);
+        if (response == null || response.sections() == null) {
+            return new DealRankResponse(market.name(), investorType.name(), dealType.name(), periodType.name(), new ArrayList<>());
+        }
+
+        List<NaverForeignOrgRankItem> items = dealType == DealType.BUY
+                ? response.sections().buyRankList()
+                : response.sections().sellRankList();
+
+        if (items == null) {
+            items = new ArrayList<>();
+        }
+
+        String dealDate = items.isEmpty()
+                ? ""
+                : formatDealDateRange(items.get(0).bizdateFrom(), items.get(0).bizdateTo());
+
+        List<DealRankItem> dealRankItems = new ArrayList<>();
+        int rank = 1;
+        for (NaverForeignOrgRankItem item : items) {
+            dealRankItems.add(new DealRankItem(
+                    rank++,
+                    item.itemcode(),
+                    item.itemname(),
+                    toBigDecimalSafely(item.accTradeVolume()),
+                    toBigDecimalSafely(item.accTradeAmount()),
+                    toBigDecimalSafely(item.dailyTradeVolume())
+            ));
+        }
+
+        DealRankDay day = new DealRankDay(dealDate, dealRankItems);
+
+        return new DealRankResponse(market.name(), investorType.name(), dealType.name(), periodType.name(), List.of(day));
+    }
+
+    private String formatDealDateRange(String bizdateFrom, String bizdateTo) {
+        String from = formatBizDate(bizdateFrom);
+        String to = formatBizDate(bizdateTo);
+        if (from.equals(to)) {
+            return from;
+        }
+        return from + " ~ " + to;
+    }
+
+    private BigDecimal toBigDecimalSafely(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverForeignOrgTrendResponse(
+            NaverForeignOrgSections sections
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverForeignOrgSections(
+            List<NaverForeignOrgRankItem> buyRankList,
+            List<NaverForeignOrgRankItem> sellRankList
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record NaverForeignOrgRankItem(
+            String itemcode,
+            String itemname,
+            String bizdateFrom,
+            String bizdateTo,
+            String accTradeVolume,
+            String accTradeAmount,
+            String dailyTradeVolume,
+            String nowPrice,
+            String prevChangeRate,
+            String prevChangePrice,
+            String type
+    ) {
     }
 
     private static final Pattern DEAL_RANK_CODE_PATTERN = Pattern.compile("code=([^&\"]+)");
-
-    private DealRankResponse parseDealRank(String html, DealRankMarket market, InvestorType investorType, DealType dealType) {
-
-        Document doc = Jsoup.parse(html);
-
-        Elements dateBlocks = doc.select("div.box_type_ms");
-        if (dateBlocks.isEmpty()) {
-            throw new IllegalStateException("div.box_type_ms 를 찾을 수 없습니다. HTML 구조를 확인하세요.");
-        }
-
-        List<DealRankDay> days = new ArrayList<>();
-
-        for (Element block : dateBlocks) {
-            Element dateEl = block.selectFirst(".sise_guide_date");
-            String dealDate = dateEl != null ? dateEl.text().trim() : "unknown";
-
-            Element dataTable = null;
-            for (Element table : block.select("table.type_1")) {
-                if (!table.select("tbody tr").isEmpty()) {
-                    dataTable = table;
-                    break;
-                }
-            }
-            if (dataTable == null) continue;
-
-            Elements rows = dataTable.select("tbody tr");
-            List<String> colNames = new ArrayList<>();
-            for (Element tr : rows) {
-                Elements ths = tr.select("th");
-                if (!ths.isEmpty()) {
-                    for (Element th : ths) colNames.add(th.text().trim());
-                    break;
-                }
-            }
-
-            int qtyIdx = indexOf(colNames, "수량");
-            int amtIdx = indexOf(colNames, "금액");
-            int volIdx = indexOf(colNames, "당일거래량", "거래량");
-
-            List<DealRankItem> items = new ArrayList<>();
-            int rank = 1;
-            for (Element tr : rows) {
-                Elements tds = tr.select("td");
-                if (tds.isEmpty()) continue;
-                Element anchor = tds.get(0).selectFirst("a");
-                if (anchor == null) continue;
-
-                String stockName = anchor.attr("title").trim();
-                if (stockName.isEmpty()) stockName = anchor.text().trim();
-                String stockCode = extractDealRankCode(anchor);
-
-                BigDecimal quantity = tdNumber(tds, qtyIdx, 1);
-                BigDecimal amount = tdNumber(tds, amtIdx, 2);
-                BigDecimal volume = tdNumber(tds, volIdx, 3);
-
-                items.add(new DealRankItem(rank++, stockCode, stockName, quantity, amount, volume));
-            }
-
-            days.add(new DealRankDay(dealDate, items));
-        }
-
-        return new DealRankResponse(market.name(), investorType.name(), dealType.name(), days);
-    }
 
     private int indexOf(List<String> colNames, String... keywords) {
         for (int i = 0; i < colNames.size(); i++) {

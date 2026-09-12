@@ -67,8 +67,9 @@ public class StockInfoController {
     public DealRankResponse getDealRank(
             @RequestParam DealRankMarket market,
             @RequestParam InvestorType investorType,
-            @RequestParam DealType dealType
+            @RequestParam DealType dealType,
+            @RequestParam(defaultValue = "DAY") PeriodType periodType
     ) {
-        return stockInfoService.getDealRank(market, investorType, dealType);
+        return stockInfoService.getDealRank(market, investorType, dealType, periodType);
     }
 }
