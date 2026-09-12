@@ -4,12 +4,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../components/Modal'
 import { logout } from '../api/auth'
 import { disconnectStomp } from '../api/stompClient'
-import NoticeModal from '../main/components/NoticeModal'
-import MyInfoModal from '../main/components/MyInfoModal'
-import HelpModal from '../main/components/HelpModal'
-import ManagedModal from '../main/components/ManagedModal'
-import { useUser } from '../main/context/UserContext'
-import RankBadge from '../main/components/RankBadge'
+import Header from '../main/components/Header'
 import { useMarketData } from '../main/context/MarketDataContext'
 import IndexModal from '../main/components/IndexModal'
 import HotStocksModal from '../main/components/HotStocksModal'
@@ -26,15 +21,10 @@ type LogoutReason = 'manual' | 'expired' | null
 
 export default function MainLayout({ children, onLoggedOut }: Props) {
     const [logoutReason, setLogoutReason] = useState<LogoutReason>(null)
-    const [showNoticeModal, setShowNoticeModal] = useState(false)
-    const [showMyInfoModal, setShowMyInfoModal] = useState(false)
-    const [showHelpModal, setShowHelpModal] = useState(false)
-    const [showManagedModal, setShowManagedModal] = useState(false)
     const [showIndexModal, setShowIndexModal] = useState(false)
     const [showHotStocksModal, setShowHotStocksModal] = useState(false)
     const [showSectorModal, setShowSectorModal] = useState(false)
     const [showInvestorModal, setShowInvestorModal] = useState(false)
-    const { user } = useUser()
     const { marketMain } = useMarketData()
 
     const handleLogout = async () => {
@@ -65,21 +55,7 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <h1 className={styles.title}>모의투자 서비스</h1>
-                <button className={styles.userBadge} onClick={() => setShowMyInfoModal(true)}>
-                    <span>{user?.nickname ?? '...'}</span>
-                    <RankBadge rank={user?.rank ?? null} size={20} />
-                </button>
-                <div className={styles.headerActions}>
-                    <button className={styles.noticeButton} onClick={() => setShowNoticeModal(true)}>공지사항</button>
-                    <button className={styles.noticeButton} onClick={() => setShowHelpModal(true)}>도움말</button>
-                    {user?.role === 'ADMIN' && (
-                        <button className={styles.noticeButton} onClick={() => setShowManagedModal(true)}>관리자</button>
-                    )}
-                    <button className={styles.logoutButton} onClick={handleLogout}>로그아웃</button>
-                </div>
-            </header>
+            <Header onLogout={handleLogout} />
 
             <main className={styles.main}>{children}</main>
 
@@ -121,12 +97,6 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
                 </Modal>
             )}
 
-            <NoticeModal show={showNoticeModal} onClose={() => setShowNoticeModal(false)} />
-            <MyInfoModal show={showMyInfoModal} onClose={() => setShowMyInfoModal(false)} />
-            <HelpModal show={showHelpModal} onClose={() => setShowHelpModal(false)} />
-            {user?.role === 'ADMIN' && (
-                <ManagedModal show={showManagedModal} onClose={() => setShowManagedModal(false)} />
-            )}
             <IndexModal show={showIndexModal} onClose={() => setShowIndexModal(false)} />
             <HotStocksModal show={showHotStocksModal} onClose={() => setShowHotStocksModal(false)} />
             <SectorModal show={showSectorModal} onClose={() => setShowSectorModal(false)} />
