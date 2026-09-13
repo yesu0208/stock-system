@@ -4,6 +4,7 @@ public record LeveragePositionInfo(
         Integer quantity,
         Integer availableQuantity,
         Long purchaseAmount,
-        Long loanAmount
+        Long loanAmount,
+        String marginStatus
 ) {
 }

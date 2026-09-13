@@ -4,9 +4,11 @@ public record LeveragePositionInfo(
         Integer quantity,
         Integer availableQuantity,
         Long purchaseAmount,
-        Long loanAmount
+        Long loanAmount,
+        String marginStatus
 ) {
-    public static LeveragePositionInfo of(Integer quantity, Integer availableQuantity, Long purchaseAmount, Long loanAmount) {
-        return new LeveragePositionInfo(quantity, availableQuantity, purchaseAmount, loanAmount);
+    public static LeveragePositionInfo of(Integer quantity, Integer availableQuantity, Long purchaseAmount,
+                                          Long loanAmount, String marginStatus) {
+        return new LeveragePositionInfo(quantity, availableQuantity, purchaseAmount, loanAmount, marginStatus);
     }
 }

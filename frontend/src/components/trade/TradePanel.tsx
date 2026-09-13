@@ -1444,8 +1444,10 @@ export default function TradePanel({
                                                             : ''}
 </span>
                                                     <span>
-                                            {info.buyPrice.toLocaleString()}원
-                                        </span>
+    {info.quantity > 0
+        ? Math.round(info.totalAmount / info.quantity).toLocaleString()
+        : 0}원
+</span>
                                                     <span>
                                             {curPrice !== undefined
                                                 ? curPrice.toLocaleString()

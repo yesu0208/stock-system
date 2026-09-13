@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.accountserver.useraccount.controller;
 
+import arile.toy.stocksystem.accountserver.leverage.service.LeveragePositionSettleService;
 import arile.toy.stocksystem.accountserver.useraccount.dto.SettleAccountsRequest;
 import arile.toy.stocksystem.accountserver.useraccount.service.UserAccountService;
 import arile.toy.stocksystem.accountserver.userstock.service.UserStockService;
@@ -17,11 +18,13 @@ public class AccountSettleController {
 
     private final UserAccountService userAccountService;
     private final UserStockService userStockService;
+    private final LeveragePositionSettleService leveragePositionSettleService;
 
     @PostMapping("/settle")
     public ResponseEntity<Void> settle(@RequestBody SettleAccountsRequest request) {
         userAccountService.settleAccounts(request.usernames());
         userStockService.settleStocks(request.usernames());
+        leveragePositionSettleService.settleLeveragePositions(request.usernames());
         return ResponseEntity.ok().build();
     }
 
@@ -29,6 +32,7 @@ public class AccountSettleController {
     public ResponseEntity<Void> settleAll() {
         userAccountService.settleAllAccounts();
         userStockService.settleAllStocks();
+        leveragePositionSettleService.settleAllLeveragePositions();
         return ResponseEntity.ok().build();
     }
 }

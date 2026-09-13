@@ -1,6 +1,7 @@
 import "./UserPanel.css";
 import RankBadge from "./RankBadge";
-import { FiUser, FiCalendar, FiAward, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiUser, FiCalendar, FiAward, FiEye, FiEyeOff, FiCreditCard  } from "react-icons/fi";
+import MyAccountModal from "./MyAccountModal";
 import { useState } from "react";
 import { useUser } from "../context/UserContext";
 import { useAccount } from "../context/AccountContext";
@@ -60,7 +61,7 @@ export default function UserPanel() {
     const fmtRate = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
 
     const [hideBalance, setHideBalance] = useState(false);
-    const [openModal, setOpenModal] = useState<null | "info">(null);
+    const [openModal, setOpenModal] = useState<null | "info" | "portfolio" | "account">(null);
 
     return (
         <aside className="user-panel">
@@ -145,36 +146,36 @@ export default function UserPanel() {
 
                         <div className="row">
                             <span>총 자산</span>
-                            <span>{hideBalance ? "********원" : `${fmt(account.totalValue)}원`}</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.totalValue)} 원`}</span>
                         </div>
 
                         <div className="row">
                             <span>평가손익</span>
                             <span className={hideBalance ? "" : getValueClass(account.totalProfit)}>
-                                {hideBalance ? "********원" : `${fmtSigned(account.totalProfit)}원`}
+                                {hideBalance ? "******** 원" : `${fmtSigned(account.totalProfit)} 원`}
                             </span>
                         </div>
 
                         <div className="row">
                             <span>수익률</span>
                             <span className={hideBalance ? "" : getValueClass(account.totalProfitRate)}>
-                                {hideBalance ? "**.**%" : fmtRate(account.totalProfitRate)}
+                                {hideBalance ? "**.** %" : fmtRate(account.totalProfitRate)}
                             </span>
                         </div>
 
                         <div className="row">
                             <span>예수금</span>
-                            <span>{hideBalance ? "********원" : `${fmt(account.totalCash)}원`}</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.totalCash)} 원`}</span>
                         </div>
 
                         <div className="row">
                             <span>주식 평가금액</span>
-                            <span>{hideBalance ? "********원" : `${fmt(account.stockValue)}원`}</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.stockValue)} 원`}</span>
                         </div>
 
                         <div className="row">
                             <span>매수 가능금액</span>
-                            <span>{hideBalance ? "********원" : `${fmt(account.availableCash)}원`}</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.availableCash)} 원`}</span>
                         </div>
                     </>
                 ) : (
@@ -189,9 +190,14 @@ export default function UserPanel() {
                     <FiUser className="menu-icon" />
                     내 정보
                 </button>
+                <button className="menu-btn" onClick={() => setOpenModal("account")}>
+                    <FiCreditCard className="menu-icon" />
+                    내 계좌
+                </button>
             </div>
 
             <MyInfoModal open={openModal === "info"} onClose={() => setOpenModal(null)} />
+            <MyAccountModal open={openModal === "account"} onClose={() => setOpenModal(null)} />
         </aside>
     );
 }

@@ -3,8 +3,8 @@ export type AccountStatus = 'NORMAL' | 'NEGATIVE' | 'SUSPENDED'
 
 export interface StockInfo {
     quantity: number
-    buyPrice: number
     availableQuantity: number
+    totalAmount: number
 }
 
 export interface LeveragePositionView {
@@ -16,8 +16,13 @@ export interface LeveragePositionView {
     loanAmount: number
     evaluationAmount: number
     netValue: number
+    profitAmount: number
     profitRate: number
     currentPrice: number
+    marginStatus: MarginStatus
+    initialMargin: number
+    maintenanceMargin: number
+    maintenancePrice: number
 }
 
 export interface AccountResponse {
