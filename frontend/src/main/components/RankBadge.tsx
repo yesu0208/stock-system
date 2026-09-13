@@ -1,8 +1,13 @@
-import type { RankResponse, RankTier } from '../../types/rank'
+import type { RankTier } from '../../types/rank'
 import './RankBadge.css'
 
+interface MinimalRank {
+    tier: RankTier
+    subTier: number | null
+}
+
 interface Props {
-    rank: RankResponse | null
+    rank: MinimalRank | null
     size?: number
     showLabel?: boolean
 }
