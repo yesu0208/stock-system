@@ -1,0 +1,396 @@
+.mam-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 14px;
+}
+
+.mam-tab {
+    flex: 1;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.mam-tab--active {
+    color: #b7a6ff;
+    border-bottom-color: #7c5cff;
+}
+
+.positive { color: #ff6347; }
+.negative { color: #4f9dff; }
+
+.mam-account {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+}
+
+.mam-cumulative {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+.mam-cumulative::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+}
+
+.mam-cumulative--positive {
+    background: rgba(255, 99, 71, 0.08);
+    border-color: rgba(255, 99, 71, 0.25);
+}
+.mam-cumulative--positive::before { background: #ff6347; }
+
+.mam-cumulative--negative {
+    background: rgba(79, 157, 255, 0.08);
+    border-color: rgba(79, 157, 255, 0.25);
+}
+.mam-cumulative--negative::before { background: #4f9dff; }
+
+.mam-cumulative__label { font-size: 11px; opacity: 0.7; }
+.mam-cumulative__value { font-size: 18px; font-weight: 700; }
+.mam-cumulative__rate { font-size: 11px; font-weight: 600; }
+
+.mam-top-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.mam-summary-cards {
+    flex: 0 0 30%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mam-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.mam-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    text-align: center;
+    align-items: center;
+}
+
+.mam-cell__label { font-size: 11px; opacity: 0.5; }
+.mam-cell__value { font-size: 13px; font-weight: 600; }
+
+.mam-cell--pending {
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.015);
+}
+
+/* ── 계좌/마진 상태 패널 ── */
+.mam-margin-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+}
+
+.mam-margin-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mam-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin: 4px 0 6px;
+}
+
+.mam-section-title--inline { margin: 0; }
+
+.mam-margin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+.mam-margin-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.mam-margin-badge--normal {
+    color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.mam-margin-badge--call {
+    color: #ffce54;
+    background: rgba(255, 206, 84, 0.14);
+    border-color: rgba(255, 206, 84, 0.35);
+}
+
+.mam-margin-badge--risk {
+    color: #ff9248;
+    background: rgba(255, 146, 72, 0.16);
+    border-color: rgba(255, 146, 72, 0.4);
+}
+
+/* ── 보유주식/레버리지 공용 테이블 ── */
+.mam-section-title { }
+
+.mam-holdings {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.mam-holdings--tab {
+    flex: 1;
+    min-height: 0;
+}
+
+.mam-holdings-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.mam-holdings-body::-webkit-scrollbar { width: 4px; }
+.mam-holdings-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+}
+
+.mam-holding-header,
+.mam-holding-row__main {
+    display: grid;
+    grid-template-columns: 1.6fr 1.4fr 1.2fr 1.6fr 1.8fr;
+    gap: 4px;
+    font-size: 11px;
+    padding: 6px 8px;
+    align-items: center;
+}
+
+.mam-holding-header--leverage,
+.mam-holding-row__main--leverage {
+    grid-template-columns: 1.6fr 1.4fr 1.2fr 1.4fr 1.4fr;
+}
+
+.mam-holding-header {
+    position: sticky;
+    top: 0;
+    background: #1a1a2e;
+    z-index: 1;
+    color: rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    padding-bottom: 6px;
+    font-size: 10px;
+    text-align: center;
+}
+
+.mam-holding-header > span:first-child { text-align: center; }
+
+.mam-holding-row {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background 0.1s;
+}
+
+.mam-holding-row__main { text-align: center; }
+
+.mam-holding-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+}
+
+.mam-holding-row:last-child { border-bottom: none; }
+
+.mam-holding-name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-weight: 600;
+    font-size: 12px;
+    overflow: hidden;
+}
+
+.mam-holding-name span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mam-leverage-badge {
+    flex-shrink: 0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.mam-leverage-badge--cash {
+    color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.mam-leverage-badge--lev2 {
+    color: #7dd3fc;
+    background: rgba(125, 211, 252, 0.12);
+    border-color: rgba(125, 211, 252, 0.3);
+}
+
+.mam-leverage-badge--lev3 {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.mam-leverage-badge--lev5 {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+.mam-leverage-badge--levother {
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.12);
+    border-color: rgba(244, 114, 182, 0.3);
+}
+
+.mam-holding-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+}
+
+.mam-holding-cell__top { font-size: 11px; }
+.mam-holding-cell__bottom { font-size: 11px; }
+
+.mam-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    opacity: 0.35;
+    letter-spacing: 0.03em;
+}
+
+.mam-loading {
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.4;
+    padding: 16px 0;
+}
+
+/* ── 수익률 탭 ── */
+.mam-profit {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+
+.mam-profit::-webkit-scrollbar { width: 4px; }
+.mam-profit::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+}
+
+.mam-profit-header,
+.mam-profit-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 0.8fr 1.2fr 0.9fr 1.2fr;
+    gap: 4px;
+    font-size: 11px;
+    padding: 7px 8px;
+    align-items: center;
+}
+
+.mam-profit-header {
+    position: sticky;
+    top: 0;
+    background: #1a1a2e;
+    color: rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 10px;
+    z-index: 1;
+}
+
+.mam-profit-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.1s;
+}
+
+.mam-profit-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+}
+
+.mam-profit-header span,
+.mam-profit-row span { text-align: center; }
+
+.mam-end-of-list {
+    text-align: center;
+    font-size: 11px;
+    opacity: 0.3;
+    padding: 14px 0 10px;
+    letter-spacing: 0.04em;
+}
