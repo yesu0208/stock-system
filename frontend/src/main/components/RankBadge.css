@@ -1,0 +1,18 @@
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 3px 10px;
+    border-radius: 6px;
+
+    font-weight: 700;
+    color: #0b0f19;
+
+    letter-spacing: 0.3px;
+
+    min-width: 75px;
+    text-align: center;
+
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+}
