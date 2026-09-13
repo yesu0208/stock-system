@@ -3,6 +3,7 @@ package arile.toy.stocksystem.accountserver.leverage.service;
 import arile.toy.stocksystem.accountserver.leverage.dto.Outcome;
 import arile.toy.stocksystem.accountserver.useraccount.dto.AccountStatus;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
+import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRedisRepository;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class NegativeBalanceResolutionService {
     private static final int GRACE_PERIOD_BUSINESS_DAYS = 3;
 
     private final UserAccountRepository userAccountRepository;
+    private final UserAccountRedisRepository userAccountRedisRepository;
     private final BusinessDayCalculator businessDayCalculator;
 
     /**
@@ -66,6 +68,7 @@ public class NegativeBalanceResolutionService {
         if (account.getBalance() >= 0) {
             account.changeAccountStatus(AccountStatus.NORMAL, null);
             userAccountRepository.save(account);
+            userAccountRedisRepository.saveAccountStatus(account.getUsername(), AccountStatus.NORMAL.name());
             log.info("[NegativeBalanceResolution] account recovered. username={}, balance={}",
                     account.getUsername(), account.getBalance());
             return Outcome.RECOVERED;
@@ -76,11 +79,11 @@ public class NegativeBalanceResolutionService {
         if (elapsed >= GRACE_PERIOD_BUSINESS_DAYS) {
             account.changeAccountStatus(AccountStatus.SUSPENDED, account.getNegativeBalanceStartDate());
             userAccountRepository.save(account);
+            userAccountRedisRepository.saveAccountStatus(account.getUsername(), AccountStatus.SUSPENDED.name());
             log.warn("[NegativeBalanceResolution] account suspended. username={}, balance={}, elapsedBusinessDays={}",
                     account.getUsername(), account.getBalance(), elapsed);
             return Outcome.SUSPENDED;
         }
-
         return Outcome.UNCHANGED;
     }
 

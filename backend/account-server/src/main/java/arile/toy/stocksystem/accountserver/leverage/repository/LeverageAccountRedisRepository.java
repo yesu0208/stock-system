@@ -19,13 +19,14 @@ import java.util.Map;
 public class LeverageAccountRedisRepository {
 
     private static final String KEY_PREFIX = "account:leverage:";
-    private static final String FIELD = "positions";
+    private static final String POSITIONS_FIELD = "positions";
+    private static final String MARGIN_STATUS_FIELD = "marginStatus";
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
     public Map<String, LeveragePositionInfo> getPositions(String username) {
-        String json = (String) redisTemplate.opsForHash().get(key(username), FIELD);
+        String json = (String) redisTemplate.opsForHash().get(key(username), POSITIONS_FIELD);
         if (json == null || json.isBlank()) return new HashMap<>();
         try {
             return objectMapper.readValue(json, new TypeReference<Map<String, LeveragePositionInfo>>() {});
@@ -38,10 +39,19 @@ public class LeverageAccountRedisRepository {
     public void savePositions(String username, Map<String, LeveragePositionInfo> positions) {
         try {
             String json = objectMapper.writeValueAsString(positions);
-            redisTemplate.opsForHash().put(key(username), FIELD, json);
+            redisTemplate.opsForHash().put(key(username), POSITIONS_FIELD, json);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize leverage positions. username={}", username, e);
         }
+    }
+
+    public void saveMarginStatus(String username, String marginStatus) {
+        redisTemplate.opsForHash().put(key(username), MARGIN_STATUS_FIELD, marginStatus);
+    }
+
+    public String getMarginStatus(String username) {
+        Object value = redisTemplate.opsForHash().get(key(username), MARGIN_STATUS_FIELD);
+        return value != null ? (String) value : "NORMAL";
     }
 
     public static String positionKey(String stockCode, LeverageRatio leverageRatio) {

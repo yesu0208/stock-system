@@ -5,6 +5,7 @@ import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionR
 import arile.toy.stocksystem.accountserver.useraccount.dto.AccountStatus;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
+import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRedisRepository;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class LeverageInterestService {
 
     private final LeveragePositionRepository leveragePositionRepository;
     private final UserAccountRepository userAccountRepository;
+    private final UserAccountRedisRepository userAccountRedisRepository;
     private final LeverageInterestCalculator interestCalculator;
     private final AccountBalanceCommand accountBalanceCommand;
 
@@ -70,6 +72,7 @@ public class LeverageInterestService {
         boolean wasNormal = account.getAccountStatus() == AccountStatus.NORMAL;
         if (account.getBalance() < 0 && wasNormal) {
             account.changeAccountStatus(AccountStatus.NEGATIVE, LocalDate.now());
+            userAccountRedisRepository.saveAccountStatus(username, AccountStatus.NEGATIVE.name());
             log.warn("[LeverageInterest] Account converted to NEGATIVE by interest charge. username={}, balance={}",
                     username, account.getBalance());
         }

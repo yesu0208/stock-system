@@ -5,7 +5,9 @@ public record RankResponse(
         String tier,
         Integer subTier,
         Long rp,
-        String highestTierReached
+        String highestTierReached,
+        Long currentRankMinRp,
+        Long nextRankMinRp
 ) {
     public RankTier currentRankTier() {
         try {

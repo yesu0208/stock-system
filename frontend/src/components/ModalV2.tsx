@@ -45,6 +45,8 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "관리자": "managed-modal",
     "로그아웃 완료": "logout-result-modal",
     "세션 만료": "session-expired-modal",
+    "내 정보": "my-info-modal",
+    "비밀번호 변경": "password-modify-modal",
 };
 
 export default function ModalV2({

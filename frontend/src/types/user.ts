@@ -9,4 +9,5 @@ export interface UserDto {
     createdDateTime: string
     role: Role
     rank: RankResponse | null
+    profileImageUrl: string | null
 }

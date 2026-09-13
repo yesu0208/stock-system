@@ -167,3 +167,18 @@
     display: flex;
     flex-direction: column;
 }
+
+.modal-v2-box.my-info-modal {
+    width: 400px;
+    height: 640px;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-v2-box.password-modify-modal {
+    width: 320px;
+    min-height: 380px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}

@@ -6,10 +6,10 @@ import org.springframework.http.HttpStatus;
 public class UserNotFoundException extends ClientErrorException {
 
     public UserNotFoundException() {
-        super(HttpStatus.NOT_FOUND, "User not found.");
+        super(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다.");
     }
 
     public UserNotFoundException(String username) {
-        super(HttpStatus.NOT_FOUND, "User with username" + username + " not found.");
+        super(HttpStatus.NOT_FOUND, "아이디 '" + username + "'인 유저를 찾을 수 없습니다.");
     }
 }

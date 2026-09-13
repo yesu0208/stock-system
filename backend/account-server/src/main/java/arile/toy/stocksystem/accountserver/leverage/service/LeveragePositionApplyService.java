@@ -20,6 +20,7 @@ public class LeveragePositionApplyService {
     private final UserAccountRepository userAccountRepository;
     private final LeveragePositionRepository leveragePositionRepository;
     private final LeveragePositionRedisSyncer redisSyncer;
+    private final AccountMarginStatusSyncer accountMarginStatusSyncer;
     private final AccountBalanceCommand accountBalanceCommand;
 
     /**
@@ -115,6 +116,7 @@ public class LeveragePositionApplyService {
         if (position.isEmpty()) {
             leveragePositionRepository.delete(position);
             redisSyncer.remove(event.username(), event.stockCode(), leverageRatio);
+            accountMarginStatusSyncer.resync(event.username());
         } else {
             leveragePositionRepository.save(position);
             redisSyncer.sync(position);

@@ -68,8 +68,15 @@
 .main {
     flex: 1;
     display: flex;
-    padding: 20px;
-    gap: 20px;
+    flex-direction: row;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.mainContent {
+    flex: 1;
+    min-width: 0;
+    overflow: auto;
 }
 
 .footer {

@@ -10,6 +10,7 @@ import IndexModal from '../main/components/IndexModal'
 import HotStocksModal from '../main/components/HotStocksModal'
 import SectorModal from '../main/components/SectorModal'
 import InvestorModal from '../main/components/InvestorModal'
+import UserPanel from '../main/components/UserPanel'
 import styles from './MainLayout.module.css'
 
 interface Props {
@@ -57,7 +58,12 @@ export default function MainLayout({ children, onLoggedOut }: Props) {
         <div className={styles.container}>
             <Header onLogout={handleLogout} />
 
-            <main className={styles.main}>{children}</main>
+            <main className={styles.main}>
+                <UserPanel />
+                <div className={styles.mainContent}>
+                    {children}
+                </div>
+            </main>
 
             <footer className={styles.footer}>
                 <div className={styles.footerWidgets}>

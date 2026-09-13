@@ -40,14 +40,23 @@ public class AccountPullService {
         Map<String, StockInfo> stocks = parseOrEmpty(stocksJson, new TypeReference<Map<String, StockInfo>>() {});
 
         Map<String, LeveragePositionInfo> leveragePositions = getLeveragePositions(username);
+        String marginStatus = getMarginStatus(username);
 
-        return AccountSnapshot.of(availableCash, reservedCash, stocks, leveragePositions);
+        String accountStatus = (String) accountMap.getOrDefault("accountStatus", "NORMAL");
+
+        return AccountSnapshot.of(availableCash, reservedCash, stocks, leveragePositions, marginStatus, accountStatus);
     }
 
     private Map<String, LeveragePositionInfo> getLeveragePositions(String username) {
         String key = "account:leverage:" + username;
         String json = (String) redisTemplate.opsForHash().get(key, "positions");
         return parseOrEmpty(json, new TypeReference<Map<String, LeveragePositionInfo>>() {});
+    }
+
+    private String getMarginStatus(String username) {
+        String key = "account:leverage:" + username;
+        Object value = redisTemplate.opsForHash().get(key, "marginStatus");
+        return value != null ? (String) value : "NORMAL";
     }
 
     private <T> Map<String, T> parseOrEmpty(String json, TypeReference<Map<String, T>> typeReference) {
