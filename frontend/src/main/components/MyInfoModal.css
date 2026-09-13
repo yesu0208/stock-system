@@ -417,3 +417,10 @@
     flex: 4;
     min-width: 0;
 }
+
+.my-info-content .history-empty {
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+    padding: 24px 0;
+}

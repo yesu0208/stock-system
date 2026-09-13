@@ -451,29 +451,34 @@ export default function MyInfoModal({ open, onClose }: Props) {
                         <h4 className="section-title">등급 기록 내역</h4>
 
                         <div className="history-list" ref={listRef} onScroll={handleScroll}>
-                            {history.map((item, idx) => (
-                                <div className="history-row" key={`${item.date}-${idx}`}>
-                                    <span className="history-date">{item.date}</span>
-                                    <div className="history-badge-cell">
-                                        <RankBadge rank={{ tier: item.tier, subTier: item.subTier }} size={16} />
-                                    </div>
-                                    <span className="history-rp">{item.rp} RP</span>
-                                    <span
-                                        className={
-                                            "history-change " +
-                                            (item.rpChange > 0 ? "positive" : item.rpChange < 0 ? "negative" : "neutral")
-                                        }
-                                    >
-                                        {item.rpChange > 0 ? "+" : ""}
-                                        {item.rpChange}
-                                    </span>
-                                </div>
-                            ))}
+                            {!loading && history.length === 0 ? (
+                                <div className="history-empty">등급 기록이 없습니다</div>
+                            ) : (
+                                <>
+                                    {history.map((item, idx) => (
+                                        <div className="history-row" key={`${item.date}-${idx}`}>
+                                            <span className="history-date">{item.date}</span>
+                                            <div className="history-badge-cell">
+                                                <RankBadge rank={{ tier: item.tier, subTier: item.subTier }}/>
+                                            </div>
+                                            <span className="history-rp">{item.rp} RP</span>
+                                            <span
+                                                className={
+                                                    "history-change " +
+                                                    (item.rpChange > 0 ? "positive" : item.rpChange < 0 ? "negative" : "neutral")
+                                                }
+                                            >
+                                                ({item.rpChange > 0 ? "+" : ""}{item.rpChange})
+                                            </span>
+                                        </div>
+                                    ))}
 
-                            {loading && <div className="history-loading">불러오는 중...</div>}
+                                    {loading && <div className="history-loading">불러오는 중...</div>}
 
-                            {!hasNext && history.length > 0 && (
-                                <div className="history-end">마지막 기록입니다</div>
+                                    {!hasNext && history.length > 0 && (
+                                        <div className="history-end">마지막 기록입니다</div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
