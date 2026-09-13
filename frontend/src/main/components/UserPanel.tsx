@@ -146,36 +146,36 @@ export default function UserPanel() {
 
                         <div className="row">
                             <span>총 자산</span>
-                            <span>{hideBalance ? "********원" : `${fmt(account.totalValue)}원`}</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.totalValue)} 원`}</span>
                         </div>
 
                         <div className="row">
                             <span>평가손익</span>
                             <span className={hideBalance ? "" : getValueClass(account.totalProfit)}>
-                                {hideBalance ? "********원" : `${fmtSigned(account.totalProfit)}원`}
+                                {hideBalance ? "******** 원" : `${fmtSigned(account.totalProfit)} 원`}
                             </span>
                         </div>
 
                         <div className="row">
                             <span>수익률</span>
                             <span className={hideBalance ? "" : getValueClass(account.totalProfitRate)}>
-                                {hideBalance ? "**.**%" : fmtRate(account.totalProfitRate)}
+                                {hideBalance ? "**.** %" : fmtRate(account.totalProfitRate)}
                             </span>
                         </div>
 
                         <div className="row">
                             <span>예수금</span>
-                            <span>{hideBalance ? "********원" : `${fmt(account.totalCash)}원`}</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.totalCash)} 원`}</span>
                         </div>
 
                         <div className="row">
                             <span>주식 평가금액</span>
-                            <span>{hideBalance ? "********원" : `${fmt(account.stockValue)}원`}</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.stockValue)} 원`}</span>
                         </div>
 
                         <div className="row">
                             <span>매수 가능금액</span>
-                            <span>{hideBalance ? "********원" : `${fmt(account.availableCash)}원`}</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.availableCash)} 원`}</span>
                         </div>
                     </>
                 ) : (

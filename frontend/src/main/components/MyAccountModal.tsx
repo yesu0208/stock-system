@@ -141,7 +141,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                     <div className={`mam-cumulative ${account.accumulatedProfit >= 0 ? "mam-cumulative--positive" : "mam-cumulative--negative"}`}>
                                         <span className="mam-cumulative__label">누적 손익</span>
                                         <span className={`mam-cumulative__value ${account.accumulatedProfit >= 0 ? "positive" : "negative"}`}>
-                                            {fmtSigned(account.accumulatedProfit)}원
+                                            {fmtSigned(account.accumulatedProfit)} 원
                                         </span>
                                         <span className={`mam-cumulative__rate ${account.accumulatedProfitRate >= 0 ? "positive" : "negative"}`}>
                                             {fmtRate(account.accumulatedProfitRate)}
@@ -151,7 +151,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                     <div className={`mam-cumulative ${account.totalProfit >= 0 ? "mam-cumulative--positive" : "mam-cumulative--negative"}`}>
                                         <span className="mam-cumulative__label">평가 손익</span>
                                         <span className={`mam-cumulative__value ${account.totalProfit >= 0 ? "positive" : "negative"}`}>
-                                            {fmtSigned(account.totalProfit)}원
+                                            {fmtSigned(account.totalProfit)} 원
                                         </span>
                                         <span className={`mam-cumulative__rate ${account.totalProfitRate >= 0 ? "positive" : "negative"}`}>
                                             {fmtRate(account.totalProfitRate)}
@@ -162,27 +162,27 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                 <div className="mam-grid">
                                     <div className="mam-cell">
                                         <span className="mam-cell__label">총 자산</span>
-                                        <span className="mam-cell__value">{fmt(account.totalValue)}원</span>
+                                        <span className="mam-cell__value">{fmt(account.totalValue)} 원</span>
                                     </div>
                                     <div className="mam-cell">
                                         <span className="mam-cell__label">예수금</span>
-                                        <span className="mam-cell__value">{fmt(account.totalCash)}원</span>
+                                        <span className="mam-cell__value">{fmt(account.totalCash)} 원</span>
                                     </div>
                                     <div className="mam-cell">
                                         <span className="mam-cell__label">주문 가능</span>
-                                        <span className="mam-cell__value">{fmt(account.availableCash)}원</span>
+                                        <span className="mam-cell__value">{fmt(account.availableCash)} 원</span>
                                     </div>
                                     <div className="mam-cell mam-cell--pending">
                                         <span className="mam-cell__label">예약(미체결)</span>
-                                        <span className="mam-cell__value">{fmt(account.reservedCash)}원</span>
+                                        <span className="mam-cell__value">{fmt(account.reservedCash)} 원</span>
                                     </div>
                                     <div className="mam-cell">
                                         <span className="mam-cell__label">총 매입</span>
-                                        <span className="mam-cell__value">{fmt(account.buyValue)}원</span>
+                                        <span className="mam-cell__value">{fmt(account.buyValue)} 원</span>
                                     </div>
                                     <div className="mam-cell">
                                         <span className="mam-cell__label">총 평가</span>
-                                        <span className="mam-cell__value">{fmt(account.stockValue)}원</span>
+                                        <span className="mam-cell__value">{fmt(account.stockValue)} 원</span>
                                     </div>
                                 </div>
                             </div>
@@ -209,11 +209,11 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                     </div>
                                     <div className="mam-cell">
                                         <span className="mam-cell__label">레버리지 순자산</span>
-                                        <span className="mam-cell__value">{fmt(account.leverageNetValue ?? 0)}원</span>
+                                        <span className="mam-cell__value">{fmt(account.leverageNetValue ?? 0)} 원</span>
                                     </div>
                                     <div className="mam-cell">
                                         <span className="mam-cell__label">레버리지 대출금</span>
-                                        <span className="mam-cell__value negative">{fmt(account.leverageLoanTotal ?? 0)}원</span>
+                                        <span className="mam-cell__value negative">{fmt(account.leverageLoanTotal ?? 0)} 원</span>
                                     </div>
                                 </div>
                             </div>
