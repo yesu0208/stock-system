@@ -608,3 +608,18 @@
 @keyframes signup-rule-spin {
     to { transform: rotate(360deg); }
 }
+
+.signup-submit:focus,
+.signup-submit:focus-visible {
+    outline: none;
+}
+
+.signup-field__toggle-pw:focus,
+.signup-field__toggle-pw:focus-visible {
+    outline: none;
+}
+
+.signup-back-link:focus,
+.signup-back-link:focus-visible {
+    outline: none;
+}

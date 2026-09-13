@@ -160,6 +160,13 @@
             border-radius .45s cubic-bezier(.65,0,.35,1),
             background .4s ease,
             box-shadow .4s ease;
+
+    outline: none;
+}
+
+.login-submit:focus,
+.login-submit:focus-visible {
+    outline: none;
 }
 
 .login-submit:hover:not(:disabled) {
@@ -429,6 +436,12 @@
     cursor: pointer;
 
     transition: color .2s ease;
+    outline: none;
+}
+
+.login-field__toggle-pw:focus,
+.login-field__toggle-pw:focus-visible {
+    outline: none;
 }
 
 .login-field__toggle-pw:hover:not(:disabled) {
@@ -461,6 +474,12 @@
     cursor: pointer;
 
     transition: color .2s ease;
+    outline: none;
+}
+
+.login-signup-link:focus,
+.login-signup-link:focus-visible {
+    outline: none;
 }
 
 .login-signup-link:hover:not(:disabled) {
