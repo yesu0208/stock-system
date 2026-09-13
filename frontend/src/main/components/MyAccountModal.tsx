@@ -322,43 +322,87 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <span className="mam-holding-cell__bottom">가능수량</span>
                                     </div>
                                     <div className="mam-holding-cell">
-                                        <span className="mam-holding-cell__top">대출금</span>
-                                        <span className="mam-holding-cell__bottom">순자산</span>
+                                        <span className="mam-holding-cell__top">평가손익</span>
+                                        <span className="mam-holding-cell__bottom">수익률</span>
                                     </div>
                                     <div className="mam-holding-cell">
-                                        <span className="mam-holding-cell__top">평가금액</span>
-                                        <span className="mam-holding-cell__bottom">수익률</span>
+                                        <span className="mam-holding-cell__top">매입금액</span>
+                                        <span className="mam-holding-cell__bottom">평가금액</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">순자산</span>
+                                        <span className="mam-holding-cell__bottom">대출금</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">개시증거금</span>
+                                        <span className="mam-holding-cell__bottom">유지증거금</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">마진상태</span>
+                                        <span className="mam-holding-cell__bottom">유지증거금 기준가</span>
                                     </div>
                                 </div>
 
                                 {leveragePositions.map((pos) => {
                                     const avgBuyPrice = pos.quantity > 0 ? Math.round(pos.purchaseAmount / pos.quantity) : 0;
+
                                     return (
                                         <div key={`${pos.stockCode}-${pos.leverageRatio}`} className="mam-holding-row">
                                             <div className="mam-holding-row__main mam-holding-row__main--leverage">
                                                 <div className="mam-holding-name">
+                                                    <img
+                                                        className="mam-holding-icon"
+                                                        src={`https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock${pos.stockCode}.svg`}
+                                                        alt=""
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                                                        }}
+                                                    />
                                                     <span>{stockNameMap[pos.stockCode] ?? pos.stockCode}</span>
                                                     <span className={`mam-leverage-badge ${LEVERAGE_BADGE_CLASS[pos.leverageRatio] ?? "mam-leverage-badge--levother"}`}>
                                                         {LEVERAGE_LABEL[pos.leverageRatio] ?? pos.leverageRatio}
                                                     </span>
                                                 </div>
+
                                                 <div className="mam-holding-cell">
                                                     <span className="mam-holding-cell__top">{fmt(avgBuyPrice)}</span>
                                                     <span className="mam-holding-cell__bottom">{fmt(pos.currentPrice)}</span>
                                                 </div>
+
                                                 <div className="mam-holding-cell">
                                                     <span className="mam-holding-cell__top">{pos.quantity}</span>
                                                     <span className="mam-holding-cell__bottom">{pos.availableQuantity}</span>
                                                 </div>
+
                                                 <div className="mam-holding-cell">
-                                                    <span className="mam-holding-cell__top negative">{fmt(pos.loanAmount)}</span>
-                                                    <span className="mam-holding-cell__bottom">{fmt(pos.netValue)}</span>
-                                                </div>
-                                                <div className="mam-holding-cell">
-                                                    <span className="mam-holding-cell__top">{fmt(pos.evaluationAmount)}</span>
+                                                    <span className={`mam-holding-cell__top ${pos.profitAmount >= 0 ? "positive" : "negative"}`}>
+                                                        {fmtSigned(pos.profitAmount)}
+                                                    </span>
                                                     <span className={`mam-holding-cell__bottom ${pos.profitRate >= 0 ? "positive" : "negative"}`}>
                                                         {fmtRate(pos.profitRate)}
                                                     </span>
+                                                </div>
+
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(pos.purchaseAmount)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(pos.evaluationAmount)}</span>
+                                                </div>
+
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(pos.netValue)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(pos.loanAmount)}</span>
+                                                </div>
+
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(pos.initialMargin)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(pos.maintenanceMargin)}</span>
+                                                </div>
+
+                                                <div className="mam-holding-cell">
+                                                    <span className={`mam-margin-badge mam-margin-badge--sm ${MARGIN_STATUS_CLASS[pos.marginStatus]}`}>
+                                                        {MARGIN_STATUS_LABEL[pos.marginStatus]}
+                                                    </span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(pos.maintenancePrice)}</span>
                                                 </div>
                                             </div>
                                         </div>

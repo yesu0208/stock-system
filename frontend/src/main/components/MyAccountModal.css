@@ -88,7 +88,12 @@
 .mam-cumulative--negative::before { background: #4f9dff; }
 
 .mam-cumulative__label { font-size: 11px; opacity: 0.7; }
-.mam-cumulative__value { font-size: 18px; font-weight: 700; }
+.mam-cumulative__value {
+    font-size: 18px;
+    font-weight: 700;
+    word-break: break-all;
+    max-width: 100%;
+}
 .mam-cumulative__rate { font-size: 11px; font-weight: 600; }
 
 .mam-top-row {
@@ -99,6 +104,7 @@
 
 .mam-summary-cards {
     flex: 0 0 30%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -106,8 +112,9 @@
 
 .mam-grid {
     flex: 1;
+    min-width: 0;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: repeat(3, 1fr);
     gap: 6px;
 }
@@ -125,14 +132,17 @@
 }
 
 .mam-cell__label { font-size: 11px; opacity: 0.5; }
-.mam-cell__value { font-size: 13px; font-weight: 600; }
+.mam-cell__value {
+    font-size: 13px;
+    font-weight: 600;
+    word-break: break-all;
+}
 
 .mam-cell--pending {
     border: 1px dashed rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.015);
 }
 
-/* ── 계좌/마진 상태 패널 ── */
 .mam-margin-panel {
     display: flex;
     flex-direction: column;
@@ -178,6 +188,11 @@
     border: 1px solid transparent;
 }
 
+.mam-margin-badge--sm {
+    padding: 2px 6px;
+    font-size: 9px;
+}
+
 .mam-margin-badge--normal {
     color: rgba(255, 255, 255, 0.55);
     background: rgba(255, 255, 255, 0.07);
@@ -195,9 +210,6 @@
     background: rgba(255, 146, 72, 0.16);
     border-color: rgba(255, 146, 72, 0.4);
 }
-
-/* ── 보유주식/레버리지 공용 테이블 ── */
-.mam-section-title { }
 
 .mam-holdings {
     display: flex;
@@ -228,23 +240,21 @@
 .mam-holding-header,
 .mam-holding-row__main {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1.6fr 1.8fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     gap: 4px;
     font-size: 11px;
     padding: 6px 8px;
     align-items: center;
 }
 
-.mam-holding-icon {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-    object-fit: contain;
+.mam-holding-row__main > .mam-holding-name {
+    justify-content: flex-start;
+    text-align: left;
 }
 
 .mam-holding-header--leverage,
 .mam-holding-row__main--leverage {
-    grid-template-columns: 1.6fr 1.4fr 1.2fr 1.4fr 1.4fr;
+    grid-template-columns: 2fr 1.2fr 1.0fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr;
 }
 
 .mam-holding-header {
@@ -270,11 +280,6 @@
 
 .mam-holding-row__main { text-align: center; }
 
-.mam-holding-row__main > .mam-holding-name {
-    justify-content: flex-start;
-    text-align: left;
-}
-
 .mam-holding-row:hover {
     background: rgba(255, 255, 255, 0.04);
     border-radius: 6px;
@@ -292,10 +297,17 @@
     overflow: hidden;
 }
 
-.mam-holding-name span:first-child {
+.mam-holding-name span:first-of-type {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.mam-holding-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    object-fit: contain;
 }
 
 .mam-leverage-badge {
@@ -365,7 +377,6 @@
     padding: 16px 0;
 }
 
-/* ── 수익률 탭 ── */
 .mam-profit {
     display: flex;
     flex-direction: column;
