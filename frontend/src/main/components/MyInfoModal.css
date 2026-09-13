@@ -196,6 +196,12 @@
     flex-shrink: 0;
 }
 
+.my-info-content .profile-avatar-wrapper .tt-wrapper {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
 .my-info-content .profile-avatar {
     width: 56px;
     height: 56px;
@@ -207,9 +213,6 @@
 }
 
 .my-info-content .profile-avatar-edit {
-    position: absolute;
-    bottom: 0;
-    right: 0;
     width: 18px;
     height: 18px;
     border-radius: 50%;
