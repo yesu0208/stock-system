@@ -6,10 +6,10 @@ import org.springframework.http.HttpStatus;
 public class UserAlreadyExistsException extends ClientErrorException {
 
     public UserAlreadyExistsException() {
-        super(HttpStatus.CONFLICT, "User already exists.");
+        super(HttpStatus.CONFLICT, "이미 가입된 유저입니다.");
     }
 
     public UserAlreadyExistsException(String username) {
-        super(HttpStatus.CONFLICT, "User with username" + username + " already exists.");
+        super(HttpStatus.CONFLICT, "아이디 '" + username + "'는 이미 사용 중입니다.");
     }
 }

@@ -6,6 +6,6 @@ import org.springframework.http.HttpStatus;
 public class PasswordMismatchException extends ClientErrorException {
 
     public PasswordMismatchException() {
-        super(HttpStatus.BAD_REQUEST, "Current password does not match.");
+        super(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다.");
     }
 }
