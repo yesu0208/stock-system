@@ -15,8 +15,22 @@
     font-weight: 500;
     cursor: pointer;
     outline: none;
+    appearance: none;
+    box-sizing: border-box;
+    border-radius: 0;
+
     border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
+}
+
+.mam-tab:focus,
+.mam-tab:focus-visible {
+    outline: none;
+}
+
+.mam-tab:hover:not(.mam-tab--active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
 }
 
 .mam-tab--active {
