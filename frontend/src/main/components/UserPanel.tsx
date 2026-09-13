@@ -1,6 +1,7 @@
 import "./UserPanel.css";
 import RankBadge from "./RankBadge";
-import { FiUser, FiCalendar, FiAward, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiUser, FiCalendar, FiAward, FiEye, FiEyeOff, FiCreditCard  } from "react-icons/fi";
+import MyAccountModal from "./MyAccountModal";
 import { useState } from "react";
 import { useUser } from "../context/UserContext";
 import { useAccount } from "../context/AccountContext";
@@ -60,7 +61,7 @@ export default function UserPanel() {
     const fmtRate = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
 
     const [hideBalance, setHideBalance] = useState(false);
-    const [openModal, setOpenModal] = useState<null | "info">(null);
+    const [openModal, setOpenModal] = useState<null | "info" | "portfolio" | "account">(null);
 
     return (
         <aside className="user-panel">
@@ -189,9 +190,14 @@ export default function UserPanel() {
                     <FiUser className="menu-icon" />
                     내 정보
                 </button>
+                <button className="menu-btn" onClick={() => setOpenModal("account")}>
+                    <FiCreditCard className="menu-icon" />
+                    내 계좌
+                </button>
             </div>
 
             <MyInfoModal open={openModal === "info"} onClose={() => setOpenModal(null)} />
+            <MyAccountModal open={openModal === "account"} onClose={() => setOpenModal(null)} />
         </aside>
     );
 }
