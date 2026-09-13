@@ -176,8 +176,9 @@
 }
 
 .modal-v2-box.password-modify-modal {
-    width: 300px;
-    height: 260px;
+    width: 320px;
+    min-height: 380px;
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
 }
