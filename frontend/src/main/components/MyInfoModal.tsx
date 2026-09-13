@@ -9,6 +9,7 @@ import { updateProfileImage, changeNickname, getRankHistory } from "../../api/us
 import type { RankHistoryItem } from "../../types/rank";
 import Tooltip from "../../tooltip/Tooltip";
 import PasswordModifyModal from "./PasswordModifyModal";
+import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import "./MyInfoModal.css";
 
 interface Props {
@@ -16,7 +17,6 @@ interface Props {
     onClose: () => void;
 }
 
-const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/thumbs/svg?seed=default";
 const PAGE_SIZE = 20;
 
 function formatJoinDate(iso: string): string {
@@ -289,12 +289,10 @@ export default function MyInfoModal({ open, onClose }: Props) {
                     <div className="profile-section">
                         <div className="profile-avatar-wrapper">
                             <img
-                                src={user.profileImageUrl ?? DEFAULT_AVATAR}
+                                src={resolveProfileImageUrl(user?.profileImageUrl)}
                                 alt="프로필"
-                                className="profile-avatar"
-                                onError={(e) => {
-                                    e.currentTarget.src = DEFAULT_AVATAR;
-                                }}
+                                className="avatar"
+                                onError={(e) => { e.currentTarget.src = DEFAULT_AVATAR; }}
                             />
                             <Tooltip text="사진 변경" placement="top">
                                 <label className="profile-avatar-edit">

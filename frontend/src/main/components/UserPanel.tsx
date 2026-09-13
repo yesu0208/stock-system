@@ -7,8 +7,7 @@ import { useAccount } from "../context/AccountContext";
 import type { MarginStatus, AccountStatus } from "../../types/account";
 import Tooltip from "../../tooltip/Tooltip";
 import MyInfoModal from "./MyInfoModal";
-
-const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/thumbs/svg?seed=default";
+import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 
 function formatJoinDate(iso: string): string {
     try {
@@ -67,12 +66,10 @@ export default function UserPanel() {
         <aside className="user-panel">
             <div className="profile">
                 <img
-                    src={DEFAULT_AVATAR}
+                    src={resolveProfileImageUrl(user?.profileImageUrl)}
                     alt="프로필"
                     className="avatar"
-                    onError={(e) => {
-                        e.currentTarget.src = DEFAULT_AVATAR;
-                    }}
+                    onError={(e) => { e.currentTarget.src = DEFAULT_AVATAR; }}
                 />
 
                 <div className="profile-info">
