@@ -415,20 +415,24 @@ export default function MyInfoModal({ open, onClose }: Props) {
 
                     {rank && (
                         <div className="rp-section">
-                            <div className="rp-header">
-                                <div className="rp-badge">
-                                    <RankBadge rank={rank} size={48} />
-                                </div>
-                                <div className="rp-text">
-                                    <span>
-                                        {rank.nextRankMinRp == null
+                            <div className="rp-grid">
+                                <span className="rp-label">최고</span>
+                                <RankBadge rank={{ tier: rank.highestTierReached, subTier: null }}/>
+                                <span className="rp-info">
+                                    {rank.tier === "UNRANKED"
+                                        ? "첫 거래를 시작해보세요!"
+                                        : rank.nextRankMinRp == null
                                             ? "최고 등급 달성!"
                                             : `다음 등급까지 ${rank.nextRankMinRp - rank.rp} RP 남음`}
-                                    </span>
-                                    <span>
-                                        {rank.rp} {rank.nextRankMinRp != null ? `/ ${rank.nextRankMinRp}` : ""} RP
-                                    </span>
-                                </div>
+                                </span>
+
+                                <span className="rp-label">현재</span>
+                                <RankBadge rank={rank}/>
+                                <span className="rp-info">
+                                    {rank.tier === "UNRANKED"
+                                        ? `${rank.rp} RP (장 마감 후 등급 부여)`
+                                        : `${rank.rp} ${rank.nextRankMinRp != null ? `/ ${rank.nextRankMinRp}` : ""} RP`}
+                                </span>
                             </div>
 
                             <div className="rp-bar-bg">
