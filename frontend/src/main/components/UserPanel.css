@@ -161,3 +161,43 @@
 .user-panel .margin-status-text--risk {
     color: #ff9248;
 }
+
+.user-panel .menu-section {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.user-panel .menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #e5e5e5;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.user-panel .menu-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.user-panel .menu-btn:active {
+    transform: scale(0.98);
+}
+
+.user-panel .menu-icon {
+    font-size: 14px;
+    opacity: 0.8;
+}

@@ -6,6 +6,7 @@ import { useUser } from "../context/UserContext";
 import { useAccount } from "../context/AccountContext";
 import type { MarginStatus, AccountStatus } from "../../types/account";
 import Tooltip from "../../tooltip/Tooltip";
+import MyInfoModal from "./MyInfoModal";
 
 const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/thumbs/svg?seed=default";
 
@@ -60,6 +61,7 @@ export default function UserPanel() {
     const fmtRate = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
 
     const [hideBalance, setHideBalance] = useState(false);
+    const [openModal, setOpenModal] = useState<null | "info">(null);
 
     return (
         <aside className="user-panel">
@@ -184,6 +186,15 @@ export default function UserPanel() {
                     </div>
                 )}
             </div>
+
+            <div className="menu-section">
+                <button className="menu-btn" onClick={() => setOpenModal("info")}>
+                    <FiUser className="menu-icon" />
+                    내 정보
+                </button>
+            </div>
+
+            <MyInfoModal show={openModal === "info"} onClose={() => setOpenModal(null)} />
         </aside>
     );
 }
