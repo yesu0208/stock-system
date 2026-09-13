@@ -423,8 +423,8 @@ export default function MyAccountModal({ open, onClose }: Props) {
                 <div className="mam-profit" ref={scrollRef}>
                     <div className="mam-profit-header">
                         <span>일자</span>
-                        <span>일손익</span>
-                        <span>수익률</span>
+                        <span>당일 손익</span>
+                        <span>당일 수익률</span>
                         <span>누적손익</span>
                         <span>누적수익률</span>
                         <span>거래대금</span>
