@@ -228,11 +228,18 @@
 .mam-holding-header,
 .mam-holding-row__main {
     display: grid;
-    grid-template-columns: 1.6fr 1.4fr 1.2fr 1.6fr 1.8fr;
+    grid-template-columns: 2fr 1fr 1fr 1.6fr 1.8fr;
     gap: 4px;
     font-size: 11px;
     padding: 6px 8px;
     align-items: center;
+}
+
+.mam-holding-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    object-fit: contain;
 }
 
 .mam-holding-header--leverage,
@@ -263,6 +270,11 @@
 
 .mam-holding-row__main { text-align: center; }
 
+.mam-holding-row__main > .mam-holding-name {
+    justify-content: flex-start;
+    text-align: left;
+}
+
 .mam-holding-row:hover {
     background: rgba(255, 255, 255, 0.04);
     border-radius: 6px;
@@ -274,7 +286,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 10px;
     font-weight: 600;
     font-size: 12px;
     overflow: hidden;

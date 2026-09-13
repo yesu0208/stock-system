@@ -261,6 +261,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <div key={code} className="mam-holding-row">
                                             <div className="mam-holding-row__main mam-holding-row__main--spot">
                                                 <div className="mam-holding-name">
+                                                    <img
+                                                        className="mam-holding-icon"
+                                                        src={`https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock${code}.svg`}
+                                                        alt=""
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                                                        }}
+                                                    />
                                                     <span>{stockNameMap[code] ?? code}</span>
                                                 </div>
                                                 <div className="mam-holding-cell">
