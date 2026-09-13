@@ -1,0 +1,163 @@
+.user-panel {
+    width: 320px;
+    height: 100%;
+    background: #1f1f23;
+    color: white;
+    padding: 16px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    overflow-y: auto;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.user-panel .profile {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.user-panel .avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #334155;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.user-panel .profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-panel .profile-row,
+.user-panel .rank-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.user-panel .rank-box {
+    margin-top: 2px;
+}
+
+.user-panel .rp-score {
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+}
+
+.user-panel .icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.user-panel .profile-nickname {
+    font-weight: 700;
+}
+
+.user-panel .account-panel {
+    margin-top: 16px;
+    padding: 12px;
+    padding-top: 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+.user-panel .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.user-panel .visibility-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    padding: 2px;
+    outline: none;
+}
+
+.user-panel .visibility-btn:hover {
+    color: white;
+}
+
+.user-panel .account-panel h3 {
+    font-size: 13px;
+    margin-bottom: 10px;
+    opacity: 0.85;
+}
+
+.user-panel .account-suspended-banner {
+    margin-bottom: 8px;
+    padding: 8px 10px;
+
+    background: rgba(255, 92, 92, 0.12);
+    border: 1px solid rgba(255, 92, 92, 0.4);
+    border-radius: 6px;
+
+    color: #ff8a8a;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.user-panel .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    padding: 6px 0;
+    opacity: 0.85;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.user-panel .row:hover {
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+}
+
+.user-panel .positive {
+    color: #ff6347;
+    font-weight: 600;
+}
+
+.user-panel .negative {
+    color: #4f9dff;
+    font-weight: 600;
+}
+
+.user-panel .neutral {
+    color: #9ca3af;
+}
+
+.user-panel .margin-status-text {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.user-panel .margin-status-text--normal {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.user-panel .margin-status-text--call {
+    color: #ffce54;
+}
+
+.user-panel .margin-status-text--risk {
+    color: #ff9248;
+}
