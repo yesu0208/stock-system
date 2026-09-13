@@ -16,8 +16,13 @@ export interface LeveragePositionView {
     loanAmount: number
     evaluationAmount: number
     netValue: number
+    profitAmount: number
     profitRate: number
     currentPrice: number
+    marginStatus: MarginStatus
+    initialMargin: number
+    maintenanceMargin: number
+    maintenancePrice: number
 }
 
 export interface AccountResponse {
