@@ -10,6 +10,7 @@ public record LeveragePositionView(
         Long evaluationAmount,
         Long netValue,
         Double profitRate,
-        Integer currentPrice
+        Integer currentPrice,
+        String marginStatus
 ) {
 }

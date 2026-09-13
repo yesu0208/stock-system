@@ -20,8 +20,13 @@ public class LeveragePositionRedisSyncer {
         Map<String, LeveragePositionInfo> positions = leverageAccountRedisRepository.getPositions(username);
         positions.put(
                 LeverageAccountRedisRepository.positionKey(position.getStockCode(), position.getLeverageRatio()),
-                LeveragePositionInfo.of(position.getQuantity(), position.getAvailableQuantity(),
-                        position.getPurchaseAmount(), position.getLoanAmount())
+                LeveragePositionInfo.of(
+                        position.getQuantity(),
+                        position.getAvailableQuantity(),
+                        position.getPurchaseAmount(),
+                        position.getLoanAmount(),
+                        position.getMarginStatus().name()
+                )
         );
         leverageAccountRedisRepository.savePositions(username, positions);
     }

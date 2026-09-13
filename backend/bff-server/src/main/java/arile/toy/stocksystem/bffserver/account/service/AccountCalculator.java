@@ -126,7 +126,8 @@ public class AccountCalculator {
                     : profitAmount * 100.0 / equityAmount;
 
             views.add(new LeveragePositionView(stockCode, leverageRatio, info.quantity(), info.availableQuantity(),
-                    info.purchaseAmount(), info.loanAmount(), evaluationAmount, netValue, profitRate, curPrice));
+                    info.purchaseAmount(), info.loanAmount(), evaluationAmount, netValue, profitRate, curPrice,
+                    info.marginStatus()));
 
             netValueTotal += netValue;
             equityTotal += equityAmount;

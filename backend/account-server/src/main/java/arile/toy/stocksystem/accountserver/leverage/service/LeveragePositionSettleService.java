@@ -53,7 +53,8 @@ public class LeveragePositionSettleService {
                         entity.getQuantity(),
                         entity.getAvailableQuantity(),
                         entity.getPurchaseAmount(),
-                        entity.getLoanAmount()
+                        entity.getLoanAmount(),
+                        entity.getMarginStatus().name()
                 ));
             }
 
