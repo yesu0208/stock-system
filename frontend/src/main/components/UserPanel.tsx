@@ -194,7 +194,7 @@ export default function UserPanel() {
                 </button>
             </div>
 
-            <MyInfoModal show={openModal === "info"} onClose={() => setOpenModal(null)} />
+            <MyInfoModal open={openModal === "info"} onClose={() => setOpenModal(null)} />
         </aside>
     );
 }
