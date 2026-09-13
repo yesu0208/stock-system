@@ -9,7 +9,6 @@ interface MinimalRank {
 interface Props {
     rank: MinimalRank | null
     size?: number
-    showLabel?: boolean
 }
 
 const TIER_COLOR: Record<RankTier, string> = {
@@ -34,16 +33,12 @@ const TIER_LABEL: Record<RankTier, string> = {
 
 const ROMAN_MAP = ['', 'Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ']
 
-function formatRankText(tier: RankTier, subTier: number | null, showLabel: boolean): string {
-    const label = TIER_LABEL[tier] ?? tier
-    if (!showLabel) {
-        const short = label.slice(0, 1)
-        return subTier != null ? `${short}${ROMAN_MAP[subTier] ?? subTier}` : short
-    }
+function formatRankText(tier: RankTier, subTier: number | null): string {
+    const label = TIER_LABEL[tier]
     return subTier != null ? `${label} ${ROMAN_MAP[subTier] ?? subTier}` : label
 }
 
-export default function RankBadge({ rank, size = 24, showLabel = true }: Props) {
+export default function RankBadge({ rank, size = 24 }: Props) {
     const tier: RankTier = rank?.tier ?? 'UNRANKED'
     const subTier = rank?.subTier ?? null
 
@@ -57,7 +52,7 @@ export default function RankBadge({ rank, size = 24, showLabel = true }: Props) 
                 fontSize: `${fontSize}px`,
             }}
         >
-            {formatRankText(tier, subTier, showLabel)}
+            {formatRankText(tier, subTier)}
         </span>
     )
 }
