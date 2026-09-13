@@ -18,10 +18,10 @@ export default function Tooltip({ text, children, placement = "top" }: TooltipPr
         const rect = wrapperRef.current.getBoundingClientRect();
 
         const positions = {
-            top:    { top: rect.top + window.scrollY - 6,               left: rect.left + window.scrollX + rect.width / 2 },
-            bottom: { top: rect.bottom + window.scrollY + 6,             left: rect.left + window.scrollX + rect.width / 2 },
-            left:   { top: rect.top + window.scrollY + rect.height / 2,  left: rect.left + window.scrollX - 6 },
-            right:  { top: rect.top + window.scrollY + rect.height / 2,  left: rect.right + window.scrollX + 6 },
+            top:    { top: rect.top - 6,               left: rect.left + rect.width / 2 },
+            bottom: { top: rect.bottom + 6,             left: rect.left + rect.width / 2 },
+            left:   { top: rect.top + rect.height / 2,  left: rect.left - 6 },
+            right:  { top: rect.top + rect.height / 2,  left: rect.right + 6 },
         };
         setCoords(positions[placement]);
     };
