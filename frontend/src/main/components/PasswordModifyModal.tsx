@@ -40,6 +40,7 @@ export default function PasswordModifyModal({ open, onClose }: Props) {
 
     const [errorMsg, setErrorMsg] = useState("");
     const [state, setState] = useState<SubmitState>("idle");
+    const [shakeKey, setShakeKey] = useState(0);
 
     const errorInnerRef = useRef<HTMLParagraphElement>(null);
     const [errorHeight, setErrorHeight] = useState(0);
@@ -100,8 +101,9 @@ export default function PasswordModifyModal({ open, onClose }: Props) {
         setErrorMsg("");
         setState("loading");
 
+        const MIN_LOADING_MS = 1000;
+
         try {
-            const MIN_LOADING_MS = 600;
             await Promise.all([
                 changePassword({ currentPassword, newPassword }),
                 new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
@@ -109,9 +111,12 @@ export default function PasswordModifyModal({ open, onClose }: Props) {
 
             setState("success");
             success("비밀번호가 변경되었습니다.");
-            window.setTimeout(resetAndClose, 500);
+            window.setTimeout(resetAndClose, 1500);
         } catch (e: any) {
+            await new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS));
+
             setState("failure");
+            setShakeKey((prev) => prev + 1);
             setCurrentPwInvalid(true);
             setErrorMsg(e.response?.data?.message ?? "현재 비밀번호가 일치하지 않습니다.");
             window.setTimeout(() => setState("idle"), 1200);
@@ -217,9 +222,47 @@ export default function PasswordModifyModal({ open, onClose }: Props) {
                     <p className="pwm-error" ref={errorInnerRef}>{errorMsg}</p>
                 </div>
 
-                <button type="submit" className="pwm-submit" data-state={state} disabled={state !== "idle"}>
-                    {state === "loading" ? "변경 중..." : state === "success" ? "변경 완료" : "변경하기"}
-                </button>
+                <div
+                    className="pwm-submit-area"
+                    key={shakeKey}
+                    data-shake={state === "failure" ? "true" : undefined}
+                >
+                    <button
+                        type="submit"
+                        className="pwm-submit"
+                        data-state={state}
+                        disabled={state !== "idle"}
+                    >
+                        <span className="pwm-submit__label">변경하기</span>
+
+                        <span className="pwm-submit__spinner" aria-hidden="true">
+                            <svg viewBox="0 0 44 44">
+                                <circle className="pwm-submit__spinner-track" cx="22" cy="22" r="18" />
+                                <circle className="pwm-submit__spinner-arc" cx="22" cy="22" r="18" />
+                            </svg>
+                        </span>
+
+                        <span className="pwm-submit__check" aria-hidden="true">
+                            <svg viewBox="0 0 44 44">
+                                <path className="pwm-submit__check-mark" d="M13 22.5L19 28.5L31 15.5" />
+                            </svg>
+                        </span>
+
+                        <span className="pwm-submit__cross" aria-hidden="true">
+                            <svg viewBox="0 0 44 44">
+                                <path className="pwm-submit__cross-line pwm-submit__cross-line--1" d="M15 15L29 29" />
+                                <path className="pwm-submit__cross-line pwm-submit__cross-line--2" d="M29 15L15 29" />
+                            </svg>
+                        </span>
+                    </button>
+
+                    <p className="pwm-status" data-state={state}>
+                        {state === "loading" ? "변경 처리 중"
+                            : state === "success" ? "변경 완료"
+                                : state === "failure" ? "변경 실패"
+                                    : ""}
+                    </p>
+                </div>
             </form>
         </ModalV2>
     );
