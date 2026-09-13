@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import ModalV2 from "../../components/ModalV2";
 import { changePassword } from "../../api/userProfile";
 import { useMsg } from "../context/MsgContext";
@@ -40,6 +40,17 @@ export default function PasswordModifyModal({ open, onClose }: Props) {
 
     const [errorMsg, setErrorMsg] = useState("");
     const [state, setState] = useState<SubmitState>("idle");
+
+    const errorInnerRef = useRef<HTMLParagraphElement>(null);
+    const [errorHeight, setErrorHeight] = useState(0);
+
+    useEffect(() => {
+        if (errorMsg && errorInnerRef.current) {
+            setErrorHeight(errorInnerRef.current.scrollHeight);
+        } else {
+            setErrorHeight(0);
+        }
+    }, [errorMsg]);
 
     const pwLengthOk = newPassword.length >= 8;
     const pwLowerOk = /[a-z]/.test(newPassword);
@@ -202,7 +213,9 @@ export default function PasswordModifyModal({ open, onClose }: Props) {
                     <PwRuleItem ok={pwConfirmMatchOk}>새 비밀번호와 일치</PwRuleItem>
                 </ul>
 
-                {errorMsg && <p className="pwm-error">{errorMsg}</p>}
+                <div className="pwm-error-wrap" style={{ height: errorHeight }}>
+                    <p className="pwm-error" ref={errorInnerRef}>{errorMsg}</p>
+                </div>
 
                 <button type="submit" className="pwm-submit" data-state={state} disabled={state !== "idle"}>
                     {state === "loading" ? "변경 중..." : state === "success" ? "변경 완료" : "변경하기"}
