@@ -9,6 +9,7 @@ public record LeveragePositionView(
         Long loanAmount,
         Long evaluationAmount,
         Long netValue,
+        Long profitAmount,
         Double profitRate,
         Integer currentPrice,
         String marginStatus,
