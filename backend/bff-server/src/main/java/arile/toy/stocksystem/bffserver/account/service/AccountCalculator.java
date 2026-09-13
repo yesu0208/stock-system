@@ -21,6 +21,11 @@ public class AccountCalculator {
     private final AccountPullService accountPullService;
     private final BffServerStockSummaryRepository stockSummaryRepository;
 
+    /** account-server의 MarginRatioCalculator.MIN_MAINTENANCE_RATIO와 동일해야 한다.
+     *  마이크로서비스 경계로 인해 직접 참조가 불가능해 값만 동일하게 복제해서 사용한다.
+     *  이 값이 바뀌면 account-server 쪽도 함께 변경해야 한다. */
+    private static final double MAINTENANCE_RATIO = 1.4; // 140%
+
     @Value("${account.initial-balance}")
     private long initialBalance;
 
@@ -119,15 +124,20 @@ public class AccountCalculator {
             long netValue = evaluationAmount - info.loanAmount();
             long profitAmount = evaluationAmount - info.purchaseAmount();
 
-            // 실제 내가 투입한 자기자본
             long equityAmount = info.purchaseAmount() - info.loanAmount();
             double profitRate = equityAmount == 0
                     ? 0
                     : profitAmount * 100.0 / equityAmount;
 
+            long initialMargin = equityAmount;
+            long maintenanceMargin = Math.round(info.loanAmount() * MAINTENANCE_RATIO);
+            long maintenancePrice  = info.quantity() > 0
+                    ? Math.round((MAINTENANCE_RATIO * info.loanAmount()) / info.quantity())
+                    : 0L;
+
             views.add(new LeveragePositionView(stockCode, leverageRatio, info.quantity(), info.availableQuantity(),
                     info.purchaseAmount(), info.loanAmount(), evaluationAmount, netValue, profitRate, curPrice,
-                    info.marginStatus()));
+                    info.marginStatus(), initialMargin, maintenanceMargin, maintenancePrice ));
 
             netValueTotal += netValue;
             equityTotal += equityAmount;

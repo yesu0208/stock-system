@@ -11,6 +11,9 @@ public record LeveragePositionView(
         Long netValue,
         Double profitRate,
         Integer currentPrice,
-        String marginStatus
+        String marginStatus,
+        Long initialMargin, // 개시증거금 = purchaseAmount - loanAmount
+        Long maintenanceMargin, // 유지증거금 = loanAmount × 유지증거금비율
+        Long maintenancePrice // 유지증거금 기준가 = (유지증거금비율 × loanAmount) / quantity
 ) {
 }
