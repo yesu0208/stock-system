@@ -1,6 +1,8 @@
 import "./ModalV2.css";
 import { useEffect, useState, useRef, useCallback } from "react";
 
+let modalStack: symbol[] = [];
+
 type ModalV2Props = {
     open: boolean;
     title: string;
@@ -59,6 +61,7 @@ export default function ModalV2({
                                 }: ModalV2Props) {
     const [render, setRender] = useState(open);
     const { boxRef, offset, onMouseDown } = useDraggable(open);
+    const idRef = useRef(Symbol());
 
     useEffect(() => {
         if (open) {
@@ -71,11 +74,23 @@ export default function ModalV2({
 
     useEffect(() => {
         if (!open) return;
+
+        modalStack.push(idRef.current);
+
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") onClose();
+            if (e.key !== "Escape") return;
+            const topId = modalStack[modalStack.length - 1];
+            if (topId === idRef.current) {
+                onClose();
+            }
         };
+
         window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
+
+        return () => {
+            modalStack = modalStack.filter((id) => id !== idRef.current);
+            window.removeEventListener("keydown", handleKeyDown);
+        };
     }, [open, onClose]);
 
     if (!render) return null;

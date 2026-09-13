@@ -71,3 +71,8 @@
     color: var(--color-text-primary);
     border-color: #64748b;
 }
+
+.lom__btn:focus,
+.lom__btn:focus-visible {
+    outline: none;
+}
