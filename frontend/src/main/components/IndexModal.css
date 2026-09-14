@@ -14,15 +14,29 @@
 .index-wrap .tab button {
     flex: 1;
     padding: 8px 0;
-    border: none;
     background: none;
+    border: none;
     color: rgba(255, 255, 255, 0.4);
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
+    border-radius: 0;
+
     border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
+}
+
+.index-wrap .tab button:focus,
+.index-wrap .tab button:focus-visible {
     outline: none;
+}
+
+.index-wrap .tab button:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
 }
 
 .index-wrap .tab button.active {
