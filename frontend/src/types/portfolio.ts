@@ -5,6 +5,8 @@ export interface PortfolioStockItem {
     totalAmount: number
     ratioInSector: number
     ratioInTotal: number
+    profitAmount: number
+    profitRate: number
 }
 
 export interface PortfolioSectorItem {

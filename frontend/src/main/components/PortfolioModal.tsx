@@ -415,37 +415,33 @@ export default function PortfolioModal({ open, onClose }: Props) {
                                             <span className="portfolio__stock-legend-rate">수익률</span>
                                         </div>
 
-                                        {filteredStocks.map((h, i) => {
-                                            const profitAmount = account.profitAmounts[h.stockCode] ?? 0;
-                                            const profitRate = account.profitRates[h.stockCode] ?? 0;
-                                            return (
-                                                <div
-                                                    key={h.stockCode}
-                                                    className="portfolio__stock-legend-item"
-                                                    style={{ animationDelay: `${0.2 + i * 0.12}s` }}
-                                                >
-                                                    <span
-                                                        className="portfolio__stock-legend-dot"
-                                                        style={{ background: stockColors[i] }}
-                                                    />
-                                                    <span className="portfolio__stock-legend-name">
-                                                        {stockNameMap[h.stockCode] ?? h.stockCode}
-                                                    </span>
-                                                    <span className="portfolio__stock-legend-pct">
-                                                        {(stockSectors[i]?.pct ?? 0).toFixed(1)}%
-                                                    </span>
-                                                    <span className="portfolio__stock-legend-eval">
-                                                        {fmt(Math.round(h.totalAmount))}
-                                                    </span>
-                                                    <span className={`portfolio__stock-legend-pnl ${cls(profitAmount)}`}>
-                                                        {profitAmount >= 0 ? "+" : ""}{fmt(Math.round(profitAmount))}
-                                                    </span>
-                                                    <span className={`portfolio__stock-legend-rate ${cls(profitRate)}`}>
-                                                        {fmtRate(profitRate)}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
+                                        {filteredStocks.map((h, i) => (
+                                            <div
+                                                key={h.stockCode}
+                                                className="portfolio__stock-legend-item"
+                                                style={{ animationDelay: `${0.2 + i * 0.12}s` }}
+                                            >
+                                                <span
+                                                    className="portfolio__stock-legend-dot"
+                                                    style={{ background: stockColors[i] }}
+                                                />
+                                                                                        <span className="portfolio__stock-legend-name">
+                                                    {stockNameMap[h.stockCode] ?? h.stockCode}
+                                                </span>
+                                                                                        <span className="portfolio__stock-legend-pct">
+                                                    {(stockSectors[i]?.pct ?? 0).toFixed(1)}%
+                                                </span>
+                                                                                        <span className="portfolio__stock-legend-eval">
+                                                    {fmt(Math.round(h.totalAmount))}
+                                                </span>
+                                                                                        <span className={`portfolio__stock-legend-pnl ${cls(h.profitAmount)}`}>
+                                                    {h.profitAmount >= 0 ? "+" : ""}{fmt(Math.round(h.profitAmount))}
+                                                </span>
+                                                                                        <span className={`portfolio__stock-legend-rate ${cls(h.profitRate)}`}>
+                                                    {fmtRate(h.profitRate)}
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
