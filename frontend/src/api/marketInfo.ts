@@ -3,6 +3,7 @@ import type {
     PopularStock,
     UpjongResponse,
     TrendResponse,
+    UpjongStockResponse,
     DealRankResponse,
     DealRankMarket,
     InvestorType,
@@ -25,6 +26,11 @@ export async function getPopularStocks(): Promise<PopularStock[]> {
 
 export async function getUpjongs(): Promise<UpjongResponse> {
     const res = await instance.get<UpjongResponse>('/stocks/market/upjong')
+    return res.data
+}
+
+export async function getUpjongStocks(no: string): Promise<UpjongStockResponse> {
+    const res = await instance.get<UpjongStockResponse>(`/stocks/upjong/${no}`)
     return res.data
 }
 

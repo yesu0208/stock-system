@@ -11,6 +11,13 @@ export interface PopularStock {
     direction: string
 }
 
+export interface UpjongRankItem {
+    code: string
+    name: string
+    value: string
+    itemLogoUrl: string
+}
+
 export interface UpjongInfo {
     name: string
     no: string
@@ -20,10 +27,33 @@ export interface UpjongInfo {
     steady: string
     fall: string
     graphRatio: string
+    totalMarketCap: string
+    totalTradingVolume: string
+    totalTradingValue: string
+    topByChangeRate: UpjongRankItem[]
+    topByMarketCap: UpjongRankItem[]
+    topByTradingValue: UpjongRankItem[]
 }
 
 export interface UpjongResponse {
     items: UpjongInfo[]
+}
+
+export interface UpjongStock {
+    name: string
+    code: string
+    price: string
+    change: string
+    direction: string
+    rate: string
+    volume: string
+    tradingValue: string
+    marketCap: string
+}
+
+export interface UpjongStockResponse {
+    upjongName: string
+    items: UpjongStock[]
 }
 
 export interface InvestorTrendDto {
