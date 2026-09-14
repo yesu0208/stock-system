@@ -205,8 +205,8 @@
 }
 
 .modal-v2-box.hot-stocks-modal {
-    width: 1000px;
-    height: 560px;
+    width: 500px;
+    height: 600px;
     display: flex;
     flex-direction: column;
 }

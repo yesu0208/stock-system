@@ -6,7 +6,6 @@
     color: white;
 }
 
-/* 탭 - IndexModal과 동일한 밑줄 스타일 */
 .hs-wrap .tab {
     display: flex;
     gap: 0;
@@ -47,7 +46,6 @@
     border-bottom-color: #7c5cff;
 }
 
-/* 필터 (시장/매매/기간) */
 .hs-wrap .filter-group {
     display: flex;
     gap: 4px;
@@ -84,15 +82,22 @@
     margin-bottom: 10px;
 }
 
-/* 리스트 영역 */
 .hs-wrap .list {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
 }
 
+.hs-wrap .day-header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #16161f;
+}
+
 .hs-wrap .list-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 0.2fr 1.5fr 1.5fr 1.2fr 1.5fr;
     gap: 8px;
     padding: 4px 6px;
     font-size: 11px;
@@ -103,10 +108,12 @@
     color: #94a3b8;
     font-size: 12px;
     padding: 8px 6px 4px;
+    text-align: center;
 }
 
 .hs-wrap .row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 0.2fr 1.5fr 1.5fr 1fr 1.5fr;
     align-items: center;
     gap: 8px;
     width: 100%;
@@ -133,41 +140,36 @@
 }
 
 .hs-wrap .col-rank {
-    width: 24px;
     color: #888;
+    text-align: center;
 }
 
 .hs-wrap .col-name {
-    flex: 1;
-    text-align: left;
+    text-align: center;
 }
 
 .hs-wrap .col-code {
-    width: 60px;
     color: #888;
     font-size: 12px;
+    text-align: center;
 }
 
 .hs-wrap .col-price {
-    width: 70px;
-    text-align: right;
+    text-align: center;
 }
 
 .hs-wrap .col-direction {
-    width: 40px;
-    text-align: right;
+    text-align: center;
     font-size: 12px;
 }
 
 .hs-wrap .col-num {
-    width: 70px;
-    text-align: right;
+    text-align: center;
     font-size: 12px;
 }
 
 .hs-wrap .col-num-wide {
-    width: 90px;
-    text-align: right;
+    text-align: center;
     font-size: 12px;
 }
 
@@ -237,4 +239,9 @@
     align-items: center;
     gap: 10px; /* 원하는 만큼 조절 */
     justify-content: flex-end;
+}
+
+.hs-wrap .deal-rank {
+    color: #fbbf24;
+    font-weight: 700;
 }

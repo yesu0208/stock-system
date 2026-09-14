@@ -56,6 +56,17 @@ function formatPrice(price: string): string {
     return num.toLocaleString()
 }
 
+function getSignColor(value: number): string {
+    if (value < 0) return '#4f9dff'
+    if (value > 0) return '#ff6347'
+    return '#ffffff'
+}
+
+function formatToMillion(amount: number): string {
+    const millions = Math.trunc(amount / 1_000_000)
+    return millions.toLocaleString()
+}
+
 export default function HotStocksModal({ show, onClose, onSelectStock }: Props) {
     const [tab, setTab] = useState<TabType>('popular')
 
@@ -168,14 +179,16 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                         ) : (
                             dealDays.map(day => (
                                 <div key={day.dealDate}>
-                                    <div className="date-label">{day.dealDate}</div>
+                                    <div className="day-header-sticky">
+                                        <div className="date-label">{day.dealDate}</div>
 
-                                    <div className="list-header">
-                                        <span className="col-rank"></span>
-                                        <span className="col-name">종목</span>
-                                        <span className="col-num">수량</span>
-                                        <span className="col-num-wide">거래대금</span>
-                                        <span className="col-num">거래량</span>
+                                        <div className="list-header">
+                                            <span className="col-rank"></span>
+                                            <span className="col-name"></span>
+                                            <span className="col-num">수량(주)</span>
+                                            <span className="col-num-wide">거래대금(백만)</span>
+                                            <span className="col-num">거래량(주)</span>
+                                        </div>
                                     </div>
 
                                     {day.items.map(item => (
@@ -185,10 +198,10 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                                             onClick={() => onSelectStock?.(item.stockCode)}
                                             disabled={!onSelectStock}
                                         >
-                                            <span className="col-rank">{item.rank}</span>
+                                            <span className="col-rank deal-rank">{item.rank}</span>
                                             <span className="col-name">{item.stockName}</span>
-                                            <span className="col-num">{item.quantity.toLocaleString()}</span>
-                                            <span className="col-num-wide">{item.amount.toLocaleString()}</span>
+                                            <span className="col-num" style={{ color: getSignColor(item.quantity) }}>{item.quantity.toLocaleString()}</span>
+                                            <span className="col-num-wide" style={{ color: getSignColor(item.amount) }}>{formatToMillion(item.amount)}</span>
                                             <span className="col-num">{item.volume.toLocaleString()}</span>
                                         </button>
                                     ))}
