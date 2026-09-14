@@ -191,6 +191,7 @@
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
+    outline: none;
 
     padding: 2px 4px;
     transition: 0.2s;
@@ -198,6 +199,11 @@
     display: flex;
     align-items: center;
     gap: 9px;
+}
+
+.footer .left-btn:focus,
+.footer .left-btn:focus-visible {
+    outline: none;
 }
 
 .footer .left-btn:hover {
