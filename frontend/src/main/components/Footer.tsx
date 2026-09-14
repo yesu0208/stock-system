@@ -12,6 +12,27 @@ import InvestorModal from "./InvestorModal";
 type HoverType = "kospi" | "kosdaq" | "fx" | null;
 type ModalType = "index" | "investor" | "hot" | "sector" | null;
 
+function formatBaseTime(iso: string): string {
+    try {
+        const d = new Date(iso);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+
+        const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+        const weekday = weekdays[d.getDay()];
+
+        return `${yyyy}.${mm}.${dd}(${weekday}) 기준`;
+    } catch {
+        return iso;
+    }
+}
+
+function withUnit(value?: string): string {
+    if (!value || value === "-") return value ?? "-";
+    return `${value}억`;
+}
+
 export default function Footer() {
     const { marketMain, exchangeRates } = useMarketData();
 
@@ -117,7 +138,7 @@ export default function Footer() {
         return (
             <div className="tooltip">
                 <div className="tooltip-section">
-                    <div className="tooltip-time">{data?.baseTime ?? "-"}</div>
+                    <div className="tooltip-time">{data?.baseTime ? formatBaseTime(data.baseTime) : "-"}</div>
                 </div>
 
                 <div className="tooltip-section">
@@ -150,9 +171,9 @@ export default function Footer() {
                     </div>
 
                     <div className="grid3 value-row">
-                        <div className={`cell ${colorClass(p?.arbitrage)}`}>{p?.arbitrage ?? "-"}</div>
-                        <div className={`cell ${colorClass(p?.nonArbitrage)}`}>{p?.nonArbitrage ?? "-"}</div>
-                        <div className={`cell ${colorClass(p?.total)}`}>{p?.total ?? "-"}</div>
+                        <div className={`cell ${colorClass(p?.arbitrage)}`}>{withUnit(p?.arbitrage)}</div>
+                        <div className={`cell ${colorClass(p?.nonArbitrage)}`}>{withUnit(p?.nonArbitrage)}</div>
+                        <div className={`cell ${colorClass(p?.total)}`}>{withUnit(p?.total)}</div>
                     </div>
                 </div>
 
@@ -166,9 +187,9 @@ export default function Footer() {
                     </div>
 
                     <div className="grid3 value-row">
-                        <div className={`cell ${colorClass(i?.personal)}`}>{i?.personal ?? "-"}</div>
-                        <div className={`cell ${colorClass(i?.foreigner)}`}>{i?.foreigner ?? "-"}</div>
-                        <div className={`cell ${colorClass(i?.institution)}`}>{i?.institution ?? "-"}</div>
+                        <div className={`cell ${colorClass(i?.personal)}`}>{withUnit(i?.personal)}</div>
+                        <div className={`cell ${colorClass(i?.foreigner)}`}>{withUnit(i?.foreigner)}</div>
+                        <div className={`cell ${colorClass(i?.institution)}`}>{withUnit(i?.institution)}</div>
                     </div>
                 </div>
             </div>
