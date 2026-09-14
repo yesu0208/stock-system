@@ -189,3 +189,52 @@
     text-align: center;
     padding: 20px 0;
 }
+
+.hs-wrap .hot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hs-wrap .hot-item {
+    display: flex;
+    align-items: center;
+
+    padding: 10px 12px;
+
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.hs-wrap .hot-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.hs-wrap .hot-item:disabled {
+    cursor: default;
+}
+
+.hs-wrap .hot-rank {
+    width: 32px;
+    font-weight: 700;
+    color: #fbbf24;
+    text-align: left;
+}
+
+.hs-wrap .hot-name {
+    flex: 1;
+    text-align: left;
+    color: white;
+    font-weight: 600;
+}
+
+.hs-wrap .hot-price {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* 원하는 만큼 조절 */
+    justify-content: flex-end;
+}

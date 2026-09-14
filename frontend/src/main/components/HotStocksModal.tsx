@@ -19,11 +19,41 @@ interface Props {
 
 type TabType = 'popular' | 'foreign' | 'institution'
 
-// [신규] 등락 방향에 따른 색상 클래스 매핑 (IndexModal의 color() 헬퍼와 동일한 접근)
-function directionClass(direction: string): string {
-    if (direction === '상승') return 'up'
-    if (direction === '하락') return 'down'
-    return 'neutral'
+function getColor(direction: string): string {
+    switch (direction) {
+        case 'UPPER_LIMIT':
+        case 'UP':
+            return '#ff6347'
+        case 'LOWER_LIMIT':
+        case 'DOWN':
+            return '#4f9dff'
+        case 'STEADY':
+        default:
+            return '#ffffff'
+    }
+}
+
+function getArrow(direction: string): string {
+    switch (direction) {
+        case 'UPPER_LIMIT':
+            return '⬆'
+        case 'UP':
+            return '▲'
+        case 'LOWER_LIMIT':
+            return '⬇'
+        case 'DOWN':
+            return '▼'
+        case 'STEADY':
+            return '-'
+        default:
+            return ''
+    }
+}
+
+function formatPrice(price: string): string {
+    const num = Number(price.replace(/[^0-9.-]/g, ''))
+    if (isNaN(num)) return price
+    return num.toLocaleString()
 }
 
 export default function HotStocksModal({ show, onClose, onSelectStock }: Props) {
@@ -66,9 +96,7 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
 
     return (
         <ModalV2 open={show} title="인기 종목" onClose={onClose}>
-            {/* [수정] hs-wrap 클래스로 전체 레이아웃 감싸기 (인라인 스타일 제거) */}
             <div className="hs-wrap">
-                {/* [수정] IndexModal과 동일한 밑줄 탭 스타일 적용 */}
                 <div className="tab">
                     <button
                         className={tab === 'popular' ? 'active' : ''}
@@ -114,30 +142,23 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                         loading ? (
                             <div className="empty">불러오는 중...</div>
                         ) : (
-                            <>
-                                <div className="list-header">
-                                    <span className="col-rank"></span>
-                                    <span className="col-name">종목명</span>
-                                    <span className="col-code">코드</span>
-                                    <span className="col-price">현재가</span>
-                                    <span className="col-direction">등락</span>
-                                </div>
-
+                            <div className="hot-list">
                                 {stocks.map(s => (
                                     <button
                                         key={s.code}
-                                        className="row"
+                                        className="hot-item"
                                         onClick={() => onSelectStock?.(s.code)}
                                         disabled={!onSelectStock}
                                     >
-                                        <span className="col-rank">{s.rank}</span>
-                                        <span className="col-name">{s.name}</span>
-                                        <span className="col-code">{s.code}</span>
-                                        <span className={`col-price ${directionClass(s.direction)}`}>{s.price}</span>
-                                        <span className={`col-direction ${directionClass(s.direction)}`}>{s.direction}</span>
+                                        <div className="hot-rank">{s.rank}</div>
+                                        <div className="hot-name">{s.name}</div>
+                                        <div className="hot-price" style={{ color: getColor(s.direction) }}>
+                                            <span className="hot-price-arrow">{getArrow(s.direction)}</span>
+                                            <span className="hot-price-value">{formatPrice(s.price)}</span>
+                                        </div>
                                     </button>
                                 ))}
-                            </>
+                            </div>
                         )
                     )}
 
