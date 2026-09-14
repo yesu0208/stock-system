@@ -1,0 +1,138 @@
+.sector-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: white;
+    font-size: 12px;
+    overflow-y: auto;
+    max-height: 65vh;
+}
+
+.sector-loading {
+    text-align: center;
+    padding: 20px 0;
+    color: #888;
+    font-size: 13px;
+}
+
+.sector-item {
+    border-bottom: 1px solid #262626;
+    padding-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sector-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.sector-name {
+    font-weight: 700;
+}
+
+.sector-no {
+    font-size: 10px;
+    color: #666;
+}
+
+.sector-change {
+    font-weight: 600;
+}
+
+.sector-breadth {
+    font-size: 11px;
+    color: #999;
+}
+
+.sector-graph-ratio {
+    font-size: 10px;
+    color: #666;
+}
+
+.sector-detail-line {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: #aaa;
+}
+
+.sector-rank-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.sector-rank-title {
+    font-size: 10px;
+    color: #888;
+    font-weight: 600;
+}
+
+.sector-rank-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.sector-rank-logo {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+}
+
+.sector-rank-name {
+    font-weight: 600;
+}
+
+.sector-rank-code {
+    color: #777;
+    font-size: 10px;
+}
+
+.sector-rank-value {
+    margin-left: auto;
+    color: #ccc;
+}
+
+.sector-stock-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+}
+
+.sector-stock-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sector-stock-name {
+    font-weight: 600;
+}
+
+.sector-stock-code {
+    color: #777;
+    font-size: 10px;
+}
+
+.sector-stock-volume,
+.sector-stock-tradingValue,
+.sector-stock-marketCap {
+    color: #999;
+    font-size: 10px;
+}
