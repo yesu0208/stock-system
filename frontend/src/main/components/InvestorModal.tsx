@@ -2,6 +2,7 @@ import "./InvestorModal.css";
 import ModalV2 from "../../components/ModalV2";
 import { useEffect, useState } from "react";
 import { getInvestorTrend } from "../../api/marketInfo";
+import type { InvestorTrendMarket } from "../../api/marketInfo";
 import type { InvestorTrendDto } from "../../types/marketWidgets";
 
 interface Props {
@@ -23,11 +24,17 @@ const COLUMNS: { key: keyof InvestorTrendDto; label: string }[] = [
     { key: "corporation", label: "기타법인" },
 ];
 
+const MARKET_TABS: { value: InvestorTrendMarket; label: string }[] = [
+    { value: "KOSPI", label: "KOSPI" },
+    { value: "KOSDAQ", label: "KOSDAQ" },
+    { value: "FUTURES", label: "선물" },
+];
+
 const FIRST_COL_WIDTH = 100;
 const COL_WIDTH = 82;
 
 export default function InvestorModal({ open, onClose }: Props) {
-    const [market, setMarket] = useState<"KOSPI" | "KOSDAQ">("KOSPI");
+    const [market, setMarket] = useState<InvestorTrendMarket>("KOSPI");
     const [trendType, setTrendType] = useState<"time" | "day">("time");
     const [data, setData] = useState<InvestorTrendDto[]>([]);
     const [loading, setLoading] = useState(false);
@@ -48,13 +55,13 @@ export default function InvestorModal({ open, onClose }: Props) {
             <div className="investor-wrap">
                 <div className="tab-row">
                     <div className="tab">
-                        {(["KOSPI", "KOSDAQ"] as const).map((m) => (
+                        {MARKET_TABS.map((m) => (
                             <button
-                                key={m}
-                                className={market === m ? "active" : ""}
-                                onClick={() => setMarket(m)}
+                                key={m.value}
+                                className={market === m.value ? "active" : ""}
+                                onClick={() => setMarket(m.value)}
                             >
-                                {m}
+                                {m.label}
                             </button>
                         ))}
                     </div>

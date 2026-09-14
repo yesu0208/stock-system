@@ -10,6 +10,14 @@ import type {
     PeriodType,
 } from '../types/marketWidgets'
 
+export type InvestorTrendMarket = 'KOSPI' | 'KOSDAQ' | 'FUTURES'
+
+const MARKET_CODE: Record<InvestorTrendMarket, string> = {
+    KOSPI: 'KOSPI',
+    KOSDAQ: 'KOSDAQ',
+    FUTURES: 'FUTURES',
+}
+
 export async function getPopularStocks(): Promise<PopularStock[]> {
     const res = await instance.get<PopularStock[]>('/stocks/market/popular')
     return res.data
@@ -21,12 +29,12 @@ export async function getUpjongs(): Promise<UpjongResponse> {
 }
 
 export async function getInvestorTrend(
-    market: 'KOSPI' | 'KOSDAQ',
+    market: InvestorTrendMarket,
     type: 'time' | 'day',
     page = 1
 ): Promise<TrendResponse> {
     const res = await instance.get<TrendResponse>(`/stocks/investor-trend/${type}`, {
-        params: { market, page },
+        params: { market: MARKET_CODE[market], page },
     })
     return res.data
 }
