@@ -21,18 +21,32 @@
 .market-tabs button {
     flex: 1;
     padding: 8px 0;
-    border: none;
     background: none;
+    border: none;
     color: rgba(255, 255, 255, 0.4);
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
+    border-radius: 0;
+
     border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
 }
 
+.market-tabs button:focus,
+.market-tabs button:focus-visible {
+    outline: none;
+}
+
+.market-tabs button:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
+}
+
 .market-tabs button.active {
-    background: none;
     color: #b7a6ff;
     border-bottom-color: #7c5cff;
 }
@@ -40,26 +54,40 @@
 .sub-tabs {
     display: flex;
     gap: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sub-tabs button {
     flex: 1;
-    padding: 6px 0;
-    border: none;
+    padding: 8px 0;
     background: none;
+    border: none;
     color: rgba(255, 255, 255, 0.4);
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
+    border-radius: 0;
+
     border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
 }
 
+.sub-tabs button:focus,
+.sub-tabs button:focus-visible {
+    outline: none;
+}
+
+.sub-tabs button:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
+}
+
 .sub-tabs button.active {
-    background: none;
-    color: white;
-    border-bottom-color: #64748b;
+    color: #b7a6ff;
+    border-bottom-color: #7c5cff;
 }
 
 .content-area {
