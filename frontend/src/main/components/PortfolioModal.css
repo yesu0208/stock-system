@@ -379,7 +379,7 @@
 .portfolio__stock-legend-header,
 .portfolio__stock-legend-item {
     display: grid;
-    grid-template-columns: 7px 1fr 54px 90px 90px 54px;
+    grid-template-columns: 7px 1fr 48px 80px 80px 76px 48px;
     column-gap: 6px;
     align-items: center;
 }
@@ -459,4 +459,33 @@
     font-size: 11px;
     font-weight: 600;
     text-align: center;
+}
+
+.portfolio__stock-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.portfolio__stock-legend-subrow {
+    display: grid;
+    grid-template-columns: 7px 1fr 48px 80px 80px 76px 48px;
+    column-gap: 6px;
+    align-items: center;
+    padding: 2px 4px 2px 16px;
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.portfolio__stock-legend-subrow-label {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.portfolio__stock-legend-subrow-hint {
+    margin-left: 4px;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.portfolio__stock-legend-item--group-title {
+    font-weight: 600;
 }

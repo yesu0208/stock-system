@@ -7,6 +7,13 @@ export interface PortfolioStockItem {
     ratioInTotal: number
     profitAmount: number
     profitRate: number
+    spotBuyAmount: number
+    spotProfitAmount: number
+    spotProfitRate: number
+    leverageBuyAmount: number
+    leverageEquityAmount: number
+    leverageProfitAmount: number
+    leverageProfitRate: number
 }
 
 export interface PortfolioSectorItem {

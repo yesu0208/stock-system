@@ -410,38 +410,91 @@ export default function PortfolioModal({ open, onClose }: Props) {
                                             <span className="portfolio__stock-legend-dot" style={{ visibility: "hidden" }} />
                                             <span className="portfolio__stock-legend-name">종목명</span>
                                             <span className="portfolio__stock-legend-pct">비중</span>
+                                            <span className="portfolio__stock-legend-eval">매수금액</span>
                                             <span className="portfolio__stock-legend-eval">평가금액</span>
                                             <span className="portfolio__stock-legend-pnl">수익금</span>
                                             <span className="portfolio__stock-legend-rate">수익률</span>
                                         </div>
 
-                                        {filteredStocks.map((h, i) => (
-                                            <div
-                                                key={h.stockCode}
-                                                className="portfolio__stock-legend-item"
-                                                style={{ animationDelay: `${0.2 + i * 0.12}s` }}
-                                            >
-                                                <span
-                                                    className="portfolio__stock-legend-dot"
-                                                    style={{ background: stockColors[i] }}
-                                                />
-                                                                                        <span className="portfolio__stock-legend-name">
-                                                    {stockNameMap[h.stockCode] ?? h.stockCode}
-                                                </span>
-                                                                                        <span className="portfolio__stock-legend-pct">
-                                                    {(stockSectors[i]?.pct ?? 0).toFixed(1)}%
-                                                </span>
-                                                                                        <span className="portfolio__stock-legend-eval">
-                                                    {fmt(Math.round(h.totalAmount))}
-                                                </span>
-                                                                                        <span className={`portfolio__stock-legend-pnl ${cls(h.profitAmount)}`}>
-                                                    {h.profitAmount >= 0 ? "+" : ""}{fmt(Math.round(h.profitAmount))}
-                                                </span>
-                                                                                        <span className={`portfolio__stock-legend-rate ${cls(h.profitRate)}`}>
-                                                    {fmtRate(h.profitRate)}
-                                                </span>
-                                            </div>
-                                        ))}
+                                        {filteredStocks.map((h, i) => {
+                                            const hasSpot = h.spotAmount > 0;
+                                            const hasLeverage = h.leverageAmount > 0;
+
+                                            return (
+                                                <div key={h.stockCode} className="portfolio__stock-group">
+                                                    <div
+                                                        className="portfolio__stock-legend-item portfolio__stock-legend-item--group-title"
+                                                        style={{ animationDelay: `${0.2 + i * 0.12}s` }}
+                                                    >
+                                                        <span
+                                                            className="portfolio__stock-legend-dot"
+                                                            style={{ background: stockColors[i] }}
+                                                        />
+                                                        <span className="portfolio__stock-legend-name">
+                                                            {stockNameMap[h.stockCode] ?? h.stockCode}
+                                                        </span>
+                                                        <span className="portfolio__stock-legend-pct">
+                                                            {(stockSectors[i]?.pct ?? 0).toFixed(1)}%
+                                                        </span>
+                                                        <span className="portfolio__stock-legend-eval">-</span>
+                                                        <span className="portfolio__stock-legend-eval">
+                                                            {fmt(Math.round(h.totalAmount))}
+                                                        </span>
+                                                        <span className={`portfolio__stock-legend-pnl ${cls(h.profitAmount)}`}>
+                                                            {h.profitAmount >= 0 ? "+" : ""}{fmt(Math.round(h.profitAmount))}
+                                                        </span>
+                                                        <span className={`portfolio__stock-legend-rate ${cls(h.profitRate)}`}>
+                                                            {fmtRate(h.profitRate)}
+                                                        </span>
+                                                    </div>
+
+                                                    {hasSpot && (
+                                                        <div className="portfolio__stock-legend-subrow">
+                                                            <span className="portfolio__stock-legend-dot" style={{ visibility: "hidden" }} />
+                                                            <span className="portfolio__stock-legend-subrow-label">현물</span>
+                                                            <span />
+                                                            <span className="portfolio__stock-legend-eval">
+                                                                {fmt(h.spotBuyAmount)}
+                                                            </span>
+                                                            <span className="portfolio__stock-legend-eval">
+                                                                {fmt(h.spotAmount)}
+                                                            </span>
+                                                            <span className={`portfolio__stock-legend-pnl ${cls(h.spotProfitAmount)}`}>
+                                                                {h.spotProfitAmount >= 0 ? "+" : ""}{fmt(h.spotProfitAmount)}
+                                                            </span>
+                                                            <span className={`portfolio__stock-legend-rate ${cls(h.spotProfitRate)}`}>
+                                                                {fmtRate(h.spotProfitRate)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {hasLeverage && (
+                                                        <div className="portfolio__stock-legend-subrow">
+                                                            <span className="portfolio__stock-legend-dot" style={{ visibility: "hidden" }} />
+                                                            <span className="portfolio__stock-legend-subrow-label">
+                                                                레버리지
+                                                                <span className="portfolio__stock-legend-subrow-hint">
+                                                                    (내 돈 {fmt(h.leverageEquityAmount)})
+                                                                </span>
+                                                            </span>
+                                                            <span />
+                                                            <span className="portfolio__stock-legend-eval">
+                                                                {fmt(h.leverageBuyAmount)}
+                                                            </span>
+                                                            <span className="portfolio__stock-legend-eval">
+                                                                {fmt(h.leverageAmount)}
+                                                            </span>
+                                                            <span className={`portfolio__stock-legend-pnl ${cls(h.leverageProfitAmount)}`}>
+                                                                {h.leverageProfitAmount >= 0 ? "+" : ""}{fmt(h.leverageProfitAmount)}
+                                                            </span>
+                                                            <span className={`portfolio__stock-legend-rate ${cls(h.leverageProfitRate)}`}>
+                                                                {fmtRate(h.leverageProfitRate)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
