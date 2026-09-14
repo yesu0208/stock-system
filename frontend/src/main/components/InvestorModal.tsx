@@ -1,75 +1,114 @@
-import { useEffect, useState } from 'react'
-import Modal from '../../components/Modal'
-import { getInvestorTrend } from '../../api/marketInfo'
-import type { InvestorTrendDto } from '../../types/marketWidgets'
+import "./InvestorModal.css";
+import ModalV2 from "../../components/ModalV2";
+import { useEffect, useState } from "react";
+import { getInvestorTrend } from "../../api/marketInfo";
+import type { InvestorTrendDto } from "../../types/marketWidgets";
 
 interface Props {
-    show: boolean
-    onClose: () => void
+    open: boolean;
+    onClose: () => void;
 }
 
-export default function InvestorModal({ show, onClose }: Props) {
-    const [market, setMarket] = useState<'KOSPI' | 'KOSDAQ'>('KOSPI')
-    const [trendType, setTrendType] = useState<'time' | 'day'>('time')
-    const [data, setData] = useState<InvestorTrendDto[]>([])
-    const [loading, setLoading] = useState(false)
+const COLUMNS: { key: keyof InvestorTrendDto; label: string }[] = [
+    { key: "dateOrTime", label: "시간/날짜" },
+    { key: "individual", label: "개인" },
+    { key: "foreigner", label: "외국인" },
+    { key: "institution", label: "기관" },
+    { key: "financeInvestment", label: "금융투자" },
+    { key: "insurance", label: "보험" },
+    { key: "fund", label: "투신" },
+    { key: "bank", label: "은행" },
+    { key: "etcFinance", label: "기타금융" },
+    { key: "pension", label: "연기금" },
+    { key: "corporation", label: "기타법인" },
+];
+
+const FIRST_COL_WIDTH = 100;
+const COL_WIDTH = 82;
+
+export default function InvestorModal({ open, onClose }: Props) {
+    const [market, setMarket] = useState<"KOSPI" | "KOSDAQ">("KOSPI");
+    const [trendType, setTrendType] = useState<"time" | "day">("time");
+    const [data, setData] = useState<InvestorTrendDto[]>([]);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (!show) return
-        setLoading(true)
+        if (!open) return;
+        setLoading(true);
         getInvestorTrend(market, trendType, 1)
-            .then(res => setData(res.data))
+            .then((res) => setData(res.data))
             .catch(() => setData([]))
-            .finally(() => setLoading(false))
-    }, [show, market, trendType])
+            .finally(() => setLoading(false));
+    }, [open, market, trendType]);
 
-    if (!show) return null
+    const gridTemplateColumns = `${FIRST_COL_WIDTH}px repeat(${COLUMNS.length - 1}, ${COL_WIDTH}px)`;
 
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '380px', maxHeight: '65vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>투자자별 매매동향</h3>
-
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '12px' }}>
-                    {(['KOSPI', 'KOSDAQ'] as const).map(m => (
-                        <button key={m} onClick={() => setMarket(m)} style={{ ...styles.toggle, ...(market === m ? styles.toggleActive : {}) }}>
-                            {m}
-                        </button>
-                    ))}
-                    {(['time', 'day'] as const).map(t => (
-                        <button key={t} onClick={() => setTrendType(t)} style={{ ...styles.toggle, ...(trendType === t ? styles.toggleActive : {}) }}>
-                            {t === 'time' ? '시간별' : '일별'}
-                        </button>
-                    ))}
-                </div>
-
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    <div style={styles.header}>
-                        <span>시간/날짜</span><span>개인</span><span>외국인</span><span>기관</span>
+        <ModalV2 open={open} title="투자자별 매매동향" onClose={onClose}>
+            <div className="investor-wrap">
+                <div className="tab-row">
+                    <div className="tab">
+                        {(["KOSPI", "KOSDAQ"] as const).map((m) => (
+                            <button
+                                key={m}
+                                className={market === m ? "active" : ""}
+                                onClick={() => setMarket(m)}
+                            >
+                                {m}
+                            </button>
+                        ))}
                     </div>
-                    {loading ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
-                    ) : (
-                        data.map((d, i) => (
-                            <div key={i} style={styles.row}>
-                                <span>{d.dateOrTime}</span>
-                                <span style={{ color: d.individual >= 0 ? '#FF6347' : '#4F9DFF' }}>{d.individual.toLocaleString()}</span>
-                                <span style={{ color: d.foreigner >= 0 ? '#FF6347' : '#4F9DFF' }}>{d.foreigner.toLocaleString()}</span>
-                                <span style={{ color: d.institution >= 0 ? '#FF6347' : '#4F9DFF' }}>{d.institution.toLocaleString()}</span>
-                            </div>
-                        ))
-                    )}
+                    <div className="tab">
+                        {(["time", "day"] as const).map((t) => (
+                            <button
+                                key={t}
+                                className={trendType === t ? "active" : ""}
+                                onClick={() => setTrendType(t)}
+                            >
+                                {t === "time" ? "시간별" : "일별"}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
-            </div>
-        </Modal>
-    )
-}
 
-const styles = {
-    toggle: { padding: '4px 10px', fontSize: '12px', borderRadius: '4px', border: '1px solid #555', backgroundColor: '#222', color: '#FFF', cursor: 'pointer' },
-    toggleActive: { backgroundColor: '#4F9DFF', borderColor: '#4F9DFF' },
-    header: { display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', fontSize: '11px', color: '#888', padding: '4px', borderBottom: '1px solid #333' },
-    row: { display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', fontSize: '12px', padding: '6px 4px', borderBottom: '1px solid #262626' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
-} as const
+                <div className="table-box">
+                    <div className="table-inner">
+                        <div className="header-row" style={{ gridTemplateColumns }}>
+                            {COLUMNS.map((col) => (
+                                <span key={col.key} className={col.key === "dateOrTime" ? "" : "num-cell"}>
+                                    {col.label}
+                                </span>
+                            ))}
+                        </div>
+
+                        {loading ? (
+                            <div className="empty-state">불러오는 중...</div>
+                        ) : data.length === 0 ? (
+                            <div className="empty-state">데이터가 없습니다.</div>
+                        ) : (
+                            data.map((d, i) => (
+                                <div key={i} className="data-row" style={{ gridTemplateColumns }}>
+                                    {COLUMNS.map((col) => {
+                                        if (col.key === "dateOrTime") {
+                                            return <span key={col.key}>{d.dateOrTime}</span>;
+                                        }
+                                        const value = d[col.key] as number;
+                                        return (
+                                            <span
+                                                key={col.key}
+                                                className="num-cell"
+                                                style={{ color: value >= 0 ? "#ff5b5b" : "#4f9dff" }}
+                                            >
+                                                {value.toLocaleString()}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+        </ModalV2>
+    );
+}

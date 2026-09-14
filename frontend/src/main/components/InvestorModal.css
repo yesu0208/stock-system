@@ -1,0 +1,105 @@
+.investor-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: white;
+    height: 100%;
+    min-height: 0;
+}
+
+.investor-wrap .tab-row {
+    display: flex;
+    gap: 8px;
+}
+
+.investor-wrap .tab {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex: 1;
+}
+
+.investor-wrap .tab button {
+    flex: 1;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
+    border-radius: 0;
+
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.investor-wrap .tab button:focus,
+.investor-wrap .tab button:focus-visible {
+    outline: none;
+}
+
+.investor-wrap .tab button:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
+}
+
+.investor-wrap .tab button.active {
+    color: #b7a6ff;
+    border-bottom-color: #7c5cff;
+}
+
+.investor-wrap .table-box {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.investor-wrap .table-inner {
+    width: max-content;
+    min-width: 100%;
+}
+
+.investor-wrap .header-row,
+.investor-wrap .data-row {
+    display: grid;
+}
+
+.investor-wrap .header-row {
+    position: sticky;
+    top: 0;
+    background: #16213e;
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 1;
+}
+
+.investor-wrap .data-row {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.investor-wrap .data-row:last-child {
+    border-bottom: none;
+}
+
+.investor-wrap .num-cell {
+    text-align: right;
+}
+
+.investor-wrap .empty-state {
+    color: #94a3b8;
+    font-size: 13px;
+    text-align: center;
+    padding: 24px 0;
+}

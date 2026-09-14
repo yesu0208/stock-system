@@ -53,6 +53,7 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "포트폴리오": "portfolio-modal",
     "지수": "index-modal",
     "인기 종목": "hot-stocks-modal",
+    "투자자별 매매동향": "investor-modal",
 };
 
 export default function ModalV2({

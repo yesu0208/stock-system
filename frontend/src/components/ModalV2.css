@@ -211,3 +211,9 @@
     flex-direction: column;
 }
 
+.modal-v2-box.investor-modal {
+    width: 780px;
+    height: 560px;
+    display: flex;
+    flex-direction: column;
+}
