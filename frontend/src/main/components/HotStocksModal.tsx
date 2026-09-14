@@ -1,3 +1,4 @@
+import './HotStocksModal.css'
 import { useEffect, useState } from 'react'
 import ModalV2 from '../../components/ModalV2'
 import { getPopularStocks, getDealRank } from '../../api/marketInfo'
@@ -17,6 +18,13 @@ interface Props {
 }
 
 type TabType = 'popular' | 'foreign' | 'institution'
+
+// [신규] 등락 방향에 따른 색상 클래스 매핑 (IndexModal의 color() 헬퍼와 동일한 접근)
+function directionClass(direction: string): string {
+    if (direction === '상승') return 'up'
+    if (direction === '하락') return 'down'
+    return 'neutral'
+}
 
 export default function HotStocksModal({ show, onClose, onSelectStock }: Props) {
     const [tab, setTab] = useState<TabType>('popular')
@@ -58,71 +66,75 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
 
     return (
         <ModalV2 open={show} title="인기 종목" onClose={onClose}>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-                    <button onClick={() => setTab('popular')} style={styles.tabButton(tab === 'popular')}>인기</button>
-                    <button onClick={() => setTab('foreign')} style={styles.tabButton(tab === 'foreign')}>외국인</button>
-                    <button onClick={() => setTab('institution')} style={styles.tabButton(tab === 'institution')}>기관</button>
+            {/* [수정] hs-wrap 클래스로 전체 레이아웃 감싸기 (인라인 스타일 제거) */}
+            <div className="hs-wrap">
+                {/* [수정] IndexModal과 동일한 밑줄 탭 스타일 적용 */}
+                <div className="tab">
+                    <button
+                        className={tab === 'popular' ? 'active' : ''}
+                        onClick={() => setTab('popular')}
+                    >
+                        인기
+                    </button>
+                    <button
+                        className={tab === 'foreign' ? 'active' : ''}
+                        onClick={() => setTab('foreign')}
+                    >
+                        외국인
+                    </button>
+                    <button
+                        className={tab === 'institution' ? 'active' : ''}
+                        onClick={() => setTab('institution')}
+                    >
+                        기관
+                    </button>
                 </div>
 
                 {(tab === 'foreign' || tab === 'institution') && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            <button onClick={() => setMarket('KOSPI')} style={styles.filterButton(market === 'KOSPI')}>코스피</button>
-                            <button onClick={() => setMarket('KOSDAQ')} style={styles.filterButton(market === 'KOSDAQ')}>코스닥</button>
+                    <div className="filters">
+                        <div className="filter-group">
+                            <button className={market === 'KOSPI' ? 'active' : ''} onClick={() => setMarket('KOSPI')}>코스피</button>
+                            <button className={market === 'KOSDAQ' ? 'active' : ''} onClick={() => setMarket('KOSDAQ')}>코스닥</button>
                         </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            <button onClick={() => setDealType('BUY')} style={styles.filterButton(dealType === 'BUY')}>매수</button>
-                            <button onClick={() => setDealType('SELL')} style={styles.filterButton(dealType === 'SELL')}>매도</button>
+                        <div className="filter-group">
+                            <button className={dealType === 'BUY' ? 'active' : ''} onClick={() => setDealType('BUY')}>매수</button>
+                            <button className={dealType === 'SELL' ? 'active' : ''} onClick={() => setDealType('SELL')}>매도</button>
                         </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            <button onClick={() => setPeriodType('DAY')} style={styles.filterButton(periodType === 'DAY')}>일</button>
-                            <button onClick={() => setPeriodType('WEEK')} style={styles.filterButton(periodType === 'WEEK')}>주</button>
-                            <button onClick={() => setPeriodType('MONTH')} style={styles.filterButton(periodType === 'MONTH')}>1개월</button>
-                            <button onClick={() => setPeriodType('THREE_MONTH')} style={styles.filterButton(periodType === 'THREE_MONTH')}>3개월</button>
+                        <div className="filter-group">
+                            <button className={periodType === 'DAY' ? 'active' : ''} onClick={() => setPeriodType('DAY')}>일</button>
+                            <button className={periodType === 'WEEK' ? 'active' : ''} onClick={() => setPeriodType('WEEK')}>주</button>
+                            <button className={periodType === 'MONTH' ? 'active' : ''} onClick={() => setPeriodType('MONTH')}>1개월</button>
+                            <button className={periodType === 'THREE_MONTH' ? 'active' : ''} onClick={() => setPeriodType('THREE_MONTH')}>3개월</button>
                         </div>
                     </div>
                 )}
 
-                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                <div className="list">
                     {tab === 'popular' && (
                         loading ? (
-                            <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
+                            <div className="empty">불러오는 중...</div>
                         ) : (
                             <>
-                                <div style={{ display: 'flex', gap: '8px', padding: '4px', fontSize: '11px', color: '#666' }}>
-                                    <span style={{ width: '24px' }}></span>
-                                    <span style={{ flex: 1 }}>종목명</span>
-                                    <span style={{ width: '60px' }}>코드</span>
-                                    <span style={{ width: '70px', textAlign: 'right' }}>현재가</span>
-                                    <span style={{ width: '40px', textAlign: 'right' }}>등락</span>
+                                <div className="list-header">
+                                    <span className="col-rank"></span>
+                                    <span className="col-name">종목명</span>
+                                    <span className="col-code">코드</span>
+                                    <span className="col-price">현재가</span>
+                                    <span className="col-direction">등락</span>
                                 </div>
 
                                 {stocks.map(s => (
                                     <button
                                         key={s.code}
+                                        className="row"
                                         onClick={() => onSelectStock?.(s.code)}
-                                        style={styles.row}
                                         disabled={!onSelectStock}
                                     >
-                                        <span style={{ width: '24px', color: '#888' }}>{s.rank}</span>
-                                        <span style={{ flex: 1, textAlign: 'left' }}>{s.name}</span>
-                                        <span style={{ width: '60px', color: '#888', fontSize: '12px' }}>{s.code}</span>
-                                        <span style={{
-                                            width: '70px',
-                                            textAlign: 'right',
-                                            color: s.direction === '상승' ? '#FF6347' : s.direction === '하락' ? '#4F9DFF' : '#FFF',
-                                        }}>
-                                            {s.price}
-                                        </span>
-                                        <span style={{
-                                            width: '40px',
-                                            textAlign: 'right',
-                                            fontSize: '12px',
-                                            color: s.direction === '상승' ? '#FF6347' : s.direction === '하락' ? '#4F9DFF' : '#FFF',
-                                        }}>
-                                            {s.direction}
-                                        </span>
+                                        <span className="col-rank">{s.rank}</span>
+                                        <span className="col-name">{s.name}</span>
+                                        <span className="col-code">{s.code}</span>
+                                        <span className={`col-price ${directionClass(s.direction)}`}>{s.price}</span>
+                                        <span className={`col-direction ${directionClass(s.direction)}`}>{s.direction}</span>
                                     </button>
                                 ))}
                             </>
@@ -131,38 +143,32 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
 
                     {(tab === 'foreign' || tab === 'institution') && (
                         dealLoading ? (
-                            <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
+                            <div className="empty">불러오는 중...</div>
                         ) : (
                             dealDays.map(day => (
                                 <div key={day.dealDate}>
-                                    <div style={{ color: '#888', fontSize: '12px', padding: '6px 4px' }}>{day.dealDate}</div>
+                                    <div className="date-label">{day.dealDate}</div>
 
-                                    <div style={{ display: 'flex', gap: '8px', padding: '4px', fontSize: '11px', color: '#666' }}>
-                                        <span style={{ width: '20px' }}></span>
-                                        <span style={{ flex: 1 }}>종목</span>
-                                        <span style={{ width: '70px', textAlign: 'right' }}>수량</span>
-                                        <span style={{ width: '90px', textAlign: 'right' }}>거래대금</span>
-                                        <span style={{ width: '70px', textAlign: 'right' }}>거래량</span>
+                                    <div className="list-header">
+                                        <span className="col-rank"></span>
+                                        <span className="col-name">종목</span>
+                                        <span className="col-num">수량</span>
+                                        <span className="col-num-wide">거래대금</span>
+                                        <span className="col-num">거래량</span>
                                     </div>
 
                                     {day.items.map(item => (
                                         <button
                                             key={item.stockCode}
+                                            className="row"
                                             onClick={() => onSelectStock?.(item.stockCode)}
-                                            style={styles.dealRow}
                                             disabled={!onSelectStock}
                                         >
-                                            <span style={{ width: '20px', color: '#888', fontSize: '12px' }}>{item.rank}</span>
-                                            <span style={{ flex: 1, textAlign: 'left' }}>{item.stockName}</span>
-                                            <span style={{ width: '70px', textAlign: 'right', fontSize: '12px' }}>
-                                                {item.quantity.toLocaleString()}
-                                            </span>
-                                            <span style={{ width: '90px', textAlign: 'right', fontSize: '12px' }}>
-                                                {item.amount.toLocaleString()}
-                                            </span>
-                                            <span style={{ width: '70px', textAlign: 'right', fontSize: '12px' }}>
-                                                {item.volume.toLocaleString()}
-                                            </span>
+                                            <span className="col-rank">{item.rank}</span>
+                                            <span className="col-name">{item.stockName}</span>
+                                            <span className="col-num">{item.quantity.toLocaleString()}</span>
+                                            <span className="col-num-wide">{item.amount.toLocaleString()}</span>
+                                            <span className="col-num">{item.volume.toLocaleString()}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -174,28 +180,3 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
         </ModalV2>
     )
 }
-
-const styles = {
-    row: { display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 4px', borderBottom: '1px solid #262626', background: 'none', border: 'none', color: '#FFF', fontSize: '13px', cursor: 'pointer' },
-    dealRow: { display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 4px', borderBottom: '1px solid #262626', background: 'none', border: 'none', color: '#FFF', fontSize: '13px', cursor: 'pointer', minWidth: '280px' },
-    tabButton: (active: boolean) => ({
-        flex: 1,
-        padding: '8px',
-        fontSize: '13px',
-        backgroundColor: active ? '#444' : '#222',
-        color: '#FFF',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-    }),
-    filterButton: (active: boolean) => ({
-        flex: 1,
-        padding: '6px',
-        fontSize: '12px',
-        backgroundColor: active ? '#3a5f8a' : '#222',
-        color: '#FFF',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-    }),
-} as const
