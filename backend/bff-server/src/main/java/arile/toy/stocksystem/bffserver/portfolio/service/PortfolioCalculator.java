@@ -113,7 +113,7 @@ public class PortfolioCalculator {
             long profit = evaluationAmount - info.purchaseAmount();
 
             mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
-                    .addLeverage(evaluationAmount, equityAmount, profit); // [수정] 인자 추가
+                    .addLeverage(evaluationAmount, info.purchaseAmount(), equityAmount, profit);
         }
     }
 
@@ -156,7 +156,14 @@ public class PortfolioCalculator {
                                 ratio(amount.total(), sectorValue),
                                 ratio(amount.total(), totalAssetValue),
                                 amount.profitAmount(),
-                                amount.profitRate()
+                                amount.profitRate(),
+                                amount.spotBuyAmount(),
+                                amount.spotProfitAmount(),
+                                amount.spotProfitRate(),
+                                amount.leverageBuyAmount(),
+                                amount.leverageEquityAmount(),
+                                amount.leverageProfitAmount(),
+                                amount.leverageProfitRate()
                         );
                     })
                     .toList();
@@ -176,35 +183,50 @@ public class PortfolioCalculator {
     private static class StockAmount {
         private long spot = 0L;
         private long leverage = 0L;
-        // 현물 매입원가 / 레버리지 투입원금(개시증거금) 누적 — 수익률(profitRate) 계산의 분모
-        private long spotCost = 0L;
-        private long leverageCost = 0L;
-        // 현물 + 레버리지 손익금 누적
-        private long profitAmount = 0L;
 
-        void addSpot(long amount, long cost, long profit) {
+        // 현물 세부
+        private long spotBuyAmount = 0L;
+        private long spotProfitAmount = 0L;
+
+        // 레버리지 세부
+        private long leverageBuyAmount = 0L; // purchaseAmount 누적
+        private long leverageEquityAmount = 0L; // equityAmount 누적
+        private long leverageProfitAmount = 0L;
+
+        void addSpot(long amount, long buyAmount, long profit) {
             this.spot += amount;
-            this.spotCost += cost;
-            this.profitAmount += profit;
+            this.spotBuyAmount += buyAmount;
+            this.spotProfitAmount += profit;
         }
 
-        void addLeverage(long amount, long cost, long profit) {
+        void addLeverage(long amount, long buyAmount, long equityAmount, long profit) {
             this.leverage += amount;
-            this.leverageCost += cost;
-            this.profitAmount += profit;
+            this.leverageBuyAmount += buyAmount;
+            this.leverageEquityAmount += equityAmount;
+            this.leverageProfitAmount += profit;
         }
 
         long spot() { return spot; }
         long leverage() { return leverage; }
         long total() { return spot + leverage; }
 
-        // 투입원금(매입원가+개시증거금) 합계
-        long totalCost() { return spotCost + leverageCost; }
-        // 손익금 합계
-        long profitAmount() { return profitAmount; }
-        // 손익 / 투입원금 기준 수익률(%). 투입원금이 0이면 0으로 처리
+        long spotBuyAmount() { return spotBuyAmount; }
+        long spotProfitAmount() { return spotProfitAmount; }
+        double spotProfitRate() {
+            return spotBuyAmount == 0 ? 0 : spotProfitAmount * 100.0 / spotBuyAmount;
+        }
+
+        long leverageBuyAmount() { return leverageBuyAmount; }
+        long leverageEquityAmount() { return leverageEquityAmount; }
+        long leverageProfitAmount() { return leverageProfitAmount; }
+        double leverageProfitRate() {
+            return leverageEquityAmount == 0 ? 0 : leverageProfitAmount * 100.0 / leverageEquityAmount;
+        }
+
+        long profitAmount() { return spotProfitAmount + leverageProfitAmount; }
+        long totalCost() { return spotBuyAmount + leverageEquityAmount; } // 합산 수익률의 분모는 (현물 매입금액 + 레버리지 개시증거금)
         double profitRate() {
-            return totalCost() == 0 ? 0 : profitAmount * 100.0 / totalCost();
+            return totalCost() == 0 ? 0 : profitAmount() * 100.0 / totalCost();
         }
     }
 }
