@@ -67,43 +67,6 @@ function generateStockColors(baseHex: string, count: number): string[] {
     });
 }
 
-function useAnimatedNumber(target: number, duration = 450) {
-    const [value, setValue] = useState(target);
-    const fromRef = useRef(target);
-    const rafRef = useRef<number | undefined>(undefined);
-
-    useEffect(() => {
-        const from = fromRef.current;
-        if (from === target) return;
-
-        let startTime: number | undefined;
-
-        const animate = (ts: number) => {
-            if (!startTime) startTime = ts;
-            const t = Math.min((ts - startTime) / duration, 1);
-            const eased = 1 - Math.pow(1 - t, 3);
-            setValue(from + (target - from) * eased);
-            if (t < 1) {
-                rafRef.current = requestAnimationFrame(animate);
-            } else {
-                setValue(target);
-                fromRef.current = target;
-            }
-        };
-
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
-        rafRef.current = requestAnimationFrame(animate);
-        return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-    }, [target, duration]);
-
-    return value;
-}
-
-function AnimatedNumber({ value, format }: { value: number; format: (n: number) => string }) {
-    const animated = useAnimatedNumber(value);
-    return <>{format(animated)}</>;
-}
-
 type SectorData = { name: string; pct: number; color: string };
 
 function DonutChart({
@@ -344,7 +307,7 @@ export default function PortfolioModal({ open, onClose }: Props) {
                             <div className={`pf-card pf-card--accent ${account.accumulatedProfit >= 0 ? "pf-card--pos" : "pf-card--neg"}`}>
                                 <span className="pf-card__label">누적손익</span>
                                 <span className={`pf-card__value ${cls(account.accumulatedProfit)}`}>
-                                    <AnimatedNumber value={account.accumulatedProfit} format={n => fmtSigned(Math.round(n))} />원
+                                    {fmtSigned(account.accumulatedProfit)}원
                                 </span>
                                 <span className={`pf-card__rate ${cls(account.accumulatedProfitRate)}`}>
                                     {fmtRate(account.accumulatedProfitRate)}
@@ -354,7 +317,7 @@ export default function PortfolioModal({ open, onClose }: Props) {
                             <div className={`pf-card pf-card--accent ${account.totalProfit >= 0 ? "pf-card--pos" : "pf-card--neg"}`}>
                                 <span className="pf-card__label">평가손익</span>
                                 <span className={`pf-card__value ${cls(account.totalProfit)}`}>
-                                    <AnimatedNumber value={account.totalProfit} format={n => fmtSigned(Math.round(n))} />원
+                                    {fmtSigned(account.totalProfit)}원
                                 </span>
                                 <span className={`pf-card__rate ${cls(account.totalProfitRate)}`}>
                                     {fmtRate(account.totalProfitRate)}
@@ -365,21 +328,15 @@ export default function PortfolioModal({ open, onClose }: Props) {
                         <div className="pf-summary__right">
                             <div className="pf-card">
                                 <span className="pf-card__label">총 자산</span>
-                                <span className="pf-card__value">
-                                    <AnimatedNumber value={account.totalValue} format={n => fmt(Math.round(n))} />원
-                                </span>
+                                <span className="pf-card__value">{fmt(account.totalValue)}원</span>
                             </div>
                             <div className="pf-card">
                                 <span className="pf-card__label">총 매입</span>
-                                <span className="pf-card__value">
-                                    <AnimatedNumber value={account.buyValue} format={n => fmt(Math.round(n))} />원
-                                </span>
+                                <span className="pf-card__value">{fmt(account.buyValue)}원</span>
                             </div>
                             <div className="pf-card">
                                 <span className="pf-card__label">총 평가</span>
-                                <span className="pf-card__value">
-                                    <AnimatedNumber value={account.stockValue} format={n => fmt(Math.round(n))} />원
-                                </span>
+                                <span className="pf-card__value">{fmt(account.stockValue)}원</span>
                             </div>
                         </div>
                     </div>
