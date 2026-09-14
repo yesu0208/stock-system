@@ -31,6 +31,10 @@ function withUnit(value?: string): string {
     return `${value}억`;
 }
 
+function stripSign(value: string): string {
+    return value.replace(/^[+-]/, "");
+}
+
 export default function IndexModal({ open, onClose }: Props) {
     const { marketMain } = useMarketData();
     const [tab, setTab] = useState<Tab>("KOSPI");
@@ -109,7 +113,7 @@ export default function IndexModal({ open, onClose }: Props) {
                             ? "▼"
                             : ""}
                 </span>
-                                                {current.changeValue} ({current.changeRate})
+                                                {stripSign(current.changeValue)} ({current.changeRate}%)
                                             </div>
 
                                             <div className="time">기준 {formatBaseTime(current.baseTime)}</div>

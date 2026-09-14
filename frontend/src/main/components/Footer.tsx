@@ -33,6 +33,10 @@ function withUnit(value?: string): string {
     return `${value}억`;
 }
 
+function stripSign(value: string): string {
+    return value.replace(/^[+-]/, "");
+}
+
 export default function Footer() {
     const { marketMain, exchangeRates } = useMarketData();
 
@@ -78,7 +82,9 @@ export default function Footer() {
 
     const formatChange = (value?: string, rate?: string) => {
         if (!value && !rate) return "";
-        return `${value ?? ""} (${rate ?? ""})`.trim();
+        const v = value ? stripSign(value) : "";
+        const r = rate ? `${rate}%` : "";
+        return `${v} (${r})`.trim();
     };
 
     const labelStyle = {
