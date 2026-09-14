@@ -272,7 +272,7 @@ export default function Footer() {
                 </div>
             </footer>
 
-            <IndexModal show={modal === "index"} onClose={() => setModal(null)} />
+            <IndexModal open={modal === "index"} onClose={() => setModal(null)} />
             <InvestorModal show={modal === "investor"} onClose={() => setModal(null)} />
             <HotStocksModal show={modal === "hot"} onClose={() => setModal(null)} />
             <SectorModal show={modal === "sector"} onClose={() => setModal(null)} />
