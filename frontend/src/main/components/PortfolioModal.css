@@ -468,3 +468,28 @@
     font-weight: 600;
     text-align: center;
 }
+
+.portfolio__legend-item {
+    height: 24px;
+    box-sizing: border-box;
+}
+
+.portfolio__legend-item--cash {
+    cursor: default;
+}
+
+.portfolio__legend-item--cash:hover {
+    background: transparent;
+}
+
+.portfolio__legend {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.portfolio__section--sector {
+    flex: 2;
+}
+
+.portfolio__section--table {
+    flex: 3;
+}

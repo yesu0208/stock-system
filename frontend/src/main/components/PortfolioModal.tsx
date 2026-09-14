@@ -12,6 +12,10 @@ const SECTOR_PALETTE = [
     "#94a3b8", "#f472b6", "#818cf8",
 ];
 
+// [추가] 현금 항목 라벨/색상 상수 (클릭 불가 섹터로 사용)
+const CASH_LABEL = "현금";
+const CASH_COLOR = "#64748b";
+
 function hexToHsl(hex: string): [number, number, number] {
     const r = parseInt(hex.slice(1, 3), 16) / 255;
     const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -175,6 +179,9 @@ function DonutChart({
                 const isSelected = selectedSector === s.name;
                 const opacity = selectedSector === null ? 1 : isSelected ? 1 : 0.3;
 
+                // [추가] 현금 슬라이스는 클릭 불가 처리
+                const isCash = s.name === CASH_LABEL;
+
                 return (
                     <circle
                         key={s.name}
@@ -186,8 +193,8 @@ function DonutChart({
                         strokeDashoffset={dashOffset}
                         strokeLinecap="butt"
                         opacity={opacity}
-                        style={{ transition: "opacity 0.2s, stroke-width 0.2s", cursor: "pointer" }}
-                        onClick={() => onSectorClick(s.name)}
+                        style={{ transition: "opacity 0.2s, stroke-width 0.2s", cursor: isCash ? "default" : "pointer" }}
+                        onClick={isCash ? undefined : () => onSectorClick(s.name)}
                     />
                 );
             })}
@@ -214,6 +221,8 @@ export default function PortfolioModal({ open, onClose }: Props) {
     const [stockOrderMap, setStockOrderMap] = useState<Record<string, string[]>>({});
 
     const handleSectorClick = (name: string) => {
+        // [추가] 현금 항목은 클릭해도 선택되지 않도록 무시
+        if (name === CASH_LABEL) return;
         setSelectedSector(prev => prev === name ? null : name);
     };
 
@@ -266,6 +275,15 @@ export default function PortfolioModal({ open, onClose }: Props) {
             .map(name => sectorsRaw.find(s => s.name === name))
             .filter(Boolean) as typeof sectorsRaw)
         : [...sectorsRaw].sort((a, b) => b.pct - a.pct);
+
+    // [추가] 현금 비중 계산 (전체 100%에서 섹터 비중 합을 뺀 나머지) 및 표시용 목록 구성
+    const totalSectorPct = sectorsRaw.reduce((sum, s) => sum + s.pct, 0);
+    const cashPct = Math.max(0, 100 - totalSectorPct);
+    const cashEntry: SectorData | null = cashPct > 0.05
+        ? { name: CASH_LABEL, pct: cashPct, color: CASH_COLOR }
+        : null;
+    // [수정] 현금 항목을 맨 앞에 위치하도록 변경
+    const displaySectors: SectorData[] = cashEntry ? [cashEntry, ...sectors] : sectors;
 
     const selectedSectorData = selectedSector
         ? portfolio.sectors.find(s => s.sector === selectedSector)
@@ -332,31 +350,35 @@ export default function PortfolioModal({ open, onClose }: Props) {
                     </div>
                 </div>
 
-                <div className="portfolio__section">
+                <div className="portfolio__section portfolio__section--sector">
                     <div className="portfolio__section-title">
                         <FiPieChart style={{ marginRight: 6, opacity: 0.7 }} />
                         섹터 분포
                     </div>
                     <div className="portfolio__sector-row">
                         <DonutChart
-                            sectors={sectors}
+                            sectors={displaySectors}
                             open={open}
                             selectedSector={selectedSector}
                             onSectorClick={handleSectorClick}
                         />
                         <div className="portfolio__legend">
-                            {sectors.map((s, i) => (
-                                <div
-                                    key={s.name}
-                                    className={`portfolio__legend-item${selectedSector === s.name ? " portfolio__legend-item--selected" : ""}${selectedSector !== null && selectedSector !== s.name ? " portfolio__legend-item--dim" : ""}`}
-                                    style={{ animationDelay: `${0.25 + i * 0.18}s` }}
-                                    onClick={() => handleSectorClick(s.name)}
-                                >
-                                    <span className="portfolio__legend-dot" style={{ background: s.color }} />
-                                    <span className="portfolio__legend-name">{s.name}</span>
-                                    <span className="portfolio__legend-pct">{s.pct.toFixed(1)}%</span>
-                                </div>
-                            ))}
+                            {displaySectors.map((s, i) => {
+                                // [추가] 현금 항목 여부 (클릭 불가, hover 스타일 제거)
+                                const isCash = s.name === CASH_LABEL;
+                                return (
+                                    <div
+                                        key={s.name}
+                                        className={`portfolio__legend-item${selectedSector === s.name ? " portfolio__legend-item--selected" : ""}${selectedSector !== null && selectedSector !== s.name ? " portfolio__legend-item--dim" : ""}${isCash ? " portfolio__legend-item--cash" : ""}`}
+                                        style={{ animationDelay: `${0.25 + i * 0.18}s` }}
+                                        onClick={isCash ? undefined : () => handleSectorClick(s.name)}
+                                    >
+                                        <span className="portfolio__legend-dot" style={{ background: s.color }} />
+                                        <span className="portfolio__legend-name">{s.name}</span>
+                                        <span className="portfolio__legend-pct">{s.pct.toFixed(1)}%</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
