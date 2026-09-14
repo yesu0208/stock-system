@@ -11,6 +11,10 @@ public record PortfolioStockItem(
         /** 이 종목이 속한 업종 내에서 차지하는 비중 (%) */
         Double ratioInSector,
         /** 전체 자산 대비 이 종목의 비중 (%) */
-        Double ratioInTotal
+        Double ratioInTotal,
+        /** 현물 + 레버리지 합산 손익금 */
+        Long profitAmount,
+        /** 손익 / (매입금액 + 개시증거금) 기준 수익률 (%) */
+        Double profitRate
 ) {
 }

@@ -72,9 +72,10 @@ public class PortfolioCalculator {
             }
 
             long evaluationAmount = (long) stockInfo.quantity() * curPrice;
+            long profit = evaluationAmount - stockInfo.totalAmount();
 
             mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
-                    .addSpot(evaluationAmount);
+                    .addSpot(evaluationAmount, stockInfo.totalAmount(), profit);
         }
     }
 
@@ -106,9 +107,13 @@ public class PortfolioCalculator {
             }
 
             long evaluationAmount = (long) info.quantity() * curPrice;
+            // 개시증거금(투입원금) = 매입금액 - 대출금 (AccountCalculator의 equityAmount와 동일한 공식)
+            long equityAmount = info.purchaseAmount() - info.loanAmount();
+            // 레버리지 손익 = 평가금액 - 매입금액(포지션 전체 크기)
+            long profit = evaluationAmount - info.purchaseAmount();
 
             mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
-                    .addLeverage(evaluationAmount);
+                    .addLeverage(evaluationAmount, equityAmount, profit); // [수정] 인자 추가
         }
     }
 
@@ -149,7 +154,9 @@ public class PortfolioCalculator {
                                 amount.leverage(),
                                 amount.total(),
                                 ratio(amount.total(), sectorValue),
-                                ratio(amount.total(), totalAssetValue)
+                                ratio(amount.total(), totalAssetValue),
+                                amount.profitAmount(),
+                                amount.profitRate()
                         );
                     })
                     .toList();
@@ -169,12 +176,35 @@ public class PortfolioCalculator {
     private static class StockAmount {
         private long spot = 0L;
         private long leverage = 0L;
+        // 현물 매입원가 / 레버리지 투입원금(개시증거금) 누적 — 수익률(profitRate) 계산의 분모
+        private long spotCost = 0L;
+        private long leverageCost = 0L;
+        // 현물 + 레버리지 손익금 누적
+        private long profitAmount = 0L;
 
-        void addSpot(long amount) { this.spot += amount; }
-        void addLeverage(long amount) { this.leverage += amount; }
+        void addSpot(long amount, long cost, long profit) {
+            this.spot += amount;
+            this.spotCost += cost;
+            this.profitAmount += profit;
+        }
+
+        void addLeverage(long amount, long cost, long profit) {
+            this.leverage += amount;
+            this.leverageCost += cost;
+            this.profitAmount += profit;
+        }
 
         long spot() { return spot; }
         long leverage() { return leverage; }
         long total() { return spot + leverage; }
+
+        // 투입원금(매입원가+개시증거금) 합계
+        long totalCost() { return spotCost + leverageCost; }
+        // 손익금 합계
+        long profitAmount() { return profitAmount; }
+        // 손익 / 투입원금 기준 수익률(%). 투입원금이 0이면 0으로 처리
+        double profitRate() {
+            return totalCost() == 0 ? 0 : profitAmount * 100.0 / totalCost();
+        }
     }
 }
