@@ -29,7 +29,6 @@
     color: rgba(255, 255, 255, 0.7);
 }
 
-/* [수정] 총자산/누적손익/평가손익을 한 줄로 배치하기 위해 좌/우 분리 없이 단일 행으로 사용 */
 .pf-summary__body {
     display: flex;
     gap: 8px;
@@ -365,17 +364,12 @@
 }
 
 .portfolio__stock-legend-header,
-.portfolio__stock-legend-item {
+.portfolio__stock-group {
     display: grid;
-    grid-template-columns: 7px 1fr 48px 80px 80px 76px 48px;
+    grid-template-columns: 0.1fr 2fr 1fr 0.5fr 2fr 1fr 1fr 1fr;
     column-gap: 6px;
+    row-gap: 2px;
     align-items: center;
-}
-
-.portfolio__stock-legend-header > *:not(:last-child),
-.portfolio__stock-legend-item > *:not(:last-child) {
-    box-sizing: border-box;
-    padding-right: 7px;
 }
 
 .portfolio__stock-legend-header {
@@ -391,7 +385,7 @@
     background: #1a1d2e;
 }
 
-.portfolio__stock-legend-item {
+.portfolio__stock-group {
     opacity: 0;
     animation: pf-legend-in 0.3s ease forwards;
     border-radius: 5px;
@@ -405,6 +399,7 @@
     border-radius: 50%;
     flex-shrink: 0;
     justify-self: center;
+    align-self: center;
 }
 
 .portfolio__stock-legend-name {
@@ -414,6 +409,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
+    align-self: center;
 }
 
 .portfolio__stock-legend-header .portfolio__stock-legend-name {
@@ -426,6 +422,30 @@
     font-variant-numeric: tabular-nums;
     font-size: 11px;
     text-align: center;
+    align-self: center;
+}
+
+.portfolio__stock-legend-type {
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    white-space: nowrap;
+}
+
+.portfolio__stock-legend-buy {
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.portfolio__stock-legend-header .portfolio__stock-legend-buy {
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
 }
 
 .portfolio__stock-legend-eval {
@@ -447,33 +467,4 @@
     font-size: 11px;
     font-weight: 600;
     text-align: center;
-}
-
-.portfolio__stock-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.portfolio__stock-legend-subrow {
-    display: grid;
-    grid-template-columns: 7px 1fr 48px 80px 80px 76px 48px;
-    column-gap: 6px;
-    align-items: center;
-    padding: 2px 4px 2px 16px;
-    font-size: 10.5px;
-    color: rgba(255, 255, 255, 0.55);
-}
-
-.portfolio__stock-legend-subrow-label {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.portfolio__stock-legend-subrow-hint {
-    margin-left: 4px;
-    font-size: 9px;
-    color: rgba(255, 255, 255, 0.35);
-}
-
-.portfolio__stock-legend-item--group-title {
-    font-weight: 600;
 }
