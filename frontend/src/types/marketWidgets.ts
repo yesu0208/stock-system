@@ -1,9 +1,21 @@
+export type DealRankMarket = 'KOSPI' | 'KOSDAQ'
+export type InvestorType = 'FOREIGN' | 'INSTITUTION'
+export type DealType = 'BUY' | 'SELL'
+export type PeriodType = 'DAY' | 'WEEK' | 'MONTH' | 'THREE_MONTH'
+
 export interface PopularStock {
     rank: number
     code: string
     name: string
     price: string
     direction: string
+}
+
+export interface UpjongRankItem {
+    code: string
+    name: string
+    value: string
+    itemLogoUrl: string
 }
 
 export interface UpjongInfo {
@@ -15,10 +27,33 @@ export interface UpjongInfo {
     steady: string
     fall: string
     graphRatio: string
+    totalMarketCap: string
+    totalTradingVolume: string
+    totalTradingValue: string
+    topByChangeRate: UpjongRankItem[]
+    topByMarketCap: UpjongRankItem[]
+    topByTradingValue: UpjongRankItem[]
 }
 
 export interface UpjongResponse {
     items: UpjongInfo[]
+}
+
+export interface UpjongStock {
+    name: string
+    code: string
+    price: string
+    change: string
+    direction: string
+    rate: string
+    volume: string
+    tradingValue: string
+    marketCap: string
+}
+
+export interface UpjongStockResponse {
+    upjongName: string
+    items: UpjongStock[]
 }
 
 export interface InvestorTrendDto {
@@ -38,4 +73,26 @@ export interface InvestorTrendDto {
 export interface TrendResponse {
     data: InvestorTrendDto[]
     hasNext: boolean
+}
+
+export interface DealRankItem {
+    rank: number
+    stockCode: string
+    stockName: string
+    quantity: number
+    amount: number
+    volume: number
+}
+
+export interface DealRankDay {
+    dealDate: string
+    items: DealRankItem[]
+}
+
+export interface DealRankResponse {
+    market: string
+    investorType: string
+    dealType: string
+    periodType: string
+    days: DealRankDay[]
 }

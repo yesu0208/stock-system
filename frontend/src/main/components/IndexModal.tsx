@@ -1,72 +1,208 @@
-import Modal from '../../components/Modal'
-import { useMarketData } from '../context/MarketDataContext'
-import type { MarketIndexInfo } from '../../types/marketMain'
+import "./IndexModal.css";
+import ModalV2 from "../../components/ModalV2";
+import { useMarketData } from "../context/MarketDataContext";
+import { useState } from "react";
+
+type Tab = "KOSPI" | "KOSDAQ" | "FUTURES";
 
 interface Props {
-    show: boolean
-    onClose: () => void
+    open: boolean;
+    onClose: () => void;
 }
 
-function IndexRow({ index }: { index: MarketIndexInfo }) {
-    const up = index.direction === '상승'
-    const down = index.direction === '하락'
-    const color = up ? '#FF6347' : down ? '#4F9DFF' : '#FFF'
+function formatBaseTime(iso: string): string {
+    try {
+        const d = new Date(iso);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
 
-    return (
-        <div style={styles.indexBlock}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ fontSize: '14px', fontWeight: 600 }}>{index.name}</span>
-                <span style={{ fontSize: '16px', fontWeight: 700, color }}>{index.currentIndex}</span>
-            </div>
-            <div style={{ fontSize: '12px', color, textAlign: 'right' }}>
-                {index.changeValue} ({index.changeRate})
-            </div>
-            <div style={styles.subGrid}>
-                <span>상한 {index.breadth.upperLimit}</span>
-                <span>상승 {index.breadth.rise}</span>
-                <span>보합 {index.breadth.steady}</span>
-                <span>하락 {index.breadth.fall}</span>
-                <span>하한 {index.breadth.lowerLimit}</span>
-            </div>
-            <div style={styles.subGrid}>
-                <span>개인 {index.investorTrend.personal}</span>
-                <span>외국인 {index.investorTrend.foreigner}</span>
-                <span>기관 {index.investorTrend.institution}</span>
-            </div>
-        </div>
-    )
+        const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+        const weekday = weekdays[d.getDay()];
+
+        return `${yyyy}.${mm}.${dd}(${weekday}) 기준`;
+    } catch {
+        return iso;
+    }
 }
 
-export default function IndexModal({ show, onClose }: Props) {
-    const { marketMain } = useMarketData()
+function withUnit(value?: string): string {
+    if (!value || value === "-") return value ?? "-";
+    return `${value}억`;
+}
 
-    if (!show) return null
+function stripSign(value: string): string {
+    return value.replace(/^[+-]/, "");
+}
+
+export default function IndexModal({ open, onClose }: Props) {
+    const { marketMain } = useMarketData();
+    const [tab, setTab] = useState<Tab>("KOSPI");
+
+    const color = (dir: string) => {
+        if (dir === "UP" || dir.includes("+")) return "#ff5b5b";
+        if (dir === "DOWN" || dir.includes("-")) return "#4f9dff";
+        return "#fff";
+    };
+
+    const valueColor = (value: string) => {
+        if (value.includes("+")) return "#ff5b5b";
+        if (value.includes("-")) return "#4f9dff";
+        return "#fff";
+    };
+
+    const breadthColor = (type: string) => {
+        if (type === "rise" || type === "upperLimit") return "#ff5b5b";
+        if (type === "fall" || type === "lowerLimit") return "#4f9dff";
+        return "#fff";
+    };
 
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '340px', maxHeight: '65vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>시장 지수</h3>
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {!marketMain ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
-                            시황 수신 대기중...
-                        </div>
-                    ) : (
-                        <>
-                            <IndexRow index={marketMain.kospi} />
-                            <IndexRow index={marketMain.kosdaq} />
-                            <IndexRow index={marketMain.kospi200} />
-                        </>
-                    )}
+        <ModalV2 open={open} title="지수" onClose={onClose}>
+            {!marketMain ? (
+                <div className="index-wrap">
+                    <div className="box">로딩 중...</div>
                 </div>
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
-            </div>
-        </Modal>
-    )
-}
+            ) : (
+                <div className="index-wrap">
+                    {(() => {
+                        const current =
+                            tab === "KOSPI"
+                                ? marketMain.kospi
+                                : tab === "KOSDAQ"
+                                    ? marketMain.kosdaq
+                                    : marketMain.kospi200;
 
-const styles = {
-    indexBlock: { borderBottom: '1px solid #262626', padding: '10px 4px' },
-    subGrid: { display: 'flex', gap: '8px', fontSize: '11px', color: '#888', marginTop: '4px', flexWrap: 'wrap' as const },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
-} as const
+                        return (
+                            <>
+                                <div className="tab">
+                                    <button
+                                        className={tab === "KOSPI" ? "active" : ""}
+                                        onClick={() => setTab("KOSPI")}
+                                    >
+                                        KOSPI
+                                    </button>
+
+                                    <button
+                                        className={tab === "KOSDAQ" ? "active" : ""}
+                                        onClick={() => setTab("KOSDAQ")}
+                                    >
+                                        KOSDAQ
+                                    </button>
+
+                                    <button
+                                        className={tab === "FUTURES" ? "active" : ""}
+                                        onClick={() => setTab("FUTURES")}
+                                    >
+                                        KOSPI 200
+                                    </button>
+                                </div>
+
+                                <div className="content fade" key={tab}>
+                                    <div className="box main">
+                                        <div className="index" style={{ color: color(current.direction) }}>
+                                            {current.currentIndex}
+                                        </div>
+
+                                        <div className="right">
+                                            <div className="change" style={{ color: color(current.direction) }}>
+                <span className="triangle">
+                    {current.direction === "UP" || current.direction.includes("+")
+                        ? "▲"
+                        : current.direction === "DOWN" || current.direction.includes("-")
+                            ? "▼"
+                            : ""}
+                </span>
+                                                {stripSign(current.changeValue)} ({current.changeRate}%)
+                                            </div>
+
+                                            <div className="time">기준 {formatBaseTime(current.baseTime)}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="section-title">등락 종목</div>
+                                    <div className="box">
+                                        <div className="grid5">
+                                            <div>
+                                                <div className="label">상한</div>
+                                                <div style={{ color: breadthColor("upperLimit") }}>
+                                                    {current.breadth.upperLimit ?? "0"}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="label">상승</div>
+                                                <div style={{ color: breadthColor("rise") }}>
+                                                    {current.breadth.rise ?? "0"}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="label">보합</div>
+                                                <div>{current.breadth.steady ?? "0"}</div>
+                                            </div>
+                                            <div>
+                                                <div className="label">하락</div>
+                                                <div style={{ color: breadthColor("fall") }}>
+                                                    {current.breadth.fall ?? "0"}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="label">하한</div>
+                                                <div style={{ color: breadthColor("lowerLimit") }}>
+                                                    {current.breadth.lowerLimit ?? "0"}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="section-title">프로그램 매매</div>
+                                    <div className="box grid3">
+                                        <div>
+                                            <div className="label">차익</div>
+                                            <div style={{ color: valueColor(current.programTrade.arbitrage) }}>
+                                                {withUnit(current.programTrade.arbitrage)}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="label">비차익</div>
+                                            <div style={{ color: valueColor(current.programTrade.nonArbitrage) }}>
+                                                {withUnit(current.programTrade.nonArbitrage)}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="label">전체</div>
+                                            <div style={{ color: valueColor(current.programTrade.total) }}>
+                                                {withUnit(current.programTrade.total)}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="section-title">투자자별 동향</div>
+                                    <div className="box grid3">
+                                        <div>
+                                            <div className="label">개인</div>
+                                            <div style={{ color: valueColor(current.investorTrend.personal) }}>
+                                                {withUnit(current.investorTrend.personal)}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="label">외국인</div>
+                                            <div style={{ color: valueColor(current.investorTrend.foreigner) }}>
+                                                {withUnit(current.investorTrend.foreigner)}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="label">기관</div>
+                                            <div style={{ color: valueColor(current.investorTrend.institution) }}>
+                                                {withUnit(current.investorTrend.institution)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        );
+                    })()}
+                </div>
+            )}
+        </ModalV2>
+    );
+}

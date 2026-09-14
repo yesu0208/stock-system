@@ -1,7 +1,15 @@
+import './HotStocksModal.css'
 import { useEffect, useState } from 'react'
-import Modal from '../../components/Modal'
-import { getPopularStocks } from '../../api/marketInfo'
-import type { PopularStock } from '../../types/marketWidgets'
+import ModalV2 from '../../components/ModalV2'
+import { getPopularStocks, getDealRank } from '../../api/marketInfo'
+import type {
+    PopularStock,
+    DealRankDay,
+    DealRankMarket,
+    InvestorType,
+    DealType,
+    PeriodType,
+} from '../../types/marketWidgets'
 
 interface Props {
     show: boolean
@@ -9,49 +17,200 @@ interface Props {
     onSelectStock?: (code: string) => void
 }
 
+type TabType = 'popular' | 'foreign' | 'institution'
+
+function getColor(direction: string): string {
+    switch (direction) {
+        case 'UPPER_LIMIT':
+        case 'UP':
+            return '#ff6347'
+        case 'LOWER_LIMIT':
+        case 'DOWN':
+            return '#4f9dff'
+        case 'STEADY':
+        default:
+            return '#ffffff'
+    }
+}
+
+function getArrow(direction: string): string {
+    switch (direction) {
+        case 'UPPER_LIMIT':
+            return '⬆'
+        case 'UP':
+            return '▲'
+        case 'LOWER_LIMIT':
+            return '⬇'
+        case 'DOWN':
+            return '▼'
+        case 'STEADY':
+            return '-'
+        default:
+            return ''
+    }
+}
+
+function formatPrice(price: string): string {
+    const num = Number(price.replace(/[^0-9.-]/g, ''))
+    if (isNaN(num)) return price
+    return num.toLocaleString()
+}
+
+function getSignColor(value: number): string {
+    if (value < 0) return '#4f9dff'
+    if (value > 0) return '#ff6347'
+    return '#ffffff'
+}
+
+function formatToMillion(amount: number): string {
+    const millions = Math.trunc(amount / 1_000_000)
+    return millions.toLocaleString()
+}
+
 export default function HotStocksModal({ show, onClose, onSelectStock }: Props) {
+    const [tab, setTab] = useState<TabType>('popular')
+
     const [stocks, setStocks] = useState<PopularStock[]>([])
     const [loading, setLoading] = useState(false)
 
+    const [market, setMarket] = useState<DealRankMarket>('KOSPI')
+    const [dealType, setDealType] = useState<DealType>('BUY')
+    const [periodType, setPeriodType] = useState<PeriodType>('DAY')
+
+    const [dealDays, setDealDays] = useState<DealRankDay[]>([])
+    const [dealLoading, setDealLoading] = useState(false)
+
     useEffect(() => {
-        if (!show) return
+        if (!show || tab !== 'popular') return
         setLoading(true)
         getPopularStocks().then(setStocks).catch(() => setStocks([])).finally(() => setLoading(false))
+    }, [show, tab])
+
+    useEffect(() => {
+        if (!show) return
+        if (tab !== 'foreign' && tab !== 'institution') return
+
+        const investorType: InvestorType = tab === 'foreign' ? 'FOREIGN' : 'INSTITUTION'
+
+        setDealLoading(true)
+        getDealRank(market, investorType, dealType, periodType)
+            .then(res => setDealDays(res.days))
+            .catch(() => setDealDays([]))
+            .finally(() => setDealLoading(false))
+    }, [show, tab, market, dealType, periodType])
+
+    useEffect(() => {
+        if (!show) {
+            setTab('popular')
+        }
     }, [show])
 
-    if (!show) return null
-
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '320px', maxHeight: '65vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>인기 종목</h3>
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {loading ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
-                    ) : (
-                        stocks.map(s => (
-                            <button
-                                key={s.code}
-                                onClick={() => onSelectStock?.(s.code)}
-                                style={styles.row}
-                                disabled={!onSelectStock}
-                            >
-                                <span style={{ width: '24px', color: '#888' }}>{s.rank}</span>
-                                <span style={{ flex: 1, textAlign: 'left' }}>{s.name}</span>
-                                <span style={{ color: s.direction === '상승' ? '#FF6347' : s.direction === '하락' ? '#4F9DFF' : '#FFF' }}>
-                                    {s.price}
-                                </span>
-                            </button>
-                        ))
+        <ModalV2 open={show} title="인기 종목" onClose={onClose}>
+            <div className="hs-wrap">
+                <div className="tab">
+                    <button
+                        className={tab === 'popular' ? 'active' : ''}
+                        onClick={() => setTab('popular')}
+                    >
+                        인기
+                    </button>
+                    <button
+                        className={tab === 'foreign' ? 'active' : ''}
+                        onClick={() => setTab('foreign')}
+                    >
+                        외국인
+                    </button>
+                    <button
+                        className={tab === 'institution' ? 'active' : ''}
+                        onClick={() => setTab('institution')}
+                    >
+                        기관
+                    </button>
+                </div>
+
+                {(tab === 'foreign' || tab === 'institution') && (
+                    <div className="filters">
+                        <div className="filter-group">
+                            <button className={market === 'KOSPI' ? 'active' : ''} onClick={() => setMarket('KOSPI')}>코스피</button>
+                            <button className={market === 'KOSDAQ' ? 'active' : ''} onClick={() => setMarket('KOSDAQ')}>코스닥</button>
+                        </div>
+                        <div className="filter-group">
+                            <button className={dealType === 'BUY' ? 'active' : ''} onClick={() => setDealType('BUY')}>매수</button>
+                            <button className={dealType === 'SELL' ? 'active' : ''} onClick={() => setDealType('SELL')}>매도</button>
+                        </div>
+                        <div className="filter-group">
+                            <button className={periodType === 'DAY' ? 'active' : ''} onClick={() => setPeriodType('DAY')}>일</button>
+                            <button className={periodType === 'WEEK' ? 'active' : ''} onClick={() => setPeriodType('WEEK')}>주</button>
+                            <button className={periodType === 'MONTH' ? 'active' : ''} onClick={() => setPeriodType('MONTH')}>1개월</button>
+                            <button className={periodType === 'THREE_MONTH' ? 'active' : ''} onClick={() => setPeriodType('THREE_MONTH')}>3개월</button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="list">
+                    {tab === 'popular' && (
+                        loading ? (
+                            <div className="empty">불러오는 중...</div>
+                        ) : (
+                            <div className="hot-list">
+                                {stocks.map(s => (
+                                    <button
+                                        key={s.code}
+                                        className="hot-item"
+                                        onClick={() => onSelectStock?.(s.code)}
+                                        disabled={!onSelectStock}
+                                    >
+                                        <div className="hot-rank">{s.rank}</div>
+                                        <div className="hot-name">{s.name}</div>
+                                        <div className="hot-price" style={{ color: getColor(s.direction) }}>
+                                            <span className="hot-price-arrow">{getArrow(s.direction)}</span>
+                                            <span className="hot-price-value">{formatPrice(s.price)}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )
+                    )}
+
+                    {(tab === 'foreign' || tab === 'institution') && (
+                        dealLoading ? (
+                            <div className="empty">불러오는 중...</div>
+                        ) : (
+                            dealDays.map(day => (
+                                <div key={day.dealDate}>
+                                    <div className="day-header-sticky">
+                                        <div className="date-label">{day.dealDate}</div>
+
+                                        <div className="list-header">
+                                            <span className="col-rank"></span>
+                                            <span className="col-name"></span>
+                                            <span className="col-num">수량(주)</span>
+                                            <span className="col-num-wide">거래대금(백만)</span>
+                                            <span className="col-num">거래량(주)</span>
+                                        </div>
+                                    </div>
+
+                                    {day.items.map(item => (
+                                        <button
+                                            key={item.stockCode}
+                                            className="row"
+                                            onClick={() => onSelectStock?.(item.stockCode)}
+                                            disabled={!onSelectStock}
+                                        >
+                                            <span className="col-rank deal-rank">{item.rank}</span>
+                                            <span className="col-name">{item.stockName}</span>
+                                            <span className="col-num" style={{ color: getSignColor(item.quantity) }}>{item.quantity.toLocaleString()}</span>
+                                            <span className="col-num-wide" style={{ color: getSignColor(item.amount) }}>{formatToMillion(item.amount)}</span>
+                                            <span className="col-num">{item.volume.toLocaleString()}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ))
+                        )
                     )}
                 </div>
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
             </div>
-        </Modal>
+        </ModalV2>
     )
 }
-
-const styles = {
-    row: { display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 4px', borderBottom: '1px solid #262626', background: 'none', border: 'none', color: '#FFF', fontSize: '13px', cursor: 'pointer' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
-} as const

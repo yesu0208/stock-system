@@ -1,0 +1,247 @@
+.hs-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    color: white;
+}
+
+.hs-wrap .tab {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px;
+}
+
+.hs-wrap .tab button {
+    flex: 1;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
+    border-radius: 0;
+
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.hs-wrap .tab button:focus,
+.hs-wrap .tab button:focus-visible {
+    outline: none;
+}
+
+.hs-wrap .tab button:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
+}
+
+.hs-wrap .tab button.active {
+    color: #b7a6ff;
+    border-bottom-color: #7c5cff;
+}
+
+.hs-wrap .filter-group {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.hs-wrap .filter-group button {
+    flex: 1;
+    padding: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.hs-wrap .filter-group button:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.hs-wrap .filter-group button.active {
+    background: #7c5cff;
+    color: #fff;
+}
+
+.hs-wrap .filters {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.hs-wrap .list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.hs-wrap .day-header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #16161f;
+}
+
+.hs-wrap .list-header {
+    display: grid;
+    grid-template-columns: 0.2fr 1.5fr 1.5fr 1.2fr 1.5fr;
+    gap: 8px;
+    padding: 4px 6px;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.hs-wrap .date-label {
+    color: #94a3b8;
+    font-size: 12px;
+    padding: 8px 6px 4px;
+    text-align: center;
+}
+
+.hs-wrap .row {
+    display: grid;
+    grid-template-columns: 0.2fr 1.5fr 1.5fr 1fr 1.5fr;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.hs-wrap .row:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.hs-wrap .row:disabled {
+    cursor: default;
+}
+
+.hs-wrap .col-rank {
+    color: #888;
+    text-align: center;
+}
+
+.hs-wrap .col-name {
+    text-align: center;
+}
+
+.hs-wrap .col-code {
+    color: #888;
+    font-size: 12px;
+    text-align: center;
+}
+
+.hs-wrap .col-price {
+    text-align: center;
+}
+
+.hs-wrap .col-direction {
+    text-align: center;
+    font-size: 12px;
+}
+
+.hs-wrap .col-num {
+    text-align: center;
+    font-size: 12px;
+}
+
+.hs-wrap .col-num-wide {
+    text-align: center;
+    font-size: 12px;
+}
+
+.hs-wrap .up {
+    color: #ff5b5b;
+}
+
+.hs-wrap .down {
+    color: #4f9dff;
+}
+
+.hs-wrap .neutral {
+    color: #fff;
+}
+
+.hs-wrap .empty {
+    color: #666;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.hs-wrap .hot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hs-wrap .hot-item {
+    display: flex;
+    align-items: center;
+
+    padding: 10px 12px;
+
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.hs-wrap .hot-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.hs-wrap .hot-item:disabled {
+    cursor: default;
+}
+
+.hs-wrap .hot-rank {
+    width: 32px;
+    font-weight: 700;
+    color: #fbbf24;
+    text-align: left;
+}
+
+.hs-wrap .hot-name {
+    flex: 1;
+    text-align: left;
+    color: white;
+    font-weight: 600;
+}
+
+.hs-wrap .hot-price {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* 원하는 만큼 조절 */
+    justify-content: flex-end;
+}
+
+.hs-wrap .deal-rank {
+    color: #fbbf24;
+    font-weight: 700;
+}

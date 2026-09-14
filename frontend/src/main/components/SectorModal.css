@@ -1,0 +1,380 @@
+.sector-wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.sector-loading {
+    text-align: center;
+    padding: 20px 0;
+    color: #888;
+    font-size: 13px;
+}
+
+.sector-wrap .sector-slider {
+    display: flex;
+
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sector-wrap .sector-slider.show-stock {
+    transform: translateX(-100%);
+}
+
+.sector-wrap .sector-page {
+    min-width: 100%;
+    width: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+
+    box-sizing: border-box;
+}
+
+.sector-wrap .sector-grid {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto;
+
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 10px;
+
+    padding-right: 4px;
+}
+
+.sector-wrap .sector-card {
+    position: relative;
+
+    padding: 12px;
+    padding-bottom: 14px;
+
+    background: rgba(255, 255, 255, 0.04);
+
+    border: 1px solid rgba(255, 255, 255, 0.06);
+
+    border-radius: 12px;
+
+    overflow: hidden;
+
+    transition: all 0.2s ease;
+
+    cursor: pointer;
+
+    height: 50px;
+}
+
+.sector-wrap .sector-card:hover {
+    transform: translateY(-2px);
+
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.sector-wrap .sector-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.sector-wrap .sector-name {
+    color: white;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sector-wrap .sector-bottom {
+    margin-top: 8px;
+
+    display: flex;
+    gap: 10px;
+
+    font-size: 11px;
+}
+
+.sector-wrap .rise {
+    color: #ff6347;
+}
+
+.sector-wrap .steady {
+    color: white;
+}
+
+.sector-wrap .fall {
+    color: #4f9dff;
+}
+
+.sector-wrap .sector-bar {
+    position: absolute;
+
+    left: 12px;
+    bottom: 8px;
+
+    height: 3px;
+
+    border-radius: 999px;
+
+    transition:
+            width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sector-wrap .sector-grid::-webkit-scrollbar,
+.sector-wrap .stock-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sector-wrap .sector-grid::-webkit-scrollbar-thumb,
+.sector-wrap .stock-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+}
+
+.sector-wrap .sector-grid::-webkit-scrollbar-track,
+.sector-wrap .stock-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sector-wrap .stock-page {
+    display: flex;
+    flex-direction: column;
+
+    padding-left: 10px;
+    padding-right: 10px;
+    box-sizing: border-box;
+}
+
+.sector-wrap .stock-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 8px;
+}
+
+.sector-wrap .stock-back-btn {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.06);
+
+    color: #cbd5e1;
+
+    cursor: pointer;
+    outline: none;
+
+    transition: all 0.2s ease;
+}
+
+.sector-wrap .stock-back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+
+    color: white;
+
+    transform: translateX(2px);
+}
+
+.sector-wrap .stock-title {
+    color: white;
+
+    font-weight: 700;
+
+    font-size: 15px;
+}
+
+.sector-wrap .sector-summary-line {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.sector-wrap .sector-rank-section {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+}
+
+.sector-wrap .sector-rank-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.sector-wrap .sector-rank-title {
+    font-size: 9px;
+    color: #94a3b8;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.sector-wrap .sector-rank-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    min-width: 0;
+}
+
+.sector-wrap .sector-rank-logo {
+    width: 12px;
+    height: 12px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.sector-wrap .sector-rank-name {
+    color: #e2e8f0;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.sector-wrap .sector-rank-value {
+    margin-left: auto;
+    color: #cbd5e1;
+    font-size: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.sector-wrap .sector-rank-value.rise {
+    color: #ff6347;
+}
+
+.sector-wrap .sector-rank-value.steady {
+    color: #e2e8f0;
+}
+
+.sector-wrap .sector-rank-value.fall {
+    color: #4f9dff;
+}
+
+.sector-wrap .stock-list {
+    flex: 1;
+
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.sector-wrap .stock-card {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    background: rgba(255, 255, 255, 0.04);
+
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sector-wrap .stock-name {
+    color: white;
+
+    font-weight: 600;
+}
+
+.sector-wrap .stock-meta {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    margin-top: 3px;
+    flex-wrap: wrap;
+}
+
+.sector-wrap .stock-meta span {
+    color: #94a3b8;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.sector-wrap .stock-price {
+    text-align: right;
+}
+
+.sector-wrap .stock-rate {
+    text-align: right;
+
+    font-size: 11px;
+}
+
+.sector-wrap .stock-right {
+    text-align: right;
+}
+
+.sector-wrap .stock-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.sector-wrap .stock-search-icon {
+    position: absolute;
+    left: 10px;
+    color: #64748b;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.sector-wrap .stock-search {
+    width: 100%;
+    padding: 10px 10px 10px 30px;
+    box-sizing: border-box;
+    margin-bottom: 0;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: white;
+    outline: none;
+    font-size: 13px;
+}
+
+.sector-wrap .stock-search::placeholder {
+    color: #64748b;
+}
+
+.sector-wrap .stock-search:focus {
+    border-color: #7c5cff;
+}

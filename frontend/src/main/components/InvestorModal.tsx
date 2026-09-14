@@ -1,75 +1,275 @@
-import { useEffect, useState } from 'react'
-import Modal from '../../components/Modal'
-import { getInvestorTrend } from '../../api/marketInfo'
-import type { InvestorTrendDto } from '../../types/marketWidgets'
+import "./InvestorModal.css";
+import ModalV2 from "../../components/ModalV2";
+import { useEffect, useRef, useState } from "react";
+import { getInvestorTrend } from "../../api/marketInfo";
+import type { InvestorTrendMarket } from "../../api/marketInfo";
+import type { InvestorTrendDto } from "../../types/marketWidgets";
 
 interface Props {
-    show: boolean
-    onClose: () => void
+    open: boolean;
+    onClose: () => void;
 }
 
-export default function InvestorModal({ show, onClose }: Props) {
-    const [market, setMarket] = useState<'KOSPI' | 'KOSDAQ'>('KOSPI')
-    const [trendType, setTrendType] = useState<'time' | 'day'>('time')
-    const [data, setData] = useState<InvestorTrendDto[]>([])
-    const [loading, setLoading] = useState(false)
+type TrendType = "time" | "day";
+
+const MARKET_TABS: { value: InvestorTrendMarket; label: string }[] = [
+    { value: "KOSPI", label: "KOSPI" },
+    { value: "KOSDAQ", label: "KOSDAQ" },
+    { value: "FUTURES", label: "선물" },
+];
+
+interface TrendState {
+    data: InvestorTrendDto[];
+    page: number;
+    hasNext: boolean;
+    loading: boolean;
+}
+
+const INITIAL_TREND_STATE: TrendState = {
+    data: [],
+    page: 1,
+    hasNext: false,
+    loading: false,
+};
+
+export default function InvestorModal({ open, onClose }: Props) {
+    const [market, setMarket] = useState<InvestorTrendMarket>("KOSPI");
+    const [trendType, setTrendType] = useState<TrendType>("day");
+    const [animating, setAnimating] = useState(false);
+
+    const [dayState, setDayState] = useState<TrendState>(INITIAL_TREND_STATE);
+    const [timeState, setTimeState] = useState<TrendState>(INITIAL_TREND_STATE);
+
+    const current = trendType === "day" ? dayState : timeState;
+
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const tableWrapRef = useRef<HTMLDivElement>(null);
+    const observerLocked = useRef(false);
+
+    const fetchPage = (
+        m: InvestorTrendMarket,
+        type: TrendType,
+        page: number,
+        append: boolean
+    ) => {
+        const setter = type === "day" ? setDayState : setTimeState;
+        setter((prev) => ({ ...prev, loading: true }));
+
+        getInvestorTrend(m, type, page)
+            .then((res) => {
+                setter((prev) => ({
+                    data: append ? [...prev.data, ...res.data] : res.data,
+                    page,
+                    hasNext: res.hasNext,
+                    loading: false,
+                }));
+            })
+            .catch(() => {
+                setter((prev) => ({
+                    ...prev,
+                    loading: false,
+                    ...(append ? {} : { data: [], hasNext: false }),
+                }));
+            });
+    };
 
     useEffect(() => {
-        if (!show) return
-        setLoading(true)
-        getInvestorTrend(market, trendType, 1)
-            .then(res => setData(res.data))
-            .catch(() => setData([]))
-            .finally(() => setLoading(false))
-    }, [show, market, trendType])
+        if (!open) return;
+        setDayState(INITIAL_TREND_STATE);
+        setTimeState(INITIAL_TREND_STATE);
+        fetchPage(market, "day", 1, false);
+        fetchPage(market, "time", 1, false);
+    }, [open, market]);
 
-    if (!show) return null
+    useEffect(() => {
+        if (current.data.length > 0) {
+            observerLocked.current = false;
+        }
+    }, [current.data]);
+
+    useEffect(() => {
+        const sentinel = sentinelRef.current;
+        if (!sentinel || !open) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+                if (observerLocked.current) return;
+
+                if (entry.isIntersecting && current.hasNext && !current.loading) {
+                    fetchPage(market, trendType, current.page + 1, true);
+                }
+            },
+            {
+                rootMargin: "0px 0px 80px 0px",
+                threshold: 0.1,
+            }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [open, market, trendType, current.hasNext, current.loading, current.page]);
+
+    const lockAndScrollTop = () => {
+        observerLocked.current = true;
+        if (tableWrapRef.current) {
+            tableWrapRef.current.scrollTop = 0;
+        }
+    };
+
+    const changeTrendType = (next: TrendType) => {
+        if (trendType === next) return;
+        lockAndScrollTop();
+        setAnimating(true);
+        setTimeout(() => {
+            setTrendType(next);
+            setAnimating(false);
+        }, 120);
+    };
+
+    const changeMarket = (m: InvestorTrendMarket) => {
+        if (market === m) return;
+        lockAndScrollTop();
+        setAnimating(true);
+        setTimeout(() => {
+            setMarket(m);
+            setAnimating(false);
+        }, 120);
+    };
+
+    const fmt = (v: number) => {
+        if (market === "FUTURES") {
+            return v > 0 ? `+${v.toLocaleString()}` : v.toLocaleString();
+        }
+        const eok = Math.round(v / 100_000_000);
+        return eok > 0 ? `+${eok.toLocaleString()}` : eok.toLocaleString();
+    };
+
+    const color = (v: number) => (v > 0 ? "#ff4d4f" : v < 0 ? "#3b82f6" : "#94a3b8");
+
+    const formatDateOrTime = (value: string): string => {
+        if (value.length === 8) {
+            return `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6, 8)}`;
+        }
+        if (value.length === 6) {
+            return `${value.slice(0, 2)}:${value.slice(2, 4)}:${value.slice(4, 6)}`;
+        }
+        return value;
+    };
 
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '380px', maxHeight: '65vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>투자자별 매매동향</h3>
-
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '12px' }}>
-                    {(['KOSPI', 'KOSDAQ'] as const).map(m => (
-                        <button key={m} onClick={() => setMarket(m)} style={{ ...styles.toggle, ...(market === m ? styles.toggleActive : {}) }}>
-                            {m}
-                        </button>
-                    ))}
-                    {(['time', 'day'] as const).map(t => (
-                        <button key={t} onClick={() => setTrendType(t)} style={{ ...styles.toggle, ...(trendType === t ? styles.toggleActive : {}) }}>
-                            {t === 'time' ? '시간별' : '일별'}
+        <ModalV2 open={open} title="투자자별 매매동향" onClose={onClose}>
+            <div className="investor-wrap">
+                <div className="market-tabs">
+                    {MARKET_TABS.map((m) => (
+                        <button
+                            key={m.value}
+                            className={market === m.value ? "active" : ""}
+                            onClick={() => changeMarket(m.value)}
+                        >
+                            {m.label}
                         </button>
                     ))}
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    <div style={styles.header}>
-                        <span>시간/날짜</span><span>개인</span><span>외국인</span><span>기관</span>
+                <div className="sub-tabs">
+                    <button
+                        className={trendType === "day" ? "active" : ""}
+                        onClick={() => changeTrendType("day")}
+                    >
+                        일자별
+                    </button>
+                    <button
+                        className={trendType === "time" ? "active" : ""}
+                        onClick={() => changeTrendType("time")}
+                    >
+                        시간별
+                    </button>
+                </div>
+
+                <div className={`content-area ${animating ? "animating" : ""}`}>
+                    <div className="table-wrap" ref={tableWrapRef}>
+                        <table>
+                            <thead>
+                            <tr>
+                                <th rowSpan={2}>시간</th>
+                                <th rowSpan={2}>개인</th>
+                                <th rowSpan={2}>외국인</th>
+                                <th colSpan={7}>기관계</th>
+                                <th rowSpan={2}>기타법인</th>
+                            </tr>
+                            <tr>
+                                <th>기관</th>
+                                <th>금융투자</th>
+                                <th>보험</th>
+                                <th>투신(사모)</th>
+                                <th>은행</th>
+                                <th>기타금융</th>
+                                <th>연기금등</th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                            {current.data.map((row, i) => (
+                                <tr key={i}>
+                                    <td className="time">{formatDateOrTime(row.dateOrTime)}</td>
+                                    <td style={{ color: color(row.individual) }}>
+                                        {fmt(row.individual)}
+                                    </td>
+                                    <td style={{ color: color(row.foreigner) }}>
+                                        {fmt(row.foreigner)}
+                                    </td>
+                                    <td style={{ color: color(row.institution) }}>
+                                        {fmt(row.institution)}
+                                    </td>
+                                    <td style={{ color: color(row.financeInvestment) }}>
+                                        {fmt(row.financeInvestment)}
+                                    </td>
+                                    <td style={{ color: color(row.insurance) }}>
+                                        {fmt(row.insurance)}
+                                    </td>
+                                    <td style={{ color: color(row.fund) }}>
+                                        {fmt(row.fund)}
+                                    </td>
+                                    <td style={{ color: color(row.bank) }}>
+                                        {fmt(row.bank)}
+                                    </td>
+                                    <td style={{ color: color(row.etcFinance) }}>
+                                        {fmt(row.etcFinance)}
+                                    </td>
+                                    <td style={{ color: color(row.pension) }}>
+                                        {fmt(row.pension)}
+                                    </td>
+                                    <td style={{ color: color(row.corporation) }}>
+                                        {fmt(row.corporation)}
+                                    </td>
+                                </tr>
+                            ))}
+
+                            {!current.loading && current.data.length === 0 && (
+                                <tr>
+                                    <td colSpan={10} className="empty-state">
+                                        데이터가 없습니다.
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+
+                        <div ref={sentinelRef} className="scroll-sentinel">
+                            {current.loading && (
+                                <div className="loading-indicator">
+                                    <span className="loading-spinner" />
+                                    로딩중입니다...
+                                </div>
+                            )}
+                            {!current.hasNext && current.data.length > 0 && (
+                                <div className="end-of-list">— 더 이상 데이터가 없습니다 —</div>
+                            )}
+                        </div>
                     </div>
-                    {loading ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
-                    ) : (
-                        data.map((d, i) => (
-                            <div key={i} style={styles.row}>
-                                <span>{d.dateOrTime}</span>
-                                <span style={{ color: d.individual >= 0 ? '#FF6347' : '#4F9DFF' }}>{d.individual.toLocaleString()}</span>
-                                <span style={{ color: d.foreigner >= 0 ? '#FF6347' : '#4F9DFF' }}>{d.foreigner.toLocaleString()}</span>
-                                <span style={{ color: d.institution >= 0 ? '#FF6347' : '#4F9DFF' }}>{d.institution.toLocaleString()}</span>
-                            </div>
-                        ))
-                    )}
                 </div>
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
             </div>
-        </Modal>
-    )
+        </ModalV2>
+    );
 }
-
-const styles = {
-    toggle: { padding: '4px 10px', fontSize: '12px', borderRadius: '4px', border: '1px solid #555', backgroundColor: '#222', color: '#FFF', cursor: 'pointer' },
-    toggleActive: { backgroundColor: '#4F9DFF', borderColor: '#4F9DFF' },
-    header: { display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', fontSize: '11px', color: '#888', padding: '4px', borderBottom: '1px solid #333' },
-    row: { display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', fontSize: '12px', padding: '6px 4px', borderBottom: '1px solid #262626' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
-} as const

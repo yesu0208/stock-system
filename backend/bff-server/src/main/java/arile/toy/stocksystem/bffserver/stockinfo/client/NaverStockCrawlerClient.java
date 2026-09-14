@@ -278,7 +278,7 @@ public class NaverStockCrawlerClient {
                             .queryParam("marketType", "ALL")
                             .queryParam("orderType", "searchTop")
                             .queryParam("startIdx", 0)
-                            .queryParam("pageSize", 30)
+                            .queryParam("pageSize", 50)
                             .build())
                     .retrieve()
                     .body(new ParameterizedTypeReference<List<NaverPopularStockItem>>() {});
@@ -629,7 +629,7 @@ public class NaverStockCrawlerClient {
                     .uri(uriBuilder -> uriBuilder
                             .path("/api/domestic/market/upjong/{no}/stocklist")
                             .queryParam("marketType", "ALL")
-                            .queryParam("orderType", "priceTop")
+                            .queryParam("orderType", "up")
                             .queryParam("startIdx", 0)
                             .queryParam("pageSize", 200)
                             .build(upjongNo))

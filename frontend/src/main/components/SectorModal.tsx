@@ -1,51 +1,270 @@
-import { useEffect, useState } from 'react'
-import Modal from '../../components/Modal'
-import { getUpjongs } from '../../api/marketInfo'
-import type { UpjongInfo } from '../../types/marketWidgets'
+import "./SectorModal.css";
+import ModalV2 from "../../components/ModalV2";
+import { useEffect, useState } from "react";
+import { FiArrowLeft, FiSearch } from "react-icons/fi";
+import { getUpjongs, getUpjongStocks } from "../../api/marketInfo";
+import type { UpjongInfo, UpjongStock, UpjongRankItem } from "../../types/marketWidgets";
+import Tooltip from "../../tooltip/Tooltip";
 
 interface Props {
-    show: boolean
-    onClose: () => void
+    open: boolean;
+    onClose: () => void;
 }
 
-export default function SectorModal({ show, onClose }: Props) {
-    const [upjongs, setUpjongs] = useState<UpjongInfo[]>([])
-    const [loading, setLoading] = useState(false)
+function parseNumber(raw: string): number {
+    const n = Number(raw.replace(/[,%]/g, "").trim());
+    return isNaN(n) ? 0 : n;
+}
+
+function formatEok(raw: string): string {
+    const n = parseNumber(raw);
+    return `${Math.round(n / 1e8).toLocaleString("ko-KR")}억`;
+}
+
+function formatMillion(raw: string): string {
+    const n = parseNumber(raw);
+    return `${Math.round(n / 1e6).toLocaleString("ko-KR")}백만`;
+}
+
+function formatVolume(raw: string): string {
+    const n = parseNumber(raw);
+    return `${n.toLocaleString("ko-KR")}주`;
+}
+
+function rateColorClass(rate: number): string {
+    if (rate > 0) return "rise";
+    if (rate < 0) return "fall";
+    return "steady";
+}
+
+type RankListType = "rate" | "marketCap" | "tradingValue";
+
+function RankList({
+                      title,
+                      items,
+                      type,
+                  }: {
+    title: string;
+    items: UpjongRankItem[];
+    type: RankListType;
+}) {
+    if (items.length === 0) return null;
+    return (
+        <div className="sector-rank-block">
+            <div className="sector-rank-title">{title}</div>
+            {items.map((r) => {
+                let displayValue: string;
+                let colorClass = "";
+
+                if (type === "rate") {
+                    const rate = parseNumber(r.value);
+                    displayValue = `${r.value.replace("%", "")}%`;
+                    colorClass = rateColorClass(rate);
+                } else if (type === "marketCap") {
+                    displayValue = formatEok(r.value);
+                } else {
+                    displayValue = formatMillion(r.value);
+                }
+
+                return (
+                    <div key={r.code} className="sector-rank-row">
+                        <img
+                            className="sector-rank-logo"
+                            src={r.itemLogoUrl}
+                            alt=""
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+                        />
+                        <span className="sector-rank-name">{r.name}</span>
+                        <span className={`sector-rank-value ${colorClass}`}>{displayValue}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+export default function SectorModal({ open, onClose }: Props) {
+    const [upjongs, setUpjongs] = useState<UpjongInfo[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const [animate, setAnimate] = useState(false);
+
+    const [selectedUpjong, setSelectedUpjong] = useState<UpjongInfo | null>(null);
+    const [stocks, setStocks] = useState<UpjongStock[]>([]);
+    const [stockLoading, setStockLoading] = useState(false);
+
+    const [search, setSearch] = useState("");
 
     useEffect(() => {
-        if (!show) return
-        setLoading(true)
-        getUpjongs().then(res => setUpjongs(res.items)).catch(() => setUpjongs([])).finally(() => setLoading(false))
-    }, [show])
+        if (!open) return;
+        setLoading(true);
+        getUpjongs()
+            .then((res) => setUpjongs(res.items))
+            .catch(() => setUpjongs([]))
+            .finally(() => setLoading(false));
+    }, [open]);
 
-    if (!show) return null
+    useEffect(() => {
+        if (!open) {
+            setSelectedUpjong(null);
+            setStocks([]);
+            setSearch("");
+            setAnimate(false);
+            return;
+        }
+        const timer = setTimeout(() => setAnimate(true), 50);
+        return () => clearTimeout(timer);
+    }, [open]);
+
+    const getRate = (rate: string) => parseFloat(rate.replace("%", "")) || 0;
+
+    const maxAbsRate = upjongs.length > 0
+        ? Math.max(...upjongs.map((u) => Math.abs(getRate(u.changeRate))))
+        : 0;
+
+    const handleSelectUpjong = async (item: UpjongInfo) => {
+        setSelectedUpjong(item);
+        setStockLoading(true);
+        try {
+            const res = await getUpjongStocks(item.no);
+            setStocks(res.items);
+        } catch (e) {
+            console.error(e);
+            setStocks([]);
+        } finally {
+            setStockLoading(false);
+        }
+    };
+
+    const handleBack = () => {
+        setSelectedUpjong(null);
+        setStocks([]);
+        setSearch("");
+    };
+
+    const filteredStocks = stocks.filter((stock) => {
+        const keyword = search.toLowerCase();
+        return (
+            stock.name.toLowerCase().includes(keyword) ||
+            stock.code.toLowerCase().includes(keyword)
+        );
+    });
 
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '360px', maxHeight: '65vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>업종별 시세</h3>
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {loading ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
-                    ) : (
-                        upjongs.map(u => (
-                            <div key={u.no} style={styles.row}>
-                                <span style={{ flex: 1 }}>{u.name}</span>
-                                <span style={{ color: u.changeRate.startsWith('-') ? '#4F9DFF' : '#FF6347' }}>{u.changeRate}</span>
-                                <span style={{ fontSize: '11px', color: '#888', marginLeft: '8px' }}>
-                                    상승 {u.rise} 보합 {u.steady} 하락 {u.fall}
-                                </span>
-                            </div>
-                        ))
-                    )}
-                </div>
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
-            </div>
-        </Modal>
-    )
-}
+        <ModalV2 open={open} title="업종" onClose={onClose}>
+            <div className="sector-wrap">
+                {loading ? (
+                    <div className="sector-loading">불러오는 중...</div>
+                ) : (
+                    <div className={`sector-slider ${selectedUpjong ? "show-stock" : ""}`}>
+                        <div className="sector-page">
+                            <div className="sector-grid">
+                                {upjongs.map((item) => {
+                                    const rate = getRate(item.changeRate);
 
-const styles = {
-    row: { display: 'flex', alignItems: 'center', fontSize: '12px', padding: '8px 4px', borderBottom: '1px solid #262626', flexWrap: 'wrap' as const, gap: '4px' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
-} as const
+                                    return (
+                                        <div
+                                            key={item.no}
+                                            className="sector-card"
+                                            onClick={() => handleSelectUpjong(item)}
+                                        >
+                                            <div className="sector-top">
+                                                <span className="sector-name">{item.name}</span>
+                                                <span className={rate > 0 ? "rise" : rate < 0 ? "fall" : "steady"}>
+                                                    {item.changeRate}%
+                                                </span>
+                                            </div>
+
+                                            <div className="sector-bottom">
+                                                <span className="rise">↑ {item.rise}</span>
+                                                <span className="steady">- {item.steady}</span>
+                                                <span className="fall">↓ {item.fall}</span>
+                                            </div>
+
+                                            <div
+                                                className="sector-bar"
+                                                style={{
+                                                    width: animate
+                                                        ? `calc(${maxAbsRate > 0 ? (Math.abs(rate) / maxAbsRate) * 100 : 0}% - 24px)`
+                                                        : "0px",
+                                                    background: rate >= 0 ? "#ff6347" : "#4f9dff",
+                                                }}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="sector-page stock-page">
+                            <div className="stock-header">
+                                <span className="stock-title">{selectedUpjong?.name}</span>
+
+                                <Tooltip text="뒤로가기" placement="top">
+                                    <button className="stock-back-btn" onClick={handleBack} aria-label="뒤로가기">
+                                        <FiArrowLeft size={18} />
+                                    </button>
+                                </Tooltip>
+                            </div>
+
+                            {selectedUpjong && (
+                                <div className="sector-summary-line">
+                                    <span>시가총액 {formatEok(selectedUpjong.totalMarketCap)}</span>
+                                    <span>거래량 {formatVolume(selectedUpjong.totalTradingVolume)}</span>
+                                    <span>거래대금 {formatMillion(selectedUpjong.totalTradingValue)}</span>
+                                </div>
+                            )}
+
+                            {selectedUpjong && (
+                                <div className="sector-rank-section">
+                                    <RankList title="등락률 상위" items={selectedUpjong.topByChangeRate} type="rate" />
+                                    <RankList title="시가총액 상위" items={selectedUpjong.topByMarketCap} type="marketCap" />
+                                    <RankList title="거래대금 상위" items={selectedUpjong.topByTradingValue} type="tradingValue" />
+                                </div>
+                            )}
+
+                            <div className="stock-search-box">
+                                <FiSearch size={14} className="stock-search-icon" />
+                                <input
+                                    className="stock-search"
+                                    placeholder="종목명·종목코드 검색"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="stock-list">
+                                {stockLoading ? (
+                                    <div className="sector-loading">불러오는 중...</div>
+                                ) : (
+                                    filteredStocks.map((stock) => {
+                                        const rate = parseFloat(stock.rate);
+                                        const rateClass = rate > 0 ? "rise" : rate < 0 ? "fall" : "steady";
+
+                                        return (
+                                            <div key={stock.code} className="stock-card">
+                                                <div className="stock-left">
+                                                    <div className="stock-name">{stock.name}</div>
+                                                    <div className="stock-meta">
+                                                        <span>시가총액 {formatEok(stock.marketCap)}</span>
+                                                        <span>거래량 {formatVolume(stock.volume)}</span>
+                                                        <span>거래대금 {formatMillion(stock.tradingValue)}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="stock-right">
+                                                    <div className={`stock-price ${rateClass}`}>{stock.price}</div>
+                                                    <div className={`stock-rate ${rateClass}`}>{stock.rate}</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </ModalV2>
+    );
+}

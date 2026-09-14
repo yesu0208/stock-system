@@ -196,3 +196,31 @@
     display: flex;
     flex-direction: column;
 }
+
+.modal-v2-box.index-modal {
+    width: 340px;
+    height: 520px;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-v2-box.hot-stocks-modal {
+    width: 500px;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-v2-box.investor-modal {
+    width: 780px;
+    height: 560px;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-v2-box.sector-modal {
+    width: 480px;
+    height: 650px;
+    display: flex;
+    flex-direction: column;
+}
