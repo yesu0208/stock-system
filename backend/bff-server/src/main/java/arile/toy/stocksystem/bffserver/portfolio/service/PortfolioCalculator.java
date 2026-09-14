@@ -72,9 +72,10 @@ public class PortfolioCalculator {
             }
 
             long evaluationAmount = (long) stockInfo.quantity() * curPrice;
+            long profit = evaluationAmount - stockInfo.totalAmount();
 
             mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
-                    .addSpot(evaluationAmount);
+                    .addSpot(evaluationAmount, stockInfo.totalAmount(), profit);
         }
     }
 
@@ -106,9 +107,13 @@ public class PortfolioCalculator {
             }
 
             long evaluationAmount = (long) info.quantity() * curPrice;
+            // 개시증거금(투입원금) = 매입금액 - 대출금 (AccountCalculator의 equityAmount와 동일한 공식)
+            long equityAmount = info.purchaseAmount() - info.loanAmount();
+            // 레버리지 손익 = 평가금액 - 매입금액(포지션 전체 크기)
+            long profit = evaluationAmount - info.purchaseAmount();
 
             mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
-                    .addLeverage(evaluationAmount);
+                    .addLeverage(evaluationAmount, info.purchaseAmount(), equityAmount, profit);
         }
     }
 
@@ -149,7 +154,16 @@ public class PortfolioCalculator {
                                 amount.leverage(),
                                 amount.total(),
                                 ratio(amount.total(), sectorValue),
-                                ratio(amount.total(), totalAssetValue)
+                                ratio(amount.total(), totalAssetValue),
+                                amount.profitAmount(),
+                                amount.profitRate(),
+                                amount.spotBuyAmount(),
+                                amount.spotProfitAmount(),
+                                amount.spotProfitRate(),
+                                amount.leverageBuyAmount(),
+                                amount.leverageEquityAmount(),
+                                amount.leverageProfitAmount(),
+                                amount.leverageProfitRate()
                         );
                     })
                     .toList();
@@ -170,11 +184,49 @@ public class PortfolioCalculator {
         private long spot = 0L;
         private long leverage = 0L;
 
-        void addSpot(long amount) { this.spot += amount; }
-        void addLeverage(long amount) { this.leverage += amount; }
+        // 현물 세부
+        private long spotBuyAmount = 0L;
+        private long spotProfitAmount = 0L;
+
+        // 레버리지 세부
+        private long leverageBuyAmount = 0L; // purchaseAmount 누적
+        private long leverageEquityAmount = 0L; // equityAmount 누적
+        private long leverageProfitAmount = 0L;
+
+        void addSpot(long amount, long buyAmount, long profit) {
+            this.spot += amount;
+            this.spotBuyAmount += buyAmount;
+            this.spotProfitAmount += profit;
+        }
+
+        void addLeverage(long amount, long buyAmount, long equityAmount, long profit) {
+            this.leverage += amount;
+            this.leverageBuyAmount += buyAmount;
+            this.leverageEquityAmount += equityAmount;
+            this.leverageProfitAmount += profit;
+        }
 
         long spot() { return spot; }
         long leverage() { return leverage; }
         long total() { return spot + leverage; }
+
+        long spotBuyAmount() { return spotBuyAmount; }
+        long spotProfitAmount() { return spotProfitAmount; }
+        double spotProfitRate() {
+            return spotBuyAmount == 0 ? 0 : spotProfitAmount * 100.0 / spotBuyAmount;
+        }
+
+        long leverageBuyAmount() { return leverageBuyAmount; }
+        long leverageEquityAmount() { return leverageEquityAmount; }
+        long leverageProfitAmount() { return leverageProfitAmount; }
+        double leverageProfitRate() {
+            return leverageEquityAmount == 0 ? 0 : leverageProfitAmount * 100.0 / leverageEquityAmount;
+        }
+
+        long profitAmount() { return spotProfitAmount + leverageProfitAmount; }
+        long totalCost() { return spotBuyAmount + leverageEquityAmount; } // 합산 수익률의 분모는 (현물 매입금액 + 레버리지 개시증거금)
+        double profitRate() {
+            return totalCost() == 0 ? 0 : profitAmount() * 100.0 / totalCost();
+        }
     }
 }

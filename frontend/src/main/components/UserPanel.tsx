@@ -1,6 +1,6 @@
 import "./UserPanel.css";
 import RankBadge from "./RankBadge";
-import { FiUser, FiCalendar, FiAward, FiEye, FiEyeOff, FiCreditCard  } from "react-icons/fi";
+import { FiUser, FiCalendar, FiAward, FiEye, FiEyeOff, FiCreditCard, FiPieChart } from "react-icons/fi";
 import MyAccountModal from "./MyAccountModal";
 import { useState } from "react";
 import { useUser } from "../context/UserContext";
@@ -9,6 +9,7 @@ import type { MarginStatus, AccountStatus } from "../../types/account";
 import Tooltip from "../../tooltip/Tooltip";
 import MyInfoModal from "./MyInfoModal";
 import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
+import PortfolioModal from "./PortfolioModal";
 
 function formatJoinDate(iso: string): string {
     try {
@@ -194,10 +195,15 @@ export default function UserPanel() {
                     <FiCreditCard className="menu-icon" />
                     내 계좌
                 </button>
+                <button className="menu-btn" onClick={() => setOpenModal("portfolio")}>
+                    <FiPieChart className="menu-icon" />
+                    포트폴리오
+                </button>
             </div>
 
             <MyInfoModal open={openModal === "info"} onClose={() => setOpenModal(null)} />
             <MyAccountModal open={openModal === "account"} onClose={() => setOpenModal(null)} />
+            <PortfolioModal open={openModal === "portfolio"} onClose={() => setOpenModal(null)} />
         </aside>
     );
 }

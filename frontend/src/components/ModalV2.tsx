@@ -50,6 +50,7 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "내 정보": "my-info-modal",
     "비밀번호 변경": "password-modify-modal",
     "내 계좌": "my-account-modal",
+    "포트폴리오": "portfolio-modal",
 };
 
 export default function ModalV2({
