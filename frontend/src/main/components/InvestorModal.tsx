@@ -137,8 +137,25 @@ export default function InvestorModal({ open, onClose }: Props) {
         }, 120);
     };
 
-    const fmt = (v: number) => (v > 0 ? `+${v.toLocaleString()}` : v.toLocaleString());
+    const fmt = (v: number) => {
+        if (market === "FUTURES") {
+            return v > 0 ? `+${v.toLocaleString()}` : v.toLocaleString();
+        }
+        const eok = Math.round(v / 100_000_000);
+        return eok > 0 ? `+${eok.toLocaleString()}` : eok.toLocaleString();
+    };
+
     const color = (v: number) => (v > 0 ? "#ff4d4f" : v < 0 ? "#3b82f6" : "#94a3b8");
+
+    const formatDateOrTime = (value: string): string => {
+        if (value.length === 8) {
+            return `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6, 8)}`;
+        }
+        if (value.length === 6) {
+            return `${value.slice(0, 2)}:${value.slice(2, 4)}:${value.slice(4, 6)}`;
+        }
+        return value;
+    };
 
     return (
         <ModalV2 open={open} title="투자자별 매매동향" onClose={onClose}>
@@ -155,7 +172,6 @@ export default function InvestorModal({ open, onClose }: Props) {
                     ))}
                 </div>
 
-                {/* SUB TAB */}
                 <div className="sub-tabs">
                     <button
                         className={trendType === "day" ? "active" : ""}
@@ -196,7 +212,7 @@ export default function InvestorModal({ open, onClose }: Props) {
                             <tbody>
                             {current.data.map((row, i) => (
                                 <tr key={i}>
-                                    <td className="time">{row.dateOrTime}</td>
+                                    <td className="time">{formatDateOrTime(row.dateOrTime)}</td>
                                     <td style={{ color: color(row.individual) }}>
                                         {fmt(row.individual)}
                                     </td>
