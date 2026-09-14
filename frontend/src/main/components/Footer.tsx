@@ -122,7 +122,7 @@ export default function Footer() {
                             <div className="grid4 value-row" key={idx}>
                                 <div className="cell white">{item.currencyName}</div>
                                 <div className="cell" style={{ color: getColor(item.direction) }}>
-                                    {item.rate ? `${item.rate} 원` : "-"}
+                                    {item.rate ? `${item.rate}` : "-"}
                                 </div>
                                 <div className="cell" style={{ color: getColor(item.direction) }}>
                                     {getArrow(item.direction)}
@@ -269,7 +269,7 @@ export default function Footer() {
                     <span style={labelStyle}>{fx?.currencyName ?? "환율"}</span>
 
                     <span style={{ color: getColor(fx?.direction) }}>
-                        {fx?.rate ? `${fx.rate} 원 ` : "-"}
+                        {fx?.rate ? `${fx.rate} ` : "-"}
                         {getArrow(fx?.direction)}{" "}
                         {fx?.change ?? ""}
                     </span>
