@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import Modal from '../../components/Modal'
+import ModalV2 from '../../components/ModalV2'
 import { getPopularStocks, getDealRank } from '../../api/marketInfo'
 import type {
     PopularStock,
@@ -56,13 +56,9 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
         }
     }, [show])
 
-    if (!show) return null
-
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '1000px', maxHeight: '65vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>인기 종목</h3>
-
+        <ModalV2 open={show} title="인기 종목" onClose={onClose}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
                 <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
                     <button onClick={() => setTab('popular')} style={styles.tabButton(tab === 'popular')}>인기</button>
                     <button onClick={() => setTab('foreign')} style={styles.tabButton(tab === 'foreign')}>외국인</button>
@@ -88,8 +84,7 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                     </div>
                 )}
 
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {/* 인기 종목 탭 */}
+                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                     {tab === 'popular' && (
                         loading ? (
                             <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
@@ -112,7 +107,6 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                                     >
                                         <span style={{ width: '24px', color: '#888' }}>{s.rank}</span>
                                         <span style={{ flex: 1, textAlign: 'left' }}>{s.name}</span>
-                                        {/* [수정] code 필드 표시 */}
                                         <span style={{ width: '60px', color: '#888', fontSize: '12px' }}>{s.code}</span>
                                         <span style={{
                                             width: '70px',
@@ -176,17 +170,14 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                         )
                     )}
                 </div>
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
             </div>
-        </Modal>
+        </ModalV2>
     )
 }
 
 const styles = {
     row: { display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 4px', borderBottom: '1px solid #262626', background: 'none', border: 'none', color: '#FFF', fontSize: '13px', cursor: 'pointer' },
-    // [신규] 외국인/기관 탭 전용 행 스타일 (컬럼이 많아 폭이 넓음)
     dealRow: { display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 4px', borderBottom: '1px solid #262626', background: 'none', border: 'none', color: '#FFF', fontSize: '13px', cursor: 'pointer', minWidth: '280px' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
     tabButton: (active: boolean) => ({
         flex: 1,
         padding: '8px',
