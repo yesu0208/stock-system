@@ -2,15 +2,22 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRealtime } from './RealtimeContext'
 import type { MarketMainResponse } from '../../types/marketMain'
+import type { ExchangeRateDto } from '../../types/exchangeRate'
+
+interface GlobalMarketResponse {
+    exchangeRates: ExchangeRateDto[]
+}
 
 interface MarketDataContextValue {
     marketMain: MarketMainResponse | null
+    exchangeRates: ExchangeRateDto[]
 }
 
 const MarketDataContext = createContext<MarketDataContextValue | null>(null)
 
 export function MarketDataProvider({ children }: { children: ReactNode }) {
     const [marketMain, setMarketMain] = useState<MarketMainResponse | null>(null)
+    const [exchangeRates, setExchangeRates] = useState<ExchangeRateDto[]>([])
     const { subscribeDestination } = useRealtime()
 
     useEffect(() => {
@@ -19,8 +26,14 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
         })
     }, [subscribeDestination])
 
+    useEffect(() => {
+        return subscribeDestination('/sub/market/global', (data: GlobalMarketResponse) => {
+            setExchangeRates(data.exchangeRates ?? [])
+        })
+    }, [subscribeDestination])
+
     return (
-        <MarketDataContext.Provider value={{ marketMain }}>
+        <MarketDataContext.Provider value={{ marketMain, exchangeRates }}>
             {children}
         </MarketDataContext.Provider>
     )
