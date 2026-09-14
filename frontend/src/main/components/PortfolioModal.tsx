@@ -302,42 +302,32 @@ export default function PortfolioModal({ open, onClose }: Props) {
                         계좌 요약
                     </div>
 
+                    {/* [수정] 총자산, 누적손익, 평가손익을 한 줄로 표시 (총매입/총평가 제거). 누적손익·평가손익 카드 디자인(pf-card--accent)은 유지 */}
                     <div className="pf-summary__body">
-                        <div className="pf-summary__left">
-                            <div className={`pf-card pf-card--accent ${account.accumulatedProfit >= 0 ? "pf-card--pos" : "pf-card--neg"}`}>
-                                <span className="pf-card__label">누적손익</span>
-                                <span className={`pf-card__value ${cls(account.accumulatedProfit)}`}>
-                                    {fmtSigned(account.accumulatedProfit)}원
-                                </span>
-                                <span className={`pf-card__rate ${cls(account.accumulatedProfitRate)}`}>
-                                    {fmtRate(account.accumulatedProfitRate)}
-                                </span>
-                            </div>
-
-                            <div className={`pf-card pf-card--accent ${account.totalProfit >= 0 ? "pf-card--pos" : "pf-card--neg"}`}>
-                                <span className="pf-card__label">평가손익</span>
-                                <span className={`pf-card__value ${cls(account.totalProfit)}`}>
-                                    {fmtSigned(account.totalProfit)}원
-                                </span>
-                                <span className={`pf-card__rate ${cls(account.totalProfitRate)}`}>
-                                    {fmtRate(account.totalProfitRate)}
-                                </span>
-                            </div>
+                        {/* [수정] 누적손익/평가손익과 동일하게 라벨-왼쪽/값-오른쪽 정렬 + 큰 글씨(pf-card--accent) 적용. 색상 바는 pos/neg 클래스가 없어 표시되지 않음 */}
+                        <div className="pf-card pf-card--accent">
+                            <span className="pf-card__label">총 자산</span>
+                            <span className="pf-card__value">{fmt(account.totalValue)}원</span>
                         </div>
 
-                        <div className="pf-summary__right">
-                            <div className="pf-card">
-                                <span className="pf-card__label">총 자산</span>
-                                <span className="pf-card__value">{fmt(account.totalValue)}원</span>
-                            </div>
-                            <div className="pf-card">
-                                <span className="pf-card__label">총 매입</span>
-                                <span className="pf-card__value">{fmt(account.buyValue)}원</span>
-                            </div>
-                            <div className="pf-card">
-                                <span className="pf-card__label">총 평가</span>
-                                <span className="pf-card__value">{fmt(account.stockValue)}원</span>
-                            </div>
+                        <div className={`pf-card pf-card--accent ${account.accumulatedProfit >= 0 ? "pf-card--pos" : "pf-card--neg"}`}>
+                            <span className="pf-card__label">누적손익</span>
+                            <span className={`pf-card__value ${cls(account.accumulatedProfit)}`}>
+                                {fmtSigned(account.accumulatedProfit)}원
+                            </span>
+                            <span className={`pf-card__rate ${cls(account.accumulatedProfitRate)}`}>
+                                {fmtRate(account.accumulatedProfitRate)}
+                            </span>
+                        </div>
+
+                        <div className={`pf-card pf-card--accent ${account.totalProfit >= 0 ? "pf-card--pos" : "pf-card--neg"}`}>
+                            <span className="pf-card__label">평가손익</span>
+                            <span className={`pf-card__value ${cls(account.totalProfit)}`}>
+                                {fmtSigned(account.totalProfit)}원
+                            </span>
+                            <span className={`pf-card__rate ${cls(account.totalProfitRate)}`}>
+                                {fmtRate(account.totalProfitRate)}
+                            </span>
                         </div>
                     </div>
                 </div>
