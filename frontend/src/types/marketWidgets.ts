@@ -1,3 +1,8 @@
+export type DealRankMarket = 'KOSPI' | 'KOSDAQ'
+export type InvestorType = 'FOREIGN' | 'INSTITUTION'
+export type DealType = 'BUY' | 'SELL'
+export type PeriodType = 'DAY' | 'WEEK' | 'MONTH' | 'THREE_MONTH'
+
 export interface PopularStock {
     rank: number
     code: string
@@ -38,4 +43,26 @@ export interface InvestorTrendDto {
 export interface TrendResponse {
     data: InvestorTrendDto[]
     hasNext: boolean
+}
+
+export interface DealRankItem {
+    rank: number
+    stockCode: string
+    stockName: string
+    quantity: number
+    amount: number
+    volume: number
+}
+
+export interface DealRankDay {
+    dealDate: string
+    items: DealRankItem[]
+}
+
+export interface DealRankResponse {
+    market: string
+    investorType: string
+    dealType: string
+    periodType: string
+    days: DealRankDay[]
 }
