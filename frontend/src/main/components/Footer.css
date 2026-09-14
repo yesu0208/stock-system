@@ -1,0 +1,205 @@
+.footer {
+    height: 34px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 0 16px;
+    background: #18253b;
+    color: white;
+    border-top: 1px solid #2b3b57;
+    font-size: 13px;
+    flex-shrink: 0;
+
+    overflow: visible;
+
+    white-space: nowrap;
+    justify-content: space-between;
+}
+
+.footer .footer-wrapper {
+    position: relative;
+}
+
+.footer .market-item {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-variant-numeric: tabular-nums;
+
+    flex: 1;
+    justify-content: center;
+}
+
+.footer .label {
+    color: #ffffff;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.footer .divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.footer .footer-copyright {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #94a3b8;
+    background: #18253b;
+    border-top: 1px solid #1e293b;
+}
+
+.footer .tooltip {
+    position: absolute;
+
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+
+    background: #0f172a;
+    color: white;
+
+    padding: 10px 12px;
+    border-radius: 10px;
+
+    font-size: 11px;
+
+    z-index: 9999;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+    width: 230px;
+
+    white-space: normal;
+
+    line-height: 1;
+
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer .tooltip-section {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.footer .tooltip-section:last-child {
+    margin-bottom: 0;
+}
+
+.footer .tooltip-title {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.footer .tooltip-time {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.footer .grid5,
+.footer .grid3 {
+    display: grid;
+    gap: 2px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.footer .grid5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.footer .grid3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.footer .grid4 {
+    display: grid;
+    grid-template-columns: 2.7fr 2fr 0.5fr 1fr;
+    gap: 2px;
+}
+
+.footer .grid4 > div {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.footer .row {
+    display: contents;
+}
+
+.footer .grid5 > div,
+.footer .grid3 > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 18px;
+    line-height: 1;
+}
+
+.footer .header-cell {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.footer .value-cell {
+    font-size: 11px;
+}
+
+.footer .red {
+    color: #ff6347;
+}
+
+.footer .blue {
+    color: #4f9dff;
+}
+
+.footer .white {
+    color: #e2e8f0;
+}
+
+.footer .footer-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding-right: 14px;
+    margin-right: 14px;
+
+    border-right: 1px solid rgba(255,255,255,0.35);
+
+    width: 254px;
+}
+
+.footer .left-btn {
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+
+    padding: 2px 4px;
+    transition: 0.2s;
+
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.footer .left-btn:hover {
+    color: white;
+}
