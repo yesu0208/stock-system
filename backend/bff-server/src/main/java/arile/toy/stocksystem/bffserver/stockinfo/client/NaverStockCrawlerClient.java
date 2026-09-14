@@ -278,7 +278,7 @@ public class NaverStockCrawlerClient {
                             .queryParam("marketType", "ALL")
                             .queryParam("orderType", "searchTop")
                             .queryParam("startIdx", 0)
-                            .queryParam("pageSize", 30)
+                            .queryParam("pageSize", 50)
                             .build())
                     .retrieve()
                     .body(new ParameterizedTypeReference<List<NaverPopularStockItem>>() {});
