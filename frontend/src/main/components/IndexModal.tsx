@@ -10,6 +10,27 @@ interface Props {
     onClose: () => void;
 }
 
+function formatBaseTime(iso: string): string {
+    try {
+        const d = new Date(iso);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+
+        const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+        const weekday = weekdays[d.getDay()];
+
+        return `${yyyy}.${mm}.${dd}(${weekday}) 기준`;
+    } catch {
+        return iso;
+    }
+}
+
+function withUnit(value?: string): string {
+    if (!value || value === "-") return value ?? "-";
+    return `${value}억`;
+}
+
 export default function IndexModal({ open, onClose }: Props) {
     const { marketMain } = useMarketData();
     const [tab, setTab] = useState<Tab>("KOSPI");
@@ -81,106 +102,157 @@ export default function IndexModal({ open, onClose }: Props) {
 
                                         <div className="right">
                                             <div className="change" style={{ color: color(current.direction) }}>
-                                                <span className="triangle">
-                                                    {current.direction === "UP" || current.direction.includes("+")
-                                                        ? "▲"
-                                                        : current.direction === "DOWN" || current.direction.includes("-")
-                                                            ? "▼"
-                                                            : ""}
-                                                </span>
+                <span className="triangle">
+                    {current.direction === "UP" || current.direction.includes("+")
+                        ? "▲"
+                        : current.direction === "DOWN" || current.direction.includes("-")
+                            ? "▼"
+                            : ""}
+                </span>
                                                 {current.changeValue} ({current.changeRate})
                                             </div>
 
-                                            <div className="time">기준 {current.baseTime}</div>
+                                            <div className="time">기준 {formatBaseTime(current.baseTime)}</div>
                                         </div>
                                     </div>
 
-                                    <div className="section-title">투자자별 동향</div>
-                                    <div className="box grid3">
-                                        <div>
-                                            <div className="label">개인</div>
-                                            <div style={{ color: valueColor(current.investorTrend.personal) }}>
-                                                {current.investorTrend.personal}
+                                    {tab !== "FUTURES" ? (
+                                        <>
+                                            {/* ── KOSPI/KOSDAQ: 등락 종목 → 프로그램 매매 → 투자자별 동향 ── */}
+                                            <div className="section-title">등락 종목</div>
+                                            <div className="box">
+                                                <div className="grid5">
+                                                    <div>
+                                                        <div className="label">상한</div>
+                                                        <div style={{ color: breadthColor("upperLimit") }}>
+                                                            {current.breadth.upperLimit ?? "0"}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="label">상승</div>
+                                                        <div style={{ color: breadthColor("rise") }}>
+                                                            {current.breadth.rise ?? "0"}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="label">보합</div>
+                                                        <div>{current.breadth.steady ?? "0"}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="label">하락</div>
+                                                        <div style={{ color: breadthColor("fall") }}>
+                                                            {current.breadth.fall ?? "0"}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="label">하한</div>
+                                                        <div style={{ color: breadthColor("lowerLimit") }}>
+                                                            {current.breadth.lowerLimit ?? "0"}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <div className="label">외국인</div>
-                                            <div style={{ color: valueColor(current.investorTrend.foreigner) }}>
-                                                {current.investorTrend.foreigner}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="label">기관</div>
-                                            <div style={{ color: valueColor(current.investorTrend.institution) }}>
-                                                {current.investorTrend.institution}
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="section-title">
-                                        {tab === "FUTURES" ? "선물 Basis" : "등락 종목"}
-                                    </div>
-                                    <div className="box">
-                                        {tab !== "FUTURES" ? (
-                                            <div className="grid5">
+                                            <div className="section-title">프로그램 매매</div>
+                                            <div className="box grid3">
                                                 <div>
-                                                    <div className="label">상한</div>
-                                                    <div style={{ color: breadthColor("upperLimit") }}>
-                                                        {current.breadth.upperLimit ?? "0"}
+                                                    <div className="label">차익</div>
+                                                    <div style={{ color: valueColor(current.programTrade.arbitrage) }}>
+                                                        {withUnit(current.programTrade.arbitrage)}
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <div className="label">상승</div>
-                                                    <div style={{ color: breadthColor("rise") }}>
-                                                        {current.breadth.rise ?? "0"}
+                                                    <div className="label">비차익</div>
+                                                    <div style={{ color: valueColor(current.programTrade.nonArbitrage) }}>
+                                                        {withUnit(current.programTrade.nonArbitrage)}
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <div className="label">보합</div>
-                                                    <div>{current.breadth.steady ?? "0"}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="label">하락</div>
-                                                    <div style={{ color: breadthColor("fall") }}>
-                                                        {current.breadth.fall ?? "0"}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="label">하한</div>
-                                                    <div style={{ color: breadthColor("lowerLimit") }}>
-                                                        {current.breadth.lowerLimit ?? "0"}
+                                                    <div className="label">전체</div>
+                                                    <div style={{ color: valueColor(current.programTrade.total) }}>
+                                                        {withUnit(current.programTrade.total)}
                                                     </div>
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <div className="basis">
-                                                <div className="label">베이시스</div>
-                                                <div className="basis-value">{current.breadth.basis}</div>
-                                            </div>
-                                        )}
-                                    </div>
 
-                                    <div className="section-title">프로그램 매매</div>
-                                    <div className="box grid3">
-                                        <div>
-                                            <div className="label">차익</div>
-                                            <div style={{ color: valueColor(current.programTrade.arbitrage) }}>
-                                                {current.programTrade.arbitrage}
+                                            <div className="section-title">투자자별 동향</div>
+                                            <div className="box grid3">
+                                                <div>
+                                                    <div className="label">개인</div>
+                                                    <div style={{ color: valueColor(current.investorTrend.personal) }}>
+                                                        {withUnit(current.investorTrend.personal)}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="label">외국인</div>
+                                                    <div style={{ color: valueColor(current.investorTrend.foreigner) }}>
+                                                        {withUnit(current.investorTrend.foreigner)}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="label">기관</div>
+                                                    <div style={{ color: valueColor(current.investorTrend.institution) }}>
+                                                        {withUnit(current.investorTrend.institution)}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <div className="label">비차익</div>
-                                            <div style={{ color: valueColor(current.programTrade.nonArbitrage) }}>
-                                                {current.programTrade.nonArbitrage}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {/* ── KOSPI200: 프로그램 매매 → 투자자별 동향 → 선물 Basis ── */}
+                                            <div className="section-title">프로그램 매매</div>
+                                            <div className="box grid3">
+                                                <div>
+                                                    <div className="label">차익</div>
+                                                    <div style={{ color: valueColor(current.programTrade.arbitrage) }}>
+                                                        {withUnit(current.programTrade.arbitrage)}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="label">비차익</div>
+                                                    <div style={{ color: valueColor(current.programTrade.nonArbitrage) }}>
+                                                        {withUnit(current.programTrade.nonArbitrage)}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="label">전체</div>
+                                                    <div style={{ color: valueColor(current.programTrade.total) }}>
+                                                        {withUnit(current.programTrade.total)}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <div className="label">전체</div>
-                                            <div style={{ color: valueColor(current.programTrade.total) }}>
-                                                {current.programTrade.total}
+
+                                            <div className="section-title">투자자별 동향</div>
+                                            <div className="box grid3">
+                                                <div>
+                                                    <div className="label">개인</div>
+                                                    <div style={{ color: valueColor(current.investorTrend.personal) }}>
+                                                        {withUnit(current.investorTrend.personal)}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="label">외국인</div>
+                                                    <div style={{ color: valueColor(current.investorTrend.foreigner) }}>
+                                                        {withUnit(current.investorTrend.foreigner)}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="label">기관</div>
+                                                    <div style={{ color: valueColor(current.investorTrend.institution) }}>
+                                                        {withUnit(current.investorTrend.institution)}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
+
+                                            <div className="section-title">선물 Basis</div>
+                                            <div className="box">
+                                                <div className="basis">
+                                                    <div className="label">베이시스</div>
+                                                    <div className="basis-value">{current.breadth.basis}</div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </>
                         );
