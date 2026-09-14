@@ -18,7 +18,8 @@
     display: flex;
 
     width: 100%;
-    height: 420px;
+    flex: 1;
+    min-height: 0;
 
     transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -31,12 +32,15 @@
     min-width: 100%;
     width: 100%;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
 
     box-sizing: border-box;
 }
 
 .sector-wrap .sector-grid {
-    height: 420px;
+    flex: 1;
+    min-height: 0;
 
     overflow-y: auto;
 
@@ -66,7 +70,7 @@
 
     cursor: pointer;
 
-    height: 80px;
+    height: 50px;
 }
 
 .sector-wrap .sector-card:hover {
@@ -200,7 +204,6 @@
     font-size: 15px;
 }
 
-/* [신규] 업종 요약 라인(시가총액/거래량/거래대금) */
 .sector-wrap .sector-summary-line {
     display: flex;
     gap: 10px;
@@ -210,7 +213,6 @@
     flex-wrap: wrap;
 }
 
-/* [신규] 등락률/시가총액/거래대금 상위 종목 섹션 */
 .sector-wrap .sector-rank-section {
     display: flex;
     flex-direction: column;

@@ -67,6 +67,10 @@ export default function SectorModal({ open, onClose }: Props) {
 
     const getRate = (rate: string) => parseFloat(rate.replace("%", "")) || 0;
 
+    const maxAbsRate = upjongs.length > 0
+        ? Math.max(...upjongs.map((u) => Math.abs(getRate(u.changeRate))))
+        : 0;
+
     const handleSelectUpjong = async (item: UpjongInfo) => {
         setSelectedUpjong(item);
         setStockLoading(true);
@@ -117,7 +121,7 @@ export default function SectorModal({ open, onClose }: Props) {
                                             <div className="sector-top">
                                                 <span className="sector-name">{item.name}</span>
                                                 <span className={rate > 0 ? "rise" : rate < 0 ? "fall" : "steady"}>
-                                                    {item.changeRate}
+                                                    {item.changeRate}%
                                                 </span>
                                             </div>
 
@@ -131,7 +135,7 @@ export default function SectorModal({ open, onClose }: Props) {
                                                 className="sector-bar"
                                                 style={{
                                                     width: animate
-                                                        ? `calc(${Math.min(Math.abs(rate) * 15, 100)}% - 24px)`
+                                                        ? `calc(${maxAbsRate > 0 ? (Math.abs(rate) / maxAbsRate) * 100 : 0}% - 24px)`
                                                         : "0px",
                                                     background: rate >= 0 ? "#ff6347" : "#4f9dff",
                                                 }}
