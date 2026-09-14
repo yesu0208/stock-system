@@ -11,23 +11,74 @@ interface Props {
     onClose: () => void;
 }
 
-function RankList({ title, items }: { title: string; items: UpjongRankItem[] }) {
+function parseNumber(raw: string): number {
+    const n = Number(raw.replace(/[,%]/g, "").trim());
+    return isNaN(n) ? 0 : n;
+}
+
+function formatEok(raw: string): string {
+    const n = parseNumber(raw);
+    return `${Math.round(n / 1e8).toLocaleString("ko-KR")}억`;
+}
+
+function formatMillion(raw: string): string {
+    const n = parseNumber(raw);
+    return `${Math.round(n / 1e6).toLocaleString("ko-KR")}백만`;
+}
+
+function formatVolume(raw: string): string {
+    const n = parseNumber(raw);
+    return `${n.toLocaleString("ko-KR")}주`;
+}
+
+function rateColorClass(rate: number): string {
+    if (rate > 0) return "rise";
+    if (rate < 0) return "fall";
+    return "steady";
+}
+
+type RankListType = "rate" | "marketCap" | "tradingValue";
+
+function RankList({
+                      title,
+                      items,
+                      type,
+                  }: {
+    title: string;
+    items: UpjongRankItem[];
+    type: RankListType;
+}) {
     if (items.length === 0) return null;
     return (
         <div className="sector-rank-block">
             <div className="sector-rank-title">{title}</div>
-            {items.map((r) => (
-                <div key={r.code} className="sector-rank-row">
-                    <img
-                        className="sector-rank-logo"
-                        src={r.itemLogoUrl}
-                        alt=""
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
-                    />
-                    <span className="sector-rank-name">{r.name}</span>
-                    <span className="sector-rank-value">{r.value}</span>
-                </div>
-            ))}
+            {items.map((r) => {
+                let displayValue: string;
+                let colorClass = "";
+
+                if (type === "rate") {
+                    const rate = parseNumber(r.value);
+                    displayValue = `${r.value.replace("%", "")}%`;
+                    colorClass = rateColorClass(rate);
+                } else if (type === "marketCap") {
+                    displayValue = formatEok(r.value);
+                } else {
+                    displayValue = formatMillion(r.value);
+                }
+
+                return (
+                    <div key={r.code} className="sector-rank-row">
+                        <img
+                            className="sector-rank-logo"
+                            src={r.itemLogoUrl}
+                            alt=""
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+                        />
+                        <span className="sector-rank-name">{r.name}</span>
+                        <span className={`sector-rank-value ${colorClass}`}>{displayValue}</span>
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -106,7 +157,6 @@ export default function SectorModal({ open, onClose }: Props) {
                     <div className="sector-loading">불러오는 중...</div>
                 ) : (
                     <div className={`sector-slider ${selectedUpjong ? "show-stock" : ""}`}>
-                        {/* 업종 목록 */}
                         <div className="sector-page">
                             <div className="sector-grid">
                                 {upjongs.map((item) => {
@@ -146,7 +196,6 @@ export default function SectorModal({ open, onClose }: Props) {
                             </div>
                         </div>
 
-                        {/* 종목 목록 */}
                         <div className="sector-page stock-page">
                             <div className="stock-header">
                                 <span className="stock-title">{selectedUpjong?.name}</span>
@@ -160,17 +209,17 @@ export default function SectorModal({ open, onClose }: Props) {
 
                             {selectedUpjong && (
                                 <div className="sector-summary-line">
-                                    <span>시가총액 {selectedUpjong.totalMarketCap}</span>
-                                    <span>거래량 {selectedUpjong.totalTradingVolume}</span>
-                                    <span>거래대금 {selectedUpjong.totalTradingValue}</span>
+                                    <span>시가총액 {formatEok(selectedUpjong.totalMarketCap)}</span>
+                                    <span>거래량 {formatVolume(selectedUpjong.totalTradingVolume)}</span>
+                                    <span>거래대금 {formatMillion(selectedUpjong.totalTradingValue)}</span>
                                 </div>
                             )}
 
                             {selectedUpjong && (
                                 <div className="sector-rank-section">
-                                    <RankList title="등락률 상위" items={selectedUpjong.topByChangeRate} />
-                                    <RankList title="시가총액 상위" items={selectedUpjong.topByMarketCap} />
-                                    <RankList title="거래대금 상위" items={selectedUpjong.topByTradingValue} />
+                                    <RankList title="등락률 상위" items={selectedUpjong.topByChangeRate} type="rate" />
+                                    <RankList title="시가총액 상위" items={selectedUpjong.topByMarketCap} type="marketCap" />
+                                    <RankList title="거래대금 상위" items={selectedUpjong.topByTradingValue} type="tradingValue" />
                                 </div>
                             )}
 
@@ -196,7 +245,11 @@ export default function SectorModal({ open, onClose }: Props) {
                                             <div key={stock.code} className="stock-card">
                                                 <div className="stock-left">
                                                     <div className="stock-name">{stock.name}</div>
-                                                    <div className="stock-code">{stock.code}</div>
+                                                    <div className="stock-meta">
+                                                        <span>시가총액 {formatEok(stock.marketCap)}</span>
+                                                        <span>거래량 {formatVolume(stock.volume)}</span>
+                                                        <span>거래대금 {formatMillion(stock.tradingValue)}</span>
+                                                    </div>
                                                 </div>
 
                                                 <div className="stock-right">
