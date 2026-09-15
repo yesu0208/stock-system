@@ -379,3 +379,15 @@
 .icon.on {
     color: #facc15;
 }
+
+.top-bar button,
+.top-bar .item {
+    outline: none;
+}
+
+.top-bar button:focus,
+.top-bar button:focus-visible,
+.top-bar .item:focus,
+.top-bar .item:focus-visible {
+    outline: none;
+}

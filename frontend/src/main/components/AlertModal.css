@@ -369,3 +369,12 @@
     font-size: 11px;
     text-align: center;
 }
+
+.alert-modal-body button {
+    outline: none;
+}
+
+.alert-modal-body button:focus,
+.alert-modal-body button:focus-visible {
+    outline: none;
+}
