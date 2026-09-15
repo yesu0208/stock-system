@@ -2,8 +2,9 @@
     display: flex;
     gap: 20px;
     width: 100%;
-    min-height: 100vh;
+    height: 100%;
     flex-wrap: wrap;
+    overflow: auto;
 }
 
 .orderBookContainer {

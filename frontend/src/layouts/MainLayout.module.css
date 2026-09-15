@@ -1,9 +1,10 @@
 .container {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     background-color: #121212;
     color: #FFF;
+    overflow: hidden;
 }
 
 .header {
@@ -76,7 +77,7 @@
 .mainContent {
     flex: 1;
     min-width: 0;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .footer {
