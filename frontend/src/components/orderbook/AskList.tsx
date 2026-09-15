@@ -1,4 +1,7 @@
-import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
+import { useStockRealtime } from '../../main/context/StockRealtimeContext'
+import { useOrderPrice } from '../../main/context/OrderPriceContext'
+
+import styles from './AskList.module.css'
 
 interface PriceLevel {
     price: number
@@ -7,18 +10,18 @@ interface PriceLevel {
 
 interface AskListProps {
     asks: PriceLevel[]
-    tradeTicks?: TradePriceTickMessage[]
     prevClosePrice?: number
     maxQty?: number
 }
 
 export default function AskList({
                                     asks,
-                                    tradeTicks = [],
                                     prevClosePrice = 0,
                                     maxQty = 0,
                                 }: AskListProps) {
 
+    const { priceTick: latestTick } = useStockRealtime()
+    const { setSelectedPrice } = useOrderPrice()
 
     const getPriceColor = (price: number) => {
         if (price > prevClosePrice) return '#FF6347'
@@ -32,30 +35,59 @@ export default function AskList({
         return '#4F9DFF'
     }
 
-    const latestTick =
-        tradeTicks.length > 0
-            ? tradeTicks[tradeTicks.length - 1]
-            : null
-
     const latestPrice = latestTick?.curPrice
     const lowPrice = latestTick?.lowPrice
+    const highPrice = latestTick?.highPrice
+    const startPrice = latestTick?.startPrice
 
     const rate =
         lowPrice && prevClosePrice
             ? ((lowPrice - prevClosePrice) / prevClosePrice) * 100
             : 0
 
+    const highRate =
+        highPrice && prevClosePrice
+            ? ((highPrice - prevClosePrice) / prevClosePrice) * 100
+            : 0
+
+    const startRate =
+        startPrice && prevClosePrice
+            ? ((startPrice - prevClosePrice) / prevClosePrice) * 100
+            : 0
+
+    const tradeRate =
+        latestTick?.totalTradingVolume &&
+        latestTick?.prevDaySameTimeAccVolume
+            ? (latestTick.totalTradingVolume /
+            latestTick.prevDaySameTimeAccVolume) * 100
+            : 0
+
+    const getPriceBorder = (price: number, isEmpty: boolean): {
+        outline: string
+        outlineOffset: string
+        zIndex: number
+    } => {
+        const none = { outline: 'none', outlineOffset: '0px', zIndex: 5 }
+        if (isEmpty) return none
+
+        if (latestPrice !== undefined && price === latestPrice)
+            return { outline: '1px solid white', outlineOffset: '-1px', zIndex: 10 }
+        if (startPrice !== undefined && price === startPrice)
+            return { outline: '1px solid #888888', outlineOffset: '-1px', zIndex: 9 }
+        if (highPrice !== undefined && price === highPrice)
+            return { outline: '1px solid #FF6347', outlineOffset: '-1px', zIndex: 8 }
+        if (lowPrice !== undefined && price === lowPrice)
+            return { outline: '1px solid #4F9DFF', outlineOffset: '-1px', zIndex: 7 }
+
+        return none
+    }
+
     return (
-        <div style={styles.container}>
+        <div className={styles.container}>
             {asks.slice().reverse().map((a, idx, arr) => {
 
                 const isEmpty = a.price === 0 || a.quantity === 0
-
-                const widthPercent =
-                    maxQty > 0 ? (a.quantity / maxQty) * 100 : 0
-
-                const isLatest =
-                    latestPrice !== undefined && a.price === latestPrice
+                const widthPercent = maxQty > 0 ? (a.quantity / maxQty) * 100 : 0
 
                 const isBottomRow = idx === arr.length - 1
                 const isAboveBottom = idx === arr.length - 2
@@ -64,70 +96,47 @@ export default function AskList({
                 const isFourAboveBottom = idx === arr.length - 5
                 const isFiveAboveBottom = idx === arr.length - 6
 
-                const highRate =
-                    latestTick?.highPrice && prevClosePrice
-                        ? ((latestTick.highPrice - prevClosePrice) / prevClosePrice) * 100
-                        : 0
-
-                const startRate =
-                    latestTick?.startPrice && prevClosePrice
-                        ? ((latestTick.startPrice - prevClosePrice) / prevClosePrice) * 100
-                        : 0
-
-                const tradeRate =
-                    latestTick?.totalTradingVolume &&
-                    latestTick?.prevDaySameTimeAccVolume
-                        ? (latestTick.totalTradingVolume /
-                        latestTick.prevDaySameTimeAccVolume) * 100
-                        : 0
+                const borderStyle = getPriceBorder(a.price, isEmpty)
 
                 return (
-                    <div key={idx} style={styles.row}>
-                        {/* 왼쪽 잔량 */}
-                        <div style={styles.left}>
+                    <div key={idx} className={styles.row}>
+                        <div className={styles.left}>
                             {!isEmpty && (
                                 <>
-                                    <div
-                                        style={{
-                                            ...styles.bar,
-                                            width: `${widthPercent}%`,
-                                        }}
-                                    />
-                                    <span style={styles.quantityText}>
-                                        {a.quantity}
-                                    </span>
+                                    <div className={styles.bar} style={{ width: `${widthPercent}%` }} />
+                                    <span className={styles.quantityText}>{a.quantity}</span>
                                 </>
                             )}
                         </div>
 
-                        {/* 중앙 가격 */}
                         <div
+                            className={styles.price}
+                            onClick={() => {
+                                if (!isEmpty) setSelectedPrice(a.price)
+                            }}
                             style={{
-                                ...styles.price,
                                 color: !isEmpty ? getPriceColor(a.price) : 'white',
-                                boxShadow:
-                                    isLatest && !isEmpty
-                                        ? '0 0 0 1px white'
-                                        : 'none',
+                                outline: borderStyle.outline,
+                                outlineOffset: borderStyle.outlineOffset,
+                                zIndex: borderStyle.zIndex,
+                                cursor: !isEmpty ? 'pointer' : 'default',
                             }}
                         >
                             {!isEmpty ? a.price.toLocaleString() : ''}
                         </div>
 
-                        {/* 오른쪽 정보 영역 */}
-                        <div style={styles.right}>
-
+                        <div className={styles.right}>
                             {isFiveAboveBottom && (
                                 <>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>거래량</span>
-                                        <span style={styles.smallRowRight}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>거래량</span>
+                                        <span className={styles.smallRowRight}>
                                             {latestTick?.totalTradingVolume?.toLocaleString() ?? '-'}
                                         </span>
                                     </div>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>거래액</span>
-                                        <span style={styles.smallRowRight}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>거래액</span>
+                                        <span className={styles.smallRowRight}>
                                             {latestTick?.totalTradingValue != null
                                                 ? (latestTick.totalTradingValue / 100000000).toFixed(1) + '억'
                                                 : '-'}
@@ -138,15 +147,15 @@ export default function AskList({
 
                             {isFourAboveBottom && (
                                 <>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>매수</span>
-                                        <span style={{ ...styles.smallRowRight, color: '#FF6347' }}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>매수</span>
+                                        <span className={styles.smallRowRight} style={{ color: '#FF6347' }}>
                                             {latestTick?.totalBuyVolume?.toLocaleString() ?? '-'}
                                         </span>
                                     </div>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>매도</span>
-                                        <span style={{ ...styles.smallRowRight, color: '#4F9DFF' }}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>매도</span>
+                                        <span className={styles.smallRowRight} style={{ color: '#4F9DFF' }}>
                                             {latestTick?.totalSellVolume?.toLocaleString() ?? '-'}
                                         </span>
                                     </div>
@@ -155,15 +164,15 @@ export default function AskList({
 
                             {isThreeAboveBottom && (
                                 <>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>전일동시</span>
-                                        <span style={styles.smallRowRight}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>전일동시</span>
+                                        <span className={styles.smallRowRight}>
                                             {tradeRate.toFixed(2)}%
                                         </span>
                                     </div>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>기준가</span>
-                                        <span style={styles.smallRowRight}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>기준가</span>
+                                        <span className={styles.smallRowRight}>
                                             {latestTick?.prevClosePrice?.toLocaleString() ?? '-'}
                                         </span>
                                     </div>
@@ -172,15 +181,15 @@ export default function AskList({
 
                             {isTwoAboveBottom && (
                                 <>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>당일시가</span>
-                                        <span style={styles.smallRowRight}>
-                                            {latestTick?.startPrice?.toLocaleString() ?? '-'}
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>당일시가</span>
+                                        <span className={styles.smallRowRight} style={{ color: getRateColor(startRate) }}>
+                                            {startPrice?.toLocaleString() ?? '-'}
                                         </span>
                                     </div>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}></span>
-                                        <span style={{ ...styles.smallRowRight, color: getRateColor(startRate) }}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}></span>
+                                        <span className={styles.smallRowRight} style={{ color: getRateColor(startRate) }}>
                                             {startRate.toFixed(2)}%
                                         </span>
                                     </div>
@@ -189,15 +198,15 @@ export default function AskList({
 
                             {isAboveBottom && (
                                 <>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>당일고가</span>
-                                        <span style={styles.smallRowRight}>
-                                            {latestTick?.highPrice?.toLocaleString() ?? '-'}
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>당일고가</span>
+                                        <span className={styles.smallRowRight} style={{ color: getRateColor(highRate) }}>
+                                            {highPrice?.toLocaleString() ?? '-'}
                                         </span>
                                     </div>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}></span>
-                                        <span style={{ ...styles.smallRowRight, color: getRateColor(highRate) }}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}></span>
+                                        <span className={styles.smallRowRight} style={{ color: getRateColor(highRate) }}>
                                             {highRate.toFixed(2)}%
                                         </span>
                                     </div>
@@ -206,21 +215,20 @@ export default function AskList({
 
                             {isBottomRow && (
                                 <>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}>당일저가</span>
-                                        <span style={styles.smallRowRight}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}>당일저가</span>
+                                        <span className={styles.smallRowRight} style={{ color: getRateColor(rate) }}>
                                             {lowPrice?.toLocaleString() ?? '-'}
                                         </span>
                                     </div>
-                                    <div style={styles.smallRow}>
-                                        <span style={styles.smallRowLeft}></span>
-                                        <span style={{ ...styles.smallRowRight, color: getRateColor(rate) }}>
+                                    <div className={styles.smallRow}>
+                                        <span className={styles.smallRowLeft}></span>
+                                        <span className={styles.smallRowRight} style={{ color: getRateColor(rate) }}>
                                             {rate.toFixed(2)}%
                                         </span>
                                     </div>
                                 </>
                             )}
-
                         </div>
                     </div>
                 )
@@ -228,95 +236,3 @@ export default function AskList({
         </div>
     )
 }
-
-const cellWidth = 120
-
-const styles = {
-    container: {
-        display: 'block' as const,
-    },
-
-    row: {
-        display: 'flex' as const,
-        height: '36px',
-        backgroundColor: '#0B1A2B',
-        color: '#FFF',
-        fontSize: '14px',
-        boxSizing: 'border-box' as const,
-    },
-
-    left: {
-        position: 'relative' as const,
-        width: `${cellWidth}px`,
-        backgroundColor: '#0B1A2B',
-        boxSizing: 'border-box' as const,
-        paddingRight: '4px',
-        display: 'flex',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        borderTop: '0.1px solid #000',
-        borderBottom: '0.1px solid #000',
-    },
-
-    price: {
-        width: `${cellWidth}px`,
-        height: '36px',
-        lineHeight: '36px',
-        textAlign: 'center' as const,
-        borderLeft: '1px solid #333',
-        borderRight: '1px solid #333',
-        borderTop: '0.1px solid #000',
-        borderBottom: '0.1px solid #000',
-        boxSizing: 'border-box' as const,
-        position: 'relative' as const,
-        zIndex: 5,
-    },
-
-    right: {
-        width: `${cellWidth}px`,
-        padding: '2px 4px',
-        backgroundColor: '#111111',
-        boxSizing: 'border-box' as const,
-        borderTop: '0.1px solid #000',
-        borderBottom: '0.1px solid #000',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-start',
-    },
-
-    smallRow: {
-        height: '14px',
-        lineHeight: '14px',
-        fontSize: '10px',
-        display: 'flex' as const,
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        gap: '4px',
-    },
-
-    smallRowLeft: {
-        flex: 1,
-        textAlign: 'left' as const,
-    },
-
-    smallRowRight: {
-        flexShrink: 0,
-        textAlign: 'right' as const,
-    },
-
-    bar: {
-        position: 'absolute' as const,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        backgroundColor: '#2E3B50',
-        zIndex: 0,
-        height: '100%',
-    },
-
-    quantityText: {
-        position: 'relative' as const,
-        zIndex: 1,
-        marginRight: '4px',
-    },
-} as const

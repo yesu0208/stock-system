@@ -1,0 +1,306 @@
+:root {
+    --cell-width: 105px;
+}
+
+.container {
+    display: block;
+}
+
+.row {
+    display: flex;
+    height: 36px;
+    background-color: #0B1A2B;
+    color: #FFF;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.left {
+    position: relative;
+    width: var(--cell-width);
+    background-color: #0B1A2B;
+    box-sizing: border-box;
+    padding-right: 4px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-top: 0.1px solid #000;
+    border-bottom: 0.1px solid #000;
+}
+
+.price {
+    width: 90px;
+    height: 36px;
+    line-height: 36px;
+    text-align: center;
+    border-left: 1px solid #333;
+    border-right: 1px solid #333;
+    border-top: 0.1px solid #000;
+    border-bottom: 0.1px solid #000;
+    box-sizing: border-box;
+    position: relative;
+    font-weight: bold;
+}
+
+.price:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.right {
+    width: var(--cell-width);
+    padding: 2px 4px;
+    background-color: #111111;
+    box-sizing: border-box;
+    border-top: 0.1px solid #000;
+    border-bottom: 0.1px solid #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.smallRow {
+    height: 14px;
+    line-height: 14px;
+    font-size: 10px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+}
+
+.smallRowLeft {
+    flex: 1;
+    text-align: left;
+}
+
+.smallRowRight {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+.bar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: #2E3B50;
+    z-index: 0;
+    height: 100%;
+}
+
+.quantityText {
+    position: relative;
+    z-index: 1;
+    vertical-align: middle;
+    font-size: 11px;
+}
+
+.myOrderBadgeWrap {
+    position: absolute;
+    top: 50%;
+    left: 4px;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 2px;
+    z-index: 11;
+}
+
+.myOrderTagBuy,
+.myOrderTagSell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0;
+    white-space: nowrap;
+    background: transparent;
+    border: 2px solid;
+}
+
+.myOrderTagBuy {
+    color: #f87171;
+    border-color: #f87171;
+}
+
+.myOrderTagSell {
+    color: #60a5fa;
+    border-color: #60a5fa;
+    position: relative;
+    top: -0.5px;
+}
+
+.myOrderTooltip {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 6px);
+    transform: translateX(-50%);
+    min-width: 160px;
+    background: #1e293b;
+    border: 1px solid rgba(124, 92, 255, 0.4);
+    border-radius: 6px;
+    padding: 6px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 20;
+    white-space: nowrap;
+}
+
+.myOrderTooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1e293b;
+}
+
+.myOrderBadgeWrap:hover .myOrderTooltip {
+    display: block;
+}
+
+.tooltipRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+.tooltipRow + .tooltipRow {
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tooltipSideBuy,
+.tooltipSideSell {
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.tooltipSideBuy {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.15);
+}
+
+.tooltipSideSell {
+    color: #60a5fa;
+    background: rgba(96, 165, 250, 0.15);
+}
+
+.tooltipQty {
+    color: #cbd5e1;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.tooltipInfo {
+    color: #b7a6ff;
+    font-weight: 600;
+    flex: 1;
+    text-align: right;
+}
+
+.myOrderTooltipPortal {
+    position: fixed;
+    transform: translate(-50%, calc(-100% - 6px));
+    min-width: 160px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 20px 6px 6px 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 9990;
+    white-space: nowrap;
+}
+
+.myOrderTooltipPortal::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1e293b;
+}
+
+.tooltipCloseBtn {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.tooltipCloseBtn:hover {
+    color: #FFF;
+}
+
+.tooltipList {
+    max-height: 85px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.tooltipList::-webkit-scrollbar {
+    width: 4px;
+}
+
+.tooltipList::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
+}
+
+.tooltipInfoPriority {
+    color: #facc15;
+    font-weight: 600;
+    flex: 1;
+    text-align: right;
+}
+
+.tooltipTitle {
+    position: absolute;
+    top: 2px;
+    left: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #cbd5e1;
+    line-height: 16px;
+}
+
+.tooltipSubInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: #cbd5e1;
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+.tooltipTime {
+    color: #cbd5e1;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}

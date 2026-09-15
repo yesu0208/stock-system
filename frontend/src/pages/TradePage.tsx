@@ -8,15 +8,13 @@ import type { TrailingStopResponseMessage, TrailingStopResultResponse, TrailingS
 import StockSummaryPanel from '../components/information/StockSummaryPanel.tsx'
 import StockInfoPanel from '../components/information/StockInfoPanel'
 import TradingChart from '../main/components/TradingChart'
-import { isRealtimeStock } from '../utils/stockUtils'
 import { useStock } from '../main/context/StockContext'
 import { useUser } from '../main/context/UserContext'
-import { STOCKS as FULL_STOCKS } from '../main/data/stocks'
+import { useStockRealtime } from '../main/context/StockRealtimeContext'
 import { motion } from 'framer-motion'
 import styles from './TradePage.module.css'
 import TopBar from '../main/components/TopBar'
 
-import type { TradePriceTickMessage } from '../types/tradePriceTickMessage'
 import { useRealtime } from '../main/context/RealtimeContext'
 import { useAccount } from '../main/context/AccountContext'
 
@@ -35,25 +33,9 @@ import type { CancelResultResponse } from '../types/cancel'
 import type { TradeResponse } from '../types/trade'
 import { STOCKS } from '../constants/stocks'
 
-interface PriceLevel {
-    price: number
-    quantity: number
-}
-
 export default function TradePage() {
-    const [selectedStock, setSelectedStock] = useState(STOCKS[0].code)
-
-    const [asks, setAsks] = useState<PriceLevel[]>([])
-    const [bids, setBids] = useState<PriceLevel[]>([])
-
-    const [tradeTicks, setTradeTicks] = useState<TradePriceTickMessage[]>([])
-    const [tradePrice, setTradePrice] =
-        useState<TradePriceTickMessage | null>(null)
-
-    const [prevClosePrice, setPrevClosePrice] = useState(0)
-
-    const [isBidAskReady, setIsBidAskReady] = useState(false)
-    const [isTradeReady, setIsTradeReady] = useState(false)
+    // 종목 선택은 TopBar와 동일한 전역 StockContext를 단일 소스로 사용
+    const { selectedStock } = useStock()
 
     const [stockSummaries, setStockSummaries] =
         useState<StockSummaryTickMessage[]>([])
@@ -89,25 +71,12 @@ export default function TradePage() {
     const { subscribeDestination } = useRealtime()
     const { account: accountInfo } = useAccount()
     const { user: userInfo } = useUser()
-    const { setSelectedStock: setGlobalSelectedStock } = useStock()
+
+    // OrderBook의 실시간 호가/체결가는 StockRealtimeContext가 selectedStock 기준으로 자체 구독하므로
+    // 여기서는 TradePanel에 넘길 현재가/연결상태만 가져온다.
+    const { priceTick, connected: isPriceConnected } = useStockRealtime()
 
     useEffect(() => {
-        const unsubStock = subscribeDestination(`/sub/stock/${selectedStock}`, (data: any) => {
-            if (data.tickMessageType === 'BIDASKPRICE') {
-                setAsks(data.asks ?? [])
-                setBids(data.bids ?? [])
-                setIsBidAskReady(true)
-            }
-
-            if (data.tickMessageType === 'TRADEPRICE') {
-                const tick = data as TradePriceTickMessage
-                setPrevClosePrice(tick.prevClosePrice ?? 0)
-                setTradePrice(tick)
-                setTradeTicks(prev => [...prev, tick])
-                setIsTradeReady(true)
-            }
-        })
-
         const unsubOrderResult = subscribeDestination('/user/sub/order/result', (data: OrderResultResponse) => {
             setOrderResult(data)
         })
@@ -171,7 +140,6 @@ export default function TradePage() {
         })
 
         return () => {
-            unsubStock()
             unsubOrderResult()
             unsubCancelResult()
             unsubTradeResult()
@@ -189,12 +157,10 @@ export default function TradePage() {
             unsubTrailingUpdate()
             unsubTrailingCancelResult()
         }
-    }, [selectedStock, subscribeDestination])
+    }, [subscribeDestination])
 
-    const stockName =
-        STOCKS.find(s => s.code === selectedStock)?.name ?? selectedStock
-
-    const isOrderBookReady = isBidAskReady && isTradeReady
+    const stockCode = selectedStock.code
+    const stockName = selectedStock.name
 
     return (
         <>
@@ -212,45 +178,7 @@ export default function TradePage() {
                     animate={{opacity: 1, y: 0}}
                     transition={{duration: 0.5, delay: 0.1}}
                 >
-                    <div className={styles.stockSelector}>
-                        <label className={styles.label}>종목 선택:</label>
-
-                        <select
-                            className={styles.select}
-                            value={selectedStock}
-                            onChange={(e) => {
-                                const code = e.target.value
-                                setSelectedStock(code)
-
-                                const full = FULL_STOCKS.find(s => s.code === code)
-                                if (full) setGlobalSelectedStock(full)
-
-                                setAsks([])
-                                setBids([])
-                                setTradeTicks([])
-                                setTradePrice(null)
-                                setPrevClosePrice(0)
-                                setIsBidAskReady(false)
-                                setIsTradeReady(false)
-                            }}
-                        >
-                            {STOCKS.map(stock => (
-                                <option key={stock.code} value={stock.code}>
-                                    {stock.name} ({stock.code})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <OrderBook
-                        stockName={stockName}
-                        asks={asks}
-                        bids={bids}
-                        tradeTicks={tradeTicks}
-                        prevClosePrice={prevClosePrice}
-                        isReady={isOrderBookReady}
-                        isRealtimeSupported={isRealtimeStock(selectedStock)}
-                    />
+                    <OrderBook />
                 </motion.div>
 
                 <motion.div
@@ -259,7 +187,7 @@ export default function TradePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.15 }}
                 >
-                    <StockInfoPanel stockCode={selectedStock} stockName={stockName} />
+                    <StockInfoPanel stockCode={stockCode} stockName={stockName} />
                     <div style={{ height: '420px' }}>
                         <TradingChart />
                     </div>
@@ -272,10 +200,10 @@ export default function TradePage() {
                     transition={{ duration: 0.5, delay: 0.2 }}
                 >
                     <TradePanel
-                        stockCode={selectedStock}
+                        stockCode={stockCode}
                         stockName={stockName}
-                        isPriceReady={isBidAskReady}
-                        curPrice={tradePrice?.curPrice}
+                        isPriceReady={isPriceConnected && !!priceTick}
+                        curPrice={priceTick?.curPrice}
                         orderResult={orderResult}
                         cancelResult={cancelResult}
                         tradeResult={tradeResult}

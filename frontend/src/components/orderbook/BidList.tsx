@@ -1,51 +1,72 @@
+import { useStockRealtime } from '../../main/context/StockRealtimeContext'
+import { useOrderPrice } from '../../main/context/OrderPriceContext'
 import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
+
+import styles from './BidList.module.css'
 
 interface BidLevel {
     price: number
     quantity: number
-    strength?: number
-    amount?: number
 }
 
 interface BidListProps {
     bids: BidLevel[]
-    tradeTicks?: TradePriceTickMessage[]
     prevClosePrice?: number
     maxQty?: number
+    accTicks?: TradePriceTickMessage[]
 }
 
 export default function BidList({
                                     bids,
-                                    tradeTicks = [],
                                     prevClosePrice = 0,
                                     maxQty = 0,
+                                    accTicks = [],
                                 }: BidListProps) {
 
-    // 가격 색상
+    const { priceTick } = useStockRealtime()
+    const { setSelectedPrice } = useOrderPrice()
+
     const getPriceColor = (price: number) => {
         if (price > prevClosePrice) return '#FF6347'
         if (price < prevClosePrice) return '#4F9DFF'
         return 'white'
     }
 
-    // 체결 타입 색상
     const getVolumeColor = (tick: TradePriceTickMessage) => {
         if (tick.tradingType === '1') return '#FF6347'
         if (tick.tradingType === '5') return '#4F9DFF'
         return 'white'
     }
 
-    // 최신 18개 체결
-    const ticksToShow = [...tradeTicks.slice(-18)].reverse()
-    const latestPrice =
-        typeof ticksToShow[0]?.curPrice === 'number'
-            ? ticksToShow[0].curPrice
-            : null
+    const latestPrice = priceTick?.curPrice
+    const startPrice = priceTick?.startPrice
+    const highPrice = priceTick?.highPrice
+    const lowPrice = priceTick?.lowPrice
 
-    // 2개씩 chunk
+    const getPriceBorder = (price: number, isEmpty: boolean): {
+        outline: string
+        outlineOffset: string
+        zIndex: number
+    } => {
+        const none = { outline: 'none', outlineOffset: '0px', zIndex: 0 }
+        if (isEmpty) return none
+
+        if (latestPrice !== undefined && price === latestPrice)
+            return { outline: '1px solid white', outlineOffset: '-1px', zIndex: 10 }
+        if (startPrice !== undefined && price === startPrice)
+            return { outline: '1px solid #888888', outlineOffset: '-1px', zIndex: 9 }
+        if (highPrice !== undefined && price === highPrice)
+            return { outline: '1px solid #FF6347', outlineOffset: '-1px', zIndex: 8 }
+        if (lowPrice !== undefined && price === lowPrice)
+            return { outline: '1px solid #4F9DFF', outlineOffset: '-1px', zIndex: 7 }
+
+        return none
+    }
+
+    const ticksToShow = accTicks.slice(0, bids.length * 2)
+
     const tickChunks: TradePriceTickMessage[][] = []
     let tickIndex = 0
-
     for (let i = 1; i < bids.length; i++) {
         const chunk = ticksToShow.slice(tickIndex, tickIndex + 2)
         tickChunks.push(chunk)
@@ -53,16 +74,11 @@ export default function BidList({
         if (tickIndex >= ticksToShow.length) break
     }
 
-    // 체결강도
     const calcStrength = () => {
-        if (tradeTicks.length === 0) return 0
-
-        const latest = tradeTicks[tradeTicks.length - 1]
-        const buy = Number(latest.totalBuyVolume)
-        const sell = Number(latest.totalSellVolume)
-
+        if (!priceTick) return 0
+        const buy = Number(priceTick.totalBuyVolume)
+        const sell = Number(priceTick.totalSellVolume)
         if (!buy || buy <= 0) return 0
-
         return +((buy / sell) * 100).toFixed(2)
     }
 
@@ -75,50 +91,35 @@ export default function BidList({
     }
 
     return (
-        <div style={styles.container}>
+        <div className={styles.container}>
             {bids.map((b, idx) => {
 
-                // row는 유지, 내용만 숨김
                 const isEmpty = b.price === 0 || b.quantity === 0
+                const widthPercent = maxQty > 0 ? (b.quantity / maxQty) * 100 : 0
+                const rowTicks = idx === 0 ? [] : tickChunks[idx - 1] || []
 
-                const widthPercent =
-                    maxQty > 0 ? (b.quantity / maxQty) * 100 : 0
-
-                const rowTicks =
-                    idx === 0 ? [] : tickChunks[idx - 1] || []
-
-                const isLatest =
-                    latestPrice !== null && b.price === latestPrice
+                const borderStyle = getPriceBorder(b.price, isEmpty)
 
                 return (
-                    <div key={idx} style={styles.row}>
-                        {/* 왼쪽 */}
-                        <div style={styles.left}>
+                    <div key={idx} className={styles.row}>
+                        <div className={styles.left}>
                             {idx === 0 ? (
                                 <>
-                                    <div style={styles.topLeft}>
+                                    <div className={styles.topLeft}>
                                         <span>체결강도</span>
                                         <span style={{ color: getStrengthColor(strength) }}>
                                             {strength.toFixed(2)}%
                                         </span>
                                     </div>
-                                    <div style={styles.bottomLeft}>
+                                    <div className={styles.bottomLeft}>
                                         <span>체결가</span>
                                         <span>체결량</span>
                                     </div>
                                 </>
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <div className={styles.tickList}>
                                     {rowTicks.map((tick, i) => (
-                                        <div
-                                            key={i}
-                                            style={{
-                                                fontSize: '10px',
-                                                lineHeight: '12px',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                            }}
-                                        >
+                                        <div key={i} className={styles.tickRow}>
                                             <span style={{ color: getPriceColor(tick.curPrice) }}>
                                                 {tick.curPrice.toLocaleString()}
                                             </span>
@@ -131,31 +132,27 @@ export default function BidList({
                             )}
                         </div>
 
-                        {/* 중앙 가격 */}
                         <div
+                            className={styles.price}
+                            onClick={() => {
+                                if (!isEmpty) setSelectedPrice(b.price)
+                            }}
                             style={{
-                                ...styles.price,
                                 color: !isEmpty ? getPriceColor(b.price) : 'white',
-                                boxShadow:
-                                    isLatest && !isEmpty
-                                        ? 'inset 0 0 0 1px white'
-                                        : 'none',
+                                outline: borderStyle.outline,
+                                outlineOffset: borderStyle.outlineOffset,
+                                zIndex: borderStyle.zIndex,
+                                cursor: !isEmpty ? 'pointer' : 'default',
                             }}
                         >
                             {!isEmpty ? b.price.toLocaleString() : ''}
                         </div>
 
-                        {/* 오른쪽 잔량 */}
-                        <div style={styles.right}>
+                        <div className={styles.right}>
                             {!isEmpty && (
-                                <div
-                                    style={{
-                                        ...styles.bar,
-                                        width: `${widthPercent}%`,
-                                    }}
-                                />
+                                <div className={styles.bar} style={{ width: `${widthPercent}%` }} />
                             )}
-                            <span style={styles.quantityText}>
+                            <span className={styles.quantityText}>
                                 {!isEmpty ? b.quantity : ''}
                             </span>
                         </div>
@@ -164,87 +161,4 @@ export default function BidList({
             })}
         </div>
     )
-}
-
-const cellWidth = 120
-
-const styles = {
-    container: { display: 'block' as const },
-
-    row: {
-        display: 'flex' as const,
-        height: '36px',
-        backgroundColor: '#2B0B0B',
-        color: '#FFF',
-        fontSize: '14px',
-        boxSizing: 'border-box' as const,
-    },
-
-    left: {
-        width: `${cellWidth}px`,
-        backgroundColor: '#111111',
-        boxSizing: 'border-box' as const,
-        fontSize: '12px',
-        padding: '1px 2px',
-        display: 'flex' as const,
-        flexDirection: 'column' as const,
-        justifyContent: 'flex-start' as const,
-    },
-
-    topLeft: {
-        height: '14px',
-        lineHeight: '14px',
-        display: 'flex' as const,
-        justifyContent: 'space-between' as const,
-        fontSize: '10px',
-    },
-
-    bottomLeft: {
-        height: '14px',
-        lineHeight: '14px',
-        display: 'flex' as const,
-        justifyContent: 'space-between' as const,
-        fontSize: '10px',
-    },
-
-    price: {
-        width: `${cellWidth}px`,
-        height: '36px',
-        lineHeight: '33px',
-        textAlign: 'center' as const,
-        borderLeft: '1px solid #333',
-        borderRight: '1px solid #333',
-        borderTop: '0.1px solid #000',
-        borderBottom: '0.1px solid #000',
-        boxSizing: 'border-box' as const,
-    },
-
-    right: {
-        position: 'relative' as const,
-        width: `${cellWidth}px`,
-        height: '36px',
-        lineHeight: '27px',
-        paddingLeft: '4px',
-        backgroundColor: '#2B0B0B',
-        boxSizing: 'border-box' as const,
-        borderTop: '0.1px solid #000',
-        borderBottom: '0.1px solid #000',
-    },
-
-    bar: {
-        position: 'absolute' as const,
-        left: 0,
-        top: 0,
-        bottom: 0,
-        backgroundColor: '#5C1B1B',
-        zIndex: 0,
-        height: '100%',
-    },
-
-    quantityText: {
-        position: 'relative' as const,
-        zIndex: 1,
-        marginLeft: '4px',
-        verticalAlign: 'middle' as const,
-    },
 }

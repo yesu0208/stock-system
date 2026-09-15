@@ -1,23 +1,22 @@
-.wrapper {
-    padding: 16px;
-    background-color: #1A1A1A;
-    border-radius: 8px;
-    width: 350px;
-    height: 870px;
-    min-height: 870px;
+.container {
+    width: 100%;
+    height: 100%;
+    background-color: #121212;
+    border-radius: 10px;
+    border: 1px solid #334155;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
-.container {
-    width: 300px;
-    background-color: #121212;
-    border-radius: 8px;
-    padding: 8px;
+.inner {
     flex: 1;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    padding: 8px;
 }
 
 .header {
@@ -25,46 +24,47 @@
     flex-direction: column;
     align-items: center;
     margin-bottom: 8px;
-}
+    flex-shrink: 0;
 
-.stockName {
-    color: #FFF;
-    margin: 0;
-}
-
-.priceInfo {
-    display: flex;
-    gap: 8px;
-    font-size: 16px;
-    margin-top: 4px;
-}
-
-.latestPrice {
+    color: #d1d5db;
+    font-size: 15px;
     font-weight: bold;
-    color: #FFF;
+    white-space: nowrap;
 }
 
-.change {
-    font-weight: bold;
-}
-
-.changeUp {
-    color: #FF6347;
-}
-
-.changeDown {
-    color: #4F9DFF;
-}
-
-.changeFlat {
-    color: #FFF;
+.scrollArea {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
 }
 
 .footer {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     color: #FFF;
+    font-size: 12px;
+    padding: 6px 4px;
+    border-top: 1px solid #2A2A2A;
     margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.footerAsk {
+    color: #4F9DFF;
+    font-size: 13px;
+}
+
+.footerLabel {
+    color: white;
+    font-size: 13px;
+    transform: translateX(-6px);
+}
+
+.footerBid {
+    color: #FF6347;
+    font-size: 13px;
 }
 
 .loading {
@@ -72,8 +72,38 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #888;
-    font-size: 14px;
+    font-weight: 600;
+    color: #8d929b;
+    font-size: 13px;
+}
+
+.unsupportedOverlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 100%;
+}
+
+.unsupportedMsg {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8d929b;
     text-align: center;
-    padding: 0 12px;
+    line-height: 1.7;
+}
+
+@keyframes orderbookFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fadeIn {
+    animation: orderbookFadeIn 0.3s ease-out;
 }
