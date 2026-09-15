@@ -243,12 +243,7 @@ export default function TopBar() {
                 </div>
             </div>
 
-            <AlertModal
-                show={alertOpen}
-                onClose={handleAlertClose}
-                stockCode={selectedStock.code}
-                stockName={selectedStock.name}
-            />
+            <AlertModal open={alertOpen} onClose={handleAlertClose} />
         </>
     );
 }
