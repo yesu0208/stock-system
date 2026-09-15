@@ -1,0 +1,48 @@
+.trade-btn-panel {
+    width: 310px;
+    height: 38px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3px;
+    padding: 2px 4px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+}
+
+.trade-btn {
+    width: 58px;
+    height: 45px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 2px 4px;
+    outline: none;
+    transition: color 0.15s;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.trade-btn:focus,
+.trade-btn:focus-visible {
+    outline: none;
+}
+
+.trade-btn:hover {
+    color: white;
+}
+
+.trade-btn .icon {
+    transition: color 0.15s;
+}

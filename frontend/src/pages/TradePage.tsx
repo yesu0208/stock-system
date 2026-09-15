@@ -14,6 +14,7 @@ import { useStockRealtime } from '../main/context/StockRealtimeContext'
 import { motion } from 'framer-motion'
 import styles from './TradePage.module.css'
 import TopBar from '../main/components/TopBar'
+import TradeBtnPanel from '../main/components/TradeBtnPanel'
 
 import { useRealtime } from '../main/context/RealtimeContext'
 import { useAccount } from '../main/context/AccountContext'
@@ -179,6 +180,7 @@ export default function TradePage() {
                     transition={{duration: 0.5, delay: 0.1}}
                 >
                     <OrderBook />
+                    <TradeBtnPanel />
                 </motion.div>
 
                 <motion.div
