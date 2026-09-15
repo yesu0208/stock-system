@@ -592,3 +592,9 @@
     color: #93c5fd;
     border-bottom-color: #3b82f6;
 }
+
+.oh-grid-pending-general {
+    display: grid;
+    grid-template-columns: 48px 1fr 52px 56px 90px 80px 110px 100px;
+    align-items: center;
+}

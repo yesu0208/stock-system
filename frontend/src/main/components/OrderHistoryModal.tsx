@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
 import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory } from "../../api/orderHistory";
-import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled, getAutoOrderTriggered } from "../../api/autoOrderHistory";
+import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled} from "../../api/autoOrderHistory";
 import { stockNameMap } from "../../constants/stocks";
 import type { OrderHistoryItem, TradeHistoryItem, AutoOrderHistoryItem, HistoryPageResponse } from "../../types/history";
 import "./OrderHistoryModal.css";
@@ -248,6 +248,11 @@ export default function OrderHistoryModal() {
     };
 
     const isPending = mainTab === "미체결";
+    const showTrigger = subTab === "자동" && mainTab !== "체결";
+    const gridClass = isPending
+        ? (showTrigger ? "oh-grid-pending" : "oh-grid-pending-general")
+        : (showTrigger ? "oh-grid-cancelled" : "oh-grid-executed");
+
     const hasFilter = !!(filter.keyword || filter.dateFrom || filter.dateTo);
 
     return (
@@ -286,24 +291,26 @@ export default function OrderHistoryModal() {
                 />
 
                 {isPending ? (
-                    <div className="oh-header-row oh-grid-pending">
+                    <div className={`oh-header-row ${gridClass}`}>
                         <span className="oh-col oh-time">시간</span>
                         <span className="oh-col oh-name">종목</span>
                         <span className="oh-col oh-side">구분</span>
                         <span className="oh-col oh-leverage">레버리지</span>
-                        <span className="oh-col oh-order-type">주문구분</span>
-                        <span className="oh-col oh-trigger">감시가</span>
+                        {showTrigger && <span className="oh-col oh-order-type">주문구분</span>}
+                        {showTrigger && <span className="oh-col oh-trigger">감시가</span>}
                         <span className="oh-col oh-qty">잔량/수량</span>
                         <span className="oh-col oh-price">가격</span>
                         <span className="oh-col oh-margin">명목가치/증거금</span>
                         <span className="oh-col oh-liquidation">유지증거금율/청산가</span>
                     </div>
                 ) : (
-                    <div className="oh-header-row oh-grid-executed">
+                    <div className={`oh-header-row ${gridClass}`}>
                         <span className="oh-col oh-time">시간</span>
                         <span className="oh-col oh-name">종목</span>
                         <span className="oh-col oh-side">구분</span>
                         <span className="oh-col oh-leverage">레버리지</span>
+                        {showTrigger && <span className="oh-col oh-order-type">주문구분</span>}
+                        {showTrigger && <span className="oh-col oh-trigger">감시가</span>}
                         <span className="oh-col oh-qty">수량</span>
                         <span className="oh-col oh-price">가격</span>
                         <span className="oh-col oh-margin">명목가치/증거금</span>
@@ -352,7 +359,7 @@ export default function OrderHistoryModal() {
                                         : item.orderQuantity;
 
                                     return (
-                                        <li key={`${auto ? "auto" : "order"}-${id}`} className="oh-item oh-grid-pending">
+                                        <li key={`${auto ? "auto" : "order"}-${id}`} className={`oh-item ${gridClass}`}>
                                             <TimeCell isoString={time} />
                                             <span className="oh-col oh-name">
                                                 <span className="oh-stock-name">{stockName}</span>
@@ -362,10 +369,12 @@ export default function OrderHistoryModal() {
                                                 {side === "BUY" ? "매수" : "매도"}
                                             </span>
                                             <LeverageBadge leverageRatio={item.leverageRatio} />
-                                            <span className="oh-col oh-order-type">{auto ? "조건부" : "지정가"}</span>
-                                            <span className="oh-col oh-trigger">
-                                                {triggerPrice != null ? triggerPrice.toLocaleString() : <span className="oh-dash">—</span>}
-                                            </span>
+                                            {showTrigger && <span className="oh-col oh-order-type">조건부</span>}
+                                            {showTrigger && (
+                                                <span className="oh-col oh-trigger">
+                                                    {triggerPrice != null ? triggerPrice.toLocaleString() : <span className="oh-dash">—</span>}
+                                                </span>
+                                            )}
                                             <span className="oh-col oh-qty">
                                                 {remainingQuantity.toLocaleString()}
                                                 <span className="oh-qty-sep">/</span>
@@ -382,7 +391,7 @@ export default function OrderHistoryModal() {
                                 }
 
                                 return (
-                                    <li key={`${auto ? "auto" : "order"}-${id}`} className="oh-item oh-grid-executed">
+                                    <li key={`${auto ? "auto" : "order"}-${id}`} className={`oh-item ${gridClass}`}>
                                         <TimeCell isoString={time} />
                                         <span className="oh-col oh-name">
                                             <span className="oh-stock-name">{stockName}</span>
@@ -392,6 +401,14 @@ export default function OrderHistoryModal() {
                                             {side === "BUY" ? "매수" : "매도"}
                                         </span>
                                         <LeverageBadge leverageRatio={item.leverageRatio} />
+                                        {showTrigger && <span className="oh-col oh-order-type">조건부</span>}
+                                        {showTrigger && (
+                                            <span className="oh-col oh-trigger">
+                                                {auto && (item as AutoOrderHistoryItem).triggerPrice != null
+                                                    ? (item as AutoOrderHistoryItem).triggerPrice.toLocaleString()
+                                                    : <span className="oh-dash">—</span>}
+                                            </span>
+                                        )}
                                         <span className="oh-col oh-qty">{item.orderQuantity.toLocaleString()}주</span>
                                         <span className="oh-col oh-price">{item.orderPrice.toLocaleString()}</span>
                                         <MarginCell notionalValue={item.notionalValue} initialMargin={item.initialMargin} />
