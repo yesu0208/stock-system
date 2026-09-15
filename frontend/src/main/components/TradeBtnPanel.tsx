@@ -47,7 +47,7 @@ export default function TradeBtnPanel() {
             </ModalV2>
 
             <ModalV2 open={openModal === '종목톡'} title="종목톡" onClose={close}>
-                <StockTalkModal open={openModal === '종목톡'} onClose={close} />
+                <StockTalkModal open={openModal === '종목톡'} />
             </ModalV2>
 
             {/* TODO: 모달 연결 예정

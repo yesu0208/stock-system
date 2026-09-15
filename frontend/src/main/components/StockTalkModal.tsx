@@ -24,7 +24,6 @@ const makeEmptyRooms = (): Record<string, RoomState> =>
 
 interface Props {
     open: boolean;
-    onClose: () => void;
 }
 
 function formatTime(isoStr: string): string {
@@ -101,7 +100,7 @@ function formatRank(tier: string, subTier: number | null) {
     return `${tier} ${subTier != null ? (ROMAN[subTier] ?? subTier) : ""}`.trim();
 }
 
-export default function StockTalkModal({ open, onClose }: Props) {
+export default function StockTalkModal({ open }: Props) {
     const { subscribeDestination, subscribeStock, publish, connected } = useRealtime();
     const { user } = useUser();
     const { account } = useAccount();
