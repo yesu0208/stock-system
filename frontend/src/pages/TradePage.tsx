@@ -187,7 +187,7 @@ export default function TradePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.15 }}
                 >
-                    <StockInfoPanel stockCode={stockCode} stockName={stockName} />
+                    <StockInfoPanel />
                     <div style={{ height: '420px' }}>
                         <TradingChart />
                     </div>
