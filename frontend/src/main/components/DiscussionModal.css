@@ -22,23 +22,30 @@
     border: none;
     color: rgba(255, 255, 255, 0.4);
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
     border-radius: 0;
     letter-spacing: 0.01em;
+
+    border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
 }
 
-.discussion-tab:hover {
-    color: rgba(255, 255, 255, 0.7);
-    background: none;
+.discussion-tab:focus,
+.discussion-tab:focus-visible {
+    outline: none;
+}
+
+.discussion-tab:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
 }
 
 .discussion-tab.active {
     color: #b7a6ff;
-    background: none;
-    border-color: transparent;
     border-bottom-color: #7c5cff;
 }
 
@@ -984,4 +991,40 @@
 .comment-edit-actions .write-submit-btn {
     padding: 5px 12px;
     font-size: 11px;
+}
+
+.write-btn,
+.stock-selector-trigger,
+.stock-selector-item,
+.d-btn,
+.owner-btn,
+.detail-back,
+.discussion-send,
+.write-cancel-btn,
+.write-submit-btn,
+.ssb-clear {
+    outline: none;
+}
+
+.write-btn:focus,
+.write-btn:focus-visible,
+.stock-selector-trigger:focus,
+.stock-selector-trigger:focus-visible,
+.stock-selector-item:focus,
+.stock-selector-item:focus-visible,
+.d-btn:focus,
+.d-btn:focus-visible,
+.owner-btn:focus,
+.owner-btn:focus-visible,
+.detail-back:focus,
+.detail-back:focus-visible,
+.discussion-send:focus,
+.discussion-send:focus-visible,
+.write-cancel-btn:focus,
+.write-cancel-btn:focus-visible,
+.write-submit-btn:focus,
+.write-submit-btn:focus-visible,
+.ssb-clear:focus,
+.ssb-clear:focus-visible {
+    outline: none;
 }
