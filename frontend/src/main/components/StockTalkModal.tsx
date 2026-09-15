@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { FiSearch, FiMessageSquare } from "react-icons/fi";
 import { useRealtime } from "../../main/context/RealtimeContext";
+import { useUser } from "../../main/context/UserContext";
 import { STOCKS } from "../../main/data/stocks";
+import { calcStockStats, DIRECTION_CLASS } from "../../utils/stockUtils";
+import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import type { StockTalkMessage, StockTalkJoinResponse } from "../../types/stockTalk";
 import "./StockTalkModal.css";
 
@@ -20,15 +23,65 @@ interface Props {
     onClose: () => void;
 }
 
+function formatTime(isoStr: string): string {
+    try {
+        const d = new Date(isoStr);
+        const now = new Date();
+        const isToday =
+            d.getFullYear() === now.getFullYear() &&
+            d.getMonth() === now.getMonth() &&
+            d.getDate() === now.getDate();
+
+        const h = String(d.getHours()).padStart(2, "0");
+        const m = String(d.getMinutes()).padStart(2, "0");
+
+        if (isToday) return `${h}:${m}`;
+
+        const yy = String(d.getFullYear()).slice(2);
+        const mo = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yy}.${mo}.${dd} ${h}:${m}`;
+    } catch {
+        return "";
+    }
+}
+
+const AVATAR_EMOJIS = ["🐶", "🐱", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐸", "🐵", "🐔", "🐧", "🦄", "🐙", "🐢"];
+const AVATAR_COLORS = ["#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399", "#22d3ee", "#60a5fa", "#818cf8", "#a78bfa", "#f472b6", "#fb7185", "#2dd4bf"];
+
+function hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+}
+
+function getFallbackAvatar(username: string): { emoji: string; bg: string } {
+    const h = hashString(username || "?");
+    return {
+        emoji: AVATAR_EMOJIS[h % AVATAR_EMOJIS.length],
+        bg: AVATAR_COLORS[h % AVATAR_COLORS.length],
+    };
+}
+
 export default function StockTalkModal({ open, onClose }: Props) {
-    const { subscribeDestination, publish, connected } = useRealtime();
+    const { subscribeDestination, subscribeStock, publish, connected } = useRealtime();
+    const { user } = useUser();
 
     const [rooms, setRooms] = useState<Record<string, RoomState>>(makeEmptyRooms);
     const [activeTicker, setActiveTicker] = useState<string | null>(null);
     const [unread, setUnread] = useState<Record<string, number>>({});
     const [search, setSearch] = useState("");
+    const [inputText, setInputText] = useState("");
+
     const activeTickerRef = useRef<string | null>(null);
     const joinedBarRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const [activeTick, setActiveTick] = useState<any>(null);
 
     const updateRoom = useCallback((ticker: string, updater: (prev: RoomState) => RoomState) => {
         setRooms((prev) => ({
@@ -78,6 +131,17 @@ export default function StockTalkModal({ open, onClose }: Props) {
     }, [open, connected, subscribeDestination, updateRoom]);
 
     useEffect(() => {
+        setActiveTick(null);
+        if (!activeTicker) return;
+
+        return subscribeStock(activeTicker, (tick: any) => {
+            if (tick.tickMessageType === "TRADEPRICE" || tick.tickMessageType === "DETAIL") {
+                setActiveTick(tick);
+            }
+        });
+    }, [activeTicker, subscribeStock]);
+
+    useEffect(() => {
         if (open) return;
 
         setRooms((prev) => {
@@ -93,6 +157,7 @@ export default function StockTalkModal({ open, onClose }: Props) {
         setActiveTicker(null);
         setUnread({});
         setSearch("");
+        setInputText("");
     }, [open, publish]);
 
     useEffect(() => {
@@ -106,6 +171,10 @@ export default function StockTalkModal({ open, onClose }: Props) {
         el.addEventListener("wheel", onWheel, { passive: false });
         return () => el.removeEventListener("wheel", onWheel);
     }, []);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [activeTicker, rooms[activeTicker ?? ""]?.messages.length]);
 
     const handleJoin = useCallback((ticker: string) => {
         publish(`/app/stock-talk/${ticker}/join`, {});
@@ -123,11 +192,21 @@ export default function StockTalkModal({ open, onClose }: Props) {
         });
     }, [publish, updateRoom, rooms]);
 
-    const handleSend = useCallback((ticker: string, content: string) => {
-        const text = content.trim();
-        if (!text || !rooms[ticker]?.joined) return;
-        publish(`/app/stock-talk/${ticker}/send`, { content: text });
-    }, [publish, rooms]);
+    const handleSend = useCallback(() => {
+        if (!activeTicker) return;
+        const text = inputText.trim();
+        if (!text || !rooms[activeTicker]?.joined) return;
+        publish(`/app/stock-talk/${activeTicker}/send`, { content: text });
+        setInputText("");
+        textareaRef.current?.focus();
+    }, [publish, activeTicker, rooms, inputText]);
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
 
     const filteredStocks = STOCKS.filter((s) => {
         const keyword = search.toLowerCase();
@@ -135,6 +214,14 @@ export default function StockTalkModal({ open, onClose }: Props) {
     });
 
     const joinedStocks = STOCKS.filter((s) => rooms[s.code]?.joined);
+    const activeRoom = activeTicker ? (rooms[activeTicker] ?? EMPTY_ROOM) : null;
+    const activeStock = activeTicker ? STOCKS.find((s) => s.code === activeTicker) : null;
+
+    const activeStats = activeTick
+        ? activeTick.tickMessageType === "TRADEPRICE"
+            ? calcStockStats(true, activeTick, null)
+            : calcStockStats(false, null, { ...activeTick, prevClosePrice: activeTick.prevPrice })
+        : null;
 
     return (
         <div className="stk">
@@ -224,10 +311,108 @@ export default function StockTalkModal({ open, onClose }: Props) {
                 </div>
 
                 <div className="stk__chat">
-                    <div className="stk__chat-placeholder">
-                        <FiMessageSquare className="stk__chat-placeholder-icon" />
-                        <span>종목톡에 입장하세요</span>
-                    </div>
+                    {!activeRoom || !activeStock ? (
+                        <div className="stk__chat-placeholder">
+                            <FiMessageSquare className="stk__chat-placeholder-icon" />
+                            <span>종목톡에 입장하세요</span>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="stk__chat-header">
+                                <div className="stk__chat-stock-info">
+                                    <div className="stk__chat-stock-left">
+                                        <span className="stk__chat-name">{activeStock.name}</span>
+                                        <span className="stk__chat-code">{activeStock.code}</span>
+                                    </div>
+                                    {activeStats && (
+                                        <div
+                                            className="stk__chat-stock-right"
+                                            style={{ color: DIRECTION_CLASS[activeStats.cur.direction] === "price-up" ? "#f87171" : DIRECTION_CLASS[activeStats.cur.direction] === "price-down" ? "#60a5fa" : "#94a3b8" }}
+                                        >
+                                            <span className="stk__chat-price">{activeStats.cur.price}</span>
+                                            <span className="stk__chat-diff">
+                                                {activeStats.cur.diffText}
+                                                <span className="stk__chat-rate">({activeStats.cur.rateText})</span>
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                <span className="stk__chat-count">
+                                    <span className="stk__chat-count-dot" />
+                                    {activeRoom.participantCount}명
+                                </span>
+                            </div>
+
+                            <div className="stk__messages">
+                                {activeRoom.messages.length === 0 && (
+                                    <div className="stk__msg-empty">
+                                        <span>첫 메시지를 남겨보세요</span>
+                                    </div>
+                                )}
+                                {activeRoom.messages.map((msg, idx) =>
+                                    msg.type === "ENTER" || msg.type === "LEAVE" ? (
+                                        <div key={idx} className="stk__msg--system">{msg.content}</div>
+                                    ) : (() => {
+                                        const isMine = msg.sender === user?.username;
+                                        const fallback = getFallbackAvatar(msg.sender);
+
+                                        return (
+                                            <div key={idx} className={`stk__msg ${isMine ? "stk__msg--mine" : ""}`}>
+                                                {!isMine && (
+                                                    msg.senderProfileImageUrl ? (
+                                                        <img
+                                                            className="stk__msg-avatar"
+                                                            src={resolveProfileImageUrl(msg.senderProfileImageUrl)}
+                                                            alt={msg.senderNickname}
+                                                            title={msg.senderNickname}
+                                                            onError={(e) => { e.currentTarget.src = DEFAULT_AVATAR; }}
+                                                        />
+                                                    ) : (
+                                                        <span
+                                                            className="stk__msg-avatar"
+                                                            style={{ background: fallback.bg }}
+                                                            title={msg.senderNickname}
+                                                        >
+                                                            {fallback.emoji}
+                                                        </span>
+                                                    )
+                                                )}
+                                                <div className="stk__msg-body">
+                                                    <div className="stk__msg-meta">
+                                                        {!isMine && (
+                                                            <span className="stk__msg-sender">{msg.senderNickname}</span>
+                                                        )}
+                                                        <span className="stk__msg-time">{formatTime(msg.sentAt)}</span>
+                                                    </div>
+                                                    <div className="stk__msg-bubble">{msg.content}</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            <div className="stk__input-area">
+                                <textarea
+                                    ref={textareaRef}
+                                    className="stk__input"
+                                    placeholder="메시지를 입력하세요 (Enter 전송)"
+                                    value={inputText}
+                                    onChange={(e) => setInputText(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    rows={1}
+                                />
+                                <button
+                                    className="stk__send-btn"
+                                    onClick={handleSend}
+                                    disabled={!inputText.trim()}
+                                >
+                                    전송
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
