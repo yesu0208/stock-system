@@ -78,7 +78,7 @@ export default function TopBar() {
     const manage = detailExtra?.manage ?? "";
     const marketName = detailExtra?.market ?? "-";
     const warningBadgeClass = WARNING_CLASS[warningType] ?? "badge--caution";
-    
+
     const stats = isRealtime
         ? calcStockStats(true, priceTick, null)
         : calcStockStats(false, null, detailTick
@@ -141,12 +141,10 @@ export default function TopBar() {
                 <div className="cell stock-cell">
                     <img
                         className="stock-mark"
-                        src={`/marks/${selectedStock.code}.svg`}
+                        src={`https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock${selectedStock.code}.svg`}
                         alt=""
                         onError={(e) => {
-                            const target = e.currentTarget;
-                            if (target.src.endsWith("/marks/default.svg")) return;
-                            target.src = "/marks/default.svg";
+                            (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
                         }}
                     />
                     <div className="stock-info">
