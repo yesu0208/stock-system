@@ -252,3 +252,10 @@
     display: flex;
     flex-direction: column;
 }
+
+.modal-v2-box.discussion-modal {
+    width: 480px;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+}
