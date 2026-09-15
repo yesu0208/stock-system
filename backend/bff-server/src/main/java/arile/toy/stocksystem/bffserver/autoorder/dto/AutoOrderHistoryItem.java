@@ -13,6 +13,10 @@ public record AutoOrderHistoryItem(
         Integer orderPrice,
         Integer orderQuantity,
         AutoOrderStatus autoOrderStatus,
-        Instant orderTime
+        Instant orderTime,
+        Long notionalValue,
+        Long initialMargin,
+        Double maintenanceMarginRate,
+        Long liquidationPrice
 ) {
 }
