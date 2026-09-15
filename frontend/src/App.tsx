@@ -16,6 +16,7 @@ import { PortfolioProvider } from './main/context/PortfolioContext'
 import { ChartDataProvider } from './main/context/ChartDataContext'
 import {StockRealtimeProvider} from "./main/context/StockRealtimeContext.tsx";
 import {OrderPriceProvider} from "./main/context/OrderPriceContext.tsx";
+import { PendingOrderProvider } from './main/context/PendingOrderContext'
 
 /**
  * RealtimeProvider / MarketDataProvider를 isLoggedIn 분기
@@ -47,17 +48,19 @@ export default function App() {
                             <StockRealtimeProvider>
                                 <OrderPriceProvider>
                                     <AccountProvider>
-                                        <PortfolioProvider>
-                                            <ChartDataProvider>
-                                                <AlertProvider>
-                                                    <WatchListProvider>
-                                                        <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
-                                                            <TradePage />
-                                                        </MainLayout>
-                                                    </WatchListProvider>
-                                                </AlertProvider>
-                                            </ChartDataProvider>
-                                        </PortfolioProvider>
+                                        <PendingOrderProvider>
+                                            <PortfolioProvider>
+                                                <ChartDataProvider>
+                                                    <AlertProvider>
+                                                        <WatchListProvider>
+                                                            <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
+                                                                <TradePage />
+                                                            </MainLayout>
+                                                        </WatchListProvider>
+                                                    </AlertProvider>
+                                                </ChartDataProvider>
+                                            </PortfolioProvider>
+                                        </PendingOrderProvider>
                                     </AccountProvider>
                                 </OrderPriceProvider>
                             </StockRealtimeProvider>
