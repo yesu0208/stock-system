@@ -173,6 +173,40 @@ export default function StockInfoPanel() {
         return n > 0 ? "#ff6347" : "#4f9dff";
     };
 
+    const formatMarketCap = (value?: string): string => {
+        if (!value) return "-";
+        const n = parseFloat(value.replace(/,/g, ""));
+        if (isNaN(n)) return value;
+
+        const eok = Math.round(n / 100_000_000);
+        const jo = Math.floor(eok / 10000);
+        const remainder = eok % 10000;
+
+        if (jo > 0) {
+            return remainder > 0 ? `${jo}조 ${remainder.toLocaleString()}억` : `${jo}조`;
+        }
+        return `${remainder.toLocaleString()}억`;
+    };
+
+    const withUnit = (value?: string, unit = ""): string => {
+        if (!value) return "-";
+        return `${value}${unit}`;
+    };
+
+    const formatWon = (value?: string): string => {
+        if (!value) return "-";
+        const n = parseFloat(value.replace(/,/g, ""));
+        if (isNaN(n)) return value;
+        return `${Math.round(n).toLocaleString()}원`;
+    };
+
+    const withMultiplier = (value?: string): string => {
+        if (!value) return "-";
+        const n = parseFloat(value.replace(/,/g, ""));
+        if (isNaN(n)) return `${value}배`;
+        return `${n.toFixed(2)}배`;
+    };
+
     return (
         <div className="stock-info-panel stock-info-panel--loaded">
             <div className="tabs">
@@ -232,36 +266,36 @@ export default function StockInfoPanel() {
                     <table className="info-table">
                         <tbody>
                         <Row2
-                            a="시가총액" av={`${info.marketCap}억원`}
+                            a="시가총액" av={formatMarketCap(info.marketCap)}
                         />
 
                         <Row3
-                            a="주식수" av={info.listedShares}
-                            b="액면가" bv={info.parValue}
-                            c="매매단위" cv={info.tradingUnit}
+                            a="주식수" av={withUnit(info.listedShares, "주")}
+                            b="액면가" bv={formatWon(info.parValue)}
+                            c="매매단위" cv={withUnit(info.tradingUnit, "주")}
                         />
 
                         <Row3
-                            a="외인보유" av={info.foreignOwned}
+                            a="외인보유" av={withUnit(info.foreignOwned, "주")}
                             b="외인비율" bv={info.foreignRate}
-                            c="외인한도" cv={info.foreignLimit}
+                            c="외인한도" cv={withUnit(info.foreignLimit, "주")}
                         />
 
                         <Row3
-                            a="PER" av={info.per}
-                            b="추정 PER" bv={info.estimatedPer}
-                            c="PBR" cv={info.pbr}
+                            a="PER" av={withMultiplier(info.per)}
+                            b="추정 PER" bv={withMultiplier(info.estimatedPer)}
+                            c="PBR" cv={withMultiplier(info.pbr)}
                         />
 
                         <Row3
-                            a="EPS" av={info.eps}
-                            b="추정 EPS" bv={info.estimatedEps}
-                            c="BPS" cv={info.bps}
+                            a="EPS" av={formatWon(info.eps)}
+                            b="추정 EPS" bv={formatWon(info.estimatedEps)}
+                            c="BPS" cv={formatWon(info.bps)}
                         />
 
                         <Row3
                             a={"배당\n수익률"} av={info.dividendYield}
-                            b="동일업종 PER" bv={info.sameIndustryPer}
+                            b="동일업종 PER" bv={withMultiplier(info.sameIndustryPer)}
                             c="동일업종 등락률" cv={info.sameIndustryRate}
                         />
                         </tbody>
@@ -332,7 +366,7 @@ export default function StockInfoPanel() {
                         <tbody>
                         <Row3
                             a="투자의견" av={info.opinion}
-                            b="목표주가" bv={info.targetPrice}
+                            b="목표주가" bv={formatWon(info.targetPrice)}
                             c="컨센서스 기준일" cv={info.consensusDate}
                         />
                         </tbody>
