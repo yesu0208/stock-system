@@ -16,10 +16,7 @@ import type { TradePriceTickMessage } from "../../types/tradePriceTickMessage";
 
 import {
     isRealtimeStock,
-    type Direction,
     DIRECTION_CLASS,
-    directionFromDiff,
-    directionFromString,
     calcStockStats,
 } from "../../utils/stockUtils";
 
@@ -81,26 +78,12 @@ export default function TopBar() {
     const manage = detailExtra?.manage ?? "";
     const marketName = detailExtra?.market ?? "-";
     const warningBadgeClass = WARNING_CLASS[warningType] ?? "badge--caution";
-
-    let direction: Direction = "flat";
-    if (isRealtime && priceTick) {
-        direction = directionFromDiff(priceTick.prevCloseDiff);
-    } else if (!isRealtime && detailTick) {
-        direction = directionFromString(detailTick.direction);
-    }
-
+    
     const stats = isRealtime
         ? calcStockStats(true, priceTick, null)
-        : detailTick
-            ? {
-                cur: { price: detailTick.currentPrice, direction, diffText: detailTick.diffPrice, rateText: detailTick.diffRate },
-                open: { price: detailTick.openPrice, direction: directionFromString(detailTick.direction), rateText: "" },
-                high: { price: detailTick.highPrice, direction: directionFromString(detailTick.direction), rateText: "" },
-                low: { price: detailTick.lowPrice, direction: directionFromString(detailTick.direction), rateText: "" },
-                volume: detailTick.volume,
-                tradingValue: detailTick.tradingValue,
-            }
-            : null;
+        : calcStockStats(false, null, detailTick
+            ? { ...detailTick, prevClosePrice: detailTick.prevPrice }
+            : null);
 
     const bellOn = false; // TODO: 종목별 알림 존재 여부 조회 Context 없음 — 다음 단계에서 추가
     const starred = isWatched(selectedStock.code);
