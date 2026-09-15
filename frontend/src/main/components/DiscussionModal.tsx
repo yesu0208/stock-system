@@ -262,6 +262,158 @@ function CommentInputRow({ value, onChange, onSend }: { value: string; onChange:
     );
 }
 
+interface WriteViewProps {
+    stockName: string;
+    stockCode: string;
+    onSubmit: (title: string, content: string) => Promise<void>;
+    onCancel: () => void;
+}
+
+function WriteView({ stockName, stockCode, onSubmit, onCancel }: WriteViewProps) {
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const canSubmit = title.trim().length > 0 && content.trim().length > 0 && !submitting;
+
+    const handleSubmit = async () => {
+        if (!canSubmit) return;
+        setSubmitting(true);
+        try {
+            await onSubmit(title.trim(), content.trim());
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="write-view">
+            <button className="detail-back" onClick={onCancel}>
+                <FiChevronLeft /> 목록으로
+            </button>
+
+            <div className="write-form">
+                <div className="write-stock-badge">
+                    <StockBadge stockName={stockName} stockCode={stockCode} />
+                </div>
+
+                <div className="write-field">
+                    <div className="write-field-header">
+                        <label className="write-label">제목</label>
+                        <span className="write-char-count">{title.length}/{MAX_TITLE_LENGTH}</span>
+                    </div>
+                    <input
+                        className="write-title-input"
+                        placeholder="제목을 입력하세요"
+                        value={title}
+                        maxLength={MAX_TITLE_LENGTH}
+                        onChange={e => setTitle(e.target.value)}
+                    />
+                </div>
+
+                <div className="write-field write-field--content">
+                    <div className="write-field-header">
+                        <label className="write-label">내용</label>
+                        <span className="write-char-count">{content.length}/{MAX_CONTENT_LENGTH}</span>
+                    </div>
+                    <textarea
+                        className="write-content-input"
+                        placeholder="내용을 입력하세요"
+                        value={content}
+                        maxLength={MAX_CONTENT_LENGTH}
+                        onChange={e => setContent(e.target.value)}
+                    />
+                </div>
+
+                <div className="write-actions">
+                    <button className="write-cancel-btn" onClick={onCancel}>취소</button>
+                    <button className="write-submit-btn" onClick={handleSubmit} disabled={!canSubmit}>
+                        {submitting ? '등록 중...' : '등록'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+interface EditPostViewProps {
+    stockName: string;
+    stockCode: string;
+    initialTitle: string;
+    initialContent: string;
+    onSubmit: (title: string, content: string) => Promise<void>;
+    onCancel: () => void;
+}
+
+function EditPostView({ stockName, stockCode, initialTitle, initialContent, onSubmit, onCancel }: EditPostViewProps) {
+    const [title, setTitle] = useState(initialTitle);
+    const [content, setContent] = useState(initialContent);
+    const [submitting, setSubmitting] = useState(false);
+
+    const canSubmit =
+        title.trim().length > 0 &&
+        content.trim().length > 0 &&
+        (title.trim() !== initialTitle || content.trim() !== initialContent) &&
+        !submitting;
+
+    const handleSubmit = async () => {
+        if (!canSubmit) return;
+        setSubmitting(true);
+        try {
+            await onSubmit(title.trim(), content.trim());
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="write-view">
+            <button className="detail-back" onClick={onCancel}>
+                <FiChevronLeft /> 돌아가기
+            </button>
+
+            <div className="write-form">
+                <div className="write-stock-badge">
+                    <StockBadge stockName={stockName} stockCode={stockCode} />
+                </div>
+
+                <div className="write-field">
+                    <div className="write-field-header">
+                        <label className="write-label">제목</label>
+                        <span className="write-char-count">{title.length}/{MAX_TITLE_LENGTH}</span>
+                    </div>
+                    <input
+                        className="write-title-input"
+                        value={title}
+                        maxLength={MAX_TITLE_LENGTH}
+                        onChange={e => setTitle(e.target.value)}
+                    />
+                </div>
+
+                <div className="write-field write-field--content">
+                    <div className="write-field-header">
+                        <label className="write-label">내용</label>
+                        <span className="write-char-count">{content.length}/{MAX_CONTENT_LENGTH}</span>
+                    </div>
+                    <textarea
+                        className="write-content-input"
+                        value={content}
+                        maxLength={MAX_CONTENT_LENGTH}
+                        onChange={e => setContent(e.target.value)}
+                    />
+                </div>
+
+                <div className="write-actions">
+                    <button className="write-cancel-btn" onClick={onCancel}>취소</button>
+                    <button className="write-submit-btn" onClick={handleSubmit} disabled={!canSubmit}>
+                        {submitting ? '수정 중...' : '수정 완료'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function DiscussionModal() {
     const { selectedStock } = useStock();
     const { user } = useUser();
@@ -447,6 +599,58 @@ export default function DiscussionModal() {
         }
     };
 
+    const handlePostSubmit = async (title: string, content: string) => {
+        try {
+            const newPost = await discussionApi.createPost({
+                stockCode: selectedStock.code,
+                stockName: selectedStock.name,
+                title,
+                content,
+            });
+
+            const newSummary: PostSummary = {
+                postId: newPost.postId,
+                stockCode: newPost.stockCode,
+                stockName: newPost.stockName,
+                title: newPost.title,
+                authorId: newPost.authorId,
+                authorNickname: newPost.authorNickname,
+                authorProfileImageUrl: newPost.authorProfileImageUrl,
+                createdDateTime: newPost.createdDateTime,
+                contentPreview: newPost.content.slice(0, 100),
+                likes: 0,
+                dislikes: 0,
+                commentCount: 0,
+                scraps: 0,
+                myReaction: null,
+                myScrapped: false,
+            };
+
+            setPosts(prev => [newSummary, ...prev]);
+            setIsWriting(false);
+        } catch (e) {
+            console.error('게시글 등록 실패', e);
+        }
+    };
+
+    const handlePostEdit = async (title: string, content: string) => {
+        if (!detail) return;
+        try {
+            const updated = await discussionApi.editPost(detail.postId, title, content);
+            setDetail(updated);
+            setPosts(prev => prev.map(p =>
+                p.postId !== updated.postId ? p : {
+                    ...p,
+                    title: updated.title,
+                    contentPreview: updated.content.slice(0, 100),
+                }
+            ));
+            setIsEditingPost(false);
+        } catch (e) {
+            console.error('게시글 수정 실패', e);
+        }
+    };
+
     const handlePostDelete = async (postId: number) => {
         if (!window.confirm('게시글을 삭제하시겠습니까?')) return;
         try {
@@ -517,8 +721,23 @@ export default function DiscussionModal() {
                 ))}
             </div>
 
-            {/* TODO: 글쓰기/수정 뷰 연결 예정 */}
-            {selectedId !== null ? (
+            {isWriting ? (
+                <WriteView
+                    stockName={selectedStock.name}
+                    stockCode={selectedStock.code}
+                    onSubmit={handlePostSubmit}
+                    onCancel={() => setIsWriting(false)}
+                />
+            ) : isEditingPost && detail ? (
+                <EditPostView
+                    stockName={detail.stockName}
+                    stockCode={detail.stockCode}
+                    initialTitle={detail.title}
+                    initialContent={detail.content}
+                    onSubmit={handlePostEdit}
+                    onCancel={() => setIsEditingPost(false)}
+                />
+            ) : selectedId !== null ? (
                 <div className="discussion-detail-view">
                     <button className="detail-back" onClick={() => { setSelectedId(null); setEditingCommentId(null); }}>
                         <FiChevronLeft /> 목록으로
