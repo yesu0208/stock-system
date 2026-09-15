@@ -1,0 +1,377 @@
+.top-bar {
+    width: calc(100% - 32px);
+    margin: 0 16px;
+    height: 8%;
+
+    display: grid;
+    column-gap: 18px;
+
+    grid-template-columns:
+        1.4fr
+        1.8fr
+        1.2fr
+        0.7fr
+        0.7fr
+        0.7fr
+        1fr
+        1fr
+        0.5fr;
+
+    align-items: center;
+
+    background: var(--bar-bg);
+    border: 1px solid var(--bar-border);
+    border-radius: 12px;
+
+    padding: 0 12px;
+
+    font-family: "Pretendard", "Noto Sans KR", sans-serif;
+    font-size: 13px;
+    color: var(--text-primary);
+
+    box-sizing: border-box;
+
+    --bar-bg: #0d1421;
+    --bar-border: #374151;
+
+    --text-primary: #e2e8f0;
+    --text-muted: #94a3b8;
+
+    --price-up: #ff6347;
+    --price-down: #4f9dff;
+    --price-flat: #e2e8f0;
+}
+
+.top-bar .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+}
+
+.top-bar .cell select {
+    width: 100%;
+    height: 34px;
+
+    background: #111c2e;
+    color: var(--text-primary);
+
+    border: 1px solid var(--bar-border);
+    border-radius: 6px;
+
+    outline: none;
+}
+
+.top-bar .stock-cell {
+    align-items: flex-start;
+}
+
+.top-bar .name {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.top-bar .meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.top-bar .price-cell {
+    align-items: center;
+}
+
+.top-bar .cur {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.top-bar .diff {
+    font-size: 12px;
+}
+
+.top-bar .price-up {
+    color: var(--price-up);
+}
+
+.top-bar .price-down {
+    color: var(--price-down);
+}
+
+.top-bar .price-flat {
+    color: var(--price-flat);
+}
+
+.top-bar .unit {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: 2px;
+}
+
+.top-bar .cell.actions {
+    flex-direction: row;
+    gap: 15px;
+}
+
+.top-bar .icon {
+    border: none;
+    background: transparent;
+    padding: 0;
+
+    color: var(--text-muted);
+    font-size: 18px;
+
+    cursor: pointer;
+}
+
+.top-bar .icon:hover {
+    color: white;
+}
+
+.top-bar .icon.on {
+    color: #facc15;
+}
+
+.top-bar .cell {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    overflow: visible;
+}
+
+.top-bar .cell:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: -9px;
+    top: 18%;
+
+    width: 1px;
+    height: 64%;
+
+    background: #334155;
+}
+
+.top-bar .stat-cell {
+    gap: 2px;
+}
+
+.top-bar .stat-cell .label-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.top-bar .rate-tooltip {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.top-bar .value {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.top-bar .label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.top-bar .value {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.top-bar .value:not(.price-up):not(.price-down):not(.price-flat) {
+    color: var(--text-primary);
+}
+
+.top-bar .search-cell {
+    align-items: flex-start;
+    position: relative;
+}
+
+.top-bar .search-box {
+    position: relative;
+    width: 100%;
+}
+
+.top-bar .search-box input {
+    width: 100%;
+    height: 34px;
+
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 7px;
+
+    color: var(--text-primary);
+
+    padding: 0 10px 0 28px;
+
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+}
+
+.top-bar .search-box input:focus {
+    border-color: #7c5cff;
+}
+
+.top-bar .search-box input::placeholder {
+    color: #64748b;
+}
+
+.top-bar .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #64748b;
+    font-size: 13px;
+
+    pointer-events: none;
+    z-index: 1;
+}
+
+.top-bar .dropdown {
+    position: absolute;
+    top: 38px;
+    left: 0;
+    right: 0;
+
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.top-bar .item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+
+.top-bar .item:hover {
+    background: #172035;
+}
+
+.top-bar .name {
+    font-size: 13px;
+}
+
+.top-bar .code {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.top-bar .empty {
+    padding: 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.top-bar .item--tradable {
+    border-left: 2px solid #6366f1;
+    padding-left: 8px;
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.top-bar .item--tradable .name {
+    color: #a5b4fc;
+}
+
+.top-bar .item--tradable .code {
+    color: #818cf8;
+}
+
+.top-bar .item--tradable:hover {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.top-bar .meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.top-bar .meta-text {
+    white-space: nowrap;
+}
+
+.top-bar .badge {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 1px 5px;
+    border-radius: 4px;
+
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1.5;
+}
+
+.top-bar .badge--caution {
+    background: rgba(250, 204, 21, 0.12);
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    color: #facc15;
+}
+
+.top-bar .badge--warning {
+    background: rgba(251, 146, 60, 0.15);
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    color: #fb923c;
+}
+
+.top-bar .badge--danger {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+.top-bar .badge--manage {
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #94a3b8;
+}
+
+.top-bar .stock-cell {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.top-bar .stock-mark {
+    width: 32px;
+    height: 100%;
+    max-height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.top-bar .stock-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    overflow: hidden;
+    min-width: 0;
+}
