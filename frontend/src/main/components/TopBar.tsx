@@ -7,6 +7,7 @@ import { STOCKS } from "../data/stocks";
 import { useStock } from "../context/StockContext";
 import { useRealtime } from "../context/RealtimeContext";
 import { useWatchList } from "../context/WatchListContext";
+import { useAlert } from "../context/AlertContext";
 import AlertModal from "./AlertModal";
 import Tooltip from "../../tooltip/Tooltip";
 import { getStockDetailExtra } from "../../api/stockInfo";
@@ -85,7 +86,8 @@ export default function TopBar() {
             ? { ...detailTick, prevClosePrice: detailTick.prevPrice }
             : null);
 
-    const bellOn = false; // TODO: 종목별 알림 존재 여부 조회 Context 없음 — 다음 단계에서 추가
+    const { alerts } = useAlert();
+    const bellOn = alerts.some((a) => a.stockCode === selectedStock.code);
     const starred = isWatched(selectedStock.code);
 
     const handleBellClick = () => setAlertOpen(true);

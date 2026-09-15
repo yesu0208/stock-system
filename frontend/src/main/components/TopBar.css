@@ -375,3 +375,7 @@
     overflow: hidden;
     min-width: 0;
 }
+
+.icon.on {
+    color: #facc15;
+}
