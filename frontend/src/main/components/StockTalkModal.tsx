@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { FiSearch, FiMessageSquare } from "react-icons/fi";
-import { useRealtime } from "../../main/context/RealtimeContext";
-import { useUser } from "../../main/context/UserContext";
-import { STOCKS } from "../../main/data/stocks";
+import { FiSearch, FiMessageSquare, FiShare2, FiAward, FiTrendingUp } from "react-icons/fi";
+import { useRealtime } from "../context/RealtimeContext";
+import { useUser } from "../context/UserContext";
+import { useAccount } from "../context/AccountContext";
+import { STOCKS } from "../data/stocks";
+import { stockNameMap } from "../../constants/stocks";
 import { calcStockStats, DIRECTION_CLASS } from "../../utils/stockUtils";
 import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import type { StockTalkMessage, StockTalkJoinResponse } from "../../types/stockTalk";
@@ -66,9 +68,41 @@ function getFallbackAvatar(username: string): { emoji: string; bg: string } {
     };
 }
 
+const RANK_PREFIX = "[rank-card]";
+const STOCK_PREFIX = "[stock-card]";
+
+function parseCard(content: string) {
+    if (content.startsWith(RANK_PREFIX)) {
+        try { return { type: "rank" as const, data: JSON.parse(content.slice(RANK_PREFIX.length)) }; }
+        catch { return null; }
+    }
+    if (content.startsWith(STOCK_PREFIX)) {
+        try { return { type: "stock" as const, data: JSON.parse(content.slice(STOCK_PREFIX.length)) }; }
+        catch { return null; }
+    }
+    return null;
+}
+
+const RANK_COLOR_MAP: Record<string, string> = {
+    UNRANKED: "#64748b",
+    BRONZE: "#b45309",
+    SILVER: "#94a3b8",
+    GOLD: "#fbbf24",
+    PLATINUM: "#14b8a6",
+    DIAMOND: "#3b82f6",
+    MASTER: "#a855f7",
+};
+
+const ROMAN = ["", "Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ"];
+function formatRank(tier: string, subTier: number | null) {
+    if (tier === "UNRANKED" || tier === "MASTER") return tier;
+    return `${tier} ${subTier != null ? (ROMAN[subTier] ?? subTier) : ""}`.trim();
+}
+
 export default function StockTalkModal({ open, onClose }: Props) {
     const { subscribeDestination, subscribeStock, publish, connected } = useRealtime();
     const { user } = useUser();
+    const { account } = useAccount();
 
     const [rooms, setRooms] = useState<Record<string, RoomState>>(makeEmptyRooms);
     const [activeTicker, setActiveTicker] = useState<string | null>(null);
@@ -80,8 +114,11 @@ export default function StockTalkModal({ open, onClose }: Props) {
     const joinedBarRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const shareRef = useRef<HTMLDivElement>(null);
 
     const [activeTick, setActiveTick] = useState<any>(null);
+    const [shareOpen, setShareOpen] = useState(false);
+    const [stockPickOpen, setStockPickOpen] = useState(false);
 
     const updateRoom = useCallback((ticker: string, updater: (prev: RoomState) => RoomState) => {
         setRooms((prev) => ({
@@ -176,6 +213,17 @@ export default function StockTalkModal({ open, onClose }: Props) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [activeTicker, rooms[activeTicker ?? ""]?.messages.length]);
 
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+                setShareOpen(false);
+                setStockPickOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
     const handleJoin = useCallback((ticker: string) => {
         publish(`/app/stock-talk/${ticker}/join`, {});
         updateRoom(ticker, (prev) => ({ ...prev, joined: true }));
@@ -207,6 +255,48 @@ export default function StockTalkModal({ open, onClose }: Props) {
             handleSend();
         }
     };
+
+    const handleShareRank = useCallback(() => {
+        if (!activeTicker || !user?.rank) return;
+        const payload = JSON.stringify({
+            tier: user.rank.tier,
+            subTier: user.rank.subTier,
+            rp: user.rank.rp,
+            currentRankMinRp: user.rank.currentRankMinRp,
+            nextRankMinRp: user.rank.nextRankMinRp,
+            nickname: user.nickname,
+        });
+        publish(`/app/stock-talk/${activeTicker}/send`, { content: RANK_PREFIX + payload });
+        setShareOpen(false);
+    }, [activeTicker, user, publish]);
+
+    const holdingEntries = account
+        ? Object.entries(account.stocks).map(([code, info]) => ({
+            stockCode: code,
+            stockName: stockNameMap[code] ?? code,
+            quantity: info.quantity,
+            avgBuyPrice: info.quantity > 0 ? Math.round(info.totalAmount / info.quantity) : 0,
+            currentPrice: account.currentPrices[code] ?? 0,
+            profitAmount: account.profitAmounts[code] ?? 0,
+            profitRate: account.profitRates[code] ?? 0,
+        }))
+        : [];
+
+    const handleShareStock = useCallback((h: typeof holdingEntries[number]) => {
+        if (!activeTicker) return;
+        const payload = JSON.stringify({
+            code: h.stockCode,
+            name: h.stockName,
+            qty: h.quantity,
+            pnlRate: h.profitRate,
+            evalPnl: h.profitAmount,
+            avgBuyPrice: h.avgBuyPrice,
+            currentPrice: h.currentPrice,
+        });
+        publish(`/app/stock-talk/${activeTicker}/send`, { content: STOCK_PREFIX + payload });
+        setShareOpen(false);
+        setStockPickOpen(false);
+    }, [activeTicker, publish]);
 
     const filteredStocks = STOCKS.filter((s) => {
         const keyword = search.toLowerCase();
@@ -327,7 +417,13 @@ export default function StockTalkModal({ open, onClose }: Props) {
                                     {activeStats && (
                                         <div
                                             className="stk__chat-stock-right"
-                                            style={{ color: DIRECTION_CLASS[activeStats.cur.direction] === "price-up" ? "#f87171" : DIRECTION_CLASS[activeStats.cur.direction] === "price-down" ? "#60a5fa" : "#94a3b8" }}
+                                            style={{
+                                                color: DIRECTION_CLASS[activeStats.cur.direction] === "price-up"
+                                                    ? "#f87171"
+                                                    : DIRECTION_CLASS[activeStats.cur.direction] === "price-down"
+                                                        ? "#60a5fa"
+                                                        : "#94a3b8",
+                                            }}
                                         >
                                             <span className="stk__chat-price">{activeStats.cur.price}</span>
                                             <span className="stk__chat-diff">
@@ -355,6 +451,7 @@ export default function StockTalkModal({ open, onClose }: Props) {
                                     ) : (() => {
                                         const isMine = msg.sender === user?.username;
                                         const fallback = getFallbackAvatar(msg.sender);
+                                        const card = parseCard(msg.content);
 
                                         return (
                                             <div key={idx} className={`stk__msg ${isMine ? "stk__msg--mine" : ""}`}>
@@ -384,7 +481,78 @@ export default function StockTalkModal({ open, onClose }: Props) {
                                                         )}
                                                         <span className="stk__msg-time">{formatTime(msg.sentAt)}</span>
                                                     </div>
-                                                    <div className="stk__msg-bubble">{msg.content}</div>
+
+                                                    {card?.type === "rank" && (
+                                                        <div className={`stk__card stk__card--rank ${isMine ? "stk__card--mine" : ""}`}>
+                                                            <span className="stk__card-label">
+                                                                <FiAward className="stk__share-icon" />
+                                                                티어 자랑
+                                                            </span>
+                                                            <span className="stk__card-nick">{card.data.nickname}</span>
+                                                            <span
+                                                                className="stk__card-rank-badge"
+                                                                style={{ background: RANK_COLOR_MAP[card.data.tier] ?? "#64748b" }}
+                                                            >
+                                                                {formatRank(card.data.tier, card.data.subTier)}
+                                                            </span>
+                                                            <div className="stk__card-rp-bar-wrap">
+                                                                <div
+                                                                    className="stk__card-rp-bar"
+                                                                    style={{
+                                                                        width: `${
+                                                                            card.data.nextRankMinRp != null
+                                                                                ? Math.min(100, ((card.data.rp - card.data.currentRankMinRp) /
+                                                                                    (card.data.nextRankMinRp - card.data.currentRankMinRp)) * 100)
+                                                                                : 100
+                                                                        }%`,
+                                                                        background: RANK_COLOR_MAP[card.data.tier] ?? "#fbbf24",
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <span className="stk__card-rp-text">
+                                                                {card.data.rp.toLocaleString()} RP
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {card?.type === "stock" && (
+                                                        <div className={`stk__card stk__card--stock ${isMine ? "stk__card--mine" : ""}`}>
+                                                            <span className="stk__card-label">
+                                                                <FiTrendingUp className="stk__share-icon" />
+                                                                보유종목 자랑
+                                                            </span>
+                                                            <div className="stk__card-stock-name">
+                                                                {card.data.name}
+                                                                <span className="stk__card-stock-code">{card.data.code}</span>
+                                                            </div>
+                                                            <div className="stk__card-stock-row">
+                                                                <span className="stk__card-stock-key">현재가</span>
+                                                                <span className="stk__card-stock-val">{card.data.currentPrice.toLocaleString()}원</span>
+                                                            </div>
+                                                            <div className="stk__card-stock-row">
+                                                                <span className="stk__card-stock-key">매입가</span>
+                                                                <span className="stk__card-stock-val">{card.data.avgBuyPrice.toLocaleString()}원</span>
+                                                            </div>
+                                                            <div className="stk__card-stock-row">
+                                                                <span className="stk__card-stock-key">보유수량</span>
+                                                                <span className="stk__card-stock-val">{card.data.qty.toLocaleString()}주</span>
+                                                            </div>
+                                                            <div className="stk__card-stock-row">
+                                                                <span className="stk__card-stock-key">평가손익</span>
+                                                                <span
+                                                                    className="stk__card-stock-val"
+                                                                    style={{ color: card.data.pnlRate >= 0 ? "#f87171" : "#60a5fa" }}
+                                                                >
+                                                                    {card.data.evalPnl >= 0 ? "+" : ""}{card.data.evalPnl.toLocaleString()}원
+                                                                    ({card.data.pnlRate >= 0 ? "+" : ""}{card.data.pnlRate.toFixed(2)}%)
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {!card && (
+                                                        <div className="stk__msg-bubble">{msg.content}</div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -394,6 +562,61 @@ export default function StockTalkModal({ open, onClose }: Props) {
                             </div>
 
                             <div className="stk__input-area">
+                                <div className="stk__share-wrap" ref={shareRef}>
+                                    <button
+                                        className="stk__share-btn"
+                                        onClick={() => { setShareOpen(v => !v); setStockPickOpen(false); }}
+                                        title="자랑하기"
+                                    >
+                                        <FiShare2 />
+                                    </button>
+
+                                    {shareOpen && (
+                                        <div className="stk__share-menu">
+                                            {!stockPickOpen ? (
+                                                <>
+                                                    <button className="stk__share-item" onClick={handleShareRank}>
+                                                        <span className="stk__share-item-inner">
+                                                            <FiAward className="stk__share-icon" />
+                                                            내 티어 자랑
+                                                        </span>
+                                                    </button>
+                                                    <button className="stk__share-item" onClick={() => setStockPickOpen(true)}>
+                                                        <span className="stk__share-item-inner">
+                                                            <FiTrendingUp className="stk__share-icon" />
+                                                            보유종목 자랑
+                                                        </span>
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="stk__share-back" onClick={() => setStockPickOpen(false)}>
+                                                        ← 돌아가기
+                                                    </div>
+                                                    <div className="stk__share-stock-list">
+                                                        {holdingEntries.length === 0 ? (
+                                                            <div className="stk__share-empty">보유 종목 없음</div>
+                                                        ) : (
+                                                            holdingEntries.map(h => (
+                                                                <button
+                                                                    key={h.stockCode}
+                                                                    className="stk__share-item"
+                                                                    onClick={() => handleShareStock(h)}
+                                                                >
+                                                                    <span>{h.stockName}</span>
+                                                                    <span style={{ color: h.profitRate >= 0 ? "#f87171" : "#60a5fa", fontSize: 10 }}>
+                                                                        {h.profitRate >= 0 ? "+" : ""}{h.profitRate.toFixed(2)}%
+                                                                    </span>
+                                                                </button>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
                                 <textarea
                                     ref={textareaRef}
                                     className="stk__input"
