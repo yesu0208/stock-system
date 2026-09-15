@@ -847,3 +847,29 @@
     box-sizing: border-box;
     transition: border-color 0.15s;
 }
+
+.stk__joined-tab,
+.stk__joined-close,
+.stk__stock-btn,
+.stk__share-btn,
+.stk__share-item,
+.stk__send-btn,
+.stk__search,
+.stk__input {
+    outline: none;
+}
+
+.stk__joined-tab:focus,
+.stk__joined-tab:focus-visible,
+.stk__joined-close:focus,
+.stk__joined-close:focus-visible,
+.stk__stock-btn:focus,
+.stk__stock-btn:focus-visible,
+.stk__share-btn:focus,
+.stk__share-btn:focus-visible,
+.stk__share-item:focus,
+.stk__share-item:focus-visible,
+.stk__send-btn:focus,
+.stk__send-btn:focus-visible {
+    outline: none;
+}
