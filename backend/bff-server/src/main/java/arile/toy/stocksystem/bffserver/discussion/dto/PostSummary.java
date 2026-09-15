@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.discussion.dto;
 
 import arile.toy.stocksystem.bffserver.discussion.entity.DiscussionPostEntity;
+import arile.toy.stocksystem.bffserver.discussion.entity.ReactionType;
 import arile.toy.stocksystem.bffserver.user.dto.UserProfile;
 
 import java.time.Instant;
@@ -18,13 +19,15 @@ public record PostSummary(
         int likes,
         int dislikes,
         int commentCount,
-        int scraps
+        int scraps,
+        ReactionType myReaction,
+        boolean myScrapped
 ) {
     private static final int PREVIEW_LENGTH = 100;
 
     public static PostSummary of(
             DiscussionPostEntity entity, UserProfile authorProfile, int likes, int dislikes,
-            int commentCount, int scraps
+            int commentCount, int scraps, ReactionType myReaction, boolean myScrapped
     ) {
         return new PostSummary(
                 entity.getPostId(),
@@ -39,7 +42,9 @@ public record PostSummary(
                 likes,
                 dislikes,
                 commentCount,
-                scraps
+                scraps,
+                myReaction,
+                myScrapped
         );
     }
 
