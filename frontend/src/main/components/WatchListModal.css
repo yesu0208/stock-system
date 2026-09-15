@@ -349,3 +349,18 @@
     color: #64748b;
     padding-top: 4px;
 }
+
+.wl-search-toggle,
+.remove-btn,
+.wl-search-result-item {
+    outline: none;
+}
+
+.wl-search-toggle:focus,
+.wl-search-toggle:focus-visible,
+.remove-btn:focus,
+.remove-btn:focus-visible,
+.wl-search-result-item:focus,
+.wl-search-result-item:focus-visible {
+    outline: none;
+}
