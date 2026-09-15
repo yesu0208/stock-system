@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { FiSearch, FiMessageSquare } from "react-icons/fi";
 import { useRealtime } from "../../main/context/RealtimeContext";
 import { STOCKS } from "../../main/data/stocks";
 import type { StockTalkMessage, StockTalkJoinResponse } from "../../types/stockTalk";
+import "./StockTalkModal.css";
 
 interface RoomState {
     joined: boolean;
@@ -24,7 +26,9 @@ export default function StockTalkModal({ open, onClose }: Props) {
     const [rooms, setRooms] = useState<Record<string, RoomState>>(makeEmptyRooms);
     const [activeTicker, setActiveTicker] = useState<string | null>(null);
     const [unread, setUnread] = useState<Record<string, number>>({});
+    const [search, setSearch] = useState("");
     const activeTickerRef = useRef<string | null>(null);
+    const joinedBarRef = useRef<HTMLDivElement>(null);
 
     const updateRoom = useCallback((ticker: string, updater: (prev: RoomState) => RoomState) => {
         setRooms((prev) => ({
@@ -88,7 +92,20 @@ export default function StockTalkModal({ open, onClose }: Props) {
         setRooms(makeEmptyRooms());
         setActiveTicker(null);
         setUnread({});
+        setSearch("");
     }, [open, publish]);
+
+    useEffect(() => {
+        const el = joinedBarRef.current;
+        if (!el) return;
+        const onWheel = (e: WheelEvent) => {
+            if (e.deltaY === 0) return;
+            e.preventDefault();
+            el.scrollBy({ left: e.deltaY, behavior: "smooth" });
+        };
+        el.addEventListener("wheel", onWheel, { passive: false });
+        return () => el.removeEventListener("wheel", onWheel);
+    }, []);
 
     const handleJoin = useCallback((ticker: string) => {
         publish(`/app/stock-talk/${ticker}/join`, {});
@@ -112,6 +129,107 @@ export default function StockTalkModal({ open, onClose }: Props) {
         publish(`/app/stock-talk/${ticker}/send`, { content: text });
     }, [publish, rooms]);
 
-    // TODO: 다음 단계에서 JSX(탭 바/사이드바/채팅 패널) 붙일 예정
-    return null;
+    const filteredStocks = STOCKS.filter((s) => {
+        const keyword = search.toLowerCase();
+        return s.name.toLowerCase().includes(keyword) || s.code.toLowerCase().includes(keyword);
+    });
+
+    const joinedStocks = STOCKS.filter((s) => rooms[s.code]?.joined);
+
+    return (
+        <div className="stk">
+            <span className="stk__joined-label">참여중인 종목톡</span>
+
+            <div className="stk__joined-bar" ref={joinedBarRef}>
+                {joinedStocks.length === 0 ? (
+                    <span className="stk__joined-empty">입장한 톡방이 없습니다</span>
+                ) : (
+                    joinedStocks.map((stock) => (
+                        <button
+                            key={stock.code}
+                            className={`stk__joined-tab ${activeTicker === stock.code ? "stk__joined-tab--active" : ""}`}
+                            onClick={() => setActiveTicker(stock.code)}
+                        >
+                            <span className="stk__joined-dot" />
+                            {stock.name}
+                            <span className={`stk__joined-count${!(rooms[stock.code]?.participantCount) ? " stk__joined-count--zero" : ""}`}>
+                                {rooms[stock.code]?.participantCount ?? 0}명
+                            </span>
+                            {(unread[stock.code] ?? 0) > 0 && (
+                                <span className="stk__unread-badge">{unread[stock.code]}</span>
+                            )}
+                            <button
+                                className="stk__joined-close"
+                                onClick={(e) => { e.stopPropagation(); handleLeave(stock.code); }}
+                            >✕</button>
+                        </button>
+                    ))
+                )}
+            </div>
+
+            <div className="stk__body">
+                <div className="stk__sidebar">
+                    <div className="stk__search-wrap">
+                        <FiSearch className="stk__search-icon" />
+                        <input
+                            className="stk__search"
+                            placeholder="종목명·종목코드 검색"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+                    <div className="stk__stock-list">
+                        {filteredStocks.length === 0 && (
+                            <div className="stk__stock-none">검색 결과 없음</div>
+                        )}
+                        {filteredStocks.map((stock) => {
+                            const r = rooms[stock.code];
+                            const isJoined = r?.joined;
+                            const isActive = activeTicker === stock.code;
+                            return (
+                                <div
+                                    key={stock.code}
+                                    className={`stk__stock-item ${isActive ? "stk__stock-item--active" : ""}`}
+                                    onClick={() => isJoined && setActiveTicker(stock.code)}
+                                >
+                                    <div className="stk__stock-info">
+                                        <span className="stk__stock-name">{stock.name}</span>
+                                        <span className="stk__stock-code">{stock.code}</span>
+                                    </div>
+                                    {isJoined && (unread[stock.code] ?? 0) > 0 && (
+                                        <span className="stk__unread-badge">{unread[stock.code]}</span>
+                                    )}
+                                    <span className={`stk__stock-count${!(r?.participantCount) ? " stk__stock-count--zero" : ""}`}>
+                                        {r?.participantCount ?? 0}명
+                                    </span>
+                                    {isJoined ? (
+                                        <button
+                                            className="stk__stock-btn stk__stock-btn--leave"
+                                            onClick={(e) => { e.stopPropagation(); handleLeave(stock.code); }}
+                                        >
+                                            나가기
+                                        </button>
+                                    ) : (
+                                        <button
+                                            className="stk__stock-btn stk__stock-btn--join"
+                                            onClick={(e) => { e.stopPropagation(); handleJoin(stock.code); }}
+                                        >
+                                            입장
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div className="stk__chat">
+                    <div className="stk__chat-placeholder">
+                        <FiMessageSquare className="stk__chat-placeholder-icon" />
+                        <span>종목톡에 입장하세요</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
