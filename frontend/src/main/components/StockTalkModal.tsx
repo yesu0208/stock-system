@@ -10,6 +10,8 @@ import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import type { StockTalkMessage, StockTalkJoinResponse } from "../../types/stockTalk";
 import "./StockTalkModal.css";
 
+const CHAT_STOCKS = STOCKS.filter((s) => s.realtimeSupported);
+
 interface RoomState {
     joined: boolean;
     messages: StockTalkMessage[];
@@ -18,7 +20,7 @@ interface RoomState {
 
 const EMPTY_ROOM: RoomState = { joined: false, messages: [], participantCount: 0 };
 const makeEmptyRooms = (): Record<string, RoomState> =>
-    Object.fromEntries(STOCKS.map((s) => [s.code, { ...EMPTY_ROOM, messages: [] }]));
+    Object.fromEntries(CHAT_STOCKS.map((s) => [s.code, { ...EMPTY_ROOM, messages: [] }])); // [수정]
 
 interface Props {
     open: boolean;
@@ -150,7 +152,7 @@ export default function StockTalkModal({ open, onClose }: Props) {
     useEffect(() => {
         if (!open || !connected) return;
 
-        const unsubs = STOCKS.map((stock) =>
+        const unsubs = CHAT_STOCKS.map((stock) =>
             subscribeDestination(`/sub/stock-talk/${stock.code}`, (data: StockTalkMessage) => {
                 updateRoom(stock.code, (prev) => ({
                     ...prev,
@@ -182,7 +184,7 @@ export default function StockTalkModal({ open, onClose }: Props) {
         if (open) return;
 
         setRooms((prev) => {
-            STOCKS.forEach((stock) => {
+            CHAT_STOCKS.forEach((stock) => {
                 if (prev[stock.code]?.joined) {
                     publish(`/app/stock-talk/${stock.code}/leave`, {});
                 }
@@ -235,7 +237,7 @@ export default function StockTalkModal({ open, onClose }: Props) {
         updateRoom(ticker, (prev) => ({ ...prev, joined: false }));
         setActiveTicker((prev) => {
             if (prev !== ticker) return prev;
-            const next = STOCKS.find((s) => s.code !== ticker && rooms[s.code]?.joined);
+            const next = CHAT_STOCKS.find((s) => s.code !== ticker && rooms[s.code]?.joined);
             return next?.code ?? null;
         });
     }, [publish, updateRoom, rooms]);
@@ -298,14 +300,14 @@ export default function StockTalkModal({ open, onClose }: Props) {
         setStockPickOpen(false);
     }, [activeTicker, publish]);
 
-    const filteredStocks = STOCKS.filter((s) => {
+    const filteredStocks = CHAT_STOCKS.filter((s) => {
         const keyword = search.toLowerCase();
         return s.name.toLowerCase().includes(keyword) || s.code.toLowerCase().includes(keyword);
     });
 
-    const joinedStocks = STOCKS.filter((s) => rooms[s.code]?.joined);
+    const joinedStocks = CHAT_STOCKS.filter((s) => rooms[s.code]?.joined);
     const activeRoom = activeTicker ? (rooms[activeTicker] ?? EMPTY_ROOM) : null;
-    const activeStock = activeTicker ? STOCKS.find((s) => s.code === activeTicker) : null;
+    const activeStock = activeTicker ? CHAT_STOCKS.find((s) => s.code === activeTicker) : null;
 
     const activeStats = activeTick
         ? activeTick.tickMessageType === "TRADEPRICE"
