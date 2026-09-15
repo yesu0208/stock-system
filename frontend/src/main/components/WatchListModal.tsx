@@ -19,12 +19,6 @@ function StockIcon({ code }: { code: string }) {
     );
 }
 
-function ChangeArrow({ direction }: { direction: 'up' | 'down' | 'flat' }) {
-    if (direction === 'up') return <span className="wl-arrow up">▲</span>;
-    if (direction === 'down') return <span className="wl-arrow down">▼</span>;
-    return <span className="wl-arrow flat">-</span>;
-}
-
 export default function WatchListModal() {
     const { watchList, addStock, removeStock } = useWatchList();
     const { subscribeStock } = useRealtime();
@@ -163,7 +157,6 @@ export default function WatchListModal() {
                 {watchList.map(item => {
                     const tick = ticksByCode[item.stockCode];
 
-                    // [수정] isRealtimeStock() 대신, 실제로 수신된 틱의 타입으로 분기
                     const stats = tick
                         ? tick.tickMessageType === 'TRADEPRICE'
                             ? calcStockStats(true, tick, null)
@@ -198,8 +191,6 @@ export default function WatchListModal() {
                                     <span className={`wl-card-change ${dirClass}`}>
                                         {stats ? (
                                             <>
-                                                <ChangeArrow direction={stats.cur.direction} />
-                                                {' '}
                                                 {stats.cur.diffText}
                                                 {stats.cur.rateText && <> ({stats.cur.rateText})</>}
                                             </>
