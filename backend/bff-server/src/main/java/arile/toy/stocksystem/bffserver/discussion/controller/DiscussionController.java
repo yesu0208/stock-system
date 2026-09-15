@@ -31,8 +31,12 @@ public class DiscussionController {
     }
 
     @GetMapping("/{postId}")
-    public ResponseEntity<PostDetail> getPost(@PathVariable Long postId) {
-        return ResponseEntity.ok(discussionService.getPost(postId));
+    public ResponseEntity<PostDetail> getPost(
+            @AuthenticationPrincipal UserDetails user,
+            @PathVariable Long postId
+    ) {
+        String viewerId = user != null ? user.getUsername() : null;
+        return ResponseEntity.ok(discussionService.getPost(postId, viewerId));
     }
 
     @PatchMapping("/{postId}")
@@ -64,10 +68,12 @@ public class DiscussionController {
 
     @GetMapping("/stocks/{stockCode}")
     public ResponseEntity<CursorPage<PostSummary>> getPostsByStock(
+            @AuthenticationPrincipal UserDetails user,
             @PathVariable String stockCode,
             @RequestParam(required = false) Long cursor
     ) {
-        return ResponseEntity.ok(discussionService.getPostsByStock(stockCode, cursor));
+        String viewerId = user != null ? user.getUsername() : null;
+        return ResponseEntity.ok(discussionService.getPostsByStock(stockCode, cursor, viewerId));
     }
 
     @GetMapping("/my/posts")
