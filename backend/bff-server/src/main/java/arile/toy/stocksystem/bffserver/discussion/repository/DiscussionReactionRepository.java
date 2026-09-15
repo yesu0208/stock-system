@@ -34,6 +34,9 @@ public interface DiscussionReactionRepository extends JpaRepository<DiscussionRe
     List<ReactionCountRow> countGroupByTargetIds(
             @Param("targetType") TargetType targetType, @Param("targetIds") List<Long> targetIds);
 
+    List<DiscussionReactionEntity> findByTargetTypeAndTargetIdInAndUserId(
+            TargetType targetType, List<Long> targetIds, String userId);
+
     interface ReactionCountRow {
         Long getTargetId();
         ReactionType getReactionType();
