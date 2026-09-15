@@ -704,7 +704,11 @@ public class NaverStockCrawlerClient {
         NaverStockDetailResponse d = fetchDetail(code);
         String market = fetchSosok(code);
 
-        String direction = mapDirection(d.upDownGb()); // 기존 PopularStock 매핑 재사용
+        String direction = mapDirection(d.upDownGb());
+
+        long currentPrice = parseLongOrZero(d.nowPrice());
+        long diffPrice = parseLongOrZero(d.prevChangePrice());
+        long prevPrice = currentPrice - diffPrice;
 
         return StockDetailTickMessage.of(
                 d.itemcode(),
@@ -715,7 +719,7 @@ public class NaverStockCrawlerClient {
                 formatComma(d.prevChangePrice()),
                 formatSignedRate(d.prevChangeRate()),
                 direction,
-                formatComma(d.prevClosePrice()),
+                formatComma(String.valueOf(prevPrice)),
                 formatComma(d.openPrice()),
                 formatComma(d.highPrice()),
                 formatComma(d.upperLimitPrice()),
@@ -724,6 +728,15 @@ public class NaverStockCrawlerClient {
                 formatComma(d.tradeVolume()),
                 formatComma(d.tradeAmount())
         );
+    }
+
+    private long parseLongOrZero(String value) {
+        if (value == null || value.isBlank()) return 0L;
+        try {
+            return Long.parseLong(value.replace(",", "").trim());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

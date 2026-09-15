@@ -224,3 +224,10 @@
     display: flex;
     flex-direction: column;
 }
+
+.modal-v2-box.alert-modal {
+    width: 360px;
+    height: 480px;
+    display: flex;
+    flex-direction: column;
+}

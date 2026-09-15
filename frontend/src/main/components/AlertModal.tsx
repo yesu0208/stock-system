@@ -1,113 +1,225 @@
-import { useState } from 'react'
-import Modal from '../../components/Modal'
-import { createAlert, cancelAlert } from '../../api/alert'
-import { useAlert } from '../context/AlertContext'
-import { useMsg } from '../context/MsgContext'
-import { stockNameMap } from '../../constants/stocks'
-import type { AlertDirection } from '../../types/alert'
+import "./AlertModal.css";
 
-interface Props {
-    show: boolean
-    onClose: () => void
-    stockCode: string
-    stockName: string
-    curPrice?: number
+import { useState, useRef, useEffect } from "react";
+
+import ModalV2 from "../../components/ModalV2";
+import { useStock } from "../context/StockContext";
+import { useAlert } from "../context/AlertContext";
+import type { AlertDirection } from "../../types/alert";
+import { STOCKS } from "../data/stocks";
+
+type AlertTab = "current" | "all";
+
+interface AlertModalProps {
+    open: boolean;
+    onClose: () => void;
 }
 
-export default function AlertModal({ show, onClose, stockCode, stockName, curPrice }: Props) {
-    const { alerts } = useAlert()
-    const { success, error } = useMsg()
+function getStockName(code: string): string {
+    return STOCKS.find((s) => s.code === code)?.name ?? code;
+}
 
-    const [direction, setDirection] = useState<AlertDirection>('ABOVE')
-    const [triggerPrice, setTriggerPrice] = useState(curPrice ?? 0)
-    const [submitting, setSubmitting] = useState(false)
+export default function AlertModal({ open, onClose }: AlertModalProps) {
+    const { selectedStock } = useStock();
+    const { alerts, registerAlert, cancelAlert, getAlertsBySymbol } = useAlert();
 
-    if (!show) return null
+    const [tab, setTab] = useState<AlertTab>("current");
+    const [price, setPrice] = useState<string>("");
+    const [direction, setDirection] = useState<AlertDirection>("ABOVE");
+    const [loading, setLoading] = useState(false);
+    const [priceError, setPriceError] = useState<string | null>(null);
 
-    const myAlerts = alerts.filter(a => a.stockCode === stockCode)
+    const errorInnerRef = useRef<HTMLParagraphElement>(null);
+    const [errorHeight, setErrorHeight] = useState(0);
 
-    const handleCreate = async () => {
-        setSubmitting(true)
-        try {
-            await createAlert({ stockCode, direction, triggerPrice })
-            success('알림이 등록되었습니다.')
-        } catch (e: any) {
-            error(`알림 등록 실패: ${e.response?.data?.message ?? e.message}`)
-        } finally {
-            setSubmitting(false)
+    useEffect(() => {
+        if (priceError && errorInnerRef.current) {
+            setErrorHeight(errorInnerRef.current.scrollHeight);
+        } else {
+            setErrorHeight(0);
         }
-    }
+    }, [priceError]);
 
-    const handleCancel = async (alertId: number) => {
-        try {
-            await cancelAlert(alertId, stockCode)
-            success('알림이 해지되었습니다.')
-        } catch (e: any) {
-            error(`알림 해지 실패: ${e.response?.data?.message ?? e.message}`)
+    const handleRegister = async () => {
+        const priceNum = parseInt(price.replace(/,/g, ""), 10);
+
+        if (!price || isNaN(priceNum) || priceNum <= 0) {
+            setPriceError("유효한 가격을 입력해 주세요.");
+            return;
         }
-    }
+
+        setPriceError(null);
+        setLoading(true);
+
+        const result = await registerAlert(selectedStock.code, priceNum, direction);
+
+        if (result.success) {
+            setPrice("");
+        }
+
+        setLoading(false);
+    };
+
+    const handleCancel = async (alertId: number, stockCode: string) => {
+        await cancelAlert(alertId, stockCode);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") handleRegister();
+    };
+
+    const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value.replace(/[^0-9]/g, "");
+        if (priceError) setPriceError(null);
+        if (raw === "") {
+            setPrice("");
+            return;
+        }
+        setPrice(Number(raw).toLocaleString("ko-KR"));
+    };
+
+    const currentAlerts = getAlertsBySymbol(selectedStock.code);
 
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '320px' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>{stockName} 목표가 알림</h3>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center', marginBottom: '12px' }}>
-                    {(['ABOVE', 'BELOW'] as const).map(d => (
-                        <button
-                            key={d}
-                            onClick={() => setDirection(d)}
-                            style={{ ...styles.toggleButton, ...(direction === d ? styles.toggleActive : {}) }}
-                        >
-                            {d === 'ABOVE' ? '이상' : '이하'}
-                        </button>
-                    ))}
-                    <input
-                        type="number"
-                        value={triggerPrice}
-                        onChange={e => setTriggerPrice(Number(e.target.value))}
-                        style={styles.input}
-                        className="no-spinner"
-                    />
-                    <span style={{ fontSize: '12px', color: '#AAA' }}>원</span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                    <button onClick={handleCreate} style={styles.submitButton} disabled={submitting}>
-                        알림 등록
+        <ModalV2 open={open} title="알림" onClose={onClose}>
+            <div className="alert-modal-body">
+                <div className="alert-tabs">
+                    <button
+                        className={`alert-tab-btn ${tab === "current" ? "active" : ""}`}
+                        onClick={() => setTab("current")}
+                    >
+                        현재 종목
+                    </button>
+                    <button
+                        className={`alert-tab-btn ${tab === "all" ? "active" : ""}`}
+                        onClick={() => setTab("all")}
+                    >
+                        전체 종목
                     </button>
                 </div>
 
-                <div style={{ borderTop: '1px solid #333', paddingTop: '8px' }}>
-                    <h4 style={{ color: '#AAA', margin: '0 0 6px 0', fontSize: '13px' }}>등록된 알림</h4>
-                    {myAlerts.length === 0 ? (
-                        <div style={{ color: '#666', fontSize: '12px', textAlign: 'center' }}>등록된 알림 없음</div>
-                    ) : (
-                        myAlerts.map(a => (
-                            <div key={a.alertId} style={styles.alertRow}>
-                                <span>
-                                    {stockNameMap[a.stockCode] ?? a.stockCode} {a.triggerPrice.toLocaleString()}원 {a.direction === 'ABOVE' ? '이상' : '이하'}
-                                </span>
-                                <button onClick={() => handleCancel(a.alertId)} style={styles.cancelSmallButton}>
-                                    해지
-                                </button>
+                {tab === "current" ? (
+                    <div className="alert-current-wrap">
+                        <section className="alert-form-section">
+                            <div className="alert-symbol-badge">
+                                {selectedStock.name}
+                                <span className="badge-code">{selectedStock.code}</span>
                             </div>
-                        ))
-                    )}
-                </div>
 
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
+                            <div className="alert-form">
+                                <div className="alert-direction-toggle">
+                                    <button
+                                        className={`alert-direction-btn ${direction === "ABOVE" ? "selected-above" : ""}`}
+                                        onClick={() => setDirection("ABOVE")}
+                                    >
+                                        ▲ 이상 (ABOVE)
+                                    </button>
+
+                                    <button
+                                        className={`alert-direction-btn ${direction === "BELOW" ? "selected-below" : ""}`}
+                                        onClick={() => setDirection("BELOW")}
+                                    >
+                                        ▼ 이하 (BELOW)
+                                    </button>
+                                </div>
+
+                                <div className="alert-price-row">
+                                    <input
+                                        className={`alert-price-input${priceError ? " is-invalid" : ""}`}
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="감시 가격 (원)"
+                                        value={price}
+                                        onChange={handlePriceChange}
+                                        onKeyDown={handleKeyDown}
+                                    />
+                                    <button
+                                        className="alert-submit-btn"
+                                        onClick={handleRegister}
+                                        disabled={loading}
+                                    >
+                                        {loading ? "등록 중" : "등록"}
+                                    </button>
+                                </div>
+
+                                <div className="alert-price-error-wrap" style={{ height: errorHeight }}>
+                                    <p className="alert-price-error" ref={errorInnerRef}>{priceError}</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="alert-list-section">
+                            <div className="alert-section-title">
+                                {selectedStock.name} 알림 ({currentAlerts.length})
+                            </div>
+
+                            <div className="alert-list current">
+                                {currentAlerts.length === 0 ? (
+                                    <div className="alert-empty">등록된 알림이 없습니다</div>
+                                ) : (
+                                    currentAlerts.map((item) => (
+                                        <div key={item.alertId} className="alert-item">
+                                            <div className="alert-item-left">
+                                                <div className="alert-item-top">
+                                                    <span className={`alert-dir-chip ${item.direction === "ABOVE" ? "above" : "below"}`}>
+                                                        {item.direction === "ABOVE" ? "▲ 이상" : "▼ 이하"}
+                                                    </span>
+                                                </div>
+
+                                                <div className="alert-item-price">
+                                                    <strong>{item.triggerPrice.toLocaleString("ko-KR")}</strong> 원
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                className="alert-cancel-btn"
+                                                onClick={() => handleCancel(item.alertId, item.stockCode)}
+                                            >
+                                                해제
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </section>
+                    </div>
+                ) : (
+                    <section>
+                        <div className="alert-section-title">전체 알림 ({alerts.length})</div>
+
+                        <div className="alert-list all">
+                            {alerts.length === 0 ? (
+                                <div className="alert-empty">등록된 알림이 없습니다</div>
+                            ) : (
+                                alerts.map((item) => (
+                                    <div key={item.alertId} className="alert-item">
+                                        <div className="alert-item-left">
+                                            <div className="alert-item-top">
+                                                <span className="alert-item-symbol">{getStockName(item.stockCode)}</span>
+                                                <span className="alert-item-code">{item.stockCode}</span>
+                                                <span className={`alert-dir-chip ${item.direction === "ABOVE" ? "above" : "below"}`}>
+                                                    {item.direction === "ABOVE" ? "▲ 이상" : "▼ 이하"}
+                                                </span>
+                                            </div>
+
+                                            <div className="alert-item-price">
+                                                <strong>{item.triggerPrice.toLocaleString("ko-KR")}</strong> 원
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            className="alert-cancel-btn"
+                                            onClick={() => handleCancel(item.alertId, item.stockCode)}
+                                        >
+                                            해제
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </section>
+                )}
             </div>
-        </Modal>
-    )
+        </ModalV2>
+    );
 }
-
-const styles = {
-    toggleButton: { padding: '4px 8px', fontSize: '12px', borderRadius: '4px', border: '1px solid #555', backgroundColor: '#222', color: '#FFF', cursor: 'pointer' },
-    toggleActive: { backgroundColor: '#4F9DFF', borderColor: '#4F9DFF' },
-    input: { padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid #333', backgroundColor: '#222', color: '#FFF', width: '90px', textAlign: 'center' as const },
-    submitButton: { padding: '8px 16px', fontSize: '14px', borderRadius: '6px', border: 'none', backgroundColor: '#4F9DFF', color: '#FFF', cursor: 'pointer', fontWeight: 600 },
-    alertRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '6px 0', borderBottom: '1px solid #262626' },
-    cancelSmallButton: { padding: '2px 8px', fontSize: '11px', backgroundColor: '#552222', color: '#FF8A80', border: '1px solid #773333', borderRadius: '4px', cursor: 'pointer' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '12px', width: '100%' },
-} as const
