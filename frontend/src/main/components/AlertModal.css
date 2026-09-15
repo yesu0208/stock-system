@@ -313,31 +313,34 @@
 
 .alert-tab-btn {
     flex: 1;
-    height: auto;
     padding: 8px 0;
-
-    border: none;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
     background: none;
-
-    font-size: 13px;
-    font-weight: 500;
+    border: none;
     color: rgba(255, 255, 255, 0.4);
-
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
+    border-radius: 0;
+
+    border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
 }
 
+.alert-tab-btn:focus,
+.alert-tab-btn:focus-visible {
+    outline: none;
+}
+
 .alert-tab-btn:hover:not(.active) {
-    color: rgba(255, 255, 255, 0.7);
-    background: none;
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
 }
 
 .alert-tab-btn.active {
     color: #b7a6ff;
-    background: none;
-    border-color: transparent;
     border-bottom-color: #7c5cff;
 }
 
