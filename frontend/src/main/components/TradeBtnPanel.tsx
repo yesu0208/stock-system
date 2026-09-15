@@ -6,6 +6,7 @@ import WatchListModal from './WatchListModal';
 import NewsModal from './NewsModal';
 import StockTalkModal from './StockTalkModal';
 import DiscussionModal from './DiscussionModal';
+import OrderHistoryModal from './OrderHistoryModal';
 
 type ModalType = '관심종목' | '종목토론' | '종목톡' | '주문내역' | '뉴스/공시' | null;
 
@@ -53,6 +54,10 @@ export default function TradeBtnPanel() {
 
             <ModalV2 open={openModal === '종목토론'} title="종목토론" onClose={close}>
                 <DiscussionModal />
+            </ModalV2>
+
+            <ModalV2 open={openModal === '주문내역'} title="주문내역" onClose={close}>
+                <OrderHistoryModal />
             </ModalV2>
 
             {/* TODO: 모달 연결 예정

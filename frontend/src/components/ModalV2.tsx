@@ -60,6 +60,7 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "뉴스/공시": "news-modal-v2",
     "종목톡": "stock-talk-modal",
     "종목토론": "discussion-modal",
+    "주문내역": "order-history-modal",
 };
 
 export default function ModalV2({

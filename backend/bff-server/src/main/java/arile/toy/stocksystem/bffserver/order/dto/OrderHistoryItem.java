@@ -13,6 +13,10 @@ public record OrderHistoryItem(
         Integer orderQuantity,
         Integer remainingQuantity,
         OrderStatus orderStatus,
-        Instant orderTime
+        Instant orderTime,
+        Long notionalValue,
+        Long initialMargin,
+        Double maintenanceMarginRate,
+        Long liquidationPrice
 ) {
 }

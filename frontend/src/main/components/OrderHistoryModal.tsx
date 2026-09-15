@@ -1,135 +1,497 @@
-import { useEffect, useState } from 'react'
-import Modal from '../../components/Modal'
-import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory } from '../../api/orderHistory'
-import { stockNameMap } from '../../constants/stocks'
-import type { OrderHistoryItem, TradeHistoryItem } from '../../types/history'
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { FiSearch } from "react-icons/fi";
+import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory, cancelOrder } from "../../api/orderHistory";
+import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled, cancelAutoOrder } from "../../api/autoOrderHistory";
+import { useRealtime } from "../context/RealtimeContext";
+import { stockNameMap } from "../../constants/stocks";
+import type { OrderHistoryItem, TradeHistoryItem, AutoOrderHistoryItem, HistoryPageResponse } from "../../types/history";
+import "./OrderHistoryModal.css";
 
-/**
- * OrderHistoryModal
- * 백엔드 OrderHistoryController.java(페이지네이션 + 기간 필터 지원)를
- * 확인한 결과 완전히 별도의 REST 조회 기능이라, 기존 인라인 목록은
- * 건드리지 않고 새 모달로 분리
- */
+type MainTab = "주문" | "취소" | "미체결" | "체결";
+type SubTab = "일반" | "자동";
 
-type TabType = 'TRADES' | 'ORDERS' | 'UNFILLED' | 'CANCELS'
+type AnyOrderItem = OrderHistoryItem | AutoOrderHistoryItem | TradeHistoryItem;
 
-const ORDER_STATUS_LABEL: Record<string, string> = {
-    OPEN: '대기',
-    PARTIAL: '부분체결',
-    FILLED: '체결완료',
-    CANCELED: '취소됨',
+function isAutoOrder(item: AnyOrderItem): item is AutoOrderHistoryItem {
+    return "autoOrderId" in item;
+}
+function isTrade(item: AnyOrderItem): item is TradeHistoryItem {
+    return "tradeId" in item;
 }
 
-interface Props {
-    show: boolean
-    onClose: () => void
+function formatTimeParts(isoString: string): { date: string; time: string } {
+    const d = new Date(isoString);
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    const sec = String(d.getSeconds()).padStart(2, "0");
+    return { date: `${yy}.${mm}.${dd}`, time: `${hh}:${min}:${sec}` };
 }
 
-export default function OrderHistoryModal({ show, onClose }: Props) {
-    const [tab, setTab] = useState<TabType>('TRADES')
-    const [page, setPage] = useState(0)
-    const [orders, setOrders] = useState<OrderHistoryItem[]>([])
-    const [trades, setTrades] = useState<TradeHistoryItem[]>([])
-    const [hasNext, setHasNext] = useState(false)
-    const [loading, setLoading] = useState(false)
+function TimeCell({ isoString }: { isoString: string }) {
+    const { date, time } = formatTimeParts(isoString);
+    return (
+        <span className="oh-col oh-time">
+            <span className="oh-time-date">{date}</span>
+            <span className="oh-time-clock">{time}</span>
+        </span>
+    );
+}
 
-    useEffect(() => {
-        if (!show) return
-        setPage(0)
-        setOrders([])
-        setTrades([])
-    }, [show, tab])
+const LEVERAGE_NUM: Record<string, number> = { SPOT: 1, X1_5: 1.5, X2: 2, X2_5: 2.5 };
 
-    useEffect(() => {
-        if (!show) return
-
-        setLoading(true)
-        const fetcher =
-            tab === 'TRADES' ? getTradeHistory
-                : tab === 'ORDERS' ? getOrderHistory
-                    : tab === 'UNFILLED' ? getUnfilledOrders
-                        : getOrderCancelHistory
-
-        fetcher({ page, size: 20 })
-            .then(res => {
-                if (tab === 'TRADES') {
-                    setTrades(prev => (page === 0 ? res.items as TradeHistoryItem[] : [...prev, ...(res.items as TradeHistoryItem[])]))
-                } else {
-                    setOrders(prev => (page === 0 ? res.items as OrderHistoryItem[] : [...prev, ...(res.items as OrderHistoryItem[])]))
-                }
-                setHasNext(res.hasNext)
-            })
-            .catch(() => setHasNext(false))
-            .finally(() => setLoading(false))
-    }, [show, tab, page])
-
-    if (!show) return null
+function LeverageBadge({ leverageRatio }: { leverageRatio: string | null }) {
+    const ratio = leverageRatio ?? "SPOT";
+    const isCash = ratio === "SPOT";
+    const num = LEVERAGE_NUM[ratio] ?? 0;
+    const levClass = isCash ? "cash" : num === 1.5 ? "lev-2" : num === 2 ? "lev-3" : num === 2.5 ? "lev-5" : "lev-other";
 
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '480px', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>주문/체결 내역</h3>
+        <span className="oh-col oh-leverage">
+            <span className={`oh-leverage-badge ${levClass}`}>
+                {isCash ? "현금" : `${num}x`}
+            </span>
+        </span>
+    );
+}
 
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '12px' }}>
-                    {(['TRADES', 'ORDERS', 'UNFILLED', 'CANCELS'] as const).map(t => (
+function MarginCell({ notionalValue, initialMargin }: { notionalValue: number; initialMargin: number | null }) {
+    return (
+        <span className="oh-col oh-margin">
+            <span className="oh-margin-notional">{notionalValue.toLocaleString()}</span>
+            <span className="oh-margin-initial">
+                {initialMargin != null ? initialMargin.toLocaleString() : <span className="oh-dash">—</span>}
+            </span>
+        </span>
+    );
+}
+
+function LiquidationCell({ maintenanceMarginRate, liquidationPrice }: { maintenanceMarginRate: number | null; liquidationPrice: number | null }) {
+    return (
+        <span className="oh-col oh-liquidation">
+            <span className="oh-liq-rate">
+                {maintenanceMarginRate != null ? `${(maintenanceMarginRate * 100).toFixed(0)}%` : <span className="oh-dash">—</span>}
+            </span>
+            <span className="oh-liq-price">
+                {liquidationPrice != null ? liquidationPrice.toLocaleString() : <span className="oh-dash">—</span>}
+            </span>
+        </span>
+    );
+}
+
+function CancelButton({ onCancel }: { onCancel: () => void }) {
+    return (
+        <span className="oh-col oh-cancel">
+            <button
+                type="button"
+                className="oh-cancel-btn"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onCancel();
+                }}
+            >
+                취소
+            </button>
+        </span>
+    );
+}
+
+interface SearchFilter {
+    keyword: string;
+    dateFrom: string;
+    dateTo: string;
+}
+
+const EMPTY_FILTER: SearchFilter = { keyword: "", dateFrom: "", dateTo: "" };
+
+function SearchBar({
+                       filter,
+                       onChange,
+                       onReset,
+                   }: {
+    filter: SearchFilter;
+    onChange: (f: SearchFilter) => void;
+    onReset: () => void;
+}) {
+    const [inputValue, setInputValue] = useState(filter.keyword);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        setInputValue(filter.keyword);
+    }, [filter.keyword]);
+
+    const handleKeywordChange = (value: string) => {
+        setInputValue(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            onChange({ ...filter, keyword: value });
+        }, 300);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, []);
+
+    const handleDateFromChange = (newFrom: string) => {
+        if (newFrom && filter.dateTo && newFrom > filter.dateTo) {
+            onChange({ ...filter, dateFrom: newFrom, dateTo: newFrom });
+        } else {
+            onChange({ ...filter, dateFrom: newFrom });
+        }
+    };
+
+    const handleDateToChange = (newTo: string) => {
+        if (newTo && filter.dateFrom && newTo < filter.dateFrom) {
+            onChange({ ...filter, dateFrom: newTo, dateTo: newTo });
+        } else {
+            onChange({ ...filter, dateTo: newTo });
+        }
+    };
+
+    return (
+        <div className="oh-search-bar">
+            <div className="oh-search-keyword-wrap">
+                <FiSearch className="oh-search-icon" />
+                <input
+                    className="oh-search-input oh-search-keyword"
+                    type="text"
+                    placeholder="종목명·종목코드 검색"
+                    value={inputValue}
+                    onChange={(e) => handleKeywordChange(e.target.value)}
+                />
+            </div>
+
+            <input
+                className="oh-search-input oh-search-date"
+                type="date"
+                value={filter.dateFrom}
+                max={filter.dateTo || undefined}
+                onChange={(e) => handleDateFromChange(e.target.value)}
+            />
+            <span className="oh-search-sep">~</span>
+            <input
+                className="oh-search-input oh-search-date"
+                type="date"
+                value={filter.dateTo}
+                min={filter.dateFrom || undefined}
+                onChange={(e) => handleDateToChange(e.target.value)}
+            />
+
+            <button className="oh-search-reset" onClick={onReset} title="검색 초기화">
+                ✕
+            </button>
+        </div>
+    );
+}
+
+type Fetcher = (params: { page: number; size: number; stockCode?: string; from?: string; to?: string }) => Promise<HistoryPageResponse<AnyOrderItem>>;
+
+function resolveFetcher(main: MainTab, sub: SubTab): Fetcher {
+    if (main === "체결") return getTradeHistory as unknown as Fetcher;
+    if (main === "주문") return (sub === "일반" ? getOrderHistory : getAutoOrderHistory) as unknown as Fetcher;
+    if (main === "취소") return (sub === "일반" ? getOrderCancelHistory : getAutoOrderCancelHistory) as unknown as Fetcher;
+    return (sub === "일반" ? getUnfilledOrders : getAutoOrderUnfilled) as unknown as Fetcher;
+}
+
+export default function OrderHistoryModal() {
+    const [mainTab, setMainTab] = useState<MainTab>("주문");
+    const [subTab, setSubTab] = useState<SubTab>("일반");
+
+    const [filter, setFilter] = useState<SearchFilter>(EMPTY_FILTER);
+
+    const [items, setItems] = useState<AnyOrderItem[]>([]);
+    const [page, setPage] = useState(0);
+    const [hasNext, setHasNext] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const listWrapperRef = useRef<HTMLDivElement>(null);
+
+    const { subscribeDestination } = useRealtime();
+
+    const showSubTabs = mainTab !== "체결";
+    const isPending = mainTab === "미체결";
+
+    const fetcher = useMemo(() => resolveFetcher(mainTab, showSubTabs ? subTab : "일반"), [mainTab, subTab, showSubTabs]);
+
+    const loadPage = useCallback(async (pageToLoad: number) => {
+        setLoading(true);
+        try {
+            const res = await fetcher({
+                page: pageToLoad,
+                size: 20,
+                ...(mainTab !== "미체결" && {
+                    stockCode: filter.keyword.trim() || undefined,
+                    from: filter.dateFrom ? `${filter.dateFrom}T00:00:00` : undefined,
+                    to: filter.dateTo ? `${filter.dateTo}T23:59:59` : undefined,
+                }),
+            });
+            setItems((prev) => (pageToLoad === 0 ? res.items : [...prev, ...res.items]));
+            setHasNext(res.hasNext);
+            setPage(pageToLoad);
+        } catch (e) {
+            console.error("[OrderHistoryModal] 목록 조회 실패", e);
+        } finally {
+            setLoading(false);
+        }
+    }, [fetcher, filter, mainTab]);
+
+    useEffect(() => {
+        if (isPending) return;
+        setItems([]);
+        setHasNext(false);
+        loadPage(0);
+    }, [fetcher, isPending, filter.dateFrom, filter.dateTo, filter.keyword]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (!isPending) return;
+
+        setItems([]);
+        setHasNext(false);
+
+        if (subTab === "일반") {
+            return subscribeDestination("/user/sub/order", (data: OrderHistoryItem[]) => {
+                setItems(data.filter((o) => o.remainingQuantity > 0));
+            });
+        }
+
+        return subscribeDestination("/user/sub/auto/order", (data: AutoOrderHistoryItem[]) => {
+            setItems(data);
+        });
+    }, [isPending, subTab, subscribeDestination]);
+
+    useEffect(() => {
+        if (isPending) return;
+        const sentinel = sentinelRef.current;
+        const listWrapper = listWrapperRef.current;
+        if (!sentinel || !listWrapper) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNext && !loading) {
+                    loadPage(page + 1);
+                }
+            },
+            { root: listWrapper, threshold: 0.1 }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [isPending, hasNext, loading, page, loadPage]);
+
+    const handleMainTabChange = (t: MainTab) => {
+        setMainTab(t);
+        if (t === "체결") setSubTab("일반");
+    };
+
+    const handleCancel = async (auto: boolean, id: number, stockCode: string) => {
+        if (!window.confirm("주문을 취소하시겠습니까?")) return;
+        try {
+            if (auto) {
+                await cancelAutoOrder(id, stockCode);
+            } else {
+                await cancelOrder(id, stockCode);
+            }
+            // 실시간 구독이 곧 갱신된 목록을 다시 push하지만, 체감 반응성을 위해 즉시 제거
+            setItems((prev) =>
+                prev.filter((item) => {
+                    if (isTrade(item)) return true;
+                    if (auto) return !isAutoOrder(item) || item.autoOrderId !== id;
+                    return isAutoOrder(item) || (item as OrderHistoryItem).orderId !== id;
+                })
+            );
+        } catch (e) {
+            console.error("[OrderHistoryModal] 취소 실패", e);
+            alert("취소에 실패했습니다.");
+        }
+    };
+
+    const showTrigger = subTab === "자동" && mainTab !== "체결";
+    const gridClass = isPending
+        ? (showTrigger ? "oh-grid-pending" : "oh-grid-pending-general")
+        : (showTrigger ? "oh-grid-cancelled" : "oh-grid-executed");
+
+    const hasFilter = !!(filter.keyword || filter.dateFrom || filter.dateTo);
+
+    return (
+        <div className="oh-modal">
+            <div className="oh-tabs">
+                {(["주문", "취소", "미체결", "체결"] as MainTab[]).map((t) => (
+                    <button
+                        key={t}
+                        className={`oh-tab ${mainTab === t ? "active" : ""}`}
+                        onClick={() => handleMainTabChange(t)}
+                    >
+                        {t}
+                    </button>
+                ))}
+            </div>
+
+            {showSubTabs && (
+                <div className="oh-tabs oh-subtabs">
+                    {(["일반", "자동"] as SubTab[]).map((t) => (
                         <button
                             key={t}
-                            onClick={() => setTab(t)}
-                            style={{ ...styles.tabButton, ...(tab === t ? styles.tabActive : {}) }}
+                            className={`oh-tab ${subTab === t ? "active" : ""}`}
+                            onClick={() => setSubTab(t)}
                         >
-                            {t === 'TRADES' ? '체결' : t === 'ORDERS' ? '전체주문' : t === 'UNFILLED' ? '미체결' : '취소'}
+                            {t}주문
                         </button>
                     ))}
                 </div>
+            )}
 
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {tab === 'TRADES'
-                        ? trades.map(t => (
-                            <div key={t.tradeId} style={styles.row}>
-                                <span style={{ color: t.tradeType === 'BUY' ? '#FF6347' : '#4F9DFF' }}>
-                                    {t.tradeType === 'BUY' ? '매수' : '매도'}
-                                </span>
-                                <span>{stockNameMap[t.stockCode] ?? t.stockCode}</span>
-                                <span>{t.tradePrice.toLocaleString()}원 · {t.tradeQuantity}주</span>
-                                <span style={styles.time}>{new Date(t.executedAt).toLocaleString('ko-KR')}</span>
-                            </div>
-                        ))
-                        : orders.map(o => (
-                            <div key={o.orderId} style={styles.row}>
-                                <span style={{ color: o.orderType === 'BUY' ? '#FF6347' : '#4F9DFF' }}>
-                                    {o.orderType === 'BUY' ? '매수' : '매도'}
-                                </span>
-                                <span>{stockNameMap[o.stockCode] ?? o.stockCode}</span>
-                                <span>
-                                    {o.orderPrice.toLocaleString()}원 · {o.orderQuantity - o.remainingQuantity}/{o.orderQuantity}주
-                                </span>
-                                <span style={{ color: '#AAA' }}>{ORDER_STATUS_LABEL[o.orderStatus] ?? o.orderStatus}</span>
-                                <span style={styles.time}>{new Date(o.orderTime).toLocaleString('ko-KR')}</span>
-                            </div>
-                        ))}
-
-                    {!loading && ((tab === 'TRADES' && trades.length === 0) || (tab !== 'TRADES' && orders.length === 0)) && (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>내역 없음</div>
-                    )}
-                </div>
-
-                {hasNext && (
-                    <button onClick={() => setPage(p => p + 1)} style={styles.moreButton} disabled={loading}>
-                        더 보기
-                    </button>
+            <div className="oh-tab-content">
+                {!isPending && (
+                    <SearchBar
+                        filter={filter}
+                        onChange={setFilter}
+                        onReset={() => setFilter(EMPTY_FILTER)}
+                    />
                 )}
 
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
-            </div>
-        </Modal>
-    )
-}
+                {isPending ? (
+                    <div className={`oh-header-row ${gridClass}`}>
+                        <span className="oh-col oh-time">시간</span>
+                        <span className="oh-col oh-name">종목</span>
+                        <span className="oh-col oh-side">구분</span>
+                        <span className="oh-col oh-leverage">레버리지</span>
+                        {showTrigger && <span className="oh-col oh-order-type">주문구분</span>}
+                        {showTrigger && <span className="oh-col oh-trigger">감시가</span>}
+                        <span className="oh-col oh-qty">잔량/수량</span>
+                        <span className="oh-col oh-price">가격</span>
+                        <span className="oh-col oh-margin">명목가치/증거금</span>
+                        <span className="oh-col oh-liquidation">유지증거금율/청산가</span>
+                        <span className="oh-col oh-cancel">취소</span>
+                    </div>
+                ) : (
+                    <div className={`oh-header-row ${gridClass}`}>
+                        <span className="oh-col oh-time">시간</span>
+                        <span className="oh-col oh-name">종목</span>
+                        <span className="oh-col oh-side">구분</span>
+                        <span className="oh-col oh-leverage">레버리지</span>
+                        {showTrigger && <span className="oh-col oh-order-type">주문구분</span>}
+                        {showTrigger && <span className="oh-col oh-trigger">감시가</span>}
+                        <span className="oh-col oh-qty">수량</span>
+                        <span className="oh-col oh-price">가격</span>
+                        <span className="oh-col oh-margin">명목가치/증거금</span>
+                    </div>
+                )}
 
-const styles = {
-    tabButton: { padding: '6px 10px', fontSize: '12px', borderRadius: '4px', border: '1px solid #555', backgroundColor: '#222', color: '#FFF', cursor: 'pointer' },
-    tabActive: { backgroundColor: '#4F9DFF', borderColor: '#4F9DFF' },
-    row: { display: 'flex', gap: '8px', alignItems: 'center', fontSize: '12px', padding: '8px 4px', borderBottom: '1px solid #262626', flexWrap: 'wrap' as const },
-    time: { marginLeft: 'auto', color: '#666', fontSize: '11px' },
-    moreButton: { padding: '8px', fontSize: '13px', backgroundColor: '#222', color: '#FFF', border: '1px solid #333', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
-} as const
+                <div className="oh-list-wrapper" ref={listWrapperRef}>
+                    <ul className="oh-list">
+                        {items.length === 0 && !loading ? (
+                            <li className="oh-empty">
+                                {!isPending && hasFilter ? "검색 결과가 없습니다." : "내역이 없습니다."}
+                            </li>
+                        ) : (
+                            items.map((item) => {
+                                const stockCode = item.stockCode;
+                                const stockName = stockNameMap[stockCode] ?? stockCode;
+
+                                if (isTrade(item)) {
+                                    return (
+                                        <li key={`trade-${item.tradeId}`} className="oh-item oh-grid-executed">
+                                            <TimeCell isoString={item.executedAt} />
+                                            <span className="oh-col oh-name">
+                                                <span className="oh-stock-name">{stockName}</span>
+                                                <span className="oh-stock-code">{stockCode}</span>
+                                            </span>
+                                            <span className={`oh-col oh-side ${item.tradeType === "BUY" ? "buy" : "sell"}`}>
+                                                {item.tradeType === "BUY" ? "매수" : "매도"}
+                                            </span>
+                                            <span className="oh-col oh-leverage">—</span>
+                                            <span className="oh-col oh-qty">{item.tradeQuantity.toLocaleString()}주</span>
+                                            <span className="oh-col oh-price">{item.tradePrice.toLocaleString()}</span>
+                                            <span className="oh-col oh-margin">—</span>
+                                        </li>
+                                    );
+                                }
+
+                                const auto = isAutoOrder(item);
+                                const id = auto ? item.autoOrderId : (item as OrderHistoryItem).orderId;
+                                const side = auto ? item.autoOrderType : (item as OrderHistoryItem).orderType;
+                                const time = item.orderTime;
+
+                                if (isPending) {
+                                    const triggerPrice = auto ? (item as AutoOrderHistoryItem).triggerPrice : null;
+                                    const remainingQuantity = !auto
+                                        ? (item as OrderHistoryItem).remainingQuantity
+                                        : item.orderQuantity;
+
+                                    return (
+                                        <li key={`${auto ? "auto" : "order"}-${id}`} className={`oh-item ${gridClass}`}>
+                                            <TimeCell isoString={time} />
+                                            <span className="oh-col oh-name">
+                                                <span className="oh-stock-name">{stockName}</span>
+                                                <span className="oh-stock-code">{stockCode}</span>
+                                            </span>
+                                            <span className={`oh-col oh-side ${side === "BUY" ? "buy" : "sell"}`}>
+                                                {side === "BUY" ? "매수" : "매도"}
+                                            </span>
+                                            <LeverageBadge leverageRatio={item.leverageRatio} />
+                                            {showTrigger && <span className="oh-col oh-order-type">조건부</span>}
+                                            {showTrigger && (
+                                                <span className="oh-col oh-trigger">
+                                                    {triggerPrice != null ? triggerPrice.toLocaleString() : <span className="oh-dash">—</span>}
+                                                </span>
+                                            )}
+                                            <span className="oh-col oh-qty">
+                                                {remainingQuantity.toLocaleString()}
+                                                <span className="oh-qty-sep">/</span>
+                                                {item.orderQuantity.toLocaleString()}
+                                            </span>
+                                            <span className="oh-col oh-price">{item.orderPrice.toLocaleString()}</span>
+                                            <MarginCell notionalValue={item.notionalValue} initialMargin={item.initialMargin} />
+                                            <LiquidationCell
+                                                maintenanceMarginRate={item.maintenanceMarginRate}
+                                                liquidationPrice={item.liquidationPrice}
+                                            />
+                                            <CancelButton onCancel={() => handleCancel(auto, id, stockCode)} />
+                                        </li>
+                                    );
+                                }
+
+                                return (
+                                    <li key={`${auto ? "auto" : "order"}-${id}`} className={`oh-item ${gridClass}`}>
+                                        <TimeCell isoString={time} />
+                                        <span className="oh-col oh-name">
+                                            <span className="oh-stock-name">{stockName}</span>
+                                            <span className="oh-stock-code">{stockCode}</span>
+                                        </span>
+                                        <span className={`oh-col oh-side ${side === "BUY" ? "buy" : "sell"}`}>
+                                            {side === "BUY" ? "매수" : "매도"}
+                                        </span>
+                                        <LeverageBadge leverageRatio={item.leverageRatio} />
+                                        {showTrigger && <span className="oh-col oh-order-type">조건부</span>}
+                                        {showTrigger && (
+                                            <span className="oh-col oh-trigger">
+                                                {auto && (item as AutoOrderHistoryItem).triggerPrice != null
+                                                    ? (item as AutoOrderHistoryItem).triggerPrice.toLocaleString()
+                                                    : <span className="oh-dash">—</span>}
+                                            </span>
+                                        )}
+                                        <span className="oh-col oh-qty">{item.orderQuantity.toLocaleString()}주</span>
+                                        <span className="oh-col oh-price">{item.orderPrice.toLocaleString()}</span>
+                                        <MarginCell notionalValue={item.notionalValue} initialMargin={item.initialMargin} />
+                                    </li>
+                                );
+                            })
+                        )}
+                    </ul>
+
+                    {!isPending && (
+                        <div ref={sentinelRef} className="oh-sentinel">
+                            {loading && <span className="oh-loading">불러오는 중…</span>}
+                            {!hasNext && items.length > 0 && <span className="oh-end-mark">마지막 데이터입니다</span>}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
