@@ -57,6 +57,7 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "업종": "sector-modal",
     "알림": "alert-modal",
     "관심종목": "watchlist-modal-v2",
+    "뉴스/공시": "news-modal-v2",
 };
 
 export default function ModalV2({

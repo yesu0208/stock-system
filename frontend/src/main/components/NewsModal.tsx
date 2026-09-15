@@ -1,68 +1,140 @@
-import { useEffect, useState } from 'react'
-import Modal from '../../components/Modal'
-import { searchNews } from '../../api/news'
-import type { NaverNewsItem } from '../../types/news'
+import { useEffect, useRef, useState } from 'react';
+import { useStock } from '../context/StockContext';
+import { searchNews } from '../../api/news';
+import type { NaverNewsItem } from '../../types/news';
+import './NewsModal.css';
 
-/**
- * NewsModal
- * 백엔드 NewsController.java(GET /api/v1/news?keyword=...) 확인 결과
- * 네이버 뉴스 검색 API를 그대로 감싼 것으로, title/description에
- * 검색어 강조용 <b> 태그가 포함되어 내려옴 — 렌더링 전에 제거
- */
+type TabType = '뉴스' | '공시';
 
-interface Props {
-    show: boolean
-    onClose: () => void
-    keyword: string   // 보통 종목명
-}
+const stripHtml = (str: string) =>
+    str.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#039;/g, "'");
 
-function stripTags(html: string): string {
-    return html.replace(/<[^>]*>/g, '')
-}
+const formatDate = (pubDate: string) => {
+    try {
+        const d = new Date(pubDate);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${mm}/${dd} ${hh}:${min}`;
+    } catch {
+        return pubDate;
+    }
+};
 
-export default function NewsModal({ show, onClose, keyword }: Props) {
-    const [news, setNews] = useState<NaverNewsItem[]>([])
-    const [loading, setLoading] = useState(false)
+export default function NewsModal() {
+    const { selectedStock } = useStock();
+
+    const [activeTab, setActiveTab] = useState<TabType>('뉴스');
+    const [news, setNews] = useState<NaverNewsItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const [overlayVisible, setOverlayVisible] = useState(true);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const dartUrl = `https://dart.fss.or.kr/dsab001/main.do?autoSearch=true&textCrpNm=${encodeURIComponent(selectedStock.name)}`;
 
     useEffect(() => {
-        if (!show) return
-        setLoading(true)
-        searchNews(keyword)
-            .then(setNews)
-            .catch(() => setNews([]))
-            .finally(() => setLoading(false))
-    }, [show, keyword])
+        if (activeTab !== '뉴스') return;
 
-    if (!show) return null
+        setLoading(true);
+        setError(null);
+
+        searchNews(selectedStock.name)
+            .then(setNews)
+            .catch((e) => {
+                setError('뉴스를 불러오지 못했습니다.');
+                console.error(e);
+            })
+            .finally(() => setLoading(false));
+    }, [activeTab, selectedStock.name]);
+
+    useEffect(() => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+        setOverlayVisible(true);
+    }, [selectedStock.name]);
+
+    const handleDartLoad = () => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+        }
+
+        timerRef.current = setTimeout(() => {
+            setOverlayVisible(false);
+            timerRef.current = null;
+        }, 600);
+    };
 
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '420px', maxHeight: '65vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>{keyword} 관련 뉴스</h3>
+        <div className="news-modal">
+            <div className="nm-stock-label">
+                {selectedStock.name}
+                <span className="nm-stock-code">{selectedStock.code}</span>
+            </div>
 
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {loading ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
-                    ) : news.length === 0 ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>관련 뉴스가 없습니다.</div>
-                    ) : (
-                        news.map((n, i) => (
-                            <a key={i} href={n.originallink || n.link} target="_blank" rel="noopener noreferrer" style={styles.row}>
-                                <div style={{ fontSize: '13px', fontWeight: 600 }}>{stripTags(n.title)}</div>
-                                <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{stripTags(n.description)}</div>
-                                <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>{n.pubDate}</div>
-                            </a>
-                        ))
+            <div className="nm-tab-bar">
+                {(['뉴스', '공시'] as TabType[]).map((tab) => (
+                    <button
+                        key={tab}
+                        className={`nm-tab ${activeTab === tab ? 'active' : ''}`}
+                        onClick={() => setActiveTab(tab)}
+                    >
+                        {tab === '뉴스' ? '📰 뉴스' : '📄 공시'}
+                    </button>
+                ))}
+            </div>
+
+            {activeTab === '뉴스' && (
+                <div className="nm-news-panel">
+                    {loading && <p className="nm-status">불러오는 중...</p>}
+                    {error && <p className="nm-status error">{error}</p>}
+                    {!loading && !error && news.length === 0 && (
+                        <p className="nm-status">검색 결과가 없습니다.</p>
                     )}
+                    <ul className="nm-news-list">
+                        {news.map((item, idx) => (
+                            <li key={idx} className="nm-news-item">
+                                <a
+                                    href={item.originallink || item.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="nm-news-link"
+                                >
+                                    <span className="nm-news-title">
+                                        {stripHtml(item.title)}
+                                    </span>
+                                    <span className="nm-news-desc">
+                                        {stripHtml(item.description)}
+                                    </span>
+                                    <span className="nm-news-date">
+                                        {formatDate(item.pubDate)}
+                                    </span>
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            <div className="nm-dart-panel" style={{ display: activeTab === '공시' ? 'flex' : 'none' }}>
+                <div className={`nm-dart-overlay ${overlayVisible ? '' : 'hidden'}`}>
+                    <span className="nm-dart-loading-text">📄 공시 페이지 로딩 중...</span>
                 </div>
 
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
+                <iframe
+                    src={dartUrl}
+                    className="nm-dart-iframe"
+                    title="DART 공시"
+                    style={{
+                        filter: 'invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9)',
+                    }}
+                    onLoad={handleDartLoad}
+                />
             </div>
-        </Modal>
-    )
+        </div>
+    );
 }
-
-const styles = {
-    row: { display: 'block', textDecoration: 'none', borderBottom: '1px solid #262626', padding: '10px 4px', color: '#FFF' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' },
-} as const
