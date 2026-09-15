@@ -15,7 +15,7 @@ import type {
 } from "../../api/stockInfo";
 import type { StockDetailTickMessage } from "../../types/stockDetail";
 
-type TabType = "summary" | "info" | "price" | "broker" | "trend";
+type TabType = "summary" | "info" | "price" | "opinion" | "broker" | "trend";
 
 type MergedDetail = StockDetailExtraResponse & Partial<StockDetailTickMessage>;
 
@@ -198,6 +198,13 @@ export default function StockInfoPanel() {
                 </button>
 
                 <button
+                    className={`tab ${tab === "opinion" ? "active" : ""}`}
+                    onClick={() => setTab("opinion")}
+                >
+                    투자의견
+                </button>
+
+                <button
                     className={`tab ${tab === "broker" ? "active" : ""}`}
                     onClick={() => setTab("broker")}
                 >
@@ -294,6 +301,28 @@ export default function StockInfoPanel() {
                                 {detail.lowerLimit ?? "-"}
                             </td>
                         </tr>
+                        <tr>
+                            <td className="label">52주 최고</td>
+                            <td className="value">{info.high52}</td>
+
+                            <td className="label">52주 최저</td>
+                            <td className="value">{info.low52}</td>
+
+                            <td className="label"></td>
+                            <td className="value"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                )}
+
+                {tab === "opinion" && (
+                    <table className="info-table">
+                        <tbody>
+                        <Row3
+                            a="투자의견" av={info.opinion}
+                            b="목표주가" bv={info.targetPrice}
+                            c="컨센서스 기준일" cv={info.consensusDate}
+                        />
                         </tbody>
                     </table>
                 )}
@@ -418,7 +447,6 @@ export default function StockInfoPanel() {
         </div>
     );
 }
-
 
 function Row3({
                   a, av,
