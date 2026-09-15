@@ -24,7 +24,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     const [alerts, setAlerts] = useState<AlertResponseMessage[]>([])
     const [lastFired, setLastFired] = useState<AlertFiredResponse | null>(null)
     const { subscribeDestination } = useRealtime()
-    const { info } = useMsg()
+    const { info, success, error } = useMsg()
 
     useEffect(() => {
         const unsubList = subscribeDestination('/user/sub/alert', (data: AlertResponseMessage[]) => {
@@ -50,24 +50,30 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         async (stockCode: string, triggerPrice: number, direction: AlertDirection): Promise<ActionResult> => {
             try {
                 await createAlert({ stockCode, direction, triggerPrice })
+                success('알림이 등록되었습니다.')
                 return { success: true, message: '알림이 등록되었습니다.' }
             } catch (e: any) {
-                return { success: false, message: e.response?.data?.message ?? '알림 등록에 실패했습니다.' }
+                const msg = e.response?.data?.message ?? '알림 등록에 실패했습니다.'
+                error(msg)
+                return { success: false, message: msg }
             }
         },
-        []
+        [success, error]
     )
 
     const cancelAlert = useCallback(
         async (alertId: number, stockCode: string): Promise<ActionResult> => {
             try {
                 await cancelAlertApi(alertId, stockCode)
+                success('알림이 해지되었습니다.')
                 return { success: true, message: '알림이 해지되었습니다.' }
             } catch (e: any) {
-                return { success: false, message: e.response?.data?.message ?? '알림 해지에 실패했습니다.' }
+                const msg = e.response?.data?.message ?? '알림 해지에 실패했습니다.'
+                error(msg)
+                return { success: false, message: msg }
             }
         },
-        []
+        [success, error]
     )
 
     const getAlertsBySymbol = useCallback(

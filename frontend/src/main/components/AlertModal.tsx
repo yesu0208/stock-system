@@ -1,6 +1,6 @@
 import "./AlertModal.css";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import ModalV2 from "../../components/ModalV2";
 import { useStock } from "../context/StockContext";
@@ -26,22 +26,29 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
     const [tab, setTab] = useState<AlertTab>("current");
     const [price, setPrice] = useState<string>("");
     const [direction, setDirection] = useState<AlertDirection>("ABOVE");
-    const [feedback, setFeedback] = useState<{ msg: string; isError: boolean } | null>(null);
     const [loading, setLoading] = useState(false);
+    const [priceError, setPriceError] = useState<string | null>(null);
 
-    const showFeedback = (msg: string, isError = false) => {
-        setFeedback({ msg, isError });
-        setTimeout(() => setFeedback(null), 2500);
-    };
+    const errorInnerRef = useRef<HTMLParagraphElement>(null);
+    const [errorHeight, setErrorHeight] = useState(0);
+
+    useEffect(() => {
+        if (priceError && errorInnerRef.current) {
+            setErrorHeight(errorInnerRef.current.scrollHeight);
+        } else {
+            setErrorHeight(0);
+        }
+    }, [priceError]);
 
     const handleRegister = async () => {
         const priceNum = parseInt(price.replace(/,/g, ""), 10);
 
         if (!price || isNaN(priceNum) || priceNum <= 0) {
-            showFeedback("유효한 가격을 입력해 주세요.", true);
+            setPriceError("유효한 가격을 입력해 주세요.");
             return;
         }
 
+        setPriceError(null);
         setLoading(true);
 
         const result = await registerAlert(selectedStock.code, priceNum, direction);
@@ -49,14 +56,12 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
         if (result.success) {
             setPrice("");
         }
-        showFeedback(result.message, !result.success);
 
         setLoading(false);
     };
 
     const handleCancel = async (alertId: number, stockCode: string) => {
-        const result = await cancelAlert(alertId, stockCode);
-        showFeedback(result.message, !result.success);
+        await cancelAlert(alertId, stockCode);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -65,6 +70,7 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
 
     const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^0-9]/g, "");
+        if (priceError) setPriceError(null);
         if (raw === "") {
             setPrice("");
             return;
@@ -119,7 +125,7 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
 
                                 <div className="alert-price-row">
                                     <input
-                                        className="alert-price-input"
+                                        className={`alert-price-input${priceError ? " is-invalid" : ""}`}
                                         type="text"
                                         inputMode="numeric"
                                         placeholder="감시 가격 (원)"
@@ -135,10 +141,10 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
                                         {loading ? "등록 중" : "등록"}
                                     </button>
                                 </div>
-                            </div>
 
-                            <div className={`alert-feedback ${feedback?.isError ? "error" : ""}`}>
-                                {feedback?.msg ?? ""}
+                                <div className="alert-price-error-wrap" style={{ height: errorHeight }}>
+                                    <p className="alert-price-error" ref={errorInnerRef}>{priceError}</p>
+                                </div>
                             </div>
                         </section>
 
