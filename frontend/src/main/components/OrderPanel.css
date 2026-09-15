@@ -1,0 +1,1270 @@
+/* ═══════════════════════════════════════
+   OrderPanel.css
+   ─── 주문 패널 스타일 시트 ───────────
+   다크 모드 / 고정 높이 대응 버전
+   ═══════════════════════════════════════ */
+
+.order-panel {
+    --color-buy:    #f04a4a;
+    --color-sell:   #4d8ef5;
+    --color-cancel: #22c07a;
+
+    --color-bg:          #141518;
+    --color-surface:     #1e2024;
+    --color-surface-2:   #26292e;
+
+    --color-border:      #2e3138;
+
+    --color-text-primary:   #e8eaed;
+    --color-text-secondary: #8d929b;
+    --color-text-muted:     #565c66;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+
+    --font-base: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+    width: 310px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    font-family: var(--font-base);
+    overflow: hidden;
+}
+
+.order-panel__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px 12px;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.order-panel__title {
+    margin: 0;
+    color: #d1d5db;
+    font-size: 15px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* ─── 고급주문 버튼 ───
+ * 타이틀 행 오른쪽 끝에 배치되는 보조 버튼.
+ * type-btn류와 톤을 맞춰 과하지 않게 표시. */
+.order-panel .advanced-order-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.order-panel .advanced-order-btn:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+    border-color: #4a5060;
+}
+
+.order-panel .advanced-order-btn svg {
+    flex-shrink: 0;
+}
+
+/* ─── 메인 탭 ─── */
+.order-panel__tabs {
+    display: flex;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.order-panel .tab-btn {
+    flex: 1;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -1px;
+}
+
+.order-panel .tab-btn--buy.tab-btn--active {
+    color: var(--color-buy);
+    border-bottom-color: var(--color-buy);
+    font-weight: 700;
+}
+
+.order-panel .tab-btn--sell.tab-btn--active {
+    color: var(--color-sell);
+    border-bottom-color: var(--color-sell);
+    font-weight: 700;
+}
+
+.order-panel .tab-btn--cancel.tab-btn--active {
+    color: var(--color-cancel);
+    border-bottom-color: var(--color-cancel);
+    font-weight: 700;
+}
+
+/* ─── 패널 바디 ─── */
+.order-panel__body {
+    flex: 1;
+    overflow: hidden;
+    padding: 12px 12px 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ─── 공통 구분선 ─── */
+.order-panel .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--color-border);
+    flex-shrink: 0;
+}
+
+/* ─── 폼 행 ─── */
+.order-panel .form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.order-panel .form-row--type {
+    align-items: center;
+}
+
+.order-panel .form-label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    min-width: 48px;
+}
+
+/* ─── 감시가 행 ─── */
+.order-panel .conditional-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    flex-shrink: 0;
+    /* height 0일 때 gap 제거 */
+    margin-top: -12px;
+    margin-bottom: 0;
+    transition: grid-template-rows 0.2s ease, opacity 0.2s ease, margin-top 0.2s ease;
+}
+
+.order-panel .conditional-wrapper > .form-row {
+    overflow: hidden;   /* grid 자식 필수 */
+    min-height: 0;
+}
+
+.order-panel .conditional-wrapper--visible {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    margin-top: 0;
+}
+
+/* ─── 주문구분 버튼 그룹 ─── */
+.order-panel .type-group {
+    display: flex;
+    gap: 6px;
+}
+
+.order-panel .type-btn {
+    padding: 5px 10px;   /* ← 버튼 크기(여백) */
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-size: 12px;     /* ← 버튼 텍스트 크기 */
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.order-panel .type-btn:hover {
+    background: var(--color-surface-2);
+}
+
+.order-panel .type-btn--active {
+    background: var(--color-surface-2);
+    font-weight: 700;
+}
+
+.order-panel .type-btn--active.accent--buy {
+    color: var(--color-buy);
+    border-color: var(--color-buy);
+    background: rgba(240, 74, 74, 0.1);
+}
+
+.order-panel .type-btn--active.accent--sell {
+    color: var(--color-sell);
+    border-color: var(--color-sell);
+    background: rgba(77, 142, 245, 0.1);
+}
+
+/* ─── 스테퍼 ─── */
+.order-panel .stepper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.order-panel .stepper__btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-size: 16px;
+    line-height: 1;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s;
+}
+
+.order-panel .stepper__btn:hover {
+    background: var(--color-surface-2);
+}
+
+.order-panel .stepper__input {
+    width: 90px;
+    height: 30px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    padding: 0 6px;
+    outline: none;
+    background: var(--color-surface);
+    font-family: var(--font-base);
+    -moz-appearance: textfield;
+}
+
+.order-panel .stepper__input::-webkit-outer-spin-button,
+.order-panel .stepper__input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+.order-panel .stepper__input--wide {
+    width: 90px;
+}
+
+.order-panel .stepper__input:focus {
+    border-color: #4a5060;
+}
+
+.order-panel .stepper__unit {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-left: 20px;
+}
+
+/* ─── 매수/매도 폼 ─── */
+.order-panel .trade-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    gap: 12px;
+}
+
+/* ─── 비율 버튼 그룹 (10% / 25% / 50% / 75% / 전체) ───
+ * 수량 스테퍼 바로 아래, "주문가능금액(매수)" 또는 "주문가능수량(매도)" 대비
+ * 비율만큼 수량을 자동 계산해 세팅하는 퀵 버튼 그룹.
+ * - 패널 고정 높이(475px)를 깨지 않도록 컴팩트한 높이(24px)로 구성.
+ * - 5개 버튼을 균등 분할(flex:1)하여 310px 폭 안에서 자연스럽게 배치. */
+.order-panel .ratio-group {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.order-panel .ratio-btn {
+    flex: 1;
+    height: 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.order-panel .ratio-btn:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+}
+
+.order-panel .ratio-btn:active {
+    transform: scale(0.96);
+}
+
+/* 매수 탭에서의 비율 버튼 hover 강조색 — accent 클래스로 매수/매도 구분 */
+.order-panel .ratio-btn.accent--buy:hover {
+    border-color: var(--color-buy);
+    color: var(--color-buy);
+}
+
+.order-panel .ratio-btn.accent--sell:hover {
+    border-color: var(--color-sell);
+    color: var(--color-sell);
+}
+
+/* ─── 요약 ─── */
+.order-panel .summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /*margin-bottom: 4px;*/
+    flex: 1;
+    justify-content: flex-end;
+    min-height: 0;
+}
+
+.order-panel .summary__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-panel .summary__label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    /* 라벨 텍스트와 배수 태그(LeverageTag)를 한 줄에 나란히 표시 */
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.order-panel .summary__value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+/* ─── 신용 배수 태그 (leverage-tag) ───────────────────────────────────
+ * 신용 활성 여부와 무관하게 주문가능·예상금액·예상손익 수치 옆에 항상 표시되는
+ * 작은 레이블 뱃지. 상태에 따라 "현금" 또는 "×2/×3/×5"로 텍스트가 바뀌고,
+ * 배율 단계에 따라 색상도 함께 구분된다.
+ *
+ * ── 색상 단계 ──
+ *   현금(신용 미체크) : 중립 회색 — 레버리지 없음을 차분하게 표현
+ *   ×2                : 하늘색  — 저배율, 안전 구간
+ *   ×3                : 황색    — 중간 배율, 주의 구간
+ *   ×5                : 적색    — 고배율, 위험 구간
+ *   그 외(미정의 배수)  : 마젠타  — 목록에 없는 배수에 대한 경고
+ * OrderHistoryModal의 .oh-leverage-badge와 동일한 색상 체계로 통일했다.
+ * ─────────────────────────────────────────────────────────────────── */
+.order-panel .leverage-tag {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 5px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    vertical-align: middle;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+/* 현금 — 중립 회색 */
+.order-panel .leverage-tag.cash {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.12);
+    border-color: rgba(148, 163, 184, 0.3);
+}
+
+/* ×2 — 하늘색 (저배율) */
+.order-panel .leverage-tag.lev-2 {
+    color: #7dd3fc;
+    background: rgba(125, 211, 252, 0.12);
+    border-color: rgba(125, 211, 252, 0.3);
+}
+
+/* ×3 — 황색 (중간 배율) */
+.order-panel .leverage-tag.lev-3 {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+/* ×5 — 적색 (고배율) */
+.order-panel .leverage-tag.lev-5 {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+/* 그 외 배수 — 마젠타 경고색 */
+.order-panel .leverage-tag.lev-other {
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.12);
+    border-color: rgba(244, 114, 182, 0.3);
+}
+
+
+/* ─── 주문 버튼 행 (신용 영역 + 매수/매도 버튼) ───
+ * 왼쪽: 신용 체크박스/배수 선택/유지증거금률을 담는 2행 구조의 신용 영역(credit-area).
+ * 오른쪽: 기존 매수/매도 주문 버튼(order-btn) — 동작/스타일 그대로 유지.
+ * align-items: stretch(기본값)로 두 자식의 높이를 동일하게 맞춰,
+ * 왼쪽 2행 구성과 오른쪽 주문 버튼의 세로 높이가 시각적으로 일치하도록 한다.
+ *   [ 신용 영역(58%, 2행) ] [ 매수/매도 주문(42%, 버튼) ]
+ * 신용 영역에는 체크박스+배수 버튼 3개+증거금률까지 들어가 내용이 더 많으므로
+ * flex 비율을 1.4 : 1로 나눠 신용 영역 쪽 폭을 더 넓게 확보한다.
+ * gap으로 두 영역 사이 간격을 확보한다. */
+.order-panel .order-btn-row {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.order-panel .order-btn-row > * {
+    min-width: 0; /* 텍스트가 길어져도(신용 매수/매도) 버튼이 행을 벗어나지 않도록 */
+}
+
+/* 신용 영역 — 더 넓은 비율 */
+.order-panel .order-btn-row > .credit-area {
+    flex: 1.4;
+}
+
+/* 매수/매도 주문 버튼 — 상대적으로 좁은 비율 */
+.order-panel .order-btn-row > .order-btn {
+    flex: 1;
+}
+
+/* ─── 신용 영역 (왼쪽) ───
+ * 1행: 신용 체크박스 + 배수 선택 버튼(2배/3배/5배)
+ * 2행: 유지증거금률 표시 (배수에 연동)
+ * 오른쪽 주문 버튼(order-btn)과 높이를 맞추기 위해 column 방향 flex로
+ * 두 행을 위아래로 쌓고, justify-content: space-between으로 상/하 끝에 배치한다.
+ *
+ * ── 카드형 테두리 ──
+ * 주문 버튼(단색 채움)과 시각적으로 짝을 이루면서도 "별도 옵션 영역"임을
+ * 구분하기 위해 은은한 테두리 + 살짝 밝은 배경으로 카드처럼 감싼다.
+ *   - padding: 5px 10px로 컴팩트하게 — 1행(체크박스+배수)/2행(증거금률) 두 줄이
+ *     들어가므로 세로 패딩을 최소화해 order-btn-row 전체 높이를 슬림하게 유지한다.
+ *   - background: 패널 배경(--color-bg)과 surface 사이의 중간 음영을 만들기 위해
+ *     아주 옅은 흰색 오버레이를 사용한다.
+ *   - border-color: 신용 체크 여부에 따라 무채색(기본) ↔ 보라색(체크 시)으로
+ *     전환되어, 카드 테두리만 봐도 신용 활성 상태를 바로 인지할 수 있다.
+ *   - transition: 체크 토글 시 테두리/배경이 부드럽게 바뀌도록. */
+.order-panel .credit-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 5px 10px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.015);
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+/* 신용 체크 시 카드 테두리/배경에 보라색 톤을 살짝 입혀 "활성 카드"임을 강조 */
+.order-panel .credit-area--active {
+    border-color: rgba(124, 92, 255, 0.55);
+    background: rgba(124, 92, 255, 0.06);
+}
+
+/* 1행: 체크박스 + 배수 버튼 */
+.order-panel .credit-area__row1 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* 신용 체크박스 + "신용" 라벨 — all-check(취소 탭)과 동일한 형태의 작은 체크 영역 */
+.order-panel .credit-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+}
+
+/* 체크 시 라벨 텍스트도 보라색으로 살짝 강조 — 박스만 바뀌는 것보다 한 세트로 보임 */
+.order-panel .credit-check--active {
+    color: #b7a6ff;
+}
+
+/* ─── 커스텀 체크박스 ───
+ * 브라우저 기본 accent-color 체크박스 대신, appearance:none으로 네이티브 외형을
+ * 완전히 제거하고 둥근 모서리의 박스를 직접 그린다.
+ *   - 미체크: 옅은 테두리 + surface 배경의 작은 사각형 (눈에 띄지 않는 톤)
+ *   - 체크  : 보라색 그라데이션 채움 + 흰색 체크마크(SVG)가 scale 애니메이션으로 등장
+ * ::after 가상 요소에 SVG 체크 아이콘을 background-image로 얹고, 기본 상태에서는
+ * transform: scale(0)으로 숨겨뒀다가 :checked 시 scale(1)로 부드럽게 키운다. */
+.order-panel .credit-check input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    border-radius: 5px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.order-panel .credit-check input[type="checkbox"]:hover {
+    border-color: #8a73ff;
+}
+
+/* 체크마크(SVG) — 가상 요소로 그려 박스 중앙에 배치, 기본 숨김 */
+.order-panel .credit-check input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5L6.5 11.5L12.5 4.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 11px 11px;
+    transform: scale(0);
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1); /* 살짝 튕기는 느낌의 등장 */
+}
+
+.order-panel .credit-check input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, #8a73ff, #6c4bff); /* 단색보다 입체감 있는 그라데이션 채움 */
+    border-color: #7c5cff;
+    box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.18); /* 은은한 글로우로 고급스러운 느낌 강화 */
+}
+
+.order-panel .credit-check input[type="checkbox"]:checked::after {
+    transform: scale(1);
+}
+
+.order-panel .credit-check input[type="checkbox"]:focus-visible {
+    outline: 2px solid rgba(124, 92, 255, 0.5);
+    outline-offset: 2px;
+}
+
+/* 배수 선택 버튼 그룹(2배/3배/5배) — type-group(주문구분)과 동일한 톤의 작은 토글 버튼 */
+.order-panel .leverage-group {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.order-panel .leverage-btn {
+    flex: 1;
+    padding: 3px 0;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.order-panel .leverage-btn:hover:not(:disabled) {
+    background: var(--color-surface-2);
+}
+
+.order-panel .leverage-btn--active {
+    background: rgba(124, 92, 255, 0.12);
+    border-color: #7c5cff;
+    color: #7c5cff;
+    font-weight: 700;
+}
+
+/* 신용 미체크 시 배수 버튼은 선택 자체가 무의미하므로 비활성(흐리게) 처리 */
+.order-panel .leverage-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* 2행: 유지증거금률 표시 — 배수 선택에 따라 25% / 20% / 15%로 변동 */
+.order-panel .credit-area__row2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+}
+
+.order-panel .credit-area__margin-label {
+    color: var(--color-text-muted);
+}
+
+.order-panel .credit-area__margin-value {
+    font-weight: 700;
+    color: #7c5cff; /* 신용 강조색과 통일 */
+}
+
+/* 신용 미체크 상태에서는 증거금률 행 전체를 흐리게 표시해 "비활성" 임을 알림 */
+.order-panel .credit-area__row2--disabled .credit-area__margin-label,
+.order-panel .credit-area__row2--disabled .credit-area__margin-value {
+    color: var(--color-text-muted);
+    opacity: 0.6;
+}
+
+/* ─── 주문 버튼 ─── */
+.order-panel .order-btn {
+    width: 100%;
+    height: 100%;   /* 왼쪽 신용 영역(2행)과 세로 높이를 맞추기 위해 부모(order-btn-row) 높이를 그대로 채움 */
+    padding: 16px 0;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+    letter-spacing: -0.2px;
+    flex-shrink: 0;
+}
+
+.order-panel .order-btn:active {
+    transform: scale(0.98);
+}
+
+.order-panel .order-btn--buy {
+    background: var(--color-buy);
+    color: #fff;
+}
+
+.order-panel .order-btn--buy:hover {
+    filter: brightness(1.1);
+}
+
+.order-panel .order-btn--sell {
+    background: var(--color-sell);
+    color: #fff;
+}
+
+.order-panel .order-btn--sell:hover {
+    filter: brightness(1.12);
+}
+
+/* ─── 시장가 현재가 읽기 전용 스테퍼 래퍼 ───
+ * +/- 자리에 고스트 버튼(stepper__btn--ghost)을 배치하여
+ * 수량 행의 스테퍼와 열(column) 위치를 픽셀 단위로 맞춘다.
+ *   [ghost−] [input] [ghost+] [unit]
+ * stepper 기본 스타일(display:flex, gap:4px)을 그대로 상속하므로
+ * 별도 레이아웃 선언이 불필요하다. */
+.order-panel .stepper--readonly {
+    /* justify-content 미설정 → stepper 기본(flex-start)을 유지하여
+       수량 행의 좌→우 순서와 자연스럽게 정렬된다. */
+}
+
+/* ─── 고스트 버튼 ───
+ * 시장가 현재가 행에서 +/- 버튼 자리만 차지하고
+ * 시각적으로는 완전히 숨긴다.
+ * stepper__btn과 width/height가 동일해야 input 및 unit 텍스트의
+ * 수평 위치가 수량 행과 픽셀 단위로 일치한다.
+ *   - visibility: hidden   : 공간은 유지하되 렌더링하지 않음
+ *     (display:none 은 공간 자체를 제거하므로 정렬이 무너짐)
+ *   - pointer-events: none : 클릭·탭 이벤트 완전 차단
+ *   - flex-shrink: 0       : stepper__btn 과 동일하게 압축 방지
+ * JSX 측에서 aria-hidden="true" 를 추가해 스크린 리더에서도 숨긴다. */
+.order-panel .stepper__btn--ghost {
+    width: 30px;
+    height: 30px;
+    visibility: hidden;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+/* ─── 시장가 현재가 input — 읽기 전용 스타일 ───
+ * stepper__input 기본 스타일(테두리, 배경, 폰트)을 상속하되
+ * 편집 불가임을 시각적으로 표현하기 위해 커서와 색상만 덮어쓴다.
+ *   - cursor: default      : 텍스트 커서(I-beam) 대신 기본 화살표 커서
+ *   - color: muted         : 입력 가능한 값보다 한 단계 흐리게 표시
+ *   - pointer-events: none : 클릭·드래그 등 모든 마우스 이벤트 차단 (readonly 보완)
+ * focus 스타일은 tabIndex=-1 + pointer-events:none 으로 실질적으로 도달 불가하므로
+ * 별도 override 불필요. */
+.order-panel .stepper__input--readonly {
+    cursor: default;
+    color: var(--color-text-secondary);
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════
+   취소 탭
+   ═══════════════════════════════════════ */
+
+.order-panel .cancel-tab {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.order-panel .cancel-tab__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.order-panel .cancel-tab__count {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.order-panel .all-check {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.order-panel .all-check input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    border-radius: 4px;
+    border: 1.5px solid #4a4f59;       /* ← border-color보다 밝게 */
+    background: var(--color-surface-2); /* ← surface → surface-2 */
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.order-panel .all-check input[type="checkbox"]:hover {
+    border-color: var(--color-cancel);
+}
+
+.order-panel .all-check input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5L6.5 11.5L12.5 4.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 10px 10px;
+    transform: scale(0);
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.order-panel .all-check input[type="checkbox"]:checked {
+    background: var(--color-cancel);
+    border-color: var(--color-cancel);
+    box-shadow: 0 0 0 3px rgba(34, 192, 122, 0.18);
+}
+
+.order-panel .all-check input[type="checkbox"]:checked::after {
+    transform: scale(1);
+}
+
+/* ─── 미체결 주문 리스트 ─── */
+.order-panel .pending-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.order-panel .pending-list::-webkit-scrollbar {
+    width: 4px;
+}
+.order-panel .pending-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.order-panel .pending-list::-webkit-scrollbar-thumb {
+    background: #3a3f4a;
+    border-radius: 4px;
+}
+.order-panel .pending-list::-webkit-scrollbar-thumb:hover {
+    background: #4e5464;
+}
+
+.order-panel .pending-item {
+    display: flex;
+    align-items: flex-start; /* 체결 바가 추가되어 상단 정렬로 변경 */
+    gap: 10px;
+    padding: 10px 12px 8px; /* 하단 패딩을 줄여 바와의 간격 조절 */
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+
+.order-panel .pending-item:hover {
+    background: var(--color-surface-2);
+}
+
+.order-panel .pending-item--selected {
+    border-color: var(--color-cancel);
+    background: rgba(34, 192, 122, 0.07);
+}
+
+.order-panel .pending-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    margin-top: 2px;
+    border-radius: 4px;
+    border: 1.5px solid #4a4f59;       /* ← 밝게 */
+    background: var(--color-surface-2); /* ← 밝게 */
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.order-panel .pending-item input[type="checkbox"]:hover {
+    border-color: var(--color-cancel);
+}
+
+.order-panel .pending-item input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5L6.5 11.5L12.5 4.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 10px 10px;
+    transform: scale(0);
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.order-panel .pending-item input[type="checkbox"]:checked {
+    background: var(--color-cancel);
+    border-color: var(--color-cancel);
+    box-shadow: 0 0 0 3px rgba(34, 192, 122, 0.18);
+}
+
+.order-panel .pending-item input[type="checkbox"]:checked::after {
+    transform: scale(1);
+}
+
+.order-panel .pending-item__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+/* ─── 1행: 매수/매도 뱃지 | 지정가/조건부 | 시간 ─── */
+.order-panel .pending-item__top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.order-panel .pending-item__badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+}
+
+.order-panel .badge--buy {
+    background: rgba(240, 74, 74, 0.15);
+    color: var(--color-buy);
+}
+
+.order-panel .badge--sell {
+    background: rgba(77, 142, 245, 0.15);
+    color: var(--color-sell);
+}
+
+.order-panel .pending-item__order-type {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.order-panel .pending-item__time {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin-left: auto;
+}
+
+/* ─── 2행: 잔량 N주(황색) / 주문 N주 ─── */
+.order-panel .pending-item__qty-row {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+/* 잔량 강조 — OrderHistoryModal의 .oh-remaining과 동일한 황색 */
+.order-panel .pending-item__remaining {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fbbf24;
+}
+
+/* "주", "주문 N주" 뒤의 단위 텍스트 */
+.order-panel .pending-item__unit {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-left: 1px;
+}
+
+/* 잔량/총수량 사이 "/" 구분자 */
+.order-panel .pending-item__qty-sep {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: 0 3px;
+}
+
+/* "주문 N주"의 숫자 부분 */
+.order-panel .pending-item__total {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+/* ─── 3행: 주문가 xxxx원  (감시가 xxxx원 — 조건부만) ───
+ *
+ * 주문가 label은 흐리게, value는 primary 색상.
+ * 감시가는 조건부(CONDITIONAL) 주문일 때만 렌더링하며,
+ * label은 흐리게, value는 연한 하늘색(#7dd3fc)으로
+ * OrderHistoryModal .oh-trigger 색상과 통일한다.
+ * ─── */
+.order-panel .pending-item__price-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.order-panel .pending-item__price-label {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+.order-panel .pending-item__price {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* 감시가 label — 주문가 label과 동일 스타일, 좌측 마진으로 시각적 구분 */
+.order-panel .pending-item__trigger-label {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin-left: 6px;
+}
+
+/* 감시가 value — OrderHistoryModal .oh-trigger 색상(#7dd3fc)과 통일 */
+.order-panel .pending-item__trigger-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: #7dd3fc;
+}
+
+/* ─── 체결 진행 바 ───────────────────────────────────────────────────
+ *
+ * OrderHistoryModal 미체결 탭의 oh-qty-bar-* 패턴을 동일하게 적용한다.
+ *
+ * pending-item__bar-track : 바 배경(레일) — 항상 100% 너비
+ * pending-item__bar-fill  : 잔량 비율(remainingQty/orderQty * 100%)만큼 채워지는 바
+ *   - width: fillPct% → React 컴포넌트에서 인라인 스타일로 주입
+ *   - 매수(BUY)  → bar--buy  (적색: --color-buy 계열)
+ *   - 매도(SELL) → bar--sell (청색: --color-sell 계열)
+ *
+ * [display: block 필수]
+ * pending-item__bar-fill 을 div(block 요소)로 렌더링하므로 width가 정상 반영된다.
+ * span(inline)으로 전환 시 width를 무시하니 주의.
+ *
+ * [transition]
+ * WebSocket 실시간 갱신으로 잔량이 변할 때 바가 부드럽게 줄어드는 효과를 준다.
+ * ─────────────────────────────────────────────────────────────────── */
+
+.order-panel .pending-item__bar-track {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08); /* 트랙 배경 — 어두운 회색 레일 */
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 2px; /* 하단 정보와의 간격 */
+}
+
+.order-panel .pending-item__bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease; /* 잔량 변화 시 부드럽게 애니메이션 */
+}
+
+/* 매수: 적색 — var(--color-buy) 와 동일 계열 */
+.order-panel .pending-item__bar-fill.bar--buy {
+    background: var(--color-buy);
+}
+
+/* 매도: 청색 — var(--color-sell) 와 동일 계열 */
+.order-panel .pending-item__bar-fill.bar--sell {
+    background: var(--color-sell);
+}
+
+/* ─── 취소 탭 하단 푸터 ─── */
+.order-panel .cancel-tab__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.order-panel .cancel-tab__selected-count {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    transition: color 0.15s;
+}
+
+.order-panel .cancel-tab__selected-count--active {
+    color: var(--color-cancel);
+    font-weight: 600;
+}
+
+/* ─── 취소 버튼 ─── */
+.order-panel .cancel-btn {
+    padding: 10px 24px;
+    background: var(--color-cancel);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s, opacity 0.15s, background 0.15s;
+}
+
+.order-panel .cancel-btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.order-panel .cancel-btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.order-panel .cancel-btn--disabled,
+.order-panel .cancel-btn:disabled {
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+    filter: none;
+}
+
+.order-panel .summary__value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+}
+
+/* ─── 예상손익 색상 ───
+ * 한국 주식 시장 관행에 따라 이익은 적색(--color-buy 계열), 손실은 청색(--color-sell 계열)으로 표시.
+ * 0(손익 없음)인 경우는 별도 클래스 없이 기본 summary__value 색상 유지. */
+.order-panel .summary__value--profit {
+    color: var(--color-buy);
+}
+
+.order-panel .summary__value--loss {
+    color: var(--color-sell);
+}
+
+/* ─── summary 배수 적용 전/후 병렬 표시 (매수+신용 활성 시) ──────────────────
+ *
+ * 매수 탭에서 신용(isCredit)을 체크하면 summary의 주문가능·예상금액 행 오른쪽에
+ * 두 개의 값이 나란히 표시된다:
+ *
+ *   [ 배수 적용 후 값 (강조) ]  [ 배수 적용 전 값 (취소선·흐림) ]
+ *
+ * summary__value (flex 컨테이너)
+ *   ├ summary__value--after  : 왼쪽 — 배수 곱한 결과, 기준이 되는 주 표시값
+ *   └ summary__value--before : 오른쪽 — 배수 적용 전 원본, 취소선으로 "구 기준점" 표현
+ *
+ * ── summary__value--after (배수 적용 후 값) ──
+ *   - font-size/weight/color 를 기존 summary__value와 동일하게 맞춰
+ *     "이것이 현재 유효한 수치" 임을 강조한다.
+ *   - white-space: nowrap — "1,234,567 원" 처럼 긴 값도 줄바꿈 없이 한 줄 유지.
+ *
+ * ── summary__value--before (배수 적용 전 원본) ──
+ *   - font-size: 10px        — --after(12px)보다 작아 시선을 빼앗지 않음
+ *   - color: text-muted      — 흐린 색상으로 "참고용 구 수치" 임을 표현
+ *   - text-decoration        — line-through(가운데 선)로 "더 이상 기준이 아님" 표시
+ *   - text-decoration-color  — 취소선도 text-muted 계열로 일관성 유지
+ *   - margin-left: 6px       — --after 값과의 시각적 호흡 공간
+ *   - transition(opacity)    — isCredit 토글 시 부드럽게 등장/소멸
+ *
+ * 매도 탭 또는 신용 미체크 시에는 자식 span 없이 텍스트 노드만 렌더링되어
+ * 기존 summary__value 스타일이 그대로 적용된다(이 두 클래스는 관여하지 않음).
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* 배수 적용 후 값 — 기존 summary__value와 동일한 강조 스타일 */
+.order-panel .summary__value--after {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+}
+
+/* 배수 적용 전 원본 값 — 취소선 + 흐림으로 "구 기준점" 표현 */
+.order-panel .summary__value--before {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--color-text-muted);
+    white-space: nowrap;
+    margin-left: 6px;
+    transition: opacity 0.2s ease;
+}
+
+/* ─── 레버리지 배지 (취소 탭 미체결 목록) ───────────────────────────────
+ * OrderHistoryModal의 .oh-leverage-badge와 동일한 스타일/색상 체계를
+ * 그대로 사용한다. 1행의 매수/매도 뱃지 옆에 배치된다.
+ *   - 현금(1x)  : 중립 회색
+ *   - 2x        : 하늘색  (저배율)
+ *   - 3x        : 황색    (중간 배율)
+ *   - 5x        : 적색    (고배율)
+ *   - 그 외     : 마젠타  (정의되지 않은 배율 경고)
+ * ─────────────────────────────────────────────────────────────────── */
+.order-panel .pending-item__leverage-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 2px 6px;
+    line-height: 1.3;
+    border: 1px solid transparent;
+}
+
+.order-panel .pending-item__leverage-badge.cash {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.25);
+}
+
+.order-panel .pending-item__leverage-badge.lev-2 {
+    color: #7dd3fc;
+    background: rgba(125, 211, 252, 0.12);
+    border-color: rgba(125, 211, 252, 0.3);
+}
+
+.order-panel .pending-item__leverage-badge.lev-3 {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.order-panel .pending-item__leverage-badge.lev-5 {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+.order-panel .pending-item__leverage-badge.lev-other {
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.12);
+    border-color: rgba(244, 114, 182, 0.3);
+}
+
+.order-panel .pending-item__stock-name-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.order-panel .pending-item__stock-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.order-panel .pending-item__stock-code {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+}
+
+.order-panel .pending-item__fill-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    margin-left: 4px;
+}
+
+.order-panel .fill-badge--none {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.12);
+    border-color: rgba(148, 163, 184, 0.3);
+}
+
+.order-panel .fill-badge--partial {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+/* ─── 모의투자 미지원 안내 (그룹 B 종목) ─── */
+.order-panel .trade-form--unsupported {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.order-panel .trade-form__unsupported-msg {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-align: center;
+    line-height: 1.7;
+}

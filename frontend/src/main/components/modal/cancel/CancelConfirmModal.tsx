@@ -1,23 +1,22 @@
 import { useState } from 'react'
-import ModalV2 from '../../../../components/ModalV2'
-import { cancelOrder } from '../../../../api/orderHistory'
-import { cancelAutoOrder } from '../../../../api/autoOrderHistory'
-import { tokenStorage } from '../../../../utils/token'
-import { usePendingOrders } from '../../../context/PendingOrderContext'
+import ModalV2 from '../../../../components/ModalV2.tsx'
+import { cancelOrder } from '../../../../api/orderHistory.ts'
+import { cancelAutoOrder } from '../../../../api/autoOrderHistory.ts'
+import { tokenStorage } from '../../../../utils/token.ts'
 
 interface Props {
     open: boolean
     onClose: () => void
     onConfirm: () => void
     count: number
+    selectedOrders: { rawId: number; stockCode: string; isAuto: boolean; orderId: string }[] // [신규]
 }
 
-export default function CancelConfirmModal({ open, onClose, onConfirm, count }: Props) {
-    const { pendingOrders } = usePendingOrders()
+export default function CancelConfirmModal({ open, onClose, onConfirm, count, selectedOrders }: Props) {
     const [loading, setLoading] = useState(false)
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-    async function handleConfirmClick(selectedOrders: { rawId: number; stockCode: string; isAuto: boolean }[]) {
+    async function handleConfirmClick() {
         setLoading(true)
         setErrorMsg(null)
         try {
@@ -49,7 +48,7 @@ export default function CancelConfirmModal({ open, onClose, onConfirm, count }: 
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
                 <button onClick={onClose} disabled={loading}>아니오</button>
-                <button onClick={() => handleConfirmClick(pendingOrders.filter(() => false))} disabled={loading}>
+                <button onClick={handleConfirmClick} disabled={loading}>
                     {loading ? '처리 중...' : '확인'}
                 </button>
             </div>
