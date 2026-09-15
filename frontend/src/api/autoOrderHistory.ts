@@ -28,3 +28,7 @@ export async function getAutoOrderTriggered(params: HistoryParams = {}): Promise
     const res = await api.get<HistoryPageResponse<AutoOrderHistoryItem>>('/auto-orders/triggered', { params })
     return res.data
 }
+
+export async function cancelAutoOrder(autoOrderId: number, stockCode: string): Promise<void> {
+    await api.post('/auto-orders/cancel', { autoOrderId, stockCode })
+}

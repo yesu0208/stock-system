@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
-import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory } from "../../api/orderHistory";
-import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled} from "../../api/autoOrderHistory";
+import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory, cancelOrder } from "../../api/orderHistory";
+import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled, cancelAutoOrder } from "../../api/autoOrderHistory";
 import { stockNameMap } from "../../constants/stocks";
 import type { OrderHistoryItem, TradeHistoryItem, AutoOrderHistoryItem, HistoryPageResponse } from "../../types/history";
 import "./OrderHistoryModal.css";
@@ -76,6 +76,24 @@ function LiquidationCell({ maintenanceMarginRate, liquidationPrice }: { maintena
             <span className="oh-liq-price">
                 {liquidationPrice != null ? liquidationPrice.toLocaleString() : <span className="oh-dash">—</span>}
             </span>
+        </span>
+    );
+}
+
+// [신규] 미체결 탭 전용 개별 취소 버튼
+function CancelButton({ onCancel }: { onCancel: () => void }) {
+    return (
+        <span className="oh-col oh-cancel">
+            <button
+                type="button"
+                className="oh-cancel-btn"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onCancel();
+                }}
+            >
+                취소
+            </button>
         </span>
     );
 }
@@ -247,8 +265,32 @@ export default function OrderHistoryModal() {
         if (t === "체결") setSubTab("일반");
     };
 
+    // [신규] 취소 처리
+    const handleCancel = async (auto: boolean, id: number, stockCode: string) => {
+        if (!window.confirm("주문을 취소하시겠습니까?")) return;
+        try {
+            if (auto) {
+                await cancelAutoOrder(id, stockCode);
+            } else {
+                await cancelOrder(id, stockCode);
+            }
+            setItems((prev) =>
+                prev.filter((item) => {
+                    if (isTrade(item)) return true;
+                    if (auto) return !isAutoOrder(item) || item.autoOrderId !== id;
+                    return isAutoOrder(item) || (item as OrderHistoryItem).orderId !== id;
+                })
+            );
+        } catch (e) {
+            console.error("[OrderHistoryModal] 취소 실패", e);
+            alert("취소에 실패했습니다.");
+        }
+    };
+
     const isPending = mainTab === "미체결";
+    // 자동주문 탭(체결 제외)에만 감시가/주문구분 컬럼 표시
     const showTrigger = subTab === "자동" && mainTab !== "체결";
+    // 4가지 조합에 맞는 grid 클래스 선택
     const gridClass = isPending
         ? (showTrigger ? "oh-grid-pending" : "oh-grid-pending-general")
         : (showTrigger ? "oh-grid-cancelled" : "oh-grid-executed");
@@ -302,6 +344,7 @@ export default function OrderHistoryModal() {
                         <span className="oh-col oh-price">가격</span>
                         <span className="oh-col oh-margin">명목가치/증거금</span>
                         <span className="oh-col oh-liquidation">유지증거금율/청산가</span>
+                        <span className="oh-col oh-cancel">취소</span>
                     </div>
                 ) : (
                     <div className={`oh-header-row ${gridClass}`}>
@@ -386,6 +429,7 @@ export default function OrderHistoryModal() {
                                                 maintenanceMarginRate={item.maintenanceMarginRate}
                                                 liquidationPrice={item.liquidationPrice}
                                             />
+                                            <CancelButton onCancel={() => handleCancel(auto, id, stockCode)} />
                                         </li>
                                     );
                                 }

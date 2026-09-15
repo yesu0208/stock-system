@@ -28,3 +28,7 @@ export async function getTradeHistory(params: HistoryParams = {}): Promise<Histo
     const res = await api.get<HistoryPageResponse<TradeHistoryItem>>('/orders/trades', { params })
     return res.data
 }
+
+export async function cancelOrder(orderId: number, stockCode: string): Promise<void> {
+    await api.post('/cancels', { orderId, stockCode })
+}
