@@ -23,7 +23,6 @@ import OtocoPanel from '../../main/components/OtocoPanel'
 import type { OtocoResponseMessage, OtocoResultResponse, OtocoCancelResultResponse } from '../../types/otoco'
 import Modal from '../Modal.tsx'
 import {tokenStorage} from "../../utils/token.ts";
-import PortfolioModal from '../../main/components/PortfolioModal'
 
 interface Props {
     stockCode: string
@@ -89,7 +88,6 @@ export default function TradePanel({
     const [triggerPrice, setTriggerPrice] = useState<number>(0)
     const [loading, setLoading] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
-    const [showPortfolioModal, setShowPortfolioModal] = useState(false);
 
     const orderAmount = orderPrice * orderQuantity;
 
@@ -994,8 +992,6 @@ export default function TradePanel({
             {/* 주문/체결 내역 모달 */}
             <OrderHistoryModal show={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
 
-            {/* 포트폴리오 모달 */}
-            <PortfolioModal show={showPortfolioModal} onClose={() => setShowPortfolioModal(false)} />
 
             {/* 토스트 / 시계 + 전체 글래스 */}
             <div
@@ -1231,11 +1227,6 @@ export default function TradePanel({
                 <div style={styles.accountTabContent}>
                     {accountInfo ? (
                         <>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <button onClick={() => setShowPortfolioModal(true)} style={styles.smallButton}>
-                                    포트폴리오 보기
-                                </button>
-                            </div>
 
                             {/* ===== 계좌 사용자 정보 ===== */}
                             <div style={styles.accountTitleRow}>
