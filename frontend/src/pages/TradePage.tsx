@@ -14,6 +14,7 @@ import { useUser } from '../main/context/UserContext'
 import { STOCKS as FULL_STOCKS } from '../main/data/stocks'
 import { motion } from 'framer-motion'
 import styles from './TradePage.module.css'
+import TopBar from '../main/components/TopBar'
 
 import type { TradePriceTickMessage } from '../types/tradePriceTickMessage'
 import { useRealtime } from '../main/context/RealtimeContext'
@@ -85,18 +86,6 @@ export default function TradePage() {
     const [trailingStopResult, setTrailingStopResult] = useState<TrailingStopResultResponse | null>(null)
     const [trailingStopCancelResult, setTrailingStopCancelResult] = useState<TrailingStopCancelResultResponse | null>(null)
 
-    /*
-     * - userInfo는 UserContext 도입 이전까지 임시로 이 화면에서 직접
-     *   조회하던 값이었는데, 이번 단계에서는 손대지 않고 그대로 둠.
-     *   (아래 useEffect의 fetchUser 참고 — 원래 로직 그대로).
-     * - accountInfo 로컬 state + '/user/sub/account' 구독은 제거하고
-     *   AccountContext(useAccount)로 대체
-     * - 나머지 구독(주문/취소/체결/자동주문/시세요약)은 아직 전용
-     *   Context가 없으므로 이 화면에 남겨두되, 더 이상
-     *   client.activate()/onConnect를 직접 부르지 않고
-     *   RealtimeContext.subscribeDestination()을 통해서만 구독
-     *   (STOMP 연결의 유일한 소유자는 이제 RealtimeProvider뿐)
-     */
     const { subscribeDestination } = useRealtime()
     const { account: accountInfo } = useAccount()
     const { user: userInfo } = useUser()
@@ -171,7 +160,6 @@ export default function TradePage() {
             setTrailingStops(data)
         })
 
-        // 단건 갱신(감시가가 시세를 따라 움직임) -> 목록에서 해당 id만 upsert
         const unsubTrailingUpdate = subscribeDestination('/user/sub/trailing-stop/update', (data: TrailingStopResponseMessage) => {
             setTrailingStops(prev =>
                 prev.map(t => (t.trailingStopId === data.trailingStopId ? data : t))
@@ -209,118 +197,121 @@ export default function TradePage() {
     const isOrderBookReady = isBidAskReady && isTradeReady
 
     return (
-        <motion.div
-            className={styles.tradeContainer}
-            initial={{opacity: 0}}
-            animate={{opacity: 1}}
-            transition={{duration: 0.6, ease: 'easeInOut'}}
-        >
-            <motion.div
-                className={styles.orderBookContainer}
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.5, delay: 0.1}}
-            >
-                <div className={styles.stockSelector}>
-                    <label className={styles.label}>종목 선택:</label>
-
-                    <select
-                        className={styles.select}
-                        value={selectedStock}
-                        onChange={(e) => {
-                            const code = e.target.value
-                            setSelectedStock(code)
-
-                            // 전체 카탈로그에서 찾아 StockContext에도 반영 (TradingChart가 이 Context를 구독)
-                            const full = FULL_STOCKS.find(s => s.code === code)
-                            if (full) setGlobalSelectedStock(full)
-
-                            setAsks([])
-                            setBids([])
-                            setTradeTicks([])
-                            setTradePrice(null)
-                            setPrevClosePrice(0)
-                            setIsBidAskReady(false)
-                            setIsTradeReady(false)
-                        }}
-                    >
-                        {STOCKS.map(stock => (
-                            <option key={stock.code} value={stock.code}>
-                                {stock.name} ({stock.code})
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <OrderBook
-                    stockName={stockName}
-                    asks={asks}
-                    bids={bids}
-                    tradeTicks={tradeTicks}
-                    prevClosePrice={prevClosePrice}
-                    isReady={isOrderBookReady}
-                    isRealtimeSupported={isRealtimeStock(selectedStock)}
-                />
-            </motion.div>
+        <>
+            <TopBar /> {/* 임시 — 화면 확인용 */}
 
             <motion.div
-                style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '480px' }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 }}
+                className={styles.tradeContainer}
+                initial={{opacity: 0}}
+                animate={{opacity: 1}}
+                transition={{duration: 0.6, ease: 'easeInOut'}}
             >
-                <StockInfoPanel stockCode={selectedStock} stockName={stockName} />
-                <div style={{ height: '420px' }}>
-                    <TradingChart />
-                </div>
-            </motion.div>
+                <motion.div
+                    className={styles.orderBookContainer}
+                    initial={{opacity: 0, y: 20}}
+                    animate={{opacity: 1, y: 0}}
+                    transition={{duration: 0.5, delay: 0.1}}
+                >
+                    <div className={styles.stockSelector}>
+                        <label className={styles.label}>종목 선택:</label>
 
-            <motion.div
-                style={{ flex: 1, minWidth: 0 }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-            >
-                <TradePanel
-                    stockCode={selectedStock}
-                    stockName={stockName}
-                    isPriceReady={isBidAskReady}
-                    curPrice={tradePrice?.curPrice}
-                    orderResult={orderResult}
-                    cancelResult={cancelResult}
-                    tradeResult={tradeResult}
-                    orders={orders}
-                    autoOrders={autoOrders}
-                    autoOrderResult={autoOrderResult}
-                    autoCancelResult={autoCancelResult}
-                    accountInfo={accountInfo}
-                    otocoOrders={otocoOrders}
-                    otocoResult={otocoResult}
-                    otocoCancelResult={otocoCancelResult}
-                    trailingStops={trailingStops}
-                    trailingStopResult={trailingStopResult}
-                    trailingStopCancelResult={trailingStopCancelResult}
-                />
-            </motion.div>
+                        <select
+                            className={styles.select}
+                            value={selectedStock}
+                            onChange={(e) => {
+                                const code = e.target.value
+                                setSelectedStock(code)
 
-            <motion.div
-                className={styles.infoColumn}
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.5, delay: 0.3}}
-            >
-                <AccountInfoPanel
-                    account={accountInfo}
-                    user={userInfo}
-                />
+                                const full = FULL_STOCKS.find(s => s.code === code)
+                                if (full) setGlobalSelectedStock(full)
 
-                <StockSummaryPanel
-                    summaries={stockSummaries.map(s => ({
-                        ...s,
-                        stockName: STOCKS.find(st => st.code === s.stockCode)?.name ?? s.stockCode
-                    }))}
-                />
+                                setAsks([])
+                                setBids([])
+                                setTradeTicks([])
+                                setTradePrice(null)
+                                setPrevClosePrice(0)
+                                setIsBidAskReady(false)
+                                setIsTradeReady(false)
+                            }}
+                        >
+                            {STOCKS.map(stock => (
+                                <option key={stock.code} value={stock.code}>
+                                    {stock.name} ({stock.code})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <OrderBook
+                        stockName={stockName}
+                        asks={asks}
+                        bids={bids}
+                        tradeTicks={tradeTicks}
+                        prevClosePrice={prevClosePrice}
+                        isReady={isOrderBookReady}
+                        isRealtimeSupported={isRealtimeStock(selectedStock)}
+                    />
+                </motion.div>
+
+                <motion.div
+                    style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '480px' }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.15 }}
+                >
+                    <StockInfoPanel stockCode={selectedStock} stockName={stockName} />
+                    <div style={{ height: '420px' }}>
+                        <TradingChart />
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    style={{ flex: 1, minWidth: 0 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    <TradePanel
+                        stockCode={selectedStock}
+                        stockName={stockName}
+                        isPriceReady={isBidAskReady}
+                        curPrice={tradePrice?.curPrice}
+                        orderResult={orderResult}
+                        cancelResult={cancelResult}
+                        tradeResult={tradeResult}
+                        orders={orders}
+                        autoOrders={autoOrders}
+                        autoOrderResult={autoOrderResult}
+                        autoCancelResult={autoCancelResult}
+                        accountInfo={accountInfo}
+                        otocoOrders={otocoOrders}
+                        otocoResult={otocoResult}
+                        otocoCancelResult={otocoCancelResult}
+                        trailingStops={trailingStops}
+                        trailingStopResult={trailingStopResult}
+                        trailingStopCancelResult={trailingStopCancelResult}
+                    />
+                </motion.div>
+
+                <motion.div
+                    className={styles.infoColumn}
+                    initial={{opacity: 0, y: 20}}
+                    animate={{opacity: 1, y: 0}}
+                    transition={{duration: 0.5, delay: 0.3}}
+                >
+                    <AccountInfoPanel
+                        account={accountInfo}
+                        user={userInfo}
+                    />
+
+                    <StockSummaryPanel
+                        summaries={stockSummaries.map(s => ({
+                            ...s,
+                            stockName: STOCKS.find(st => st.code === s.stockCode)?.name ?? s.stockCode
+                        }))}
+                    />
+                </motion.div>
             </motion.div>
-        </motion.div>
+        </>
     )
 }
