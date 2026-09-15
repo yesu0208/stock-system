@@ -56,6 +56,7 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "투자자별 매매동향": "investor-modal",
     "업종": "sector-modal",
     "알림": "alert-modal",
+    "관심종목": "watchlist-modal-v2",
 };
 
 export default function ModalV2({

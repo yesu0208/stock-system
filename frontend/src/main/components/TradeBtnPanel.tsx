@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { FaStar, FaListAlt, FaNewspaper, FaClipboardList, FaComments } from 'react-icons/fa';
 import './TradeBtnPanel.css';
+import ModalV2 from '../../components/ModalV2';
+import WatchListModal from './WatchListModal';
 
 type ModalType = '관심종목' | '종목토론' | '종목톡' | '주문내역' | '뉴스/공시' | null;
 
@@ -34,13 +36,16 @@ export default function TradeBtnPanel() {
                 </button>
             </div>
 
+            <ModalV2 open={openModal === '관심종목'} title="관심종목" onClose={close}>
+                <WatchListModal />
+            </ModalV2>
+
             {/* TODO: 모달 연결 예정
                 - 뉴스/공시 → NewsModal
                 - 종목토론 → DiscussionModal
                 - 종목톡 → StockTalkModal
-                - 관심종목 → WatchlistModal
                 - 주문내역 → OrderHistoryModal (이미 있는 컴포넌트 재활용 가능성 있음)
-                지금은 openModal 상태만 관리, 실제 모달은 다음 단계에서 하나씩 연결 */}
+                나머지는 다음 단계에서 하나씩 연결 */}
         </>
     );
 }
