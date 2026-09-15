@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,12 +43,12 @@ public class DiscussionService {
 
         var saved = postRepository.save(entity);
 
-        return toDetail(saved);
+        return toDetail(saved, authorId);
     }
 
-    public PostDetail getPost(Long postId) {
+    public PostDetail getPost(Long postId, String viewerId) {
         var post = getPostEntity(postId);
-        return toDetail(post);
+        return toDetail(post, viewerId);
     }
 
     @Transactional
@@ -57,7 +58,7 @@ public class DiscussionService {
 
         post.edit(request.title(), request.content());
 
-        return toDetail(post);
+        return toDetail(post, authorId);
     }
 
     @Transactional
@@ -81,28 +82,28 @@ public class DiscussionService {
         postRepository.delete(post);
     }
 
-    public CursorPage<PostSummary> getPostsByStock(String stockCode, Long cursor) {
+    public CursorPage<PostSummary> getPostsByStock(String stockCode, Long cursor, String viewerId) {
         Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1);
         List<DiscussionPostEntity> posts = postRepository.findByStockCode(stockCode, cursor, pageable);
-        return toCursorPage(posts);
+        return toCursorPage(posts, viewerId);
     }
 
     public CursorPage<PostSummary> getMyPosts(String authorId, Long cursor) {
         Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1);
         List<DiscussionPostEntity> posts = postRepository.findByAuthorId(authorId, cursor, pageable);
-        return toCursorPage(posts);
+        return toCursorPage(posts, authorId);
     }
 
     public CursorPage<PostSummary> getPostsICommentedOn(String authorId, Long cursor) {
         Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1);
         List<DiscussionPostEntity> posts = postRepository.findByCommentAuthor(authorId, cursor, pageable);
-        return toCursorPage(posts);
+        return toCursorPage(posts, authorId);
     }
 
     public CursorPage<PostSummary> getScrappedPosts(String userId, Long cursor) {
         Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1);
         List<DiscussionPostEntity> posts = postRepository.findScrappedByUser(userId, cursor, pageable);
-        return toCursorPage(posts);
+        return toCursorPage(posts, userId);
     }
 
     @Transactional
@@ -113,7 +114,7 @@ public class DiscussionService {
         var saved = commentRepository.save(comment);
 
         UserProfile authorProfile = userProfileService.getProfile(authorId);
-        return CommentResponse.of(saved, authorProfile, 0, 0);
+        return CommentResponse.of(saved, authorProfile, 0, 0, null);
     }
 
     @Transactional
@@ -123,7 +124,7 @@ public class DiscussionService {
 
         comment.edit(request.content());
 
-        return toCommentResponse(comment);
+        return toCommentResponse(comment, authorId);
     }
 
     @Transactional
@@ -213,7 +214,7 @@ public class DiscussionService {
         return (int) reactionRepository.countByTargetTypeAndTargetIdAndReactionType(targetType, targetId, reactionType);
     }
 
-    private PostDetail toDetail(DiscussionPostEntity post) {
+    private PostDetail toDetail(DiscussionPostEntity post, String viewerId) {
         List<DiscussionCommentEntity> commentEntities =
                 commentRepository.findByPostIdOrderByCommentIdAsc(post.getPostId());
 
@@ -236,6 +237,12 @@ public class DiscussionService {
                         }
                     });
 
+            Map<Long, ReactionType> myCommentReactionMap = new HashMap<>();
+            if (viewerId != null) {
+                reactionRepository.findByTargetTypeAndTargetIdInAndUserId(TargetType.COMMENT, commentIds, viewerId)
+                        .forEach(r -> myCommentReactionMap.put(r.getTargetId(), r.getReactionType()));
+            }
+
             Set<String> commentAuthorIds = commentEntities.stream()
                     .map(DiscussionCommentEntity::getAuthorId)
                     .collect(Collectors.toSet());
@@ -247,7 +254,8 @@ public class DiscussionService {
                             commentAuthorProfiles.getOrDefault(
                                     comment.getAuthorId(), UserProfile.empty(comment.getAuthorId())),
                             likeMap.getOrDefault(comment.getCommentId(), 0),
-                            dislikeMap.getOrDefault(comment.getCommentId(), 0)))
+                            dislikeMap.getOrDefault(comment.getCommentId(), 0),
+                            myCommentReactionMap.get(comment.getCommentId())))
                     .toList();
         }
 
@@ -255,19 +263,35 @@ public class DiscussionService {
         int dislikes = countReaction(TargetType.POST, post.getPostId(), ReactionType.DISLIKE);
         int scraps = (int) scrapRepository.countByPostId(post.getPostId());
 
+        ReactionType myReaction = viewerId != null
+                ? reactionRepository.findByTargetTypeAndTargetIdAndUserId(TargetType.POST, post.getPostId(), viewerId)
+                .map(DiscussionReactionEntity::getReactionType)
+                .orElse(null)
+                : null;
+        boolean myScrapped = viewerId != null
+                && scrapRepository.findByPostIdAndUserId(post.getPostId(), viewerId).isPresent();
+
         UserProfile postAuthorProfile = userProfileService.getProfile(post.getAuthorId());
 
-        return PostDetail.of(post, postAuthorProfile, likes, dislikes, scraps, comments);
+        return PostDetail.of(post, postAuthorProfile, likes, dislikes, scraps, comments, myReaction, myScrapped);
     }
 
-    private CommentResponse toCommentResponse(DiscussionCommentEntity comment) {
+    private CommentResponse toCommentResponse(DiscussionCommentEntity comment, String viewerId) {
         int likes = countReaction(TargetType.COMMENT, comment.getCommentId(), ReactionType.LIKE);
         int dislikes = countReaction(TargetType.COMMENT, comment.getCommentId(), ReactionType.DISLIKE);
         UserProfile authorProfile = userProfileService.getProfile(comment.getAuthorId());
-        return CommentResponse.of(comment, authorProfile, likes, dislikes);
+
+        ReactionType myReaction = viewerId != null
+                ? reactionRepository.findByTargetTypeAndTargetIdAndUserId(
+                        TargetType.COMMENT, comment.getCommentId(), viewerId)
+                .map(DiscussionReactionEntity::getReactionType)
+                .orElse(null)
+                : null;
+
+        return CommentResponse.of(comment, authorProfile, likes, dislikes, myReaction);
     }
 
-    private CursorPage<PostSummary> toCursorPage(List<DiscussionPostEntity> posts) {
+    private CursorPage<PostSummary> toCursorPage(List<DiscussionPostEntity> posts, String viewerId) {
         boolean hasNext = posts.size() > PAGE_SIZE;
         List<DiscussionPostEntity> page = hasNext ? posts.subList(0, PAGE_SIZE) : posts;
 
@@ -298,6 +322,15 @@ public class DiscussionService {
                         DiscussionCommentRepository.CommentCountRow::getPostId,
                         row -> (int) row.getCnt()));
 
+        Map<Long, ReactionType> myReactionMap = new HashMap<>();
+        Set<Long> myScrapSet = new HashSet<>();
+        if (viewerId != null) {
+            reactionRepository.findByTargetTypeAndTargetIdInAndUserId(TargetType.POST, postIds, viewerId)
+                    .forEach(r -> myReactionMap.put(r.getTargetId(), r.getReactionType()));
+            scrapRepository.findByPostIdInAndUserId(postIds, viewerId)
+                    .forEach(s -> myScrapSet.add(s.getPostId()));
+        }
+
         Set<String> authorIds = page.stream()
                 .map(DiscussionPostEntity::getAuthorId)
                 .collect(Collectors.toSet());
@@ -310,7 +343,9 @@ public class DiscussionService {
                         likeMap.getOrDefault(post.getPostId(), 0),
                         dislikeMap.getOrDefault(post.getPostId(), 0),
                         commentCountMap.getOrDefault(post.getPostId(), 0),
-                        scrapMap.getOrDefault(post.getPostId(), 0)))
+                        scrapMap.getOrDefault(post.getPostId(), 0),
+                        myReactionMap.get(post.getPostId()),
+                        myScrapSet.contains(post.getPostId())))
                 .toList();
 
         Long nextCursor = hasNext ? page.get(page.size() - 1).getPostId() : null;

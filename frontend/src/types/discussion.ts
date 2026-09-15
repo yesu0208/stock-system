@@ -16,6 +16,8 @@ export interface PostSummary {
     dislikes: number
     commentCount: number
     scraps: number
+    myReaction: ReactionType | null
+    myScrapped: boolean
 }
 
 export interface CommentResponse {
@@ -28,6 +30,7 @@ export interface CommentResponse {
     content: string
     likes: number
     dislikes: number
+    myReaction: ReactionType | null
 }
 
 export interface PostDetail {
@@ -45,6 +48,8 @@ export interface PostDetail {
     dislikes: number
     scraps: number
     comments: CommentResponse[]
+    myReaction: ReactionType | null
+    myScrapped: boolean
 }
 
 export interface ReactionResponse {

@@ -28,6 +28,8 @@ public interface DiscussionScrapRepository extends JpaRepository<DiscussionScrap
             """)
     List<ScrapCountRow> countGroupByPostIds(@Param("postIds") List<Long> postIds);
 
+    List<DiscussionScrapEntity> findByPostIdInAndUserId(List<Long> postIds, String userId);
+
     interface ScrapCountRow {
         Long getPostId();
         long getCnt();
