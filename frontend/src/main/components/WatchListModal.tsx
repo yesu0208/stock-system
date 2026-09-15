@@ -1,66 +1,237 @@
-import Modal from '../../components/Modal'
-import { useWatchList } from '../context/WatchListContext'
+import { useState, useEffect, useRef } from 'react';
+import { FaTrash, FaSearch, FaPlus } from 'react-icons/fa';
+import { STOCKS } from '../data/stocks';
+import { useWatchList } from '../context/WatchListContext';
+import './WatchListModal.css';
 
-/**
- * WatchListModal
- * 4단계 WatchListContext(REST CRUD, /api/v1/watchlist)를 그대로 사용.
- * 이 모달은 UI만 제공하고, 실제 등록/해지 로직(및 성공/실패 토스트)은
- * WatchListContext 안에 이미 구현되어 있음.
- *
- * onSelectStock은 옵션이며, 이번 단계에서는 호출부(StockInfoPanel)가
- * 아직 selectedStock setter에 접근할 수 없어 연결하지 않음.
- */
-
-interface Props {
-    show: boolean
-    onClose: () => void
-    onSelectStock?: (stockCode: string) => void
+interface StockQuote {
+    code: string;
+    name: string;
+    price: number;
+    change: number;
+    changeRate: number;
+    volume: number;
 }
 
-export default function WatchListModal({ show, onClose, onSelectStock }: Props) {
-    const { watchList, loading, removeStock } = useWatchList()
+function StockIcon({ code }: { code: string }) {
+    return (
+        <img
+            src={`https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock${code}.svg`}
+            alt={code}
+            className="stock-icon"
+            onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
+            }}
+        />
+    );
+}
 
-    if (!show) return null
+function ChangeArrow({ change }: { change: number }) {
+    if (change > 0) return <span className="wl-arrow up">▲</span>;
+    if (change < 0) return <span className="wl-arrow down">▼</span>;
+    return <span className="wl-arrow flat">-</span>;
+}
+
+export default function WatchListModal() {
+    const { watchList, addStock, removeStock } = useWatchList();
+
+    const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
+
+    const [query, setQuery] = useState('');
+    const searchRef = useRef<HTMLDivElement>(null);
+
+    const [selected, setSelected] = useState<{ code: string; name: string } | null>(null);
+
+    // ── 시세 폴링 (10초) — TODO: 실제 시세 API로 교체, 현재는 mock ──
+    useEffect(() => {
+        if (watchList.length === 0) return;
+
+        const fetchQuotes = () => {
+            const mock: Record<string, StockQuote> = {};
+            watchList.forEach(({ stockCode, stockName }) => {
+                const price = Math.floor(50000 + Math.random() * 100000);
+                const change = Math.floor((Math.random() - 0.5) * 2000);
+                mock[stockCode] = {
+                    code: stockCode,
+                    name: stockName,
+                    price,
+                    change,
+                    changeRate: parseFloat(((change / price) * 100).toFixed(2)),
+                    volume: Math.floor(Math.random() * 5_000_000),
+                };
+            });
+            setQuotes(mock);
+        };
+
+        fetchQuotes();
+        const id = setInterval(fetchQuotes, 10_000);
+        return () => clearInterval(id);
+    }, [watchList]);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+                setQuery('');
+                setSelected(null);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const toggleSelect = (code: string, name: string) => {
+        setSelected(prev => (prev?.code === code ? null : { code, name }));
+    };
+
+    const handleAdd = async () => {
+        if (!selected) return;
+        try {
+            await addStock(selected.code, selected.name);
+            setQuery('');
+            setSelected(null);
+        } catch {
+        }
+    };
+
+    const handleRemove = async (code: string) => {
+        try {
+            await removeStock(code);
+        } catch {
+        }
+    };
+
+    const handleRemoveFromSearch = async () => {
+        if (!selected) return;
+        try {
+            await removeStock(selected.code);
+            setQuery('');
+            setSelected(null);
+        } catch {
+        }
+    };
+
+    const watchedCodes = new Set(watchList.map(w => w.stockCode));
+    const q = query.trim().toLowerCase();
+    const filtered = q
+        ? STOCKS.filter(
+            s => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q)
+        ).slice(0, 8)
+        : [];
+
+    const selectedIsWatched = !!selected && watchedCodes.has(selected.code);
 
     return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '320px', maxHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>관심종목</h3>
-
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {loading ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>불러오는 중...</div>
-                    ) : watchList.length === 0 ? (
-                        <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
-                            등록된 관심종목이 없습니다.
-                        </div>
-                    ) : (
-                        watchList.map(item => (
-                            <div key={item.stockCode} style={styles.row}>
-                                <button
-                                    onClick={() => onSelectStock?.(item.stockCode)}
-                                    style={styles.stockButton}
-                                    disabled={!onSelectStock}
-                                >
-                                    {item.stockName} <span style={{ color: '#666' }}>({item.stockCode})</span>
-                                </button>
-                                <button onClick={() => removeStock(item.stockCode)} style={styles.removeButton}>
-                                    삭제
-                                </button>
-                            </div>
-                        ))
+        <div className="watchlist-modal">
+            <div className="wl-toolbar" ref={searchRef}>
+                <div className="wl-search-box">
+                    <FaSearch className="wl-search-icon" />
+                    <input
+                        className="wl-search-input"
+                        placeholder="종목명·종목코드 검색"
+                        value={query}
+                        onChange={e => {
+                            setQuery(e.target.value);
+                            setSelected(null);
+                        }}
+                    />
+                    {filtered.length > 0 && (
+                        <ul className="wl-search-results">
+                            {filtered.map(s => {
+                                const isWatched = watchedCodes.has(s.code);
+                                return (
+                                    <li
+                                        key={s.code}
+                                        className={`wl-search-result-item${selected?.code === s.code ? ' selected' : ''}${isWatched ? ' watched' : ''}`}
+                                        onClick={() => toggleSelect(s.code, s.name)}
+                                    >
+                                        <span className="wl-sr-name">{s.name}</span>
+                                        <span className="wl-sr-right">
+                                            {isWatched && <span className="wl-sr-badge">추가됨</span>}
+                                            <span className="wl-sr-code">{s.code}</span>
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                    {query.trim() && filtered.length === 0 && (
+                        <div className="wl-search-empty">검색 결과 없음</div>
                     )}
                 </div>
-
-                <button onClick={onClose} style={styles.closeButton}>닫기</button>
+                <button
+                    className={`wl-search-toggle${selectedIsWatched ? ' wl-search-toggle--remove' : ''}`}
+                    disabled={!selected}
+                    onClick={selectedIsWatched ? handleRemoveFromSearch : handleAdd}
+                >
+                    {selectedIsWatched ? (
+                        <>
+                            <FaTrash className="wl-search-toggle-icon" />
+                            종목 제거
+                        </>
+                    ) : (
+                        <>
+                            <FaPlus className="wl-search-toggle-icon" />
+                            종목 추가
+                        </>
+                    )}
+                </button>
             </div>
-        </Modal>
-    )
-}
 
-const styles = {
-    row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 4px', borderBottom: '1px solid #262626' },
-    stockButton: { background: 'none', border: 'none', color: '#FFF', fontSize: '13px', cursor: 'pointer', textAlign: 'left' as const, padding: 0, flex: 1 },
-    removeButton: { padding: '2px 8px', fontSize: '11px', backgroundColor: '#552222', color: '#FF8A80', border: '1px solid #773333', borderRadius: '4px', cursor: 'pointer' },
-    closeButton: { padding: '8px', fontSize: '13px', backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '12px', width: '100%' },
-} as const
+            <ul className="watchlist-list">
+                {watchList.length === 0 && (
+                    <li className="wl-empty">관심종목을 추가해보세요.</li>
+                )}
+                {watchList.map(item => {
+                    // [수정] item.stockCode / item.stockName
+                    const q = quotes[item.stockCode];
+                    const up = q ? q.changeRate >= 0 && q.change !== 0 : null;
+                    const flat = q ? q.change === 0 : false;
+                    const dirClass = flat ? '' : up === true ? 'up' : up === false ? 'down' : '';
+
+                    return (
+                        <li key={item.stockCode} className="watchlist-card">
+                            <button
+                                className="remove-btn"
+                                onClick={() => handleRemove(item.stockCode)}
+                            >
+                                <FaTrash />
+                            </button>
+
+                            <StockIcon code={item.stockCode} />
+
+                            <div className="wl-card-body">
+                                <div className="wl-card-row wl-card-head">
+                                    <span className="item-name">{item.stockName}</span>
+                                    <span className="item-code">{item.stockCode}</span>
+                                </div>
+
+                                <div className="wl-card-row wl-card-price">
+                                    <span className="wl-price-value">
+                                        {q ? q.price.toLocaleString() : '—'}
+                                    </span>
+                                    <span className={`wl-card-change ${dirClass}`}>
+                                        {q ? (
+                                            <>
+                                                <ChangeArrow change={q.change} />
+                                                {' '}
+                                                {Math.abs(q.change).toLocaleString()}
+                                                {' '}
+                                                ({q.changeRate >= 0 ? '+' : ''}{q.changeRate}%)
+                                            </>
+                                        ) : '—'}
+                                    </span>
+                                </div>
+
+                                <div className="wl-card-row wl-card-volume">
+                                    <span>거래량 {q ? q.volume.toLocaleString() : '—'} 주</span>
+                                </div>
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+
+            <div className="wl-count">{watchList.length}개 종목</div>
+        </div>
+    );
+}
