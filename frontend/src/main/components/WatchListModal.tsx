@@ -2,16 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { FaTrash, FaSearch, FaPlus } from 'react-icons/fa';
 import { STOCKS } from '../data/stocks';
 import { useWatchList } from '../context/WatchListContext';
+import { useRealtime } from '../context/RealtimeContext';
+import { calcStockStats } from '../../utils/stockUtils';
 import './WatchListModal.css';
-
-interface StockQuote {
-    code: string;
-    name: string;
-    price: number;
-    change: number;
-    changeRate: number;
-    volume: number;
-}
 
 function StockIcon({ code }: { code: string }) {
     return (
@@ -26,47 +19,33 @@ function StockIcon({ code }: { code: string }) {
     );
 }
 
-function ChangeArrow({ change }: { change: number }) {
-    if (change > 0) return <span className="wl-arrow up">▲</span>;
-    if (change < 0) return <span className="wl-arrow down">▼</span>;
+function ChangeArrow({ direction }: { direction: 'up' | 'down' | 'flat' }) {
+    if (direction === 'up') return <span className="wl-arrow up">▲</span>;
+    if (direction === 'down') return <span className="wl-arrow down">▼</span>;
     return <span className="wl-arrow flat">-</span>;
 }
 
 export default function WatchListModal() {
     const { watchList, addStock, removeStock } = useWatchList();
+    const { subscribeStock } = useRealtime();
 
-    const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
+    const [ticksByCode, setTicksByCode] = useState<Record<string, any>>({});
 
     const [query, setQuery] = useState('');
     const searchRef = useRef<HTMLDivElement>(null);
 
     const [selected, setSelected] = useState<{ code: string; name: string } | null>(null);
 
-    // ── 시세 폴링 (10초) — TODO: 실제 시세 API로 교체, 현재는 mock ──
     useEffect(() => {
-        if (watchList.length === 0) return;
-
-        const fetchQuotes = () => {
-            const mock: Record<string, StockQuote> = {};
-            watchList.forEach(({ stockCode, stockName }) => {
-                const price = Math.floor(50000 + Math.random() * 100000);
-                const change = Math.floor((Math.random() - 0.5) * 2000);
-                mock[stockCode] = {
-                    code: stockCode,
-                    name: stockName,
-                    price,
-                    change,
-                    changeRate: parseFloat(((change / price) * 100).toFixed(2)),
-                    volume: Math.floor(Math.random() * 5_000_000),
-                };
-            });
-            setQuotes(mock);
-        };
-
-        fetchQuotes();
-        const id = setInterval(fetchQuotes, 10_000);
-        return () => clearInterval(id);
-    }, [watchList]);
+        const unsubs = watchList.map(({ stockCode }) =>
+            subscribeStock(stockCode, (tick: any) => {
+                if (tick.tickMessageType === 'TRADEPRICE' || tick.tickMessageType === 'DETAIL') {
+                    setTicksByCode(prev => ({ ...prev, [stockCode]: tick }));
+                }
+            })
+        );
+        return () => unsubs.forEach(u => u());
+    }, [watchList, subscribeStock]);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -182,11 +161,18 @@ export default function WatchListModal() {
                     <li className="wl-empty">관심종목을 추가해보세요.</li>
                 )}
                 {watchList.map(item => {
-                    // [수정] item.stockCode / item.stockName
-                    const q = quotes[item.stockCode];
-                    const up = q ? q.changeRate >= 0 && q.change !== 0 : null;
-                    const flat = q ? q.change === 0 : false;
-                    const dirClass = flat ? '' : up === true ? 'up' : up === false ? 'down' : '';
+                    const tick = ticksByCode[item.stockCode];
+
+                    // [수정] isRealtimeStock() 대신, 실제로 수신된 틱의 타입으로 분기
+                    const stats = tick
+                        ? tick.tickMessageType === 'TRADEPRICE'
+                            ? calcStockStats(true, tick, null)
+                            : calcStockStats(false, null, { ...tick, prevClosePrice: tick.prevPrice })
+                        : null;
+
+                    const dirClass = stats
+                        ? stats.cur.direction === 'up' ? 'up' : stats.cur.direction === 'down' ? 'down' : ''
+                        : '';
 
                     return (
                         <li key={item.stockCode} className="watchlist-card">
@@ -207,23 +193,22 @@ export default function WatchListModal() {
 
                                 <div className="wl-card-row wl-card-price">
                                     <span className="wl-price-value">
-                                        {q ? q.price.toLocaleString() : '—'}
+                                        {stats ? stats.cur.price : '—'}
                                     </span>
                                     <span className={`wl-card-change ${dirClass}`}>
-                                        {q ? (
+                                        {stats ? (
                                             <>
-                                                <ChangeArrow change={q.change} />
+                                                <ChangeArrow direction={stats.cur.direction} />
                                                 {' '}
-                                                {Math.abs(q.change).toLocaleString()}
-                                                {' '}
-                                                ({q.changeRate >= 0 ? '+' : ''}{q.changeRate}%)
+                                                {stats.cur.diffText}
+                                                {stats.cur.rateText && <> ({stats.cur.rateText})</>}
                                             </>
                                         ) : '—'}
                                     </span>
                                 </div>
 
                                 <div className="wl-card-row wl-card-volume">
-                                    <span>거래량 {q ? q.volume.toLocaleString() : '—'} 주</span>
+                                    <span>거래량 {stats ? stats.volume : '—'} 주</span>
                                 </div>
                             </div>
                         </li>
