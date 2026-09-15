@@ -1,72 +1,117 @@
-import { useEffect, useRef, useState } from 'react'
-import Modal from '../../components/Modal'
-import { useStockTalk } from '../hooks/useStockTalk'
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useRealtime } from "../../main/context/RealtimeContext";
+import { STOCKS } from "../../main/data/stocks";
+import type { StockTalkMessage, StockTalkJoinResponse } from "../../types/stockTalk";
+
+interface RoomState {
+    joined: boolean;
+    messages: StockTalkMessage[];
+    participantCount: number;
+}
+
+const EMPTY_ROOM: RoomState = { joined: false, messages: [], participantCount: 0 };
+const makeEmptyRooms = (): Record<string, RoomState> =>
+    Object.fromEntries(STOCKS.map((s) => [s.code, { ...EMPTY_ROOM, messages: [] }]));
 
 interface Props {
-    show: boolean
-    onClose: () => void
-    stockCode: string
-    stockName: string
+    open: boolean;
+    onClose: () => void;
 }
 
-export default function StockTalkModal({ show, onClose, stockCode, stockName }: Props) {
-    const { messages, participantCount, sendMessage } = useStockTalk(stockCode)
-    const [input, setInput] = useState('')
-    const listRef = useRef<HTMLDivElement>(null)
+export default function StockTalkModal({ open, onClose }: Props) {
+    const { subscribeDestination, publish, connected } = useRealtime();
+
+    const [rooms, setRooms] = useState<Record<string, RoomState>>(makeEmptyRooms);
+    const [activeTicker, setActiveTicker] = useState<string | null>(null);
+    const [unread, setUnread] = useState<Record<string, number>>({});
+    const activeTickerRef = useRef<string | null>(null);
+
+    const updateRoom = useCallback((ticker: string, updater: (prev: RoomState) => RoomState) => {
+        setRooms((prev) => ({
+            ...prev,
+            [ticker]: updater(prev[ticker] ?? { ...EMPTY_ROOM }),
+        }));
+    }, []);
 
     useEffect(() => {
-        listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
-    }, [messages])
+        activeTickerRef.current = activeTicker;
+        if (activeTicker) {
+            setUnread((prev) => ({ ...prev, [activeTicker]: 0 }));
+        }
+    }, [activeTicker]);
 
-    if (!show) return null
+    useEffect(() => {
+        if (!open || !connected) return;
 
-    const handleSend = () => {
-        sendMessage(input)
-        setInput('')
-    }
+        return subscribeDestination("/user/sub/stock-talk/history", (data: StockTalkJoinResponse) => {
+            updateRoom(data.ticker, (prev) => ({
+                ...prev,
+                joined: true,
+                messages: data.messages,
+                participantCount: data.participantCount,
+            }));
+        });
+    }, [open, connected, subscribeDestination, updateRoom]);
 
-    return (
-        <Modal show={show} onClose={onClose}>
-            <div style={{ width: '360px', height: '480px', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <h3 style={{ margin: 0 }}>{stockName} 종목톡</h3>
-                    <span style={{ fontSize: '12px', color: '#888' }}>참여 {participantCount}명</span>
-                </div>
+    useEffect(() => {
+        if (!open || !connected) return;
 
-                <div ref={listRef} style={{ flex: 1, overflowY: 'auto', border: '1px solid #262626', borderRadius: '6px', padding: '8px', marginBottom: '8px' }}>
-                    {messages.map((m, i) => (
-                        <div key={i} style={m.type === 'CHAT' ? styles.chatRow : styles.systemRow}>
-                            {m.type === 'CHAT' ? (
-                                <>
-                                    <span style={{ color: '#4F9DFF', fontSize: '12px' }}>{m.senderNickname}</span>
-                                    <div style={{ fontSize: '13px' }}>{m.content}</div>
-                                </>
-                            ) : (
-                                <span style={{ fontSize: '11px', color: '#666' }}>{m.content}</span>
-                            )}
-                        </div>
-                    ))}
-                </div>
+        const unsubs = STOCKS.map((stock) =>
+            subscribeDestination(`/sub/stock-talk/${stock.code}`, (data: StockTalkMessage) => {
+                updateRoom(stock.code, (prev) => ({
+                    ...prev,
+                    messages: [...prev.messages, data],
+                    participantCount: data.participantCount,
+                }));
 
-                <div style={{ display: 'flex', gap: '6px' }}>
-                    <input
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleSend()}
-                        placeholder="메시지를 입력하세요"
-                        maxLength={300}
-                        style={styles.input}
-                    />
-                    <button onClick={handleSend} style={styles.sendButton}>전송</button>
-                </div>
-            </div>
-        </Modal>
-    )
+                if (data.type === "CHAT" && activeTickerRef.current !== stock.code) {
+                    setUnread((prev) => ({ ...prev, [stock.code]: (prev[stock.code] ?? 0) + 1 }));
+                }
+            })
+        );
+
+        return () => unsubs.forEach((u) => u());
+    }, [open, connected, subscribeDestination, updateRoom]);
+
+    useEffect(() => {
+        if (open) return;
+
+        setRooms((prev) => {
+            STOCKS.forEach((stock) => {
+                if (prev[stock.code]?.joined) {
+                    publish(`/app/stock-talk/${stock.code}/leave`, {});
+                }
+            });
+            return prev;
+        });
+
+        setRooms(makeEmptyRooms());
+        setActiveTicker(null);
+        setUnread({});
+    }, [open, publish]);
+
+    const handleJoin = useCallback((ticker: string) => {
+        publish(`/app/stock-talk/${ticker}/join`, {});
+        updateRoom(ticker, (prev) => ({ ...prev, joined: true }));
+        setActiveTicker(ticker);
+    }, [publish, updateRoom]);
+
+    const handleLeave = useCallback((ticker: string) => {
+        publish(`/app/stock-talk/${ticker}/leave`, {});
+        updateRoom(ticker, (prev) => ({ ...prev, joined: false }));
+        setActiveTicker((prev) => {
+            if (prev !== ticker) return prev;
+            const next = STOCKS.find((s) => s.code !== ticker && rooms[s.code]?.joined);
+            return next?.code ?? null;
+        });
+    }, [publish, updateRoom, rooms]);
+
+    const handleSend = useCallback((ticker: string, content: string) => {
+        const text = content.trim();
+        if (!text || !rooms[ticker]?.joined) return;
+        publish(`/app/stock-talk/${ticker}/send`, { content: text });
+    }, [publish, rooms]);
+
+    // TODO: 다음 단계에서 JSX(탭 바/사이드바/채팅 패널) 붙일 예정
+    return null;
 }
-
-const styles = {
-    chatRow: { marginBottom: '8px' },
-    systemRow: { textAlign: 'center' as const, marginBottom: '6px' },
-    input: { flex: 1, padding: '8px', fontSize: '13px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#222', color: '#FFF' },
-    sendButton: { padding: '8px 14px', fontSize: '13px', borderRadius: '6px', border: 'none', backgroundColor: '#4F9DFF', color: '#FFF', cursor: 'pointer', fontWeight: 600 },
-} as const
