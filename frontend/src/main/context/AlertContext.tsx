@@ -1,12 +1,21 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRealtime } from './RealtimeContext'
 import { useMsg } from './MsgContext'
-import type { AlertResponseMessage, AlertFiredResponse } from '../../types/alert'
+import { createAlert, cancelAlert as cancelAlertApi } from '../../api/alert'
+import type { AlertResponseMessage, AlertFiredResponse, AlertDirection } from '../../types/alert'
+
+interface ActionResult {
+    success: boolean
+    message: string
+}
 
 interface AlertContextValue {
     alerts: AlertResponseMessage[]
     lastFired: AlertFiredResponse | null
+    registerAlert: (stockCode: string, triggerPrice: number, direction: AlertDirection) => Promise<ActionResult>
+    cancelAlert: (alertId: number, stockCode: string) => Promise<ActionResult>
+    getAlertsBySymbol: (stockCode: string) => AlertResponseMessage[]
 }
 
 const AlertContext = createContext<AlertContextValue | null>(null)
@@ -37,8 +46,37 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         }
     }, [subscribeDestination, info])
 
+    const registerAlert = useCallback(
+        async (stockCode: string, triggerPrice: number, direction: AlertDirection): Promise<ActionResult> => {
+            try {
+                await createAlert({ stockCode, direction, triggerPrice })
+                return { success: true, message: '알림이 등록되었습니다.' }
+            } catch (e: any) {
+                return { success: false, message: e.response?.data?.message ?? '알림 등록에 실패했습니다.' }
+            }
+        },
+        []
+    )
+
+    const cancelAlert = useCallback(
+        async (alertId: number, stockCode: string): Promise<ActionResult> => {
+            try {
+                await cancelAlertApi(alertId, stockCode)
+                return { success: true, message: '알림이 해지되었습니다.' }
+            } catch (e: any) {
+                return { success: false, message: e.response?.data?.message ?? '알림 해지에 실패했습니다.' }
+            }
+        },
+        []
+    )
+
+    const getAlertsBySymbol = useCallback(
+        (stockCode: string) => alerts.filter(a => a.stockCode === stockCode),
+        [alerts]
+    )
+
     return (
-        <AlertContext.Provider value={{ alerts, lastFired }}>
+        <AlertContext.Provider value={{ alerts, lastFired, registerAlert, cancelAlert, getAlertsBySymbol }}>
             {children}
         </AlertContext.Provider>
     )
