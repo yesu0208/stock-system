@@ -1,42 +1,26 @@
+import { useRef, useEffect, useState } from 'react'
 import AskList from './AskList'
 import BidList from './BidList'
+import { useStockRealtime } from '../../main/context/StockRealtimeContext'
+import { useStock } from '../../main/context/StockContext'
 import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
+
 import styles from './OrderBook.module.css'
 
-interface PriceLevel {
-    price: number
-    quantity: number
-}
+const MAX_TICKS = 40
 
-interface OrderBookProps {
-    stockName: string
-    asks: PriceLevel[]
-    bids: PriceLevel[]
-    tradeTicks?: TradePriceTickMessage[]
-    prevClosePrice?: number
-    isReady: boolean
-    isRealtimeSupported?: boolean
-}
+export default function OrderBook() {
 
-export default function OrderBook({
-                                      stockName,
-                                      asks,
-                                      bids,
-                                      tradeTicks = [],
-                                      prevClosePrice = 0,
-                                      isReady,
-                                      isRealtimeSupported = true,
-                                  }: OrderBookProps) {
+    const { selectedStock } = useStock()
+    const { priceTick, orderbook, connected } = useStockRealtime()
 
-    const totalAsk = asks.reduce((sum, a) => sum + a.quantity, 0)
-    const totalBid = bids.reduce((sum, b) => sum + b.quantity, 0)
+    const scrollRef = useRef<HTMLDivElement>(null)
+    const initialScrollDone = useRef(false)
 
-    const latestPrice = tradeTicks[tradeTicks.length - 1]?.curPrice ?? 0
-    const change = latestPrice - prevClosePrice
-    const changePercent = prevClosePrice ? (change / prevClosePrice) * 100 : 0
+    const [accTicks, setAccTicks] = useState<TradePriceTickMessage[]>([])
 
-    const changeClass =
-        change > 0 ? styles.changeUp : change < 0 ? styles.changeDown : styles.changeFlat
+    const asks = orderbook?.asks ?? []
+    const bids = orderbook?.bids ?? []
 
     const maxQty = Math.max(
         1,
@@ -44,50 +28,68 @@ export default function OrderBook({
         ...bids.map(b => b.quantity)
     )
 
+    const totalAsk = asks.reduce((sum, a) => sum + a.quantity, 0)
+    const totalBid = bids.reduce((sum, b) => sum + b.quantity, 0)
+
+    useEffect(() => {
+        setAccTicks([])
+        initialScrollDone.current = false
+    }, [selectedStock.code])
+
+    useEffect(() => {
+        if (!priceTick) return
+        setAccTicks(prev => [priceTick, ...prev].slice(0, MAX_TICKS))
+    }, [priceTick])
+
+    useEffect(() => {
+        if (initialScrollDone.current) return
+        if (!scrollRef.current) return
+        if (asks.length === 0 && bids.length === 0) return
+
+        const el = scrollRef.current
+        el.scrollTop = (el.scrollHeight - el.clientHeight) / 2
+        initialScrollDone.current = true
+    }, [asks, bids])
+
     return (
-        <div className={styles.wrapper}>
-            {/* 실시간 미지원 종목이면 무한 로딩 대신 명확한 안내 */}
-            {!isRealtimeSupported ? (
-                <div className={styles.loading}>
-                    실시간 미지원 종목입니다. 호가창을 제공하지 않습니다.
+        <div className={styles.container}>
+            {!selectedStock.realtimeSupported ? (
+                <div className={styles.unsupportedOverlay}>
+                    <p className={styles.unsupportedMsg}>
+                        실시간 호가를 지원하지 않는 종목입니다
+                    </p>
                 </div>
-            ) : !isReady ? (
+            ) : !connected || (asks.length === 0 && bids.length === 0) ? (
                 <div className={styles.loading}>
-                    호가창 생성중...
+                    불러오는 중입니다
                 </div>
             ) : (
-                <div className={styles.container}>
+                <div
+                    className={`${styles.inner} ${styles.fadeIn}`}
+                    key={selectedStock.code}
+                >
                     <div className={styles.header}>
-                        <h2 className={styles.stockName}>{stockName}</h2>
-                        <div className={styles.priceInfo}>
-                        <span className={styles.latestPrice}>
-                            {latestPrice.toLocaleString()}
-                        </span>
-                            <span className={`${styles.change} ${changeClass}`}>
-                            {change > 0 ? '+' : ''}
-                                {change.toLocaleString()} ({changePercent.toFixed(2)}%)
-                        </span>
-                        </div>
+                        호가
                     </div>
 
-                    <AskList
-                        asks={asks}
-                        tradeTicks={tradeTicks}
-                        prevClosePrice={prevClosePrice}
-                        maxQty={maxQty}
-                    />
-
-                    <BidList
-                        bids={bids}
-                        tradeTicks={tradeTicks}
-                        prevClosePrice={prevClosePrice}
-                        maxQty={maxQty}
-                    />
+                    <div className={styles.scrollArea} ref={scrollRef}>
+                        <AskList
+                            asks={asks}
+                            prevClosePrice={priceTick?.prevClosePrice ?? 0}
+                            maxQty={maxQty}
+                        />
+                        <BidList
+                            bids={bids}
+                            prevClosePrice={priceTick?.prevClosePrice ?? 0}
+                            maxQty={maxQty}
+                            accTicks={accTicks}
+                        />
+                    </div>
 
                     <div className={styles.footer}>
-                        <span>{totalAsk}</span>
-                        <span>총 잔량</span>
-                        <span>{totalBid}</span>
+                        <span className={styles.footerAsk}>{totalAsk.toLocaleString()}</span>
+                        <span className={styles.footerLabel}>총 잔량</span>
+                        <span className={styles.footerBid}>{totalBid.toLocaleString()}</span>
                     </div>
                 </div>
             )}
