@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { FiSearch } from "react-icons/fi";
 import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory } from "../../api/orderHistory";
 import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled, getAutoOrderTriggered } from "../../api/autoOrderHistory";
 import { stockNameMap } from "../../constants/stocks";
@@ -79,7 +80,97 @@ function LiquidationCell({ maintenanceMarginRate, liquidationPrice }: { maintena
     );
 }
 
-type Fetcher = (params: { page: number; size: number }) => Promise<HistoryPageResponse<AnyOrderItem>>;
+interface SearchFilter {
+    keyword: string;
+    dateFrom: string;
+    dateTo: string;
+}
+
+const EMPTY_FILTER: SearchFilter = { keyword: "", dateFrom: "", dateTo: "" };
+
+function SearchBar({
+                       filter,
+                       onChange,
+                       onReset,
+                   }: {
+    filter: SearchFilter;
+    onChange: (f: SearchFilter) => void;
+    onReset: () => void;
+}) {
+    const [inputValue, setInputValue] = useState(filter.keyword);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        setInputValue(filter.keyword);
+    }, [filter.keyword]);
+
+    const handleKeywordChange = (value: string) => {
+        setInputValue(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            onChange({ ...filter, keyword: value });
+        }, 300);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, []);
+
+    const handleDateFromChange = (newFrom: string) => {
+        if (newFrom && filter.dateTo && newFrom > filter.dateTo) {
+            onChange({ ...filter, dateFrom: newFrom, dateTo: newFrom });
+        } else {
+            onChange({ ...filter, dateFrom: newFrom });
+        }
+    };
+
+    const handleDateToChange = (newTo: string) => {
+        if (newTo && filter.dateFrom && newTo < filter.dateFrom) {
+            onChange({ ...filter, dateFrom: newTo, dateTo: newTo });
+        } else {
+            onChange({ ...filter, dateTo: newTo });
+        }
+    };
+
+    return (
+        <div className="oh-search-bar">
+            <div className="oh-search-keyword-wrap">
+                <FiSearch className="oh-search-icon" />
+                <input
+                    className="oh-search-input oh-search-keyword"
+                    type="text"
+                    placeholder="종목명·종목코드 검색"
+                    value={inputValue}
+                    onChange={(e) => handleKeywordChange(e.target.value)}
+                />
+            </div>
+
+            <input
+                className="oh-search-input oh-search-date"
+                type="date"
+                value={filter.dateFrom}
+                max={filter.dateTo || undefined}
+                onChange={(e) => handleDateFromChange(e.target.value)}
+            />
+            <span className="oh-search-sep">~</span>
+            <input
+                className="oh-search-input oh-search-date"
+                type="date"
+                value={filter.dateTo}
+                min={filter.dateFrom || undefined}
+                onChange={(e) => handleDateToChange(e.target.value)}
+            />
+
+            <button className="oh-search-reset" onClick={onReset} title="검색 초기화">
+                ✕
+            </button>
+        </div>
+    );
+}
+
+type Fetcher = (params: { page: number; size: number; stockCode?: string; from?: string; to?: string }) => Promise<HistoryPageResponse<AnyOrderItem>>;
 
 function resolveFetcher(main: MainTab, sub: SubTab): Fetcher {
     if (main === "체결") return getTradeHistory as unknown as Fetcher;
@@ -92,6 +183,8 @@ function resolveFetcher(main: MainTab, sub: SubTab): Fetcher {
 export default function OrderHistoryModal() {
     const [mainTab, setMainTab] = useState<MainTab>("주문");
     const [subTab, setSubTab] = useState<SubTab>("일반");
+
+    const [filter, setFilter] = useState<SearchFilter>(EMPTY_FILTER);
 
     const [items, setItems] = useState<AnyOrderItem[]>([]);
     const [page, setPage] = useState(0);
@@ -108,7 +201,13 @@ export default function OrderHistoryModal() {
     const loadPage = useCallback(async (pageToLoad: number) => {
         setLoading(true);
         try {
-            const res = await fetcher({ page: pageToLoad, size: 20 });
+            const res = await fetcher({
+                page: pageToLoad,
+                size: 20,
+                stockCode: filter.keyword.trim() || undefined,
+                from: filter.dateFrom ? `${filter.dateFrom}T00:00:00` : undefined,
+                to: filter.dateTo ? `${filter.dateTo}T23:59:59` : undefined,
+            });
             setItems((prev) => (pageToLoad === 0 ? res.items : [...prev, ...res.items]));
             setHasNext(res.hasNext);
             setPage(pageToLoad);
@@ -117,13 +216,13 @@ export default function OrderHistoryModal() {
         } finally {
             setLoading(false);
         }
-    }, [fetcher]);
+    }, [fetcher, filter]);
 
     useEffect(() => {
         setItems([]);
         setHasNext(false);
         loadPage(0);
-    }, [fetcher]);
+    }, [fetcher, filter.dateFrom, filter.dateTo, filter.keyword]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         const sentinel = sentinelRef.current;
@@ -149,6 +248,7 @@ export default function OrderHistoryModal() {
     };
 
     const isPending = mainTab === "미체결";
+    const hasFilter = !!(filter.keyword || filter.dateFrom || filter.dateTo);
 
     return (
         <div className="oh-modal">
@@ -179,6 +279,12 @@ export default function OrderHistoryModal() {
             )}
 
             <div className="oh-tab-content">
+                <SearchBar
+                    filter={filter}
+                    onChange={setFilter}
+                    onReset={() => setFilter(EMPTY_FILTER)}
+                />
+
                 {isPending ? (
                     <div className="oh-header-row oh-grid-pending">
                         <span className="oh-col oh-time">시간</span>
@@ -207,7 +313,9 @@ export default function OrderHistoryModal() {
                 <div className="oh-list-wrapper" ref={listWrapperRef}>
                     <ul className="oh-list">
                         {items.length === 0 && !loading ? (
-                            <li className="oh-empty">내역이 없습니다.</li>
+                            <li className="oh-empty">
+                                {hasFilter ? "검색 결과가 없습니다." : "내역이 없습니다."}
+                            </li>
                         ) : (
                             items.map((item) => {
                                 const stockCode = item.stockCode;
