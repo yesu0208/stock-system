@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
 import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory, cancelOrder } from "../../api/orderHistory";
 import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled, cancelAutoOrder } from "../../api/autoOrderHistory";
+import { useRealtime } from "../context/RealtimeContext";
 import { stockNameMap } from "../../constants/stocks";
 import type { OrderHistoryItem, TradeHistoryItem, AutoOrderHistoryItem, HistoryPageResponse } from "../../types/history";
 import "./OrderHistoryModal.css";
@@ -80,7 +81,6 @@ function LiquidationCell({ maintenanceMarginRate, liquidationPrice }: { maintena
     );
 }
 
-// [신규] 미체결 탭 전용 개별 취소 버튼
 function CancelButton({ onCancel }: { onCancel: () => void }) {
     return (
         <span className="oh-col oh-cancel">
@@ -194,7 +194,6 @@ function resolveFetcher(main: MainTab, sub: SubTab): Fetcher {
     if (main === "체결") return getTradeHistory as unknown as Fetcher;
     if (main === "주문") return (sub === "일반" ? getOrderHistory : getAutoOrderHistory) as unknown as Fetcher;
     if (main === "취소") return (sub === "일반" ? getOrderCancelHistory : getAutoOrderCancelHistory) as unknown as Fetcher;
-    // 미체결
     return (sub === "일반" ? getUnfilledOrders : getAutoOrderUnfilled) as unknown as Fetcher;
 }
 
@@ -212,7 +211,10 @@ export default function OrderHistoryModal() {
     const sentinelRef = useRef<HTMLDivElement>(null);
     const listWrapperRef = useRef<HTMLDivElement>(null);
 
+    const { subscribeDestination } = useRealtime();
+
     const showSubTabs = mainTab !== "체결";
+    const isPending = mainTab === "미체결";
 
     const fetcher = useMemo(() => resolveFetcher(mainTab, showSubTabs ? subTab : "일반"), [mainTab, subTab, showSubTabs]);
 
@@ -222,9 +224,11 @@ export default function OrderHistoryModal() {
             const res = await fetcher({
                 page: pageToLoad,
                 size: 20,
-                stockCode: filter.keyword.trim() || undefined,
-                from: filter.dateFrom ? `${filter.dateFrom}T00:00:00` : undefined,
-                to: filter.dateTo ? `${filter.dateTo}T23:59:59` : undefined,
+                ...(mainTab !== "미체결" && {
+                    stockCode: filter.keyword.trim() || undefined,
+                    from: filter.dateFrom ? `${filter.dateFrom}T00:00:00` : undefined,
+                    to: filter.dateTo ? `${filter.dateTo}T23:59:59` : undefined,
+                }),
             });
             setItems((prev) => (pageToLoad === 0 ? res.items : [...prev, ...res.items]));
             setHasNext(res.hasNext);
@@ -234,15 +238,34 @@ export default function OrderHistoryModal() {
         } finally {
             setLoading(false);
         }
-    }, [fetcher, filter]);
+    }, [fetcher, filter, mainTab]);
 
     useEffect(() => {
+        if (isPending) return;
         setItems([]);
         setHasNext(false);
         loadPage(0);
-    }, [fetcher, filter.dateFrom, filter.dateTo, filter.keyword]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [fetcher, isPending, filter.dateFrom, filter.dateTo, filter.keyword]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
+        if (!isPending) return;
+
+        setItems([]);
+        setHasNext(false);
+
+        if (subTab === "일반") {
+            return subscribeDestination("/user/sub/order", (data: OrderHistoryItem[]) => {
+                setItems(data.filter((o) => o.remainingQuantity > 0));
+            });
+        }
+
+        return subscribeDestination("/user/sub/auto/order", (data: AutoOrderHistoryItem[]) => {
+            setItems(data);
+        });
+    }, [isPending, subTab, subscribeDestination]);
+
+    useEffect(() => {
+        if (isPending) return;
         const sentinel = sentinelRef.current;
         const listWrapper = listWrapperRef.current;
         if (!sentinel || !listWrapper) return;
@@ -258,14 +281,13 @@ export default function OrderHistoryModal() {
 
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [hasNext, loading, page, loadPage]);
+    }, [isPending, hasNext, loading, page, loadPage]);
 
     const handleMainTabChange = (t: MainTab) => {
         setMainTab(t);
         if (t === "체결") setSubTab("일반");
     };
 
-    // [신규] 취소 처리
     const handleCancel = async (auto: boolean, id: number, stockCode: string) => {
         if (!window.confirm("주문을 취소하시겠습니까?")) return;
         try {
@@ -274,6 +296,7 @@ export default function OrderHistoryModal() {
             } else {
                 await cancelOrder(id, stockCode);
             }
+            // 실시간 구독이 곧 갱신된 목록을 다시 push하지만, 체감 반응성을 위해 즉시 제거
             setItems((prev) =>
                 prev.filter((item) => {
                     if (isTrade(item)) return true;
@@ -287,10 +310,7 @@ export default function OrderHistoryModal() {
         }
     };
 
-    const isPending = mainTab === "미체결";
-    // 자동주문 탭(체결 제외)에만 감시가/주문구분 컬럼 표시
     const showTrigger = subTab === "자동" && mainTab !== "체결";
-    // 4가지 조합에 맞는 grid 클래스 선택
     const gridClass = isPending
         ? (showTrigger ? "oh-grid-pending" : "oh-grid-pending-general")
         : (showTrigger ? "oh-grid-cancelled" : "oh-grid-executed");
@@ -326,11 +346,13 @@ export default function OrderHistoryModal() {
             )}
 
             <div className="oh-tab-content">
-                <SearchBar
-                    filter={filter}
-                    onChange={setFilter}
-                    onReset={() => setFilter(EMPTY_FILTER)}
-                />
+                {!isPending && (
+                    <SearchBar
+                        filter={filter}
+                        onChange={setFilter}
+                        onReset={() => setFilter(EMPTY_FILTER)}
+                    />
+                )}
 
                 {isPending ? (
                     <div className={`oh-header-row ${gridClass}`}>
@@ -364,7 +386,7 @@ export default function OrderHistoryModal() {
                     <ul className="oh-list">
                         {items.length === 0 && !loading ? (
                             <li className="oh-empty">
-                                {hasFilter ? "검색 결과가 없습니다." : "내역이 없습니다."}
+                                {!isPending && hasFilter ? "검색 결과가 없습니다." : "내역이 없습니다."}
                             </li>
                         ) : (
                             items.map((item) => {
@@ -462,10 +484,12 @@ export default function OrderHistoryModal() {
                         )}
                     </ul>
 
-                    <div ref={sentinelRef} className="oh-sentinel">
-                        {loading && <span className="oh-loading">불러오는 중…</span>}
-                        {!hasNext && items.length > 0 && <span className="oh-end-mark">마지막 데이터입니다</span>}
-                    </div>
+                    {!isPending && (
+                        <div ref={sentinelRef} className="oh-sentinel">
+                            {loading && <span className="oh-loading">불러오는 중…</span>}
+                            {!hasNext && items.length > 0 && <span className="oh-end-mark">마지막 데이터입니다</span>}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
