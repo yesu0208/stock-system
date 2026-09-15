@@ -7,7 +7,7 @@ import { useRealtime } from '../context/RealtimeContext';
 import { STOCKS } from '../data/stocks';
 import { calcStockStats } from '../../utils/stockUtils';
 import * as discussionApi from '../../api/discussion';
-import type { PostSummary, PostDetail, ReactionType } from '../../types/discussion';
+import type { PostSummary, PostDetail, CommentResponse, ReactionType } from '../../types/discussion';
 import './DiscussionModal.css';
 import Tooltip from '../../tooltip/Tooltip';
 
@@ -241,6 +241,27 @@ function PostCard({ post, onSelect, onReact, onScrap }: PostCardProps) {
     );
 }
 
+function CommentInputRow({ value, onChange, onSend }: { value: string; onChange: (v: string) => void; onSend: () => void }) {
+    return (
+        <div className="discussion-input-row">
+            <div className="input-wrapper">
+                <input
+                    className="discussion-input"
+                    placeholder="댓글을 남겨보세요"
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && onSend()}
+                    maxLength={100}
+                />
+                <span className="input-char-count">{value.length}/100</span>
+            </div>
+            <button className="discussion-send" onClick={onSend} disabled={!value.trim()}>
+                댓글
+            </button>
+        </div>
+    );
+}
+
 export default function DiscussionModal() {
     const { selectedStock } = useStock();
     const { user } = useUser();
@@ -316,6 +337,23 @@ export default function DiscussionModal() {
         return () => observer.disconnect();
     }, [hasNext, listLoading, nextCursor, loadPosts]);
 
+    const loadDetail = useCallback(async (postId: number) => {
+        setDetailLoading(true);
+        try {
+            const data = await discussionApi.getPost(postId);
+            setDetail(data);
+        } catch (e) {
+            console.error('게시글 상세 조회 실패', e);
+        } finally {
+            setDetailLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (selectedId !== null) loadDetail(selectedId);
+        else setDetail(null);
+    }, [selectedId, loadDetail]);
+
     const handlePostReact = async (postId: number, type: ReactionType, e: React.MouseEvent) => {
         e.stopPropagation();
         const target = posts.find(p => p.postId === postId) ?? (detail?.postId === postId ? detail : null);
@@ -332,6 +370,43 @@ export default function DiscussionModal() {
             console.error('게시글 반응 실패', err);
             setPosts(prev => prev.map(p => p.postId !== postId ? p : { ...p, myReaction: current }));
             setDetail(prev => prev?.postId !== postId ? prev : { ...prev, myReaction: current });
+        }
+    };
+
+    const handleCommentReact = async (postId: number, commentId: number, type: ReactionType) => {
+        const comment = detail?.comments.find(c => c.commentId === commentId);
+        const current = comment?.myReaction ?? null;
+
+        setDetail(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                comments: prev.comments.map(c =>
+                    c.commentId !== commentId ? c : { ...c, myReaction: current === type ? null : type }
+                ),
+            };
+        });
+
+        try {
+            const data = await discussionApi.reactToComment(postId, commentId, type);
+            setDetail(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    comments: prev.comments.map(c =>
+                        c.commentId !== commentId ? c : { ...c, likes: data.likes, dislikes: data.dislikes }
+                    ),
+                };
+            });
+        } catch (err) {
+            console.error('댓글 반응 실패', err);
+            setDetail(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    comments: prev.comments.map(c => c.commentId !== commentId ? c : { ...c, myReaction: current }),
+                };
+            });
         }
     };
 
@@ -358,6 +433,69 @@ export default function DiscussionModal() {
         }
     };
 
+    const handleCommentSend = async () => {
+        if (!commentInput.trim() || selectedId === null) return;
+        try {
+            const newComment: CommentResponse = await discussionApi.addComment(selectedId, commentInput.trim());
+            setDetail(prev => prev ? { ...prev, comments: [...prev.comments, newComment] } : prev);
+            setPosts(prev => prev.map(p =>
+                p.postId !== selectedId ? p : { ...p, commentCount: p.commentCount + 1 }
+            ));
+            setCommentInput('');
+        } catch (e) {
+            console.error('댓글 등록 실패', e);
+        }
+    };
+
+    const handlePostDelete = async (postId: number) => {
+        if (!window.confirm('게시글을 삭제하시겠습니까?')) return;
+        try {
+            await discussionApi.deletePost(postId);
+            setPosts(prev => prev.filter(p => p.postId !== postId));
+            setSelectedId(null);
+            setDetail(null);
+        } catch (e) {
+            console.error('게시글 삭제 실패', e);
+        }
+    };
+
+    const handleCommentEditStart = (comment: CommentResponse) => {
+        setEditingCommentId(comment.commentId);
+        setEditingCommentText(comment.content);
+    };
+
+    const handleCommentEditSubmit = async (postId: number, commentId: number) => {
+        const trimmed = editingCommentText.trim();
+        if (!trimmed) return;
+        try {
+            const updated = await discussionApi.editComment(postId, commentId, trimmed);
+            setDetail(prev => {
+                if (!prev) return prev;
+                return { ...prev, comments: prev.comments.map(c => c.commentId !== commentId ? c : updated) };
+            });
+            setEditingCommentId(null);
+            setEditingCommentText('');
+        } catch (e) {
+            console.error('댓글 수정 실패', e);
+        }
+    };
+
+    const handleCommentDelete = async (postId: number, commentId: number) => {
+        if (!window.confirm('댓글을 삭제하시겠습니까?')) return;
+        try {
+            await discussionApi.deleteComment(postId, commentId);
+            setDetail(prev => {
+                if (!prev) return prev;
+                return { ...prev, comments: prev.comments.filter(c => c.commentId !== commentId) };
+            });
+            setPosts(prev => prev.map(p =>
+                p.postId !== postId ? p : { ...p, commentCount: Math.max(0, p.commentCount - 1) }
+            ));
+        } catch (e) {
+            console.error('댓글 삭제 실패', e);
+        }
+    };
+
     const q = searchQuery.trim().toLowerCase();
     const visiblePosts = tab === 'list' || !q
         ? posts
@@ -379,59 +517,238 @@ export default function DiscussionModal() {
                 ))}
             </div>
 
-            {/* TODO: 상세 뷰, 글쓰기/수정 뷰 연결 예정 — 지금은 목록 뷰만 표시 */}
-            <div className="discussion-list-view">
-                {tab === 'list' && (
-                    <div className="list-header-block">
-                        <StockSelectorRow onWrite={() => setIsWriting(true)} />
-                        <StockInfoHeader />
+            {/* TODO: 글쓰기/수정 뷰 연결 예정 */}
+            {selectedId !== null ? (
+                <div className="discussion-detail-view">
+                    <button className="detail-back" onClick={() => { setSelectedId(null); setEditingCommentId(null); }}>
+                        <FiChevronLeft /> 목록으로
+                    </button>
+
+                    <div className="detail-scroll-area">
+                        {detailLoading || !detail ? (
+                            <div className="discussion-empty"><span>불러오는 중...</span></div>
+                        ) : (
+                            <>
+                                <div className="detail-post">
+                                    <div className="discussion-meta">
+                                        <Avatar src={detail.authorProfileImageUrl} alt={detail.authorNickname} />
+                                        <span className="d-author">{detail.authorNickname}</span>
+                                        <StockBadge stockName={detail.stockName} stockCode={detail.stockCode} />
+                                        <span className="d-time">
+                                            <span className="d-time-date">{formatDateTime(detail.createdDateTime).date}</span>
+                                            <span className="d-time-clock">{formatDateTime(detail.createdDateTime).time}</span>
+                                            {detail.updatedDateTime !== detail.createdDateTime && (
+                                                <span className="d-edited-badge">(수정됨)</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <p className="detail-post-title">{detail.title}</p>
+                                    <p className="detail-post-content">{detail.content}</p>
+                                    <div className="detail-divider" />
+                                    <div className="d-actions">
+                                        <Tooltip text="좋아요" placement="top">
+                                            <button
+                                                className={`d-btn like${detail.myReaction === 'LIKE' ? ' active' : ''}`}
+                                                onClick={e => handlePostReact(detail.postId, 'LIKE', e)}
+                                            >
+                                                <FaThumbsUp /> {detail.likes}
+                                            </button>
+                                        </Tooltip>
+                                        <Tooltip text="싫어요" placement="top">
+                                            <button
+                                                className={`d-btn dislike${detail.myReaction === 'DISLIKE' ? ' active' : ''}`}
+                                                onClick={e => handlePostReact(detail.postId, 'DISLIKE', e)}
+                                            >
+                                                <FaThumbsDown /> {detail.dislikes}
+                                            </button>
+                                        </Tooltip>
+                                        <Tooltip text="스크랩" placement="top">
+                                            <button
+                                                className={`d-btn scrap${detail.myScrapped ? ' active' : ''}`}
+                                                onClick={e => handleScrap(detail.postId, e)}
+                                            >
+                                                {detail.myScrapped ? <FaBookmark /> : <FaRegBookmark />}
+                                                {detail.scraps}
+                                            </button>
+                                        </Tooltip>
+
+                                        {detail.authorId === user?.username && (
+                                            <div className="post-owner-actions">
+                                                <Tooltip text="수정" placement="top">
+                                                    <button className="owner-btn edit" onClick={() => setIsEditingPost(true)}>
+                                                        <FiEdit />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip text="삭제" placement="top">
+                                                    <button className="owner-btn delete" onClick={() => handlePostDelete(detail.postId)}>
+                                                        <FiTrash2 />
+                                                    </button>
+                                                </Tooltip>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <span className="detail-comments-label">댓글 {detail.comments.length}</span>
+
+                                <ul className="detail-comments">
+                                    {detail.comments.length === 0 && (
+                                        <li className="discussion-empty">
+                                            <FiMessageSquare />
+                                            <span>첫 댓글을 남겨보세요</span>
+                                        </li>
+                                    )}
+                                    {detail.comments.map(c => {
+                                        const cdt = formatDateTime(c.createdDateTime);
+                                        const isMyComment = c.authorId === user?.username;
+                                        const isEditingThis = editingCommentId === c.commentId;
+
+                                        return (
+                                            <li key={c.commentId} className="detail-comment-item">
+                                                <div className="discussion-meta">
+                                                    <Avatar src={c.authorProfileImageUrl} alt={c.authorNickname} />
+                                                    <span className="d-author">{c.authorNickname}</span>
+                                                    <span className="d-time">
+                                                        <span className="d-time-date">{cdt.date}</span>
+                                                        <span className="d-time-clock">{cdt.time}</span>
+                                                        {c.updatedDateTime !== c.createdDateTime && (
+                                                            <span className="d-edited-badge">(수정됨)</span>
+                                                        )}
+                                                    </span>
+                                                </div>
+
+                                                {isEditingThis ? (
+                                                    <div className="comment-edit-form">
+                                                        <div className="input-wrapper">
+                                                            <input
+                                                                className="discussion-input"
+                                                                value={editingCommentText}
+                                                                onChange={e => setEditingCommentText(e.target.value)}
+                                                                onKeyDown={e => {
+                                                                    if (e.key === 'Enter') handleCommentEditSubmit(detail.postId, c.commentId);
+                                                                    if (e.key === 'Escape') { setEditingCommentId(null); setEditingCommentText(''); }
+                                                                }}
+                                                                maxLength={100}
+                                                                autoFocus
+                                                            />
+                                                            <span className="input-char-count">{editingCommentText.length}/100</span>
+                                                        </div>
+                                                        <div className="comment-edit-actions">
+                                                            <button
+                                                                className="write-cancel-btn"
+                                                                onClick={() => { setEditingCommentId(null); setEditingCommentText(''); }}
+                                                            >
+                                                                취소
+                                                            </button>
+                                                            <button
+                                                                className="write-submit-btn"
+                                                                onClick={() => handleCommentEditSubmit(detail.postId, c.commentId)}
+                                                                disabled={!editingCommentText.trim() || editingCommentText.trim() === c.content}
+                                                            >
+                                                                수정
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="d-content">{c.content}</p>
+                                                )}
+
+                                                <div className="d-actions">
+                                                    <Tooltip text="좋아요" placement="top">
+                                                        <button
+                                                            className={`d-btn like${c.myReaction === 'LIKE' ? ' active' : ''}`}
+                                                            onClick={() => handleCommentReact(detail.postId, c.commentId, 'LIKE')}
+                                                        >
+                                                            <FaThumbsUp /> {c.likes}
+                                                        </button>
+                                                    </Tooltip>
+                                                    <Tooltip text="싫어요" placement="top">
+                                                        <button
+                                                            className={`d-btn dislike${c.myReaction === 'DISLIKE' ? ' active' : ''}`}
+                                                            onClick={() => handleCommentReact(detail.postId, c.commentId, 'DISLIKE')}
+                                                        >
+                                                            <FaThumbsDown /> {c.dislikes}
+                                                        </button>
+                                                    </Tooltip>
+
+                                                    {isMyComment && !isEditingThis && (
+                                                        <div className="post-owner-actions">
+                                                            <Tooltip text="수정" placement="top">
+                                                                <button className="owner-btn edit" onClick={() => handleCommentEditStart(c)}>
+                                                                    <FiEdit />
+                                                                </button>
+                                                            </Tooltip>
+                                                            <Tooltip text="삭제" placement="top">
+                                                                <button
+                                                                    className="owner-btn delete"
+                                                                    onClick={() => handleCommentDelete(detail.postId, c.commentId)}
+                                                                >
+                                                                    <FiTrash2 />
+                                                                </button>
+                                                            </Tooltip>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </>
+                        )}
                     </div>
-                )}
 
-                {tab !== 'list' && (
-                    <StockSearchBar
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                        onClear={() => setSearchQuery('')}
-                    />
-                )}
-
-                <ul className="discussion-list">
-                    {listLoading && posts.length === 0 && (
-                        <li className="discussion-empty"><span>불러오는 중...</span></li>
-                    )}
-                    {!listLoading && visiblePosts.length === 0 && (
-                        <li className="discussion-empty">
-                            <FiMessageSquare />
-                            <span>
-                                {searchQuery.trim() ? `"${searchQuery}" 에 해당하는 글이 없습니다` : '게시글이 없습니다'}
-                            </span>
-                        </li>
-                    )}
-                    {visiblePosts.map(post => (
-                        <PostCard
-                            key={post.postId}
-                            post={post}
-                            onSelect={setSelectedId}
-                            onReact={handlePostReact}
-                            onScrap={handleScrap}
-                        />
-                    ))}
-
-                    {listLoading && posts.length > 0 && (
-                        <li className="discussion-empty" style={{ minHeight: 32 }}>
-                            <span style={{ fontSize: 11 }}>로딩 중...</span>
-                        </li>
-                    )}
-                    {!hasNext && posts.length > 0 && !listLoading && (
-                        <li className="discussion-empty" style={{ minHeight: 28 }}>
-                            <span style={{ fontSize: 11, color: '#64748b' }}>마지막 글입니다</span>
-                        </li>
+                    <CommentInputRow value={commentInput} onChange={setCommentInput} onSend={handleCommentSend} />
+                </div>
+            ) : (
+                <div className="discussion-list-view">
+                    {tab === 'list' && (
+                        <div className="list-header-block">
+                            <StockSelectorRow onWrite={() => setIsWriting(true)} />
+                            <StockInfoHeader />
+                        </div>
                     )}
 
-                    <li ref={sentinelRef} style={{ height: 1, listStyle: 'none' }} aria-hidden />
-                </ul>
-            </div>
+                    {tab !== 'list' && (
+                        <StockSearchBar value={searchQuery} onChange={setSearchQuery} onClear={() => setSearchQuery('')} />
+                    )}
+
+                    <ul className="discussion-list">
+                        {listLoading && posts.length === 0 && (
+                            <li className="discussion-empty"><span>불러오는 중...</span></li>
+                        )}
+                        {!listLoading && visiblePosts.length === 0 && (
+                            <li className="discussion-empty">
+                                <FiMessageSquare />
+                                <span>
+                                    {searchQuery.trim() ? `"${searchQuery}" 에 해당하는 글이 없습니다` : '게시글이 없습니다'}
+                                </span>
+                            </li>
+                        )}
+                        {visiblePosts.map(post => (
+                            <PostCard
+                                key={post.postId}
+                                post={post}
+                                onSelect={setSelectedId}
+                                onReact={handlePostReact}
+                                onScrap={handleScrap}
+                            />
+                        ))}
+
+                        {listLoading && posts.length > 0 && (
+                            <li className="discussion-empty" style={{ minHeight: 32 }}>
+                                <span style={{ fontSize: 11 }}>로딩 중...</span>
+                            </li>
+                        )}
+                        {!hasNext && posts.length > 0 && !listLoading && (
+                            <li className="discussion-empty" style={{ minHeight: 28 }}>
+                                <span style={{ fontSize: 11, color: '#64748b' }}>마지막 글입니다</span>
+                            </li>
+                        )}
+
+                        <li ref={sentinelRef} style={{ height: 1, listStyle: 'none' }} aria-hidden />
+                    </ul>
+                </div>
+            )}
         </div>
     );
 }
