@@ -164,7 +164,9 @@ export default function WatchListModal() {
                         : null;
 
                     const dirClass = stats
-                        ? stats.cur.direction === 'up' ? 'up' : stats.cur.direction === 'down' ? 'down' : ''
+                        ? stats.cur.direction === 'up' || stats.cur.direction === 'upperLimit' ? 'up'
+                            : stats.cur.direction === 'down' || stats.cur.direction === 'lowerLimit' ? 'down'
+                                : ''
                         : '';
 
                     return (

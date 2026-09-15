@@ -5,18 +5,22 @@ export function isRealtimeStock(code: string): boolean {
 }
 
 /* 방향 타입  */
-export type Direction = "up" | "down" | "flat";
+export type Direction = "up" | "down" | "flat" | "upperLimit" | "lowerLimit";
 
 export const DIRECTION_CLASS: Record<Direction, string> = {
     up:   "price-up",
     down: "price-down",
     flat: "price-flat",
+    upperLimit: "price-up",
+    lowerLimit: "price-down",
 };
 
 export const DIRECTION_ARROW: Record<Direction, string> = {
     up:   "▲",
     down: "▼",
     flat: "─",
+    upperLimit: "⬆",
+    lowerLimit: "⬇",
 };
 
 /* 방향 판별 */
@@ -101,7 +105,34 @@ function calcOhlc(rawPrice: number | string | null | undefined, prevClose: numbe
     return calcFromPrevClose(price, prevClose);
 }
 
+function calcCurWithLimit(
+    price: number,
+    prevClose: number,
+    upperLimit: number | null,
+    lowerLimit: number | null,
+): PriceStats {
+    const base = calcFromPrevClose(price, prevClose);
 
+    if (upperLimit !== null && price === upperLimit) {
+        const diff = price - prevClose;
+        return {
+            ...base,
+            direction: "upperLimit",
+            diffText: `${DIRECTION_ARROW.upperLimit} ${fmtNumber(Math.abs(diff))}`,
+        };
+    }
+
+    if (lowerLimit !== null && price === lowerLimit) {
+        const diff = price - prevClose;
+        return {
+            ...base,
+            direction: "lowerLimit",
+            diffText: `${DIRECTION_ARROW.lowerLimit} ${fmtNumber(Math.abs(diff))}`,
+        };
+    }
+
+    return base;
+}
 
 /* 색상 판별 유틸 */
 
@@ -157,9 +188,11 @@ export function calcStockStats(
 
     if (!isRealtime && detail) {
         const curPrice = toNumber(detail.currentPrice) ?? 0;
+        const upperLimit = toNumber(detail.upperLimit);
+        const lowerLimit = toNumber(detail.lowerLimit);
 
         return {
-            cur:  calcFromPrevClose(curPrice, prevClose),
+            cur:  calcCurWithLimit(curPrice, prevClose, upperLimit, lowerLimit), // [수정]
             open: calcOhlc(detail.openPrice, prevClose),
             high: calcOhlc(detail.highPrice, prevClose),
             low:  calcOhlc(detail.lowPrice,  prevClose),
