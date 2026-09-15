@@ -245,3 +245,10 @@
     display: flex;
     flex-direction: column;
 }
+
+.modal-v2-box.stock-talk-modal {
+    width: 720px;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+}
