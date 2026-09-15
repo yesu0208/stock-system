@@ -272,23 +272,21 @@ export default function StockInfoPanel() {
                     <table className="info-table">
                         <tbody>
                         <tr>
+                            <td className="label">현재가</td>
+                            <td className="value" style={{ color: getPriceColor(detail.currentPrice, detail.prevPrice) }}>
+                                {detail.currentPrice ?? "-"}
+                            </td>
+
                             <td className="label">전일 종가</td>
                             <td className="value">{detail.prevPrice ?? "-"}</td>
 
+                            <td className="label"></td>
+                            <td className="value"></td>
+                        </tr>
+                        <tr>
                             <td className="label">고가</td>
                             <td className="value" style={{ color: getPriceColor(detail.highPrice, detail.prevPrice) }}>
                                 {detail.highPrice ?? "-"}
-                            </td>
-
-                            <td className="label">상한가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.upperLimit, detail.prevPrice) }}>
-                                {detail.upperLimit ?? "-"}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="label">시가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.openPrice, detail.prevPrice) }}>
-                                {detail.openPrice ?? "-"}
                             </td>
 
                             <td className="label">저가</td>
@@ -296,10 +294,24 @@ export default function StockInfoPanel() {
                                 {detail.lowPrice ?? "-"}
                             </td>
 
+                            <td className="label">시가</td>
+                            <td className="value" style={{ color: getPriceColor(detail.openPrice, detail.prevPrice) }}>
+                                {detail.openPrice ?? "-"}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="label">상한가</td>
+                            <td className="value" style={{ color: getPriceColor(detail.upperLimit, detail.prevPrice) }}>
+                                {detail.upperLimit ?? "-"}
+                            </td>
+
                             <td className="label">하한가</td>
                             <td className="value" style={{ color: getPriceColor(detail.lowerLimit, detail.prevPrice) }}>
                                 {detail.lowerLimit ?? "-"}
                             </td>
+
+                            <td className="label"></td>
+                            <td className="value"></td>
                         </tr>
                         <tr>
                             <td className="label">52주 최고</td>
