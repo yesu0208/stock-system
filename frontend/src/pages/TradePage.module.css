@@ -1,47 +1,78 @@
-.tradeContainer {
+.tradeContent {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
     display: flex;
-    gap: 20px;
+    flex-direction: column;
+    padding: 12px 0 0 0;
+    overflow: hidden;
+    background: #0f172a;
+}
+
+.tradeGrid {
+    flex: 1;
+    min-height: 0;
+    max-height: 760px;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+.panelOrderbook {
+    width: 315px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.panelCenter {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+}
+
+.panelChart {
+    flex: 1;
+    min-height: 0;
+}
+
+.panelStockinfo {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.panelRight {
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    gap: 12px;
+    flex-shrink: 0;
+    min-height: 0;
+}
+
+.panelOrder {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.panelTradeBtn {
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.page {
     width: 100%;
     height: 100%;
-    flex-wrap: wrap;
-    overflow: auto;
-}
-
-.orderBookContainer {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    width: 315px;
-    height: 600px;
-}
-
-.stockSelector {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.label {
-    font-size: 14px;
-    color: #AAA;
-}
-
-.select {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid #333;
-    background-color: #1E1E1E;
-    color: #FFF;
-}
-
-.tradePanelWrapper {
-    flex: 1;
-    min-width: 0;
-}
-
-.infoColumn {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    overflow: hidden;
+    background: #0f172a;
 }
