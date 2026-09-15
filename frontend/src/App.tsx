@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import TradePage from './pages/TradePage'
 import MainLayout from './layouts/MainLayout'
+import ScaleWrapper from './components/ScaleWrapper'
 import { tokenStorage } from './utils/token'
 
 import { RealtimeProvider } from './main/context/RealtimeContext'
@@ -31,43 +32,45 @@ export default function App() {
     const [authView, setAuthView] = useState<'login' | 'signup'>('login')
 
     return (
-        <RealtimeProvider>
-            <MarketDataProvider>
-                {!isLoggedIn ? (
-                    authView === 'login' ? (
-                        <LoginPage
-                            onLoginSuccess={() => setIsLoggedIn(true)}
-                            onNavigateToSignup={() => setAuthView('signup')}
-                        />
+        <ScaleWrapper>
+            <RealtimeProvider>
+                <MarketDataProvider>
+                    {!isLoggedIn ? (
+                        authView === 'login' ? (
+                            <LoginPage
+                                onLoginSuccess={() => setIsLoggedIn(true)}
+                                onNavigateToSignup={() => setAuthView('signup')}
+                            />
+                        ) : (
+                            <SignupPage onNavigateToLogin={() => setAuthView('login')} />
+                        )
                     ) : (
-                        <SignupPage onNavigateToLogin={() => setAuthView('login')} />
-                    )
-                ) : (
-                    <UserProvider>
-                        <StockProvider>
-                            <StockRealtimeProvider>
-                                <OrderPriceProvider>
-                                    <AccountProvider>
-                                        <PendingOrderProvider>
-                                            <PortfolioProvider>
-                                                <ChartDataProvider>
-                                                    <AlertProvider>
-                                                        <WatchListProvider>
-                                                            <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
-                                                                <TradePage />
-                                                            </MainLayout>
-                                                        </WatchListProvider>
-                                                    </AlertProvider>
-                                                </ChartDataProvider>
-                                            </PortfolioProvider>
-                                        </PendingOrderProvider>
-                                    </AccountProvider>
-                                </OrderPriceProvider>
-                            </StockRealtimeProvider>
-                        </StockProvider>
-                    </UserProvider>
-                )}
-            </MarketDataProvider>
-        </RealtimeProvider>
+                        <UserProvider>
+                            <StockProvider>
+                                <StockRealtimeProvider>
+                                    <OrderPriceProvider>
+                                        <AccountProvider>
+                                            <PendingOrderProvider>
+                                                <PortfolioProvider>
+                                                    <ChartDataProvider>
+                                                        <AlertProvider>
+                                                            <WatchListProvider>
+                                                                <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
+                                                                    <TradePage />
+                                                                </MainLayout>
+                                                            </WatchListProvider>
+                                                        </AlertProvider>
+                                                    </ChartDataProvider>
+                                                </PortfolioProvider>
+                                            </PendingOrderProvider>
+                                        </AccountProvider>
+                                    </OrderPriceProvider>
+                                </StockRealtimeProvider>
+                            </StockProvider>
+                        </UserProvider>
+                    )}
+                </MarketDataProvider>
+            </RealtimeProvider>
+        </ScaleWrapper>
     )
 }

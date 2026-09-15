@@ -1,6 +1,6 @@
 .top-bar {
     width: calc(100% - 32px);
-    margin: 0 16px;
+    margin: 12px 12px 0 16px;
     height: 8%;
 
     display: grid;
