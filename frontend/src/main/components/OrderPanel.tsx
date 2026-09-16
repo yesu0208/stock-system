@@ -222,6 +222,14 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
         }
         : undefined;
 
+    const leveragePosition = account?.leveragePositions?.find(
+        (p) => p.stockCode === selectedStock.code && p.leverageRatio === selectedLeverageOption.apiValue
+    );
+
+    const sellAvailableQty = isCredit
+        ? (leveragePosition?.availableQuantity ?? 0)
+        : (holding?.availableQty ?? 0);
+
     const [appliedStockCode, setAppliedStockCode] = useState<string | null>(null);
 
     useEffect(() => {
@@ -252,11 +260,22 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
     const effectivePrice = orderType === "market" ? marketPrice : price;
     const estimatedAmount = quantity * effectivePrice;
 
-    const profitAmount = holding ? (effectivePrice - holding.avgBuyPrice) * quantity : 0;
+    const sellAvgBuyPrice = isCredit
+        ? (leveragePosition && leveragePosition.quantity > 0
+            ? Math.round(leveragePosition.purchaseAmount / leveragePosition.quantity)
+            : 0)
+        : (holding?.avgBuyPrice ?? 0);
+
+    const profitAmount = !isBuy ? (effectivePrice - sellAvgBuyPrice) * quantity : 0;
+
+    const marginPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
+        ? leveragePosition.initialMargin / leveragePosition.quantity
+        : sellAvgBuyPrice;
+
     const profitRate = profitAmount === 0
         ? 0
-        : holding && holding.avgBuyPrice !== 0
-            ? ((effectivePrice - holding.avgBuyPrice) / holding.avgBuyPrice) * 100
+        : marginPerShare !== 0
+            ? (profitAmount / (marginPerShare * quantity)) * 100
             : 0;
 
     const profitSign  = profitAmount > 0 ? "+" : profitAmount < 0 ? "−" : "";
@@ -277,6 +296,10 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
         );
     }
 
+    function clampSellQuantity(value: number): number {
+        return isBuy ? clampQuantity(value) : Math.min(sellAvailableQty, clampQuantity(value));
+    }
+
     function handleRatioClick(ratio: number) {
         if (isBuy) {
             if (effectivePrice <= 0) {
@@ -287,8 +310,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
             const affordableQty = Math.floor((budgetAmount * ratio) / effectivePrice);
             setQuantity(clampQuantity(affordableQty));
         } else {
-            const availableQty = holding?.availableQty ?? 0;
-            setQuantity(clampQuantity(Math.floor(availableQty * ratio)));
+            setQuantity(clampQuantity(Math.floor(sellAvailableQty * ratio)));
         }
     }
 
@@ -323,10 +345,17 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const orderableAmountRaw = account?.availableCash ?? 0;
     const estimatedAmountRaw = estimatedAmount;
-    const estimatedAmountAfter = (isBuy && isCredit)
-        ? Math.floor(estimatedAmountRaw / leverage)
-        : estimatedAmountRaw;
-    const showEstimatedBeforeAfter = isBuy && isCredit;
+
+    const loanPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
+        ? leveragePosition.loanAmount / leveragePosition.quantity
+        : 0;
+
+    const estimatedAmountAfter =
+        isBuy && isCredit ? Math.floor(estimatedAmountRaw / leverage) :
+            !isBuy && isCredit ? Math.max(0, Math.round(estimatedAmountRaw - loanPerShare * quantity)) :
+                estimatedAmountRaw;
+
+    const showEstimatedBeforeAfter = isCredit;
 
     return (
         <div className="trade-form">
@@ -372,15 +401,15 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
             <div className="form-row">
                 <span className="form-label">수량</span>
                 <div className="stepper">
-                    <button className="stepper__btn" onClick={() => setQuantity((q) => clampQuantity(q - 1))}>−</button>
+                    <button className="stepper__btn" onClick={() => setQuantity((q) => clampSellQuantity(q - 1))}>−</button>
                     <input
                         className="stepper__input"
                         type="text"
                         inputMode="numeric"
                         value={formatNumber(quantity)}
-                        onChange={(e) => setQuantity(clampQuantity(parseNumber(e.target.value)))}
+                        onChange={(e) => setQuantity(clampSellQuantity(parseNumber(e.target.value)))}
                     />
-                    <button className="stepper__btn" onClick={() => setQuantity((q) => clampQuantity(q + 1))}>+</button>
+                    <button className="stepper__btn" onClick={() => setQuantity((q) => clampSellQuantity(q + 1))}>+</button>
                     <span className="stepper__unit">주</span>
                 </div>
             </div>
@@ -455,7 +484,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                         {isBuy ? (
                             `${orderableAmountRaw.toLocaleString()} 원`
                         ) : (
-                            `${(holding?.availableQty ?? 0).toLocaleString()} 주`
+                            `${sellAvailableQty.toLocaleString()} 주`
                         )}
                     </span>
                 </div>
