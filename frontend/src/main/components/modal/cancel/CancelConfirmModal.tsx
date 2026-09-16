@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import ModalV2 from '../../../../components/ModalV2.tsx'
-import { cancelOrder } from '../../../../api/orderHistory.ts'
-import { cancelAutoOrder } from '../../../../api/autoOrderHistory.ts'
-import { tokenStorage } from '../../../../utils/token.ts'
+import ModalV2 from '../../../../components/ModalV2'
+import { cancelOrder } from '../../../../api/orderHistory'
+import { cancelAutoOrder } from '../../../../api/autoOrderHistory'
+import { tokenStorage } from '../../../../utils/token'
+import './CancelConfirmModal.css'
 
 interface Props {
     open: boolean
     onClose: () => void
     onConfirm: () => void
     count: number
-    selectedOrders: { rawId: number; stockCode: string; isAuto: boolean; orderId: string }[] // [신규]
+    selectedOrders: { rawId: number; stockCode: string; isAuto: boolean; orderId: string }[]
 }
 
 export default function CancelConfirmModal({ open, onClose, onConfirm, count, selectedOrders }: Props) {
@@ -41,16 +42,30 @@ export default function CancelConfirmModal({ open, onClose, onConfirm, count, se
     }
 
     return (
-        <ModalV2 open={open} title="주문 취소" onClose={onClose}>
-            <div style={{ padding: '4px', fontSize: 13, textAlign: 'center' }}>
-                <p>선택한 {count}건의 주문을 취소하시겠습니까?</p>
-                {errorMsg && <p style={{ color: '#f04a4a' }}>{errorMsg}</p>}
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-                <button onClick={onClose} disabled={loading}>아니오</button>
-                <button onClick={handleConfirmClick} disabled={loading}>
-                    {loading ? '처리 중...' : '확인'}
-                </button>
+        <ModalV2 open={open} title="주문 취소" onClose={onClose} extraClass="ccm-modal">
+            <div className="ccm">
+                <p className="ccm__message">
+                    <span className="ccm__count">{count}건</span>의 주문을 취소하시겠습니까?
+                </p>
+
+                {errorMsg && <p className="ccm__error">{errorMsg}</p>}
+
+                <div className="ccm__footer">
+                    <button
+                        className="ccm__btn ccm__btn--confirm"
+                        onClick={handleConfirmClick}
+                        disabled={loading}
+                    >
+                        {loading ? '처리 중...' : '취소 확정'}
+                    </button>
+                    <button
+                        className="ccm__btn ccm__btn--close"
+                        onClick={onClose}
+                        disabled={loading}
+                    >
+                        닫기
+                    </button>
+                </div>
             </div>
         </ModalV2>
     )
