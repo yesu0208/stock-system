@@ -564,6 +564,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 <button
                     className={`order-btn ${isBuy ? "order-btn--buy" : "order-btn--sell"}`}
                     onClick={handleOrder}
+                    disabled={quantity <= 0}
                 >
                     {isCredit ? "신용" : "현금"} {isBuy ? "매수" : "매도"}
                 </button>
