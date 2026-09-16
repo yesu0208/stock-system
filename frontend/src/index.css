@@ -73,3 +73,11 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
+* {
+  user-select: none;
+}
+
+img {
+  -webkit-user-drag: none;
+}
