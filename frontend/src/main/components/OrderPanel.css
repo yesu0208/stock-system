@@ -95,12 +95,22 @@
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
+    border-radius: 0;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     color: var(--color-text-secondary);
     transition: color 0.15s, border-color 0.15s;
     margin-bottom: -1px;
+}
+
+.order-panel .tab-btn:hover:not(.tab-btn--active) {
+    color: var(--color-text-primary);
+}
+
+.order-panel button:focus,
+.order-panel button:focus-visible {
+    outline: none;
 }
 
 .order-panel .tab-btn--buy.tab-btn--active {
