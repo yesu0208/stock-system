@@ -439,14 +439,16 @@ export default function MyAccountModal({ open, onClose }: Props) {
             {/* ════ 수익률 탭 ════ */}
             {tab === "profit" && (
                 <div className="mam-profit" ref={scrollRef}>
-                    <div className="mam-profit-header">
-                        <span>일자</span>
-                        <span>당일 손익</span>
-                        <span>당일 수익률</span>
-                        <span>누적손익</span>
-                        <span>누적수익률</span>
-                        <span>거래대금</span>
-                    </div>
+                    {profitItems.length > 0 && (
+                        <div className="mam-profit-header">
+                            <span>일자</span>
+                            <span>당일 손익</span>
+                            <span>당일 수익률</span>
+                            <span>누적손익</span>
+                            <span>누적수익률</span>
+                            <span>거래대금</span>
+                        </div>
+                    )}
                     {profitItems.map((p) => (
                         <div key={p.date} className="mam-profit-row">
                             <span>{p.date}</span>
