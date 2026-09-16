@@ -83,7 +83,7 @@ export default function Footer() {
     const formatChange = (value?: string, rate?: string) => {
         if (!value && !rate) return "";
         const v = value ? stripSign(value) : "";
-        const r = rate ? `${rate}%` : "";
+        const r = rate ? `${Number(rate) > 0 ? "+" : ""}${rate}%` : "";
         return `${v} (${r})`.trim();
     };
 
