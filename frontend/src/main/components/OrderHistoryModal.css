@@ -23,12 +23,25 @@
     border: none;
     color: rgba(255, 255, 255, 0.4);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 700;
     padding: 8px 0;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
     border-radius: 0;
+    border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
+}
+
+.oh-tab:focus,
+.oh-tab:focus-visible {
+    outline: none;
+}
+
+.oh-tab:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
 }
 
 .oh-tab.active {
@@ -36,11 +49,6 @@
     background: none;
     border-color: transparent;
     border-bottom-color: #7c5cff;
-}
-
-.oh-tab:hover:not(.active) {
-    color: rgba(255, 255, 255, 0.7);
-    background: none;
 }
 
 .oh-ws-dot {
@@ -202,6 +210,8 @@
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: stable;
+    display: flex;
+    flex-direction: column;
 }
 
 .oh-list {
@@ -211,6 +221,7 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
+    flex: 1;
 }
 
 .oh-item {
@@ -224,12 +235,14 @@
 }
 
 .oh-empty {
-    text-align: center;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 32px 0;
     color: #475569;
     font-size: 13px;
 }
-
 .oh-col {
     font-size: 12px;
     color: #cbd5e1;
@@ -575,22 +588,6 @@
     color: #fb923c;
     background: rgba(251, 146, 60, 0.1);
     border-color: rgba(251, 146, 60, 0.3);
-}
-
-.oh-subtabs {
-    margin-top: -4px;
-    margin-bottom: 2px;
-}
-
-.oh-subtabs .oh-tab {
-    font-size: 11px;
-    padding: 5px 0;
-    color: rgba(255, 255, 255, 0.3);
-}
-
-.oh-subtabs .oh-tab.active {
-    color: #93c5fd;
-    border-bottom-color: #3b82f6;
 }
 
 .oh-grid-pending-general {

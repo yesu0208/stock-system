@@ -1,0 +1,89 @@
+.ccm {
+    --color-confirm: #22c07a;
+    --color-surface-2:   #26292e;
+    --color-border:      #2e3138;
+    --color-text-primary:   #e8eaed;
+    --color-text-secondary: #b0b6c1;
+    --color-text-muted:     #565c66;
+    --color-error:       #f04a4a;
+    --radius-md: 10px;
+    --font-base: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    font-family: var(--font-base);
+    color: var(--color-text-primary);
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.ccm__message {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.ccm__count {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-confirm);
+}
+
+.ccm__error {
+    margin: -12px 0 0;
+    font-size: 12px;
+    color: var(--color-error);
+    text-align: center;
+}
+
+.ccm__footer {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.ccm__btn {
+    flex: 1;
+    height: 42px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+    font-family: var(--font-base);
+}
+
+.ccm__btn:active {
+    transform: scale(0.98);
+}
+
+.ccm__btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ccm__btn--confirm {
+    background: var(--color-confirm);
+    color: #fff;
+}
+
+.ccm__btn--confirm:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.ccm__btn--close {
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    transition: background 0.15s, color 0.15s;
+}
+
+.ccm__btn--close:hover:not(:disabled) {
+    background: #3a3d44;
+    color: var(--color-text-primary);
+}

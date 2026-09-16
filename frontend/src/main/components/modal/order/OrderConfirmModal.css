@@ -1,0 +1,276 @@
+.ocm {
+    --color-buy:    #f04a4a;
+    --color-sell:   #4d8ef5;
+
+    --color-bg:          #141518;
+    --color-surface:     #1e2024;
+    --color-surface-2:   #26292e;
+    --color-border:      #2e3138;
+
+    --color-text-primary:   #e8eaed;
+    --color-text-secondary: #8d929b;
+    --color-text-muted:     #565c66;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+
+    --font-base: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: var(--font-base);
+    color: var(--color-text-primary);
+}
+
+.ocm__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ocm__side-badge {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.5px;
+}
+
+.ocm__side-badge--buy {
+    background: rgba(240, 74, 74, 0.15);
+    color: var(--color-buy);
+    border: 1px solid rgba(240, 74, 74, 0.3);
+}
+
+.ocm__side-badge--sell {
+    background: rgba(77, 142, 245, 0.15);
+    color: var(--color-sell);
+    border: 1px solid rgba(77, 142, 245, 0.3);
+}
+
+.ocm__stock-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.ocm__stock-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.ocm__stock-code {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    letter-spacing: 0.5px;
+}
+
+.ocm__tag-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ocm__tag {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    background: var(--color-surface-2);
+    padding: 2px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--color-border);
+}
+
+.ocm__tag-sep {
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+.ocm__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ocm__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ocm__row-label {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.ocm__row-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.ocm__row-value--trigger {
+    color: #7dd3fc;
+}
+
+.ocm__row-value--amount {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.ocm__row-value--amount.buy  { color: var(--color-buy);  }
+.ocm__row-value--amount.sell { color: var(--color-sell); }
+
+.ocm__divider {
+    height: 1px;
+    background: var(--color-border);
+    flex-shrink: 0;
+}
+
+.ocm__market-notice {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.ocm__market-notice strong {
+    color: #fbbf24;
+    font-weight: 700;
+}
+
+.ocm__error {
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-buy);
+    text-align: center;
+}
+
+.ocm__footer {
+    display: flex;
+    gap: 8px;
+    margin-top: 0;
+}
+
+.ocm__btn {
+    flex: 1;
+    height: 42px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+    font-family: var(--font-base);
+}
+
+.ocm__btn:active {
+    transform: scale(0.98);
+}
+
+.ocm__btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ocm__btn--cancel {
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    transition: background 0.15s, color 0.15s;
+}
+
+.ocm__btn--cancel:hover:not(:disabled) {
+    background: #3a3d44;
+    color: var(--color-text-primary);
+}
+
+.ocm__btn--confirm-buy {
+    background: var(--color-buy);
+    color: #fff;
+}
+
+.ocm__btn--confirm-buy:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.ocm__btn--confirm-sell {
+    background: var(--color-sell);
+    color: #fff;
+}
+
+.ocm__btn--confirm-sell:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.ocm .leverage-tag {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 5px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    vertical-align: middle;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.ocm .leverage-tag.cash {
+    color: var(--color-text-muted);
+    background: rgba(141, 146, 155, 0.1);
+    border-color: rgba(141, 146, 155, 0.25);
+}
+
+.ocm .leverage-tag.lev-2 {
+    color: #7dd3fc;
+    background: rgba(125, 211, 252, 0.12);
+    border-color: rgba(125, 211, 252, 0.3);
+}
+
+.ocm .leverage-tag.lev-3 {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.ocm .leverage-tag.lev-5 {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+.ocm .leverage-tag.lev-other {
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.12);
+    border-color: rgba(244, 114, 182, 0.3);
+}
+
+.ocm__notice--buy  { color: var(--color-buy);  }
+.ocm__notice--sell { color: var(--color-sell); }
+
+.ocm__notice--sub {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    display: block;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.ocm__row-value--profit { color: var(--color-buy); }
+.ocm__row-value--loss   { color: var(--color-sell); }

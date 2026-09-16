@@ -135,6 +135,7 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     padding-right: 4px;
 }
 
@@ -492,4 +493,20 @@
 
 .portfolio__section--table {
     flex: 3;
+}
+
+.pf__neutral { color: #9ca3af; font-weight: 600; }
+
+.pf-card--neutral {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.07);
+}
+.pf-card--neutral::before { background: #9ca3af; }
+
+.pf-card--accent .pf-card__value.pf__neutral {
+    color: white;
+}
+
+.pf-card--accent .pf-card__rate.pf__neutral {
+    color: white;
 }

@@ -204,7 +204,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup }: Props)
                                         className="login-brand__market-index-value"
                                         style={{ color: activeIndexColor }}
                                     >
-                                        {activeIndex.currentIndex} ({activeIndex.changeRate}%)
+                                        {activeIndex.currentIndex} ({Number(activeIndex.changeRate) > 0 ? '+' : ''}{activeIndex.changeRate}%)
                                     </span>
                                 </span>
                             </div>
