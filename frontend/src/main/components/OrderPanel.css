@@ -478,7 +478,7 @@
     height: 17px;
     margin: 0;
     border-radius: 5px;
-    border: 1.5px solid var(--color-border);
+    border: 1.5px solid #4a4f59;
     background: var(--color-surface);
     cursor: pointer;
     flex-shrink: 0;
