@@ -93,8 +93,16 @@
     font-weight: 700;
     word-break: break-all;
     max-width: 100%;
+    width: 100%;
+    text-align: right;
 }
-.mam-cumulative__rate { font-size: 11px; font-weight: 600; }
+
+.mam-cumulative__rate {
+    font-size: 11px;
+    font-weight: 600;
+    width: 100%;
+    text-align: right;
+}
 
 .mam-top-row {
     display: flex;
@@ -433,3 +441,11 @@
     padding: 14px 0 10px;
     letter-spacing: 0.04em;
 }
+
+.neutral { color: #9ca3af; }
+
+.mam-cumulative--neutral {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+.mam-cumulative--neutral::before { background: #9ca3af; }

@@ -15,8 +15,8 @@ interface Props {
 type Tab = "account" | "holdings" | "leverage" | "profit";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
-const fmtSigned = (n: number) => (n >= 0 ? `+${fmt(n)}` : `${fmt(n)}`);
-const fmtRate = (n: number) => (n >= 0 ? `+${n.toFixed(2)}%` : `${n.toFixed(2)}%`);
+const fmtSigned = (n: number) => (n > 0 ? `+${fmt(n)}` : `${fmt(n)}`);
+const fmtRate = (n: number) => (n > 0 ? `+${n.toFixed(2)}%` : `${n.toFixed(2)}%`);
 
 const MARGIN_STATUS_LABEL: Record<MarginStatus, string> = {
     NORMAL: "정상",
@@ -138,22 +138,40 @@ export default function MyAccountModal({ open, onClose }: Props) {
                         <>
                             <div className="mam-top-row">
                                 <div className="mam-summary-cards">
-                                    <div className={`mam-cumulative ${account.accumulatedProfit >= 0 ? "mam-cumulative--positive" : "mam-cumulative--negative"}`}>
+                                    <div className={`mam-cumulative ${
+                                        account.accumulatedProfit > 0 ? "mam-cumulative--positive" :
+                                            account.accumulatedProfit < 0 ? "mam-cumulative--negative" : "mam-cumulative--neutral"
+                                    }`}>
                                         <span className="mam-cumulative__label">누적 손익</span>
-                                        <span className={`mam-cumulative__value ${account.accumulatedProfit >= 0 ? "positive" : "negative"}`}>
+                                        <span className={`mam-cumulative__value ${
+                                            account.accumulatedProfit > 0 ? "positive" :
+                                                account.accumulatedProfit < 0 ? "negative" : "neutral"
+                                        }`}>
                                             {fmtSigned(account.accumulatedProfit)} 원
                                         </span>
-                                        <span className={`mam-cumulative__rate ${account.accumulatedProfitRate >= 0 ? "positive" : "negative"}`}>
+                                        <span className={`mam-cumulative__rate ${
+                                            account.accumulatedProfitRate > 0 ? "positive" :
+                                                account.accumulatedProfitRate < 0 ? "negative" : "neutral"
+                                        }`}>
                                             {fmtRate(account.accumulatedProfitRate)}
                                         </span>
                                     </div>
 
-                                    <div className={`mam-cumulative ${account.totalProfit >= 0 ? "mam-cumulative--positive" : "mam-cumulative--negative"}`}>
+                                    <div className={`mam-cumulative ${
+                                        account.totalProfit > 0 ? "mam-cumulative--positive" :
+                                            account.totalProfit < 0 ? "mam-cumulative--negative" : "mam-cumulative--neutral"
+                                    }`}>
                                         <span className="mam-cumulative__label">평가 손익</span>
-                                        <span className={`mam-cumulative__value ${account.totalProfit >= 0 ? "positive" : "negative"}`}>
+                                        <span className={`mam-cumulative__value ${
+                                            account.totalProfit > 0 ? "positive" :
+                                                account.totalProfit < 0 ? "negative" : "neutral"
+                                        }`}>
                                             {fmtSigned(account.totalProfit)} 원
                                         </span>
-                                        <span className={`mam-cumulative__rate ${account.totalProfitRate >= 0 ? "positive" : "negative"}`}>
+                                        <span className={`mam-cumulative__rate ${
+                                            account.totalProfitRate > 0 ? "positive" :
+                                                account.totalProfitRate < 0 ? "negative" : "neutral"
+                                        }`}>
                                             {fmtRate(account.totalProfitRate)}
                                         </span>
                                     </div>
@@ -213,7 +231,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                     </div>
                                     <div className="mam-cell">
                                         <span className="mam-cell__label">레버리지 대출금</span>
-                                        <span className="mam-cell__value negative">{fmt(account.leverageLoanTotal ?? 0)} 원</span>
+                                        <span className="mam-cell__value">{fmt(account.leverageLoanTotal ?? 0)} 원</span>
                                     </div>
                                 </div>
                             </div>
