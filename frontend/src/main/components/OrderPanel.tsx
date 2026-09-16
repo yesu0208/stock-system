@@ -503,7 +503,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 <div className="form-row">
                     <span className="form-label">예상 가격</span>
                     <div className="stepper stepper--readonly">
-                        <span className="stepper__btn--ghost" aria-hidden="true" />
+                        <button className="stepper__btn" disabled aria-hidden="true">−</button>   {/* [수정] ghost span → 실제 button(disabled)으로 교체 — 수량 스테퍼와 렌더링 폭을 완전히 동일하게 맞춰 정렬 어긋남 해결 */}
                         <input
                             className="stepper__input stepper__input--wide stepper__input--readonly"
                             type="text"
@@ -511,7 +511,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                             tabIndex={-1}
                             value={marketPrice > 0 ? formatNumber(marketPrice) : "—"}
                         />
-                        <span className="stepper__btn--ghost" aria-hidden="true" />
+                        <button className="stepper__btn" disabled aria-hidden="true">+</button>   {/* [수정] ghost span → 실제 button(disabled)으로 교체 */}
                         <span className="stepper__unit">원</span>
                     </div>
                 </div>
