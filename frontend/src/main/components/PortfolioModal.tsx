@@ -214,7 +214,7 @@ export default function PortfolioModal({ open, onClose }: Props) {
     const fmt = (n: number) => n.toLocaleString("ko-KR");
     const fmtRate = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
     const fmtSigned = (n: number) => `${n > 0 ? "+" : ""}${fmt(n)}`;
-    const cls = (n: number) => n >= 0 ? "pf__pos" : "pf__neg";
+    const cls = (n: number) => n > 0 ? "pf__pos" : n < 0 ? "pf__neg" : "pf__neutral";
 
     const [selectedSector, setSelectedSector] = useState<string | null>(null);
     const [sectorOrder, setSectorOrder] = useState<string[]>([]);
@@ -328,7 +328,10 @@ export default function PortfolioModal({ open, onClose }: Props) {
                             <span className="pf-card__value">{fmt(account.totalValue)}원</span>
                         </div>
 
-                        <div className={`pf-card pf-card--accent ${account.accumulatedProfit >= 0 ? "pf-card--pos" : "pf-card--neg"}`}>
+                        <div className={`pf-card pf-card--accent ${
+                            account.accumulatedProfit > 0 ? "pf-card--pos" :
+                                account.accumulatedProfit < 0 ? "pf-card--neg" : "pf-card--neutral"
+                        }`}>
                             <span className="pf-card__label">누적손익</span>
                             <span className={`pf-card__value ${cls(account.accumulatedProfit)}`}>
                                 {fmtSigned(account.accumulatedProfit)}원
@@ -338,7 +341,10 @@ export default function PortfolioModal({ open, onClose }: Props) {
                             </span>
                         </div>
 
-                        <div className={`pf-card pf-card--accent ${account.totalProfit >= 0 ? "pf-card--pos" : "pf-card--neg"}`}>
+                        <div className={`pf-card pf-card--accent ${
+                            account.totalProfit > 0 ? "pf-card--pos" :
+                                account.totalProfit < 0 ? "pf-card--neg" : "pf-card--neutral"
+                        }`}>
                             <span className="pf-card__label">평가손익</span>
                             <span className={`pf-card__value ${cls(account.totalProfit)}`}>
                                 {fmtSigned(account.totalProfit)}원
