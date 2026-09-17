@@ -268,8 +268,8 @@ export default function OrderHistoryModal() {
                 size: 20,
                 ...(mainTab !== "미체결" && {
                     stockCode: filter.stockCode || undefined,
-                    from: filter.dateFrom ? `${filter.dateFrom}T00:00:00` : undefined,
-                    to: filter.dateTo ? `${filter.dateTo}T23:59:59` : undefined,
+                    from: filter.dateFrom ? `${filter.dateFrom}T00:00:00+09:00` : undefined,
+                    to: filter.dateTo ? `${filter.dateTo}T23:59:59+09:00` : undefined,
                 }),
             });
             setItems((prev) => (pageToLoad === 0 ? res.items : [...prev, ...res.items]));
