@@ -24,7 +24,7 @@ public record AutoOrderResponseMessage(
     private static double marginRateOf(LeverageRatio ratio) {
         return switch (ratio) {
             case SPOT -> 1.0;
-            case X1_5 -> 0.667;
+            case X1_5 -> 1.0 / 1.5;
             case X2 -> 0.5;
             case X2_5 -> 0.4;
         };

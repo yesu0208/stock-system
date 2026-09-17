@@ -429,6 +429,16 @@
     flex: 1;
 }
 
+.order-panel .order-btn-row > .tt-wrapper {
+    flex: 1;
+    display: flex;
+}
+
+.order-panel .order-btn-row > .tt-wrapper > .order-btn {
+    width: 100%;
+    height: 100%;
+}
+
 .order-panel .credit-area {
     display: flex;
     flex-direction: column;
@@ -541,10 +551,40 @@
 }
 
 .order-panel .leverage-btn--active {
-    background: rgba(124, 92, 255, 0.12);
-    border-color: #7c5cff;
-    color: #7c5cff;
     font-weight: 700;
+}
+
+.order-panel .leverage-btn.lev-2 {
+    color: #7dd3fc;
+    border-color: rgba(125, 211, 252, 0.3);
+    background: rgba(125, 211, 252, 0.06);
+}
+
+.order-panel .leverage-btn.lev-3 {
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.3);
+    background: rgba(251, 191, 36, 0.06);
+}
+
+.order-panel .leverage-btn.lev-5 {
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.3);
+    background: rgba(248, 113, 113, 0.06);
+}
+
+.order-panel .leverage-btn.lev-2.leverage-btn--active {
+    background: rgba(125, 211, 252, 0.18);
+    border-color: #7dd3fc;
+}
+
+.order-panel .leverage-btn.lev-3.leverage-btn--active {
+    background: rgba(251, 191, 36, 0.18);
+    border-color: #fbbf24;
+}
+
+.order-panel .leverage-btn.lev-5.leverage-btn--active {
+    background: rgba(248, 113, 113, 0.18);
+    border-color: #f87171;
 }
 
 .order-panel .leverage-btn:disabled {
@@ -560,12 +600,23 @@
 }
 
 .order-panel .credit-area__margin-label {
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
 }
 
 .order-panel .credit-area__margin-value {
     font-weight: 700;
-    color: #7c5cff;
+}
+
+.order-panel .credit-area__margin-value.lev-2 {
+    color: #7dd3fc;
+}
+
+.order-panel .credit-area__margin-value.lev-3 {
+    color: #fbbf24;
+}
+
+.order-panel .credit-area__margin-value.lev-5 {
+    color: #f87171;
 }
 
 .order-panel .credit-area__row2--disabled .credit-area__margin-label,

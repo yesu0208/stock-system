@@ -5,12 +5,20 @@ import { useOrderPrice } from "../context/OrderPriceContext";
 import { useStock } from "../context/StockContext";
 import { useStockRealtime } from "../context/StockRealtimeContext";
 import { useAccount } from "../context/AccountContext";
+import { useRealtime } from "../context/RealtimeContext";
+import { useMsg } from "../context/MsgContext";
+import { useUser } from "../context/UserContext";
 import { FaSlidersH } from "react-icons/fa";
 import AdvancedOrder from "./modal/AdvancedOrder";
 import OrderConfirmModal from "./modal/order/OrderConfirmModal";
 import CancelConfirmModal from "./modal/cancel/CancelConfirmModal";
 import Tooltip from "../../tooltip/Tooltip";
-import type { LeverageRatio } from "../../types/order";
+import type { RankTier } from "../../types/rank";
+import type { LeverageRatio, OrderResultResponse } from "../../types/order";
+import type { CancelResultResponse } from "../../types/cancel";
+import type { AutoOrderResultResponse } from "../../types/autoOrder";
+import type { AutoCancelResultResponse } from "../../types/autoCancel";
+import type { TradeResponse } from "../../types/trade";
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -26,10 +34,30 @@ const RATIO_OPTIONS: { label: string; ratio: number }[] = [
 ];
 
 const LEVERAGE_OPTIONS: { leverage: number; label: string; marginRate: number; apiValue: LeverageRatio }[] = [
-    { leverage: 1.5, label: "1.5배", marginRate: 66.7, apiValue: "X1_5" },
-    { leverage: 2,   label: "2배",   marginRate: 50,   apiValue: "X2" },
-    { leverage: 2.5, label: "2.5배", marginRate: 40,   apiValue: "X2_5" },
+    { leverage: 1.5, label: "1.5x", marginRate: 66.7, apiValue: "X1_5" },
+    { leverage: 2,   label: "2x",   marginRate: 50,   apiValue: "X2" },
+    { leverage: 2.5, label: "2.5x", marginRate: 40,   apiValue: "X2_5" },
 ];
+
+const RANK_ORDER: RankTier[] = ["UNRANKED", "BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "MASTER"];
+
+const LEVERAGE_REQUIRED_TIER: Record<number, RankTier | null> = {
+    1.5: null,
+    2:   "GOLD",
+    2.5: "PLATINUM",
+};
+
+function isRankAtLeast(current: RankTier | undefined, required: RankTier): boolean {
+    if (!current) return false;
+    return RANK_ORDER.indexOf(current) >= RANK_ORDER.indexOf(required);
+}
+
+function getLeverageColorClass(leverage: number): string {
+    return leverage === 1.5 ? "lev-2" :
+        leverage === 2   ? "lev-3" :
+            leverage === 2.5 ? "lev-5" :
+                "lev-other";
+}
 
 function formatNumber(value: number): string {
     return value.toLocaleString();
@@ -120,6 +148,75 @@ export default function OrderPanel() {
     const { selectedStock } = useStock();
 
     const isUnsupported = !selectedStock.realtimeSupported;
+
+    const { subscribeDestination } = useRealtime();
+    const { success, error } = useMsg();
+
+    useEffect(() => {
+        const unsubOrder = subscribeDestination(
+            "/user/sub/order/result",
+            (data: OrderResultResponse) => {
+                const sideLabel = data.orderType === "BUY" ? "매수" : "매도";
+
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} ${sideLabel} 주문이 접수되었습니다.`);
+                } else {
+                    error(`${sideLabel} 주문 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        const unsubCancel = subscribeDestination(
+            "/user/sub/cancel",
+            (data: CancelResultResponse) => {
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} 주문이 취소되었습니다.`);
+                } else {
+                    error(`주문 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        const unsubAutoOrder = subscribeDestination(
+            "/user/sub/auto/order/result",
+            (data: AutoOrderResultResponse) => {
+                const sideLabel = data.autoOrderType === "BUY" ? "자동 매수" : "자동 매도";
+
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} ${sideLabel} 주문이 등록되었습니다.`);
+                } else {
+                    error(`${sideLabel} 등록 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        const unsubAutoCancel = subscribeDestination(
+            "/user/sub/auto/cancel",
+            (data: AutoCancelResultResponse) => {
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} 자동주문이 취소되었습니다.`);
+                } else {
+                    error(`자동주문 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        const unsubTrade = subscribeDestination(
+            "/user/sub/trade",
+            (data: TradeResponse) => {
+                const sideLabel = data.tradeType === "BUY" ? "매수" : "매도";
+                success(`${data.stockCode} ${data.tradePrice.toLocaleString()}원 ${data.tradeQuantity}주 ${sideLabel} 체결`);
+            }
+        );
+
+        return () => {
+            unsubOrder();
+            unsubCancel();
+            unsubAutoOrder();
+            unsubAutoCancel();
+            unsubTrade();
+        };
+    }, [subscribeDestination, success, error]);
 
     return (
         <div className="order-panel">
@@ -214,6 +311,8 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const { account } = useAccount();
 
+    const { user } = useUser();
+
     const stockInfo = account?.stocks[selectedStock.code];
     const holding = stockInfo
         ? {
@@ -248,6 +347,9 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const isBuy           = mode === "buy";
     const accentClass     = isBuy ? "accent--buy" : "accent--sell";
+
+    const requiredTier = isCredit ? LEVERAGE_REQUIRED_TIER[leverage] : null;
+    const isLeverageAllowed = !requiredTier || isRankAtLeast(user?.rank?.tier, requiredTier);
 
     const marketPrice = isBuy
         ? (orderbook?.asks && orderbook.asks.length > 0
@@ -356,6 +458,24 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 estimatedAmountRaw;
 
     const showEstimatedBeforeAfter = isCredit;
+
+    const leverageDisabledReason =
+        isCredit && !isLeverageAllowed ? `${requiredTier} 등급 이상 가능` : null;
+    const quantityDisabledReason =
+        quantity <= 0 ? "수량 입력 필요" : null;
+
+    const disabledTooltipText = leverageDisabledReason ?? quantityDisabledReason ?? "";
+    const isOrderDisabled = leverageDisabledReason !== null || quantityDisabledReason !== null;
+
+    const orderButton = (
+        <button
+            className={`order-btn ${isBuy ? "order-btn--buy" : "order-btn--sell"}`}
+            onClick={handleOrder}
+            disabled={isOrderDisabled}
+        >
+            {isCredit ? "신용" : "현금"} {isBuy ? "매수" : "매도"}
+        </button>
+    );
 
     return (
         <div className="trade-form">
@@ -542,10 +662,8 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                                     key={lv}
                                     type="button"
                                     disabled={!isCredit}
-                                    className={`leverage-btn ${
-                                        isCredit && leverage === lv
-                                            ? `leverage-btn--active leverage-btn--${lv}`
-                                            : ""
+                                    className={`leverage-btn ${getLeverageColorClass(lv)} ${
+                                        isCredit && leverage === lv ? "leverage-btn--active" : ""
                                     }`}
                                     onClick={() => setLeverage(lv)}
                                 >
@@ -557,17 +675,13 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
                     <div className={`credit-area__row2 ${!isCredit ? "credit-area__row2--disabled" : ""}`}>
                         <span className="credit-area__margin-label">개시증거금률</span>
-                        <span className="credit-area__margin-value">{selectedLeverageOption.marginRate}%</span>
+                        <span className={`credit-area__margin-value ${getLeverageColorClass(leverage)}`}>{selectedLeverageOption.marginRate}%</span>
                     </div>
                 </div>
 
-                <button
-                    className={`order-btn ${isBuy ? "order-btn--buy" : "order-btn--sell"}`}
-                    onClick={handleOrder}
-                    disabled={quantity <= 0}
-                >
-                    {isCredit ? "신용" : "현금"} {isBuy ? "매수" : "매도"}
-                </button>
+                <Tooltip text={disabledTooltipText} placement="top">
+                    {orderButton}
+                </Tooltip>
             </div>
 
             {confirmInfo && (
@@ -676,7 +790,12 @@ function CancelTab({ orders }: { orders: PendingOrder[] }) {
                                     <span className="pending-item__stock-name">{order.stockName}</span>
                                     <span className="pending-item__stock-code">{order.stockCode}</span>
                                     <span className="pending-item__time">
-                                        {order.time.slice(11, 19)}
+                                        {new Date(order.time).toLocaleTimeString("ko-KR", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            second: "2-digit",
+                                            hour12: false,
+                                        })}
                                     </span>
                                 </div>
 
