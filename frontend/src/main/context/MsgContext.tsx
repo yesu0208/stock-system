@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useMemo } from 'react' // [수정] useMemo 추가
 import type { ReactNode } from 'react'
 import { useToast } from './ToastContext'
 
@@ -13,11 +13,11 @@ const MsgContext = createContext<MsgContextValue | null>(null)
 export function MsgProvider({ children }: { children: ReactNode }) {
     const { showToast } = useToast()
 
-    const value: MsgContextValue = {
-        success: (message) => showToast(message, 'success'),
-        error:   (message) => showToast(message, 'error'),
-        info:    (message) => showToast(message, 'info'),
-    }
+    const value: MsgContextValue = useMemo(() => ({
+        success: (message: string) => showToast(message, 'success'),
+        error:   (message: string) => showToast(message, 'error'),
+        info:    (message: string) => showToast(message, 'info'),
+    }), [showToast])
 
     return <MsgContext.Provider value={value}>{children}</MsgContext.Provider>
 }

@@ -5,12 +5,15 @@ import { useOrderPrice } from "../context/OrderPriceContext";
 import { useStock } from "../context/StockContext";
 import { useStockRealtime } from "../context/StockRealtimeContext";
 import { useAccount } from "../context/AccountContext";
+import { useRealtime } from "../context/RealtimeContext"; // [신규]
+import { useMsg } from "../context/MsgContext"; // [신규]
 import { FaSlidersH } from "react-icons/fa";
 import AdvancedOrder from "./modal/AdvancedOrder";
 import OrderConfirmModal from "./modal/order/OrderConfirmModal";
 import CancelConfirmModal from "./modal/cancel/CancelConfirmModal";
 import Tooltip from "../../tooltip/Tooltip";
-import type { LeverageRatio } from "../../types/order";
+import type { LeverageRatio, OrderResultResponse } from "../../types/order"; // [수정] OrderResultResponse 추가
+import type { CancelResultResponse } from "../../types/cancel"; // [신규]
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -120,6 +123,43 @@ export default function OrderPanel() {
     const { selectedStock } = useStock();
 
     const isUnsupported = !selectedStock.realtimeSupported;
+
+    // [신규] 주문/취소 처리 결과를 실시간으로 받아 토스트로 안내
+    // (백엔드가 REST 응답과 별개로, 비동기 처리 결과를 WebSocket으로 push함)
+    const { subscribeDestination } = useRealtime();
+    const { success, error } = useMsg();
+
+    useEffect(() => {
+        const unsubOrder = subscribeDestination(
+            "/user/sub/order/result",
+            (data: OrderResultResponse) => {
+                const sideLabel = data.orderType === "BUY" ? "매수" : "매도";
+
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} ${sideLabel} 주문이 접수되었습니다.`);
+                } else {
+                    error(`${sideLabel} 주문 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        // [수정] "/user/sub/cancel/result" → "/user/sub/cancel" (백엔드 CancelResponsePushService 확인 결과)
+        const unsubCancel = subscribeDestination(
+            "/user/sub/cancel",
+            (data: CancelResultResponse) => {
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} 주문이 취소되었습니다.`);
+                } else {
+                    error(`주문 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        return () => {
+            unsubOrder();
+            unsubCancel();
+        };
+    }, [subscribeDestination, success, error]);
 
     return (
         <div className="order-panel">
