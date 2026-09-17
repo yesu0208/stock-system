@@ -142,6 +142,13 @@ export default function StockInfoPanel() {
         return "white";
     };
 
+    const getRateColor = (value?: string): string => {
+        if (!value) return "white";
+        const n = parseFloat(value.replace(/,/g, ""));
+        if (isNaN(n) || n === 0) return "white";
+        return n > 0 ? "#ff6347" : "#4f9dff";
+    };
+
     const getForeignColor = (type: "sell" | "buy" | "diff", value: string): string => {
         if (type === "sell") return "#4f9dff";
         if (type === "buy") return "#ff6347";
@@ -267,20 +274,20 @@ export default function StockInfoPanel() {
                 {tab === "info" && (
                     <table className="info-table">
                         <tbody>
-                        <Row2
-                            a="시가총액" av={formatMarketCap(info.marketCap)}
-                        />
-
                         <Row3
-                            a="주식수" av={withUnit(info.listedShares, "주")}
+                            a="시가총액" av={formatMarketCap(info.marketCap)}
                             b="액면가" bv={formatWon(info.parValue)}
                             c="매매단위" cv={withUnit(info.tradingUnit, "주")}
                         />
 
-                        <Row3
+                        <Row2
+                            a="주식수" av={withUnit(info.listedShares, "주")}
+                            b="외인한도" bv={withUnit(info.foreignLimit, "주")}
+                        />
+
+                        <Row2
                             a="외인보유" av={withUnit(info.foreignOwned, "주")}
                             b="외인비율" bv={info.foreignRate}
-                            c="외인한도" cv={withUnit(info.foreignLimit, "주")}
                         />
 
                         <Row3
@@ -295,11 +302,18 @@ export default function StockInfoPanel() {
                             c="BPS" cv={formatWon(info.bps)}
                         />
 
-                        <Row3
-                            a={"배당\n수익률"} av={info.dividendYield}
-                            b="동일업종 PER" bv={withMultiplier(info.sameIndustryPer)}
-                            c="동일업종 등락률" cv={info.sameIndustryRate}
-                        />
+                        <tr>
+                            <td className="label">{"배당\n수익률"}</td>
+                            <td className="value">{info.dividendYield}</td>
+
+                            <td className="label">동일업종 PER</td>
+                            <td className="value">{withMultiplier(info.sameIndustryPer)}</td>
+
+                            <td className="label">동일업종 등락률</td>
+                            <td className="value" style={{ color: getRateColor(info.sameIndustryRate) }}>
+                                {info.sameIndustryRate}
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 )}
@@ -519,11 +533,23 @@ function Row3({
     );
 }
 
-function Row2({ a, av }: { a: string; av: string }) {
+function Row2({
+                  a, av,
+                  b, bv,
+              }: {
+    a: string; av: string;
+    b: string; bv: string;
+}) {
     return (
         <tr>
             <td className="label">{a}</td>
-            <td className="value" colSpan={5}>{av}</td>
+            <td className="value">{av}</td>
+
+            <td className="label">{b}</td>
+            <td className="value">{bv}</td>
+
+            <td className="label"></td>
+            <td className="value"></td>
         </tr>
     );
 }
