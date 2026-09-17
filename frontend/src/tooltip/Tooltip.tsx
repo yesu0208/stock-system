@@ -34,7 +34,7 @@ export default function Tooltip({ text, children, placement = "top" }: TooltipPr
             onMouseLeave={() => setVisible(false)}
         >
             {children}
-            {visible && createPortal(
+            {visible && text && createPortal(
                 <span
                     className={`tt-box tt-${placement}`}
                     style={{ top: coords.top, left: coords.left }}

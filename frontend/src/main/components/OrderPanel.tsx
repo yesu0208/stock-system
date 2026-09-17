@@ -5,15 +5,17 @@ import { useOrderPrice } from "../context/OrderPriceContext";
 import { useStock } from "../context/StockContext";
 import { useStockRealtime } from "../context/StockRealtimeContext";
 import { useAccount } from "../context/AccountContext";
-import { useRealtime } from "../context/RealtimeContext"; // [신규]
-import { useMsg } from "../context/MsgContext"; // [신규]
+import { useRealtime } from "../context/RealtimeContext";
+import { useMsg } from "../context/MsgContext";
+import { useUser } from "../context/UserContext";
 import { FaSlidersH } from "react-icons/fa";
 import AdvancedOrder from "./modal/AdvancedOrder";
 import OrderConfirmModal from "./modal/order/OrderConfirmModal";
 import CancelConfirmModal from "./modal/cancel/CancelConfirmModal";
 import Tooltip from "../../tooltip/Tooltip";
-import type { LeverageRatio, OrderResultResponse } from "../../types/order"; // [수정] OrderResultResponse 추가
-import type { CancelResultResponse } from "../../types/cancel"; // [신규]
+import type { LeverageRatio, OrderResultResponse } from "../../types/order";
+import type { CancelResultResponse } from "../../types/cancel";
+import type { RankTier } from "../../types/rank";
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -29,10 +31,30 @@ const RATIO_OPTIONS: { label: string; ratio: number }[] = [
 ];
 
 const LEVERAGE_OPTIONS: { leverage: number; label: string; marginRate: number; apiValue: LeverageRatio }[] = [
-    { leverage: 1.5, label: "1.5배", marginRate: 66.7, apiValue: "X1_5" },
-    { leverage: 2,   label: "2배",   marginRate: 50,   apiValue: "X2" },
-    { leverage: 2.5, label: "2.5배", marginRate: 40,   apiValue: "X2_5" },
+    { leverage: 1.5, label: "1.5x", marginRate: 66.7, apiValue: "X1_5" },
+    { leverage: 2,   label: "2x",   marginRate: 50,   apiValue: "X2" },
+    { leverage: 2.5, label: "2.5x", marginRate: 40,   apiValue: "X2_5" },
 ];
+
+const RANK_ORDER: RankTier[] = ["UNRANKED", "BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "MASTER"];
+
+const LEVERAGE_REQUIRED_TIER: Record<number, RankTier | null> = {
+    1.5: null,
+    2:   "GOLD",
+    2.5: "PLATINUM",
+};
+
+function isRankAtLeast(current: RankTier | undefined, required: RankTier): boolean {
+    if (!current) return false;
+    return RANK_ORDER.indexOf(current) >= RANK_ORDER.indexOf(required);
+}
+
+function getLeverageColorClass(leverage: number): string {
+    return leverage === 1.5 ? "lev-2" :
+        leverage === 2   ? "lev-3" :
+            leverage === 2.5 ? "lev-5" :
+                "lev-other";
+}
 
 function formatNumber(value: number): string {
     return value.toLocaleString();
@@ -124,8 +146,6 @@ export default function OrderPanel() {
 
     const isUnsupported = !selectedStock.realtimeSupported;
 
-    // [신규] 주문/취소 처리 결과를 실시간으로 받아 토스트로 안내
-    // (백엔드가 REST 응답과 별개로, 비동기 처리 결과를 WebSocket으로 push함)
     const { subscribeDestination } = useRealtime();
     const { success, error } = useMsg();
 
@@ -143,7 +163,6 @@ export default function OrderPanel() {
             }
         );
 
-        // [수정] "/user/sub/cancel/result" → "/user/sub/cancel" (백엔드 CancelResponsePushService 확인 결과)
         const unsubCancel = subscribeDestination(
             "/user/sub/cancel",
             (data: CancelResultResponse) => {
@@ -254,6 +273,8 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const { account } = useAccount();
 
+    const { user } = useUser();
+
     const stockInfo = account?.stocks[selectedStock.code];
     const holding = stockInfo
         ? {
@@ -288,6 +309,9 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const isBuy           = mode === "buy";
     const accentClass     = isBuy ? "accent--buy" : "accent--sell";
+
+    const requiredTier = isCredit ? LEVERAGE_REQUIRED_TIER[leverage] : null;
+    const isLeverageAllowed = !requiredTier || isRankAtLeast(user?.rank?.tier, requiredTier);
 
     const marketPrice = isBuy
         ? (orderbook?.asks && orderbook.asks.length > 0
@@ -396,6 +420,24 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 estimatedAmountRaw;
 
     const showEstimatedBeforeAfter = isCredit;
+
+    const leverageDisabledReason =
+        isCredit && !isLeverageAllowed ? `${requiredTier} 등급 이상 가능` : null;
+    const quantityDisabledReason =
+        quantity <= 0 ? "수량 입력 필요" : null;
+
+    const disabledTooltipText = leverageDisabledReason ?? quantityDisabledReason ?? "";
+    const isOrderDisabled = leverageDisabledReason !== null || quantityDisabledReason !== null;
+
+    const orderButton = (
+        <button
+            className={`order-btn ${isBuy ? "order-btn--buy" : "order-btn--sell"}`}
+            onClick={handleOrder}
+            disabled={isOrderDisabled}
+        >
+            {isCredit ? "신용" : "현금"} {isBuy ? "매수" : "매도"}
+        </button>
+    );
 
     return (
         <div className="trade-form">
@@ -582,10 +624,8 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                                     key={lv}
                                     type="button"
                                     disabled={!isCredit}
-                                    className={`leverage-btn ${
-                                        isCredit && leverage === lv
-                                            ? `leverage-btn--active leverage-btn--${lv}`
-                                            : ""
+                                    className={`leverage-btn ${getLeverageColorClass(lv)} ${
+                                        isCredit && leverage === lv ? "leverage-btn--active" : ""
                                     }`}
                                     onClick={() => setLeverage(lv)}
                                 >
@@ -597,17 +637,13 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
                     <div className={`credit-area__row2 ${!isCredit ? "credit-area__row2--disabled" : ""}`}>
                         <span className="credit-area__margin-label">개시증거금률</span>
-                        <span className="credit-area__margin-value">{selectedLeverageOption.marginRate}%</span>
+                        <span className={`credit-area__margin-value ${getLeverageColorClass(leverage)}`}>{selectedLeverageOption.marginRate}%</span>
                     </div>
                 </div>
 
-                <button
-                    className={`order-btn ${isBuy ? "order-btn--buy" : "order-btn--sell"}`}
-                    onClick={handleOrder}
-                    disabled={quantity <= 0}
-                >
-                    {isCredit ? "신용" : "현금"} {isBuy ? "매수" : "매도"}
-                </button>
+                <Tooltip text={disabledTooltipText} placement="top">
+                    {orderButton}
+                </Tooltip>
             </div>
 
             {confirmInfo && (
