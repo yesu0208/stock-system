@@ -7,6 +7,7 @@ import { STOCKS } from "../data/stocks";
 import { stockNameMap } from "../../constants/stocks";
 import type { OrderHistoryItem, TradeHistoryItem, AutoOrderHistoryItem, HistoryPageResponse } from "../../types/history";
 import "./OrderHistoryModal.css";
+import Tooltip from "../../tooltip/Tooltip";
 
 type MainTab = "주문" | "취소" | "미체결" | "체결";
 type SubTab = "일반" | "자동";
@@ -223,9 +224,11 @@ function SearchBar({
                 onChange={(e) => handleDateToChange(e.target.value)}
             />
 
-            <button className="oh-search-reset" onClick={onReset} title="검색 초기화">
-                ✕
-            </button>
+            <Tooltip text="검색 초기화" placement="top">
+                <button className="oh-search-reset" onClick={onReset}>
+                    ✕
+                </button>
+            </Tooltip>
         </div>
     );
 }
