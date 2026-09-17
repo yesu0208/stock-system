@@ -64,7 +64,7 @@ function MarginCell({ notionalValue, initialMargin }: { notionalValue: number; i
         <span className="oh-col oh-margin">
             <span className="oh-margin-notional">{notionalValue.toLocaleString()}</span>
             <span className="oh-margin-initial">
-                {initialMargin != null ? initialMargin.toLocaleString() : <span className="oh-dash">—</span>}
+                {initialMargin != null ? initialMargin.toLocaleString() : <span className="oh-dash">-</span>}
             </span>
         </span>
     );
@@ -74,10 +74,10 @@ function LiquidationCell({ maintenanceMarginRate, liquidationPrice }: { maintena
     return (
         <span className="oh-col oh-liquidation">
             <span className="oh-liq-rate">
-                {maintenanceMarginRate != null ? `${(maintenanceMarginRate * 100).toFixed(0)}%` : <span className="oh-dash">—</span>}
+                {maintenanceMarginRate != null ? `${(maintenanceMarginRate * 100).toFixed(0)}%` : <span className="oh-dash">-</span>}
             </span>
             <span className="oh-liq-price">
-                {liquidationPrice != null ? liquidationPrice.toLocaleString() : <span className="oh-dash">—</span>}
+                {liquidationPrice != null ? liquidationPrice.toLocaleString() : <span className="oh-dash">-</span>}
             </span>
         </span>
     );
@@ -408,8 +408,14 @@ export default function OrderHistoryModal() {
                         {showTrigger && <span className="oh-col oh-trigger">감시가</span>}
                         <span className="oh-col oh-qty">잔량/수량</span>
                         <span className="oh-col oh-price">가격</span>
-                        <span className="oh-col oh-margin">명목가치/증거금</span>
-                        <span className="oh-col oh-liquidation">유지증거금율/청산가</span>
+                        <span className="oh-col oh-margin oh-header-split">
+                            <span className="oh-header-line">주문금액</span>
+                            <span className="oh-header-line">개시증거금</span>
+                        </span>
+                        <span className="oh-col oh-liquidation oh-header-split">
+                            <span className="oh-header-line">유지증거금률</span>
+                            <span className="oh-header-line">유지증거금 기준가</span>
+                        </span>
                         <span className="oh-col oh-cancel">취소</span>
                     </div>
                 ) : (
@@ -422,7 +428,10 @@ export default function OrderHistoryModal() {
                         {showTrigger && <span className="oh-col oh-trigger">감시가</span>}
                         <span className="oh-col oh-qty">수량</span>
                         <span className="oh-col oh-price">가격</span>
-                        <span className="oh-col oh-margin">명목가치/증거금</span>
+                        <span className="oh-col oh-margin oh-header-split">
+                            <span className="oh-header-line">주문금액</span>
+                            <span className="oh-header-line">개시증거금</span>
+                        </span>
                     </div>
                 )}
 
@@ -430,7 +439,7 @@ export default function OrderHistoryModal() {
                     <ul className="oh-list">
                         {items.length === 0 && !loading ? (
                             <li className="oh-empty">
-                                {!isPending && hasFilter ? "검색 결과가 없습니다." : "내역이 없습니다."}
+                                {!isPending && hasFilter ? "검색 결과가 없습니다" : "내역이 없습니다"}
                             </li>
                         ) : (
                             items.map((item) => {
@@ -481,7 +490,7 @@ export default function OrderHistoryModal() {
                                             {showTrigger && <span className="oh-col oh-order-type">조건부</span>}
                                             {showTrigger && (
                                                 <span className="oh-col oh-trigger">
-                                                    {triggerPrice != null ? triggerPrice.toLocaleString() : <span className="oh-dash">—</span>}
+                                                    {triggerPrice != null ? triggerPrice.toLocaleString() : <span className="oh-dash">-</span>}
                                                 </span>
                                             )}
                                             <span className="oh-col oh-qty">
@@ -516,7 +525,7 @@ export default function OrderHistoryModal() {
                                             <span className="oh-col oh-trigger">
                                                 {auto && (item as AutoOrderHistoryItem).triggerPrice != null
                                                     ? (item as AutoOrderHistoryItem).triggerPrice.toLocaleString()
-                                                    : <span className="oh-dash">—</span>}
+                                                    : <span className="oh-dash">-</span>}
                                             </span>
                                         )}
                                         <span className="oh-col oh-qty">{item.orderQuantity.toLocaleString()}주</span>
