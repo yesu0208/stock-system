@@ -13,9 +13,11 @@ import AdvancedOrder from "./modal/AdvancedOrder";
 import OrderConfirmModal from "./modal/order/OrderConfirmModal";
 import CancelConfirmModal from "./modal/cancel/CancelConfirmModal";
 import Tooltip from "../../tooltip/Tooltip";
+import type { RankTier } from "../../types/rank";
 import type { LeverageRatio, OrderResultResponse } from "../../types/order";
 import type { CancelResultResponse } from "../../types/cancel";
-import type { RankTier } from "../../types/rank";
+import type { AutoOrderResultResponse } from "../../types/autoOrder";
+import type { AutoCancelResultResponse } from "../../types/autoCancel";
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -174,9 +176,35 @@ export default function OrderPanel() {
             }
         );
 
+        const unsubAutoOrder = subscribeDestination(
+            "/user/sub/auto/order/result",
+            (data: AutoOrderResultResponse) => {
+                const sideLabel = data.autoOrderType === "BUY" ? "자동 매수" : "자동 매도";
+
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} ${sideLabel} 주문이 등록되었습니다.`);
+                } else {
+                    error(`${sideLabel} 등록 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        const unsubAutoCancel = subscribeDestination(
+            "/user/sub/auto/cancel",
+            (data: AutoCancelResultResponse) => {
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} 자동주문이 취소되었습니다.`);
+                } else {
+                    error(`자동주문 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
         return () => {
             unsubOrder();
             unsubCancel();
+            unsubAutoOrder();
+            unsubAutoCancel();
         };
     }, [subscribeDestination, success, error]);
 
