@@ -104,7 +104,14 @@
 .stock-info-panel .tab-content {
     flex: 1;
     overflow-y: auto;
-    padding-top: 16px;
+    padding-top: 0;
+}
+
+.stock-info-panel .company-summary,
+.stock-info-panel > .tab-content > .info-table,
+.stock-info-panel .price-tab,
+.stock-info-panel .broker-tab-content {
+    margin-top: 16px;
 }
 
 .stock-info-panel .info-table {
@@ -238,9 +245,30 @@
 
 .stock-info-panel .trend-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     table-layout: fixed;
     font-size: 11px;
+}
+
+.stock-info-panel .trend-sticky-spacer {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    height: 16px;
+    background: #0f172a;
+    margin: 0 -12px;
+}
+
+.stock-info-panel .trend-table thead {
+    position: sticky;
+    top: 16px;
+    z-index: 2;
+    background: #0f172a;
+}
+
+.stock-info-panel .trend-table thead tr {
+    background: #0f172a;
 }
 
 .stock-info-panel .trend-table td {
@@ -251,16 +279,17 @@
     color: white;
 }
 
+.stock-info-panel .trend-table tbody tr {
+    position: relative;
+    z-index: 1;
+}
+
 .stock-info-panel .trend-table tr.broker-header-row td {
     color: #94a3b8;
     font-size: 11px;
     font-weight: 600;
     background: #0f172a;
     border-bottom: 1px solid #334155;
-}
-
-.stock-info-panel .trend-table tr:hover:not(.broker-header-row) td {
-    background: rgba(255, 255, 255, 0.02);
 }
 
 .stock-info-panel .trend-sentinel {
@@ -278,11 +307,6 @@
     color: #94a3b8;
     font-size: 10px;
     margin-left: 0;
-}
-
-.stock-info-panel .trend-table tr.broker-header-row--sub td {
-    font-size: 10px;
-    border-top: none;
 }
 
 .stock-info-panel.stock-info-panel--loading {
@@ -313,7 +337,7 @@
 .stock-info-panel .price-tab {
     display: flex;
     gap: 20px;
-    height: 100%;
+    height: calc(100% - 16px);
 }
 
 .stock-info-panel .price-left {

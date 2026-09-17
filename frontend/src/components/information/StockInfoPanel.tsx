@@ -192,10 +192,19 @@ export default function StockInfoPanel() {
         return n > 0 ? "#ff6347" : "#4f9dff";
     };
 
-    const getDiffColor = (diff: string): string => {
-        if (diff.startsWith("▲") || diff.startsWith("⬆")) return "#ff6347";
-        if (diff.startsWith("▼") || diff.startsWith("⬇")) return "#4f9dff";
-        return "white";
+    const getRowColorByRate = (rate: string): string => {
+        const n = parseFloat(rate.replace(/,/g, "").replace(/[^0-9.-]/g, ""));
+        if (isNaN(n) || n === 0) return "white";
+        return n > 0 ? "#ff6347" : "#4f9dff";
+    };
+
+    const formatDiffWithSign = (diff: string, rate: string): string => {
+        const formatted = formatDiff(diff);
+        const n = parseFloat(rate.replace(/,/g, "").replace(/[^0-9.-]/g, ""));
+        if (isNaN(n) || n === 0) return formatted;
+        if (n > 0 && !formatted.startsWith("+")) return `+${formatted}`;
+        if (n < 0 && !formatted.startsWith("-")) return `-${formatted}`;
+        return formatted;
     };
 
     const formatDiff = (diff: string): string => {
@@ -513,10 +522,7 @@ export default function StockInfoPanel() {
 
                 {tab === "trend" && (
                     <div>
-                        <div className="broker-desc">
-                            일별 외국인/기관 순매매 동향
-                        </div>
-
+                        <div className="trend-sticky-spacer" />
                         <table className="trend-table">
                             <colgroup>
                                 <col style={{ width: "12%" }} />
@@ -528,7 +534,7 @@ export default function StockInfoPanel() {
                                 <col style={{ width: "12%" }} />
                                 <col style={{ width: "16%" }} />
                             </colgroup>
-                            <tbody>
+                            <thead>
                             <tr className="broker-header-row">
                                 <td rowSpan={2}>날짜</td>
                                 <td rowSpan={2}>종가</td>
@@ -543,30 +549,34 @@ export default function StockInfoPanel() {
                                 <td>순매매</td>
                                 <td>보유주수(비율)</td>
                             </tr>
-
-                            {trendItems.map((t, i) => (
-                                <tr key={`${t.date}-${i}`}>
-                                    <td>{t.date}</td>
-                                    <td>{t.closePrice}</td>
-                                    <td style={{ color: getDiffColor(t.diff) }}>
-                                        {formatDiff(t.diff)}
-                                    </td>
-                                    <td style={{ color: getDiffColor(t.diff) }}>
-                                        {t.rate}
-                                    </td>
-                                    <td>{t.volume}</td>
-                                    <td style={{ color: getNetBuyColor(t.institutionNetBuy) }}>
-                                        {t.institutionNetBuy}
-                                    </td>
-                                    <td style={{ color: getNetBuyColor(t.foreignNetBuy) }}>
-                                        {t.foreignNetBuy}
-                                    </td>
-                                    <td className="trend-cell-stack">
-                                        <div>{t.foreignHoldings}</div>
-                                        <div className="trend-rate-sub">({t.foreignRate})</div>
-                                    </td>
-                                </tr>
-                            ))}
+                            </thead>
+                            <tbody>
+                            {trendItems.map((t, i) => {
+                                const rowColor = getRowColorByRate(t.rate);
+                                return (
+                                    <tr key={`${t.date}-${i}`}>
+                                        <td>{t.date}</td>
+                                        <td style={{ color: rowColor }}>{t.closePrice}</td>
+                                        <td style={{ color: rowColor }}>
+                                            {formatDiffWithSign(t.diff, t.rate)}
+                                        </td>
+                                        <td style={{ color: rowColor }}>
+                                            {t.rate}
+                                        </td>
+                                        <td>{t.volume}</td>
+                                        <td style={{ color: getNetBuyColor(t.institutionNetBuy) }}>
+                                            {t.institutionNetBuy}
+                                        </td>
+                                        <td style={{ color: getNetBuyColor(t.foreignNetBuy) }}>
+                                            {t.foreignNetBuy}
+                                        </td>
+                                        <td className="trend-cell-stack">
+                                            <div>{t.foreignHoldings}</div>
+                                            <div className="trend-rate-sub">({t.foreignRate})</div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             </tbody>
                         </table>
 
