@@ -15,7 +15,7 @@ import type {
 } from "../../api/stockInfo";
 import type { StockDetailTickMessage } from "../../types/stockDetail";
 
-type TabType = "summary" | "info" | "price" | "opinion" | "broker" | "trend";
+type TabType = "summary" | "info" | "price" | "broker" | "trend";
 
 type MergedDetail = StockDetailExtraResponse & Partial<StockDetailTickMessage>;
 
@@ -136,10 +136,52 @@ export default function StockInfoPanel() {
         if (!value || !base) return "white";
         const v = parseFloat(value.replace(/,/g, ""));
         const b = parseFloat(base.replace(/,/g, ""));
-        if (isNaN(v) || isNaN(b)) return "white";
+        if (isNaN(v) || isNaN(b) || v === 0) return "white";
         if (v > b) return "#ff6347";
         if (v < b) return "#4f9dff";
         return "white";
+    };
+
+    const formatPriceValue = (value?: string): string => {
+        if (!value) return "-";
+        const n = parseFloat(value.replace(/,/g, ""));
+        if (isNaN(n) || n === 0) return "-";
+        return value;
+    };
+
+    const getRateColor = (value?: string): string => {
+        if (!value) return "white";
+        const n = parseFloat(value.replace(/,/g, ""));
+        if (isNaN(n) || n === 0) return "white";
+        return n > 0 ? "#ff6347" : "#4f9dff";
+    };
+
+    const getOpinionIndex = (score?: string): number => {
+        if (!score) return 2;
+        const n = parseFloat(score);
+        if (isNaN(n)) return 2;
+        return Math.min(4, Math.max(0, Math.round(n) - 1));
+    };
+
+    const isOpinionEmpty = (score?: string): boolean => {
+        if (!score) return true;
+        const n = parseFloat(score);
+        return isNaN(n) || n === 0;
+    };
+
+    const getPricePosition = (current?: string, low?: string, high?: string): number => {
+        if (!current || !low || !high) return 50;
+        const c = parseFloat(current.replace(/,/g, ""));
+        const l = parseFloat(low.replace(/,/g, ""));
+        const h = parseFloat(high.replace(/,/g, ""));
+        if (isNaN(c) || isNaN(l) || isNaN(h) || h === l) return 50;
+        const pct = ((c - l) / (h - l)) * 100;
+        return Math.min(100, Math.max(0, pct));
+    };
+
+    const getLabelPosition = (current?: string, low?: string, high?: string): number => {
+        const raw = getPricePosition(current, low, high);
+        return Math.min(903, Math.max(7, raw));
     };
 
     const getForeignColor = (type: "sell" | "buy" | "diff", value: string): string => {
@@ -150,10 +192,19 @@ export default function StockInfoPanel() {
         return n > 0 ? "#ff6347" : "#4f9dff";
     };
 
-    const getDiffColor = (diff: string): string => {
-        if (diff.startsWith("▲") || diff.startsWith("⬆")) return "#ff6347";
-        if (diff.startsWith("▼") || diff.startsWith("⬇")) return "#4f9dff";
-        return "white";
+    const getRowColorByRate = (rate: string): string => {
+        const n = parseFloat(rate.replace(/,/g, "").replace(/[^0-9.-]/g, ""));
+        if (isNaN(n) || n === 0) return "white";
+        return n > 0 ? "#ff6347" : "#4f9dff";
+    };
+
+    const formatDiffWithSign = (diff: string, rate: string): string => {
+        const formatted = formatDiff(diff);
+        const n = parseFloat(rate.replace(/,/g, "").replace(/[^0-9.-]/g, ""));
+        if (isNaN(n) || n === 0) return formatted;
+        if (n > 0 && !formatted.startsWith("+")) return `+${formatted}`;
+        if (n < 0 && !formatted.startsWith("-")) return `-${formatted}`;
+        return formatted;
     };
 
     const formatDiff = (diff: string): string => {
@@ -232,13 +283,6 @@ export default function StockInfoPanel() {
                 </button>
 
                 <button
-                    className={`tab ${tab === "opinion" ? "active" : ""}`}
-                    onClick={() => setTab("opinion")}
-                >
-                    투자의견
-                </button>
-
-                <button
                     className={`tab ${tab === "broker" ? "active" : ""}`}
                     onClick={() => setTab("broker")}
                 >
@@ -258,27 +302,29 @@ export default function StockInfoPanel() {
             <div className="tab-content">
                 {tab === "summary" && (
                     <div className="company-summary">
-                        <p>{detail.companySummary}</p>
+                        {detail.companySummary?.split("\n").map((line, i) => (
+                            <p key={i}>{line}</p>
+                        ))}
                     </div>
                 )}
 
                 {tab === "info" && (
                     <table className="info-table">
                         <tbody>
-                        <Row2
-                            a="시가총액" av={formatMarketCap(info.marketCap)}
-                        />
-
                         <Row3
-                            a="주식수" av={withUnit(info.listedShares, "주")}
+                            a="시가총액" av={formatMarketCap(info.marketCap)}
                             b="액면가" bv={formatWon(info.parValue)}
                             c="매매단위" cv={withUnit(info.tradingUnit, "주")}
                         />
 
-                        <Row3
+                        <Row2
+                            a="주식수" av={withUnit(info.listedShares, "주")}
+                            b="외인한도" bv={withUnit(info.foreignLimit, "주")}
+                        />
+
+                        <Row2
                             a="외인보유" av={withUnit(info.foreignOwned, "주")}
                             b="외인비율" bv={info.foreignRate}
-                            c="외인한도" cv={withUnit(info.foreignLimit, "주")}
                         />
 
                         <Row3
@@ -293,143 +339,190 @@ export default function StockInfoPanel() {
                             c="BPS" cv={formatWon(info.bps)}
                         />
 
-                        <Row3
-                            a={"배당\n수익률"} av={info.dividendYield}
-                            b="동일업종 PER" bv={withMultiplier(info.sameIndustryPer)}
-                            c="동일업종 등락률" cv={info.sameIndustryRate}
-                        />
+                        <tr>
+                            <td className="label">{"배당\n수익률"}</td>
+                            <td className="value">{info.dividendYield}</td>
+
+                            <td className="label">동일업종 PER</td>
+                            <td className="value">{withMultiplier(info.sameIndustryPer)}</td>
+
+                            <td className="label">동일업종 등락률</td>
+                            <td className="value" style={{ color: getRateColor(info.sameIndustryRate) }}>
+                                {info.sameIndustryRate}
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 )}
 
                 {tab === "price" && (
-                    <table className="info-table">
-                        <tbody>
-                        <tr>
-                            <td className="label">현재가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.currentPrice, detail.prevPrice) }}>
-                                {detail.currentPrice ?? "-"}
-                            </td>
+                    <div className="price-tab">
+                        <div className="price-left">
+                            <div className="price-range-bar">
+                                <div className="price-range-current-wrapper">
+                                    <div
+                                        className="price-range-current"
+                                        style={{
+                                            left: `${getLabelPosition(detail.currentPrice, info.low52, info.high52)}%`
+                                        }}
+                                    >
+                                        <span className="price-range-label-title">현재가</span>
+                                        <span className="price-range-label-value">
+                                            {formatPriceValue(detail.currentPrice)}
+                                        </span>
+                                    </div>
+                                </div>
 
-                            <td className="label">전일 종가</td>
-                            <td className="value">{detail.prevPrice ?? "-"}</td>
+                                <div className="price-range-track">
+                                    <div
+                                        className="price-range-marker"
+                                        style={{
+                                            left: `${getPricePosition(detail.currentPrice, info.low52, info.high52)}%`
+                                        }}
+                                    />
+                                </div>
 
-                            <td className="label"></td>
-                            <td className="value"></td>
-                        </tr>
-                        <tr>
-                            <td className="label">고가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.highPrice, detail.prevPrice) }}>
-                                {detail.highPrice ?? "-"}
-                            </td>
+                                <div className="price-range-labels">
+                                    <div className="price-range-label">
+                                        <span className="price-range-label-title">52주 최저</span>
+                                        <span className="price-range-label-value">{formatPriceValue(info.low52)}</span>
+                                    </div>
 
-                            <td className="label">저가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.lowPrice, detail.prevPrice) }}>
-                                {detail.lowPrice ?? "-"}
-                            </td>
+                                    <div className="price-range-label price-range-label--right">
+                                        <span className="price-range-label-title">52주 최고</span>
+                                        <span className="price-range-label-value">{formatPriceValue(info.high52)}</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <td className="label">시가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.openPrice, detail.prevPrice) }}>
-                                {detail.openPrice ?? "-"}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="label">상한가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.upperLimit, detail.prevPrice) }}>
-                                {detail.upperLimit ?? "-"}
-                            </td>
+                            <table className="info-table price-detail-table">
+                                <tbody>
+                                <tr>
+                                    <td className="label">고가</td>
+                                    <td className="value" style={{ color: getPriceColor(detail.highPrice, detail.prevPrice) }}>
+                                        {formatPriceValue(detail.highPrice)}
+                                    </td>
 
-                            <td className="label">하한가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.lowerLimit, detail.prevPrice) }}>
-                                {detail.lowerLimit ?? "-"}
-                            </td>
+                                    <td className="label">저가</td>
+                                    <td className="value" style={{ color: getPriceColor(detail.lowPrice, detail.prevPrice) }}>
+                                        {formatPriceValue(detail.lowPrice)}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="label">상한가</td>
+                                    <td className="value" style={{ color: getPriceColor(detail.upperLimit, detail.prevPrice) }}>
+                                        {formatPriceValue(detail.upperLimit)}
+                                    </td>
 
-                            <td className="label"></td>
-                            <td className="value"></td>
-                        </tr>
-                        <tr>
-                            <td className="label">52주 최고</td>
-                            <td className="value">{info.high52}</td>
+                                    <td className="label">하한가</td>
+                                    <td className="value" style={{ color: getPriceColor(detail.lowerLimit, detail.prevPrice) }}>
+                                        {formatPriceValue(detail.lowerLimit)}
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                            <td className="label">52주 최저</td>
-                            <td className="value">{info.low52}</td>
+                        <div className="price-right">
+                            <div className="consensus-header">
+                                <span>컨센서스</span>
+                            </div>
 
-                            <td className="label"></td>
-                            <td className="value"></td>
-                        </tr>
-                        </tbody>
-                    </table>
-                )}
+                            <div className="consensus-rating-bar">
+                                {["적극매도", "매도", "중립", "매수", "적극매수"].map((label, i) => {
+                                    const empty = isOpinionEmpty(info.opinion);
+                                    const isActive = !empty && i === getOpinionIndex(info.opinion);
+                                    return (
+                                        <div key={label} className="consensus-rating-item">
+                                            <div className={`consensus-rating-badge ${isActive ? "consensus-rating-badge--active" : ""}`}>
+                                                {isActive ? Number(info.opinion).toFixed(2) : ""}
+                                            </div>
+                                            <span className="consensus-rating-label">{label}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
 
-                {tab === "opinion" && (
-                    <table className="info-table">
-                        <tbody>
-                        <Row3
-                            a="투자의견" av={info.opinion}
-                            b="목표주가" bv={formatWon(info.targetPrice)}
-                            c="컨센서스 기준일" cv={info.consensusDate}
-                        />
-                        </tbody>
-                    </table>
+                            <div className="consensus-target">
+                                <div className="consensus-target-title">목표주가</div>
+                                <div className="consensus-target-value">{formatWon(info.targetPrice)}</div>
+                            </div>
+
+                            {!isOpinionEmpty(info.opinion) && (
+                                <>
+                                    <div className="consensus-desc">
+                                        최근 3개월간 증권사에서 발표한 전망치의 평균값입니다.
+                                    </div>
+
+                                    <div className="consensus-date">
+                                        {info.consensusDate} 기준 · 에프앤가이드 제공
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 )}
 
                 {tab === "broker" && (
-                    <div>
-                        <div className="broker-desc">
-                            일별 상위 5위 거래원의 누적 정보 기준 (20분 지연)
-                        </div>
+                    <div className="broker-tab-content">
+                        {detail.brokerTrades.length === 0 ? (
+                            <div className="broker-empty">거래원 정보가 없습니다</div>
+                        ) : (
+                            <>
+                                <div className="broker-desc">
+                                    일별 상위 5위 거래원의 누적 정보 기준 (20분 지연)
+                                </div>
 
-                        <table className="broker-table">
-                            <tbody>
-                            <tr className="broker-header-row">
-                                <td>매도상위</td>
-                                <td>거래량</td>
-                                <td>매수상위</td>
-                                <td>거래량</td>
-                            </tr>
+                                <table className="broker-table">
+                                    <tbody>
+                                    <tr className="broker-header-row">
+                                        <td>매도상위</td>
+                                        <td>거래량</td>
+                                        <td>매수상위</td>
+                                        <td>거래량</td>
+                                    </tr>
 
-                            {detail.brokerTrades.map((t, i) => (
-                                <tr key={i}>
-                                    <td style={{ color: getTrendColor(t.sellBrokerClass) }}>
-                                        {t.sellBroker}
-                                    </td>
-                                    <td style={{ color: getTrendColor(t.sellVolumeClass) }}>
-                                        {t.sellVolume}
-                                    </td>
-                                    <td style={{ color: getTrendColor(t.buyBrokerClass) }}>
-                                        {t.buyBroker}
-                                    </td>
-                                    <td style={{ color: getTrendColor(t.buyVolumeClass) }}>
-                                        {t.buyVolume}
-                                    </td>
-                                </tr>
-                            ))}
+                                    {detail.brokerTrades.map((t, i) => (
+                                        <tr key={i}>
+                                            <td style={{ color: getTrendColor(t.sellBrokerClass) }}>
+                                                {t.sellBroker}
+                                            </td>
+                                            <td style={{ color: getTrendColor(t.sellVolumeClass) }}>
+                                                {t.sellVolume}
+                                            </td>
+                                            <td style={{ color: getTrendColor(t.buyBrokerClass) }}>
+                                                {t.buyBroker}
+                                            </td>
+                                            <td style={{ color: getTrendColor(t.buyVolumeClass) }}>
+                                                {t.buyVolume}
+                                            </td>
+                                        </tr>
+                                    ))}
 
-                            {detail.foreignBrokerSummary && (
-                                <tr className="foreign-total-row">
-                                    <td>외국계추정합</td>
-                                    <td style={{ color: getForeignColor("sell", detail.foreignBrokerSummary.sellVolume) }}>
-                                        매도 {detail.foreignBrokerSummary.sellVolume}
-                                    </td>
-                                    <td style={{ color: getForeignColor("diff", detail.foreignBrokerSummary.buyDiff) }}>
-                                        순매수 {detail.foreignBrokerSummary.buyDiff}
-                                    </td>
-                                    <td style={{ color: getForeignColor("buy", detail.foreignBrokerSummary.buyVolume) }}>
-                                        매수 {detail.foreignBrokerSummary.buyVolume}
-                                    </td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
+                                    {detail.foreignBrokerSummary && (
+                                        <tr className="foreign-total-row">
+                                            <td>외국계추정합</td>
+                                            <td style={{ color: getForeignColor("sell", detail.foreignBrokerSummary.sellVolume) }}>
+                                                매도 {detail.foreignBrokerSummary.sellVolume}
+                                            </td>
+                                            <td style={{ color: getForeignColor("diff", detail.foreignBrokerSummary.buyDiff) }}>
+                                                순매수 {detail.foreignBrokerSummary.buyDiff}
+                                            </td>
+                                            <td style={{ color: getForeignColor("buy", detail.foreignBrokerSummary.buyVolume) }}>
+                                                매수 {detail.foreignBrokerSummary.buyVolume}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </tbody>
+                                </table>
+                            </>
+                        )}
                     </div>
                 )}
 
                 {tab === "trend" && (
                     <div>
-                        <div className="broker-desc">
-                            일별 외국인/기관 순매매 동향
-                        </div>
-
+                        <div className="trend-sticky-spacer" />
                         <table className="trend-table">
                             <colgroup>
                                 <col style={{ width: "12%" }} />
@@ -441,7 +534,7 @@ export default function StockInfoPanel() {
                                 <col style={{ width: "12%" }} />
                                 <col style={{ width: "16%" }} />
                             </colgroup>
-                            <tbody>
+                            <thead>
                             <tr className="broker-header-row">
                                 <td rowSpan={2}>날짜</td>
                                 <td rowSpan={2}>종가</td>
@@ -456,30 +549,34 @@ export default function StockInfoPanel() {
                                 <td>순매매</td>
                                 <td>보유주수(비율)</td>
                             </tr>
-
-                            {trendItems.map((t, i) => (
-                                <tr key={`${t.date}-${i}`}>
-                                    <td>{t.date}</td>
-                                    <td>{t.closePrice}</td>
-                                    <td style={{ color: getDiffColor(t.diff) }}>
-                                        {formatDiff(t.diff)}
-                                    </td>
-                                    <td style={{ color: getDiffColor(t.diff) }}>
-                                        {t.rate}
-                                    </td>
-                                    <td>{t.volume}</td>
-                                    <td style={{ color: getNetBuyColor(t.institutionNetBuy) }}>
-                                        {t.institutionNetBuy}
-                                    </td>
-                                    <td style={{ color: getNetBuyColor(t.foreignNetBuy) }}>
-                                        {t.foreignNetBuy}
-                                    </td>
-                                    <td className="trend-cell-stack">
-                                        <div>{t.foreignHoldings}</div>
-                                        <div className="trend-rate-sub">({t.foreignRate})</div>
-                                    </td>
-                                </tr>
-                            ))}
+                            </thead>
+                            <tbody>
+                            {trendItems.map((t, i) => {
+                                const rowColor = getRowColorByRate(t.rate);
+                                return (
+                                    <tr key={`${t.date}-${i}`}>
+                                        <td>{t.date}</td>
+                                        <td style={{ color: rowColor }}>{t.closePrice}</td>
+                                        <td style={{ color: rowColor }}>
+                                            {formatDiffWithSign(t.diff, t.rate)}
+                                        </td>
+                                        <td style={{ color: rowColor }}>
+                                            {t.rate}
+                                        </td>
+                                        <td>{t.volume}</td>
+                                        <td style={{ color: getNetBuyColor(t.institutionNetBuy) }}>
+                                            {t.institutionNetBuy}
+                                        </td>
+                                        <td style={{ color: getNetBuyColor(t.foreignNetBuy) }}>
+                                            {t.foreignNetBuy}
+                                        </td>
+                                        <td className="trend-cell-stack">
+                                            <div>{t.foreignHoldings}</div>
+                                            <div className="trend-rate-sub">({t.foreignRate})</div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             </tbody>
                         </table>
 
@@ -517,11 +614,23 @@ function Row3({
     );
 }
 
-function Row2({ a, av }: { a: string; av: string }) {
+function Row2({
+                  a, av,
+                  b, bv,
+              }: {
+    a: string; av: string;
+    b: string; bv: string;
+}) {
     return (
         <tr>
             <td className="label">{a}</td>
-            <td className="value" colSpan={5}>{av}</td>
+            <td className="value">{av}</td>
+
+            <td className="label">{b}</td>
+            <td className="value">{bv}</td>
+
+            <td className="label"></td>
+            <td className="value"></td>
         </tr>
     );
 }

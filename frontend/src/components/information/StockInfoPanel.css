@@ -78,15 +78,16 @@
     left: 0;
     bottom: -1px;
 
-    width: 0%;
+    width: 100%;
     height: 2px;
 
     background: #3b82f6;
-    transition: width 0.25s ease;
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .stock-info-panel .tab.active::after {
-    width: 100%;
+    opacity: 1;
 }
 
 .stock-info-panel .tab:focus {
@@ -103,7 +104,14 @@
 .stock-info-panel .tab-content {
     flex: 1;
     overflow-y: auto;
-    padding-top: 16px;
+    padding-top: 0;
+}
+
+.stock-info-panel .company-summary,
+.stock-info-panel > .tab-content > .info-table,
+.stock-info-panel .price-tab,
+.stock-info-panel .broker-tab-content {
+    margin-top: 16px;
 }
 
 .stock-info-panel .info-table {
@@ -126,7 +134,7 @@
 
 .stock-info-panel .info-table td.label {
     color: #94a3b8;
-    width: 70px;
+    width: 67px;
     font-size: 11px;
 }
 
@@ -224,17 +232,43 @@
 }
 
 .stock-info-panel .company-summary p {
-    white-space: pre-line;
+    white-space: normal;
     line-height: 1.7;
     color: #cbd5e1;
     font-size: 13px;
+    margin: 0 0 1em 0;
+}
+
+.stock-info-panel .company-summary p::before {
+    content: "• ";
 }
 
 .stock-info-panel .trend-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     table-layout: fixed;
     font-size: 11px;
+}
+
+.stock-info-panel .trend-sticky-spacer {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    height: 16px;
+    background: #0f172a;
+    margin: 0 -12px;
+}
+
+.stock-info-panel .trend-table thead {
+    position: sticky;
+    top: 16px;
+    z-index: 2;
+    background: #0f172a;
+}
+
+.stock-info-panel .trend-table thead tr {
+    background: #0f172a;
 }
 
 .stock-info-panel .trend-table td {
@@ -245,16 +279,17 @@
     color: white;
 }
 
+.stock-info-panel .trend-table tbody tr {
+    position: relative;
+    z-index: 1;
+}
+
 .stock-info-panel .trend-table tr.broker-header-row td {
     color: #94a3b8;
     font-size: 11px;
     font-weight: 600;
     background: #0f172a;
     border-bottom: 1px solid #334155;
-}
-
-.stock-info-panel .trend-table tr:hover:not(.broker-header-row) td {
-    background: rgba(255, 255, 255, 0.02);
 }
 
 .stock-info-panel .trend-sentinel {
@@ -272,11 +307,6 @@
     color: #94a3b8;
     font-size: 10px;
     margin-left: 0;
-}
-
-.stock-info-panel .trend-table tr.broker-header-row--sub td {
-    font-size: 10px;
-    border-top: none;
 }
 
 .stock-info-panel.stock-info-panel--loading {
@@ -302,4 +332,195 @@
 
 .stock-info-panel.stock-info-panel--loaded {
     animation: stockInfoFadeIn 0.25s ease-out;
+}
+
+.stock-info-panel .price-tab {
+    display: flex;
+    gap: 20px;
+    height: calc(100% - 16px);
+}
+
+.stock-info-panel .price-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.stock-info-panel .price-right {
+    flex: 1;
+    min-width: 0;
+}
+
+.stock-info-panel .price-range-bar {
+    margin-bottom: 20px;
+}
+
+.stock-info-panel .price-range-current-wrapper {
+    position: relative;
+    height: 30px;
+    margin-bottom: 6px;
+}
+
+.stock-info-panel .price-range-current {
+    position: absolute;
+    bottom: 0;
+    transform: translateX(-50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    white-space: nowrap;
+}
+
+.stock-info-panel .price-range-current .price-range-label-title {
+    margin-bottom: 4px;
+}
+
+.stock-info-panel .price-range-track {
+    position: relative;
+    height: 6px;
+    background: #1e293b;
+    border-radius: 3px;
+    margin: 0 4px 10px 4px;
+}
+
+.stock-info-panel .price-range-marker {
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    background: #3b82f6;
+    border: 2px solid white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.stock-info-panel .price-range-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.stock-info-panel .price-range-label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.stock-info-panel .price-range-label--right {
+    align-items: flex-end;
+}
+
+.stock-info-panel .price-range-label-title {
+    color: #94a3b8;
+    font-size: 11px;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.stock-info-panel .price-range-label-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    line-height: 1.3;
+}
+
+.stock-info-panel .consensus-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 16px;
+}
+
+.stock-info-panel .consensus-rating-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    margin-bottom: 15px;
+}
+
+.stock-info-panel .consensus-rating-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.stock-info-panel .consensus-rating-badge {
+    width: 100%;
+    height: 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #1e293b;
+    border-radius: 6px;
+
+    font-size: 12px;
+    font-weight: 700;
+    color: transparent;
+}
+
+.stock-info-panel .consensus-rating-badge--active {
+    background: #f97316;
+    color: white;
+}
+
+.stock-info-panel .consensus-rating-label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.stock-info-panel .consensus-target {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.stock-info-panel .consensus-target-title {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.stock-info-panel .consensus-target-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: white;
+}
+
+.stock-info-panel .consensus-desc {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin-bottom: 3px;
+}
+
+.stock-info-panel .consensus-date {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.stock-info-panel .broker-tab-content {
+    height: 100%;
+}
+
+.stock-info-panel .broker-empty {
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #94a3b8;
+    font-size: 13px;
 }
