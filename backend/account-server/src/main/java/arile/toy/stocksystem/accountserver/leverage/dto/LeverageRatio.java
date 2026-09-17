@@ -6,7 +6,7 @@ import lombok.Getter;
 public enum LeverageRatio {
 
     SPOT(1.0, 1.0),
-    X1_5(1.5, 0.667),
+    X1_5(1.5, 1.0 / 1.5),
     X2(2.0, 0.5),
     X2_5(2.5, 0.4);
 
