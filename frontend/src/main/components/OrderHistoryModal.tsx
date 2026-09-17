@@ -3,6 +3,7 @@ import { FiSearch } from "react-icons/fi";
 import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory, cancelOrder } from "../../api/orderHistory";
 import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled, cancelAutoOrder } from "../../api/autoOrderHistory";
 import { useRealtime } from "../context/RealtimeContext";
+import { STOCKS } from "../data/stocks";
 import { stockNameMap } from "../../constants/stocks";
 import type { OrderHistoryItem, TradeHistoryItem, AutoOrderHistoryItem, HistoryPageResponse } from "../../types/history";
 import "./OrderHistoryModal.css";
@@ -99,12 +100,12 @@ function CancelButton({ onCancel }: { onCancel: () => void }) {
 }
 
 interface SearchFilter {
-    keyword: string;
+    stockCode: string;
     dateFrom: string;
     dateTo: string;
 }
 
-const EMPTY_FILTER: SearchFilter = { keyword: "", dateFrom: "", dateTo: "" };
+const EMPTY_FILTER: SearchFilter = { stockCode: "", dateFrom: "", dateTo: "" };
 
 function SearchBar({
                        filter,
@@ -115,26 +116,38 @@ function SearchBar({
     onChange: (f: SearchFilter) => void;
     onReset: () => void;
 }) {
-    const [inputValue, setInputValue] = useState(filter.keyword);
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [query, setQuery] = useState("");
+    const [open, setOpen] = useState(false);
+    const wrapRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        setInputValue(filter.keyword);
-    }, [filter.keyword]);
+        const handler = (e: MouseEvent) => {
+            if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
 
-    const handleKeywordChange = (value: string) => {
-        setInputValue(value);
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-            onChange({ ...filter, keyword: value });
-        }, 300);
+    const selectedStock = filter.stockCode
+        ? STOCKS.find((s) => s.code === filter.stockCode)
+        : null;
+
+    const filteredStocks = STOCKS.filter((s) =>
+        `${s.name} ${s.code}`.toLowerCase().includes(query.toLowerCase())
+    );
+
+    const handleSelect = (stock: { code: string; name: string }) => {
+        onChange({ ...filter, stockCode: stock.code });
+        setQuery("");
+        setOpen(false);
     };
 
-    useEffect(() => {
-        return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-        };
-    }, []);
+    const handleClearStock = () => {
+        onChange({ ...filter, stockCode: "" });
+        setQuery("");
+    };
 
     const handleDateFromChange = (newFrom: string) => {
         if (newFrom && filter.dateTo && newFrom > filter.dateTo) {
@@ -154,15 +167,44 @@ function SearchBar({
 
     return (
         <div className="oh-search-bar">
-            <div className="oh-search-keyword-wrap">
+            <div className="oh-search-keyword-wrap" ref={wrapRef}>
                 <FiSearch className="oh-search-icon" />
-                <input
-                    className="oh-search-input oh-search-keyword"
-                    type="text"
-                    placeholder="종목명·종목코드 검색"
-                    value={inputValue}
-                    onChange={(e) => handleKeywordChange(e.target.value)}
-                />
+                {selectedStock ? (
+                    <div className="oh-search-selected" onClick={() => setOpen(true)}>
+                        <span>{selectedStock.name}</span>
+                        <span className="oh-search-selected-code">{selectedStock.code}</span>
+                        <button
+                            className="oh-search-selected-clear"
+                            onClick={(e) => { e.stopPropagation(); handleClearStock(); }}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                ) : (
+                    <input
+                        className="oh-search-input oh-search-keyword"
+                        type="text"
+                        placeholder="종목명·종목코드 검색"
+                        value={query}
+                        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+                        onFocus={() => setOpen(true)}
+                    />
+                )}
+
+                {open && query && !selectedStock && (
+                    <div className="oh-search-dropdown">
+                        {filteredStocks.length > 0 ? (
+                            filteredStocks.slice(0, 8).map((s) => (
+                                <div key={s.code} className="oh-search-dropdown-item" onClick={() => handleSelect(s)}>
+                                    <span className="oh-search-dropdown-name">{s.name}</span>
+                                    <span className="oh-search-dropdown-code">{s.code}</span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="oh-search-dropdown-empty">검색 결과 없음</div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <input
@@ -225,7 +267,7 @@ export default function OrderHistoryModal() {
                 page: pageToLoad,
                 size: 20,
                 ...(mainTab !== "미체결" && {
-                    stockCode: filter.keyword.trim() || undefined,
+                    stockCode: filter.stockCode || undefined,
                     from: filter.dateFrom ? `${filter.dateFrom}T00:00:00` : undefined,
                     to: filter.dateTo ? `${filter.dateTo}T23:59:59` : undefined,
                 }),
@@ -245,7 +287,7 @@ export default function OrderHistoryModal() {
         setItems([]);
         setHasNext(false);
         loadPage(0);
-    }, [fetcher, isPending, filter.dateFrom, filter.dateTo, filter.keyword]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [fetcher, isPending, filter.dateFrom, filter.dateTo, filter.stockCode]);
 
     useEffect(() => {
         if (!isPending) return;
@@ -296,7 +338,6 @@ export default function OrderHistoryModal() {
             } else {
                 await cancelOrder(id, stockCode);
             }
-            // 실시간 구독이 곧 갱신된 목록을 다시 push하지만, 체감 반응성을 위해 즉시 제거
             setItems((prev) =>
                 prev.filter((item) => {
                     if (isTrade(item)) return true;
@@ -315,7 +356,7 @@ export default function OrderHistoryModal() {
         ? (showTrigger ? "oh-grid-pending" : "oh-grid-pending-general")
         : (showTrigger ? "oh-grid-cancelled" : "oh-grid-executed");
 
-    const hasFilter = !!(filter.keyword || filter.dateFrom || filter.dateTo);
+    const hasFilter = !!(filter.stockCode || filter.dateFrom || filter.dateTo);
 
     return (
         <div className="oh-modal">
