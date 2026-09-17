@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ModalV2 from '../../../../components/ModalV2'
 import { placeOrder } from '../../../../api/order'
+import { placeAutoOrder } from '../../../../api/autoOrder'
 import { tokenStorage } from '../../../../utils/token'
 import './OrderConfirmModal.css'
 import type { LeverageRatio, OrderType as ApiOrderType } from '../../../../types/order'
@@ -73,22 +74,35 @@ export default function OrderConfirmModal({
     const amountPrefix = orderType === 'market' ? '약 ' : ''
 
     async function handleConfirmClick() {
-        if (orderType === 'conditional') {
-            setErrorMsg('조건부 주문은 아직 지원되지 않습니다. 고급 주문을 이용해주세요.')
-            return
-        }
-
         setLoading(true)
         setErrorMsg(null)
 
         try {
-            await placeOrder({
-                stockCode,
-                orderType: (side === 'buy' ? 'BUY' : 'SELL') as ApiOrderType,
-                orderPrice: price,
-                orderQuantity: quantity,
-                leverageRatio: isCredit ? toLeverageRatio(leverage) : null,
-            })
+            if (orderType === 'conditional') {
+                if (watchPrice == null) {
+                    setErrorMsg('감시가가 올바르지 않습니다.')
+                    setLoading(false)
+                    return
+                }
+
+                await placeAutoOrder({
+                    stockCode,
+                    autoOrderType: side === 'buy' ? 'BUY' : 'SELL',
+                    triggerPrice: watchPrice,
+                    orderPrice: price,
+                    orderQuantity: quantity,
+                    leverageRatio: isCredit ? toLeverageRatio(leverage) : null,
+                })
+            } else {
+                await placeOrder({
+                    stockCode,
+                    orderType: (side === 'buy' ? 'BUY' : 'SELL') as ApiOrderType,
+                    orderPrice: price,
+                    orderQuantity: quantity,
+                    leverageRatio: isCredit ? toLeverageRatio(leverage) : null,
+                })
+            }
+
             onConfirm()
             onClose()
         } catch (e: any) {
