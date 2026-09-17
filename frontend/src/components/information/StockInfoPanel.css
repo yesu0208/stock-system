@@ -485,3 +485,18 @@
     font-size: 11px;
     color: #64748b;
 }
+
+.stock-info-panel .broker-tab-content {
+    height: 100%;
+}
+
+.stock-info-panel .broker-empty {
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #94a3b8;
+    font-size: 13px;
+}

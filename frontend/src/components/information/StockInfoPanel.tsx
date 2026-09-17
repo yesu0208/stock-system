@@ -455,53 +455,59 @@ export default function StockInfoPanel() {
                 )}
 
                 {tab === "broker" && (
-                    <div>
-                        <div className="broker-desc">
-                            일별 상위 5위 거래원의 누적 정보 기준 (20분 지연)
-                        </div>
+                    <div className="broker-tab-content">
+                        {detail.brokerTrades.length === 0 ? (
+                            <div className="broker-empty">거래원 정보가 없습니다</div>
+                        ) : (
+                            <>
+                                <div className="broker-desc">
+                                    일별 상위 5위 거래원의 누적 정보 기준 (20분 지연)
+                                </div>
 
-                        <table className="broker-table">
-                            <tbody>
-                            <tr className="broker-header-row">
-                                <td>매도상위</td>
-                                <td>거래량</td>
-                                <td>매수상위</td>
-                                <td>거래량</td>
-                            </tr>
+                                <table className="broker-table">
+                                    <tbody>
+                                    <tr className="broker-header-row">
+                                        <td>매도상위</td>
+                                        <td>거래량</td>
+                                        <td>매수상위</td>
+                                        <td>거래량</td>
+                                    </tr>
 
-                            {detail.brokerTrades.map((t, i) => (
-                                <tr key={i}>
-                                    <td style={{ color: getTrendColor(t.sellBrokerClass) }}>
-                                        {t.sellBroker}
-                                    </td>
-                                    <td style={{ color: getTrendColor(t.sellVolumeClass) }}>
-                                        {t.sellVolume}
-                                    </td>
-                                    <td style={{ color: getTrendColor(t.buyBrokerClass) }}>
-                                        {t.buyBroker}
-                                    </td>
-                                    <td style={{ color: getTrendColor(t.buyVolumeClass) }}>
-                                        {t.buyVolume}
-                                    </td>
-                                </tr>
-                            ))}
+                                    {detail.brokerTrades.map((t, i) => (
+                                        <tr key={i}>
+                                            <td style={{ color: getTrendColor(t.sellBrokerClass) }}>
+                                                {t.sellBroker}
+                                            </td>
+                                            <td style={{ color: getTrendColor(t.sellVolumeClass) }}>
+                                                {t.sellVolume}
+                                            </td>
+                                            <td style={{ color: getTrendColor(t.buyBrokerClass) }}>
+                                                {t.buyBroker}
+                                            </td>
+                                            <td style={{ color: getTrendColor(t.buyVolumeClass) }}>
+                                                {t.buyVolume}
+                                            </td>
+                                        </tr>
+                                    ))}
 
-                            {detail.foreignBrokerSummary && (
-                                <tr className="foreign-total-row">
-                                    <td>외국계추정합</td>
-                                    <td style={{ color: getForeignColor("sell", detail.foreignBrokerSummary.sellVolume) }}>
-                                        매도 {detail.foreignBrokerSummary.sellVolume}
-                                    </td>
-                                    <td style={{ color: getForeignColor("diff", detail.foreignBrokerSummary.buyDiff) }}>
-                                        순매수 {detail.foreignBrokerSummary.buyDiff}
-                                    </td>
-                                    <td style={{ color: getForeignColor("buy", detail.foreignBrokerSummary.buyVolume) }}>
-                                        매수 {detail.foreignBrokerSummary.buyVolume}
-                                    </td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
+                                    {detail.foreignBrokerSummary && (
+                                        <tr className="foreign-total-row">
+                                            <td>외국계추정합</td>
+                                            <td style={{ color: getForeignColor("sell", detail.foreignBrokerSummary.sellVolume) }}>
+                                                매도 {detail.foreignBrokerSummary.sellVolume}
+                                            </td>
+                                            <td style={{ color: getForeignColor("diff", detail.foreignBrokerSummary.buyDiff) }}>
+                                                순매수 {detail.foreignBrokerSummary.buyDiff}
+                                            </td>
+                                            <td style={{ color: getForeignColor("buy", detail.foreignBrokerSummary.buyVolume) }}>
+                                                매수 {detail.foreignBrokerSummary.buyVolume}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </tbody>
+                                </table>
+                            </>
+                        )}
                     </div>
                 )}
 
