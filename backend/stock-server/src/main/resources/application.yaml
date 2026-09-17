@@ -78,7 +78,7 @@ redis:
 
 server:
   port: 8081
-  group: B
+  group: A
 
 stock-groups:
   groups:
