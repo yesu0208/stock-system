@@ -154,7 +154,7 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                         loading ? (
                             <Spinner />
                         ) : (
-                            <div className="hot-list">
+                            <div className="hot-list tab-content" key={`${tab}-data`}>
                                 {stocks.map(s => (
                                     <button
                                         key={s.code}
@@ -178,36 +178,38 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                         dealLoading ? (
                             <Spinner />
                         ) : (
-                            dealDays.map(day => (
-                                <div key={day.dealDate}>
-                                    <div className="day-header-sticky">
-                                        <div className="date-label">{day.dealDate}</div>
+                            <div className="tab-content" key={`${tab}-${market}-${dealType}-${periodType}`}>
+                                {dealDays.map(day => (
+                                    <div key={day.dealDate}>
+                                        <div className="day-header-sticky">
+                                            <div className="date-label">{day.dealDate}</div>
 
-                                        <div className="list-header">
-                                            <span className="col-rank"></span>
-                                            <span className="col-name"></span>
-                                            <span className="col-num">수량(주)</span>
-                                            <span className="col-num-wide">거래대금(백만)</span>
-                                            <span className="col-num">거래량(주)</span>
+                                            <div className="list-header">
+                                                <span className="col-rank"></span>
+                                                <span className="col-name"></span>
+                                                <span className="col-num">수량(주)</span>
+                                                <span className="col-num-wide">거래대금(백만)</span>
+                                                <span className="col-num">거래량(주)</span>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {day.items.map(item => (
-                                        <button
-                                            key={item.stockCode}
-                                            className="row"
-                                            onClick={() => onSelectStock?.(item.stockCode)}
-                                            disabled={!onSelectStock}
-                                        >
-                                            <span className="col-rank deal-rank">{item.rank}</span>
-                                            <span className="col-name">{item.stockName}</span>
-                                            <span className="col-num" style={{ color: getSignColor(item.quantity) }}>{item.quantity.toLocaleString()}</span>
-                                            <span className="col-num-wide" style={{ color: getSignColor(item.amount) }}>{formatToMillion(item.amount)}</span>
-                                            <span className="col-num">{item.volume.toLocaleString()}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            ))
+                                        {day.items.map(item => (
+                                            <button
+                                                key={item.stockCode}
+                                                className="row"
+                                                onClick={() => onSelectStock?.(item.stockCode)}
+                                                disabled={!onSelectStock}
+                                            >
+                                                <span className="col-rank deal-rank">{item.rank}</span>
+                                                <span className="col-name">{item.stockName}</span>
+                                                <span className="col-num" style={{ color: getSignColor(item.quantity) }}>{item.quantity.toLocaleString()}</span>
+                                                <span className="col-num-wide" style={{ color: getSignColor(item.amount) }}>{formatToMillion(item.amount)}</span>
+                                                <span className="col-num">{item.volume.toLocaleString()}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
                         )
                     )}
                 </div>

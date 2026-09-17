@@ -201,13 +201,10 @@
 .hs-wrap .hot-item {
     display: flex;
     align-items: center;
-
     padding: 10px 12px;
-
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-
     cursor: pointer;
     transition: background 0.15s ease;
 }
@@ -237,11 +234,24 @@
 .hs-wrap .hot-price {
     display: flex;
     align-items: center;
-    gap: 10px; /* 원하는 만큼 조절 */
+    gap: 10px;
     justify-content: flex-end;
 }
 
 .hs-wrap .deal-rank {
     color: #fbbf24;
     font-weight: 700;
+}
+
+.hs-wrap .tab-content {
+    animation: hsFadeIn 0.18s ease;
+}
+
+@keyframes hsFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
