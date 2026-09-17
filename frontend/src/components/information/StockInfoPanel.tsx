@@ -15,7 +15,7 @@ import type {
 } from "../../api/stockInfo";
 import type { StockDetailTickMessage } from "../../types/stockDetail";
 
-type TabType = "summary" | "info" | "price" | "opinion" | "broker" | "trend";
+type TabType = "summary" | "info" | "price" | "broker" | "trend";
 
 type MergedDetail = StockDetailExtraResponse & Partial<StockDetailTickMessage>;
 
@@ -149,6 +149,21 @@ export default function StockInfoPanel() {
         return n > 0 ? "#ff6347" : "#4f9dff";
     };
 
+    const getPricePosition = (current?: string, low?: string, high?: string): number => {
+        if (!current || !low || !high) return 50;
+        const c = parseFloat(current.replace(/,/g, ""));
+        const l = parseFloat(low.replace(/,/g, ""));
+        const h = parseFloat(high.replace(/,/g, ""));
+        if (isNaN(c) || isNaN(l) || isNaN(h) || h === l) return 50;
+        const pct = ((c - l) / (h - l)) * 100;
+        return Math.min(100, Math.max(0, pct));
+    };
+
+    const getLabelPosition = (current?: string, low?: string, high?: string): number => {
+        const raw = getPricePosition(current, low, high);
+        return Math.min(903, Math.max(7, raw));
+    };
+
     const getForeignColor = (type: "sell" | "buy" | "diff", value: string): string => {
         if (type === "sell") return "#4f9dff";
         if (type === "buy") return "#ff6347";
@@ -239,13 +254,6 @@ export default function StockInfoPanel() {
                 </button>
 
                 <button
-                    className={`tab ${tab === "opinion" ? "active" : ""}`}
-                    onClick={() => setTab("opinion")}
-                >
-                    투자의견
-                </button>
-
-                <button
                     className={`tab ${tab === "broker" ? "active" : ""}`}
                     onClick={() => setTab("broker")}
                 >
@@ -319,74 +327,78 @@ export default function StockInfoPanel() {
                 )}
 
                 {tab === "price" && (
-                    <table className="info-table">
-                        <tbody>
-                        <tr>
-                            <td className="label">현재가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.currentPrice, detail.prevPrice) }}>
-                                {detail.currentPrice ?? "-"}
-                            </td>
+                    <div className="price-tab">
+                        <div className="price-left">
+                            <div className="price-range-bar">
+                                <div className="price-range-current-wrapper">
+                                    <div
+                                        className="price-range-current"
+                                        style={{
+                                            left: `${getLabelPosition(detail.currentPrice, info.low52, info.high52)}%`
+                                        }}
+                                    >
+                                        <span className="price-range-label-title">현재가</span>
+                                        <span
+                                            className="price-range-label-value"
+                                        >
+                {detail.currentPrice ?? "-"}
+            </span>
+                                    </div>
+                                </div>
 
-                            <td className="label">전일 종가</td>
-                            <td className="value">{detail.prevPrice ?? "-"}</td>
+                                <div className="price-range-track">
+                                    <div
+                                        className="price-range-marker"
+                                        style={{
+                                            left: `${getPricePosition(detail.currentPrice, info.low52, info.high52)}%`
+                                        }}
+                                    />
+                                </div>
 
-                            <td className="label"></td>
-                            <td className="value"></td>
-                        </tr>
-                        <tr>
-                            <td className="label">고가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.highPrice, detail.prevPrice) }}>
-                                {detail.highPrice ?? "-"}
-                            </td>
+                                <div className="price-range-labels">
+                                    <div className="price-range-label">
+                                        <span className="price-range-label-title">52주 최저</span>
+                                        <span className="price-range-label-value">{info.low52}</span>
+                                    </div>
 
-                            <td className="label">저가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.lowPrice, detail.prevPrice) }}>
-                                {detail.lowPrice ?? "-"}
-                            </td>
+                                    <div className="price-range-label price-range-label--right">
+                                        <span className="price-range-label-title">52주 최고</span>
+                                        <span className="price-range-label-value">{info.high52}</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <td className="label">시가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.openPrice, detail.prevPrice) }}>
-                                {detail.openPrice ?? "-"}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="label">상한가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.upperLimit, detail.prevPrice) }}>
-                                {detail.upperLimit ?? "-"}
-                            </td>
+                            <table className="info-table price-detail-table">
+                                <tbody>
+                                <tr>
+                                    <td className="label">고가</td>
+                                    <td className="value" style={{ color: getPriceColor(detail.highPrice, detail.prevPrice) }}>
+                                        {detail.highPrice ?? "-"}
+                                    </td>
 
-                            <td className="label">하한가</td>
-                            <td className="value" style={{ color: getPriceColor(detail.lowerLimit, detail.prevPrice) }}>
-                                {detail.lowerLimit ?? "-"}
-                            </td>
+                                    <td className="label">저가</td>
+                                    <td className="value" style={{ color: getPriceColor(detail.lowPrice, detail.prevPrice) }}>
+                                        {detail.lowPrice ?? "-"}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="label">상한가</td>
+                                    <td className="value" style={{ color: getPriceColor(detail.upperLimit, detail.prevPrice) }}>
+                                        {detail.upperLimit ?? "-"}
+                                    </td>
 
-                            <td className="label"></td>
-                            <td className="value"></td>
-                        </tr>
-                        <tr>
-                            <td className="label">52주 최고</td>
-                            <td className="value">{info.high52}</td>
+                                    <td className="label">하한가</td>
+                                    <td className="value" style={{ color: getPriceColor(detail.lowerLimit, detail.prevPrice) }}>
+                                        {detail.lowerLimit ?? "-"}
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                            <td className="label">52주 최저</td>
-                            <td className="value">{info.low52}</td>
-
-                            <td className="label"></td>
-                            <td className="value"></td>
-                        </tr>
-                        </tbody>
-                    </table>
-                )}
-
-                {tab === "opinion" && (
-                    <table className="info-table">
-                        <tbody>
-                        <Row3
-                            a="투자의견" av={info.opinion}
-                            b="목표주가" bv={formatWon(info.targetPrice)}
-                            c="컨센서스 기준일" cv={info.consensusDate}
-                        />
-                        </tbody>
-                    </table>
+                        <div className="price-right">
+                        </div>
+                    </div>
                 )}
 
                 {tab === "broker" && (

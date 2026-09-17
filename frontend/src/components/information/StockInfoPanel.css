@@ -309,3 +309,94 @@
 .stock-info-panel.stock-info-panel--loaded {
     animation: stockInfoFadeIn 0.25s ease-out;
 }
+
+.stock-info-panel .price-tab {
+    display: flex;
+    gap: 20px;
+    height: 100%;
+}
+
+.stock-info-panel .price-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.stock-info-panel .price-right {
+    flex: 1;
+    min-width: 0;
+}
+
+.stock-info-panel .price-range-bar {
+    margin-bottom: 20px;
+}
+
+.stock-info-panel .price-range-current-wrapper {
+    position: relative;
+    height: 30px;
+    margin-bottom: 6px;
+}
+
+.stock-info-panel .price-range-current {
+    position: absolute;
+    bottom: 0;
+    transform: translateX(-50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    white-space: nowrap;
+}
+
+.stock-info-panel .price-range-current .price-range-label-title {
+    margin-bottom: 4px;
+}
+
+.stock-info-panel .price-range-track {
+    position: relative;
+    height: 6px;
+    background: #1e293b;
+    border-radius: 3px;
+    margin: 0 4px 10px 4px;
+}
+
+.stock-info-panel .price-range-marker {
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    background: #3b82f6;
+    border: 2px solid white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.stock-info-panel .price-range-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.stock-info-panel .price-range-label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.stock-info-panel .price-range-label--right {
+    align-items: flex-end;
+}
+
+.stock-info-panel .price-range-label-title {
+    color: #94a3b8;
+    font-size: 11px;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.stock-info-panel .price-range-label-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    line-height: 1.3;
+}
