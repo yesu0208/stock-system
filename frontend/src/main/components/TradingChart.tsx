@@ -541,10 +541,11 @@ export default function TradingChart() {
             }))
             .sort((a, b) => Number(a.time) - Number(b.time));
 
+        const prevLastTime = minuteCurrentRef.current?.time as number | undefined;
+
         minuteCandlesRef.current = converted;
         minuteCurrentRef.current = converted[converted.length - 1];
 
-        // [신규] ChartDataContext 동기화 (B 원본 setMinuteCandles 시그니처 그대로)
         setChartMinuteCandles(stockCode, converted as any);
 
         if (timeframeRef.current !== "minute") return;
@@ -563,8 +564,21 @@ export default function TradingChart() {
         } else {
             const last = converted[converted.length - 1];
 
-            seriesRef.current.update(last);
-            volumeSeriesRef.current?.update(buildVolumeBar(last, converted));
+            const isTimeRegressed =
+                prevLastTime != null && Number(last.time) < Number(prevLastTime);
+
+            if (isTimeRegressed) {
+                seriesRef.current.setData(converted);
+                volumeSeriesRef.current?.setData(buildVolumeSeries(converted));
+
+                setTimeout(() => {
+                    chartRef.current?.timeScale().fitContent();
+                    if (chartRef.current) updateVisibleHighLow(chartRef.current);
+                }, 0);
+            } else {
+                seriesRef.current.update(last);
+                volumeSeriesRef.current?.update(buildVolumeBar(last, converted));
+            }
 
             updateMovingAverages();
 
@@ -587,6 +601,8 @@ export default function TradingChart() {
                 volume: c.volume,
             }))
             .sort((a, b) => Number(a.time) - Number(b.time));
+
+        const prevLastTime = dailyCurrentRef.current?.time as number | undefined;
 
         dailyCandlesRef.current = converted;
         dailyCurrentRef.current = converted[converted.length - 1];
@@ -611,8 +627,21 @@ export default function TradingChart() {
         } else {
             const last = converted[converted.length - 1];
 
-            seriesRef.current.update(last);
-            volumeSeriesRef.current?.update(buildVolumeBar(last, converted));
+            const isTimeRegressed =
+                prevLastTime != null && Number(last.time) < Number(prevLastTime);
+
+            if (isTimeRegressed) {
+                seriesRef.current.setData(converted);
+                volumeSeriesRef.current?.setData(buildVolumeSeries(converted));
+
+                setTimeout(() => {
+                    chartRef.current?.timeScale().fitContent();
+                    if (chartRef.current) updateVisibleHighLow(chartRef.current);
+                }, 0);
+            } else {
+                seriesRef.current.update(last);
+                volumeSeriesRef.current?.update(buildVolumeBar(last, converted));
+            }
 
             updateMovingAverages();
 
