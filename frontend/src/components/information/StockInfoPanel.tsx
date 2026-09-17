@@ -149,6 +149,13 @@ export default function StockInfoPanel() {
         return n > 0 ? "#ff6347" : "#4f9dff";
     };
 
+    const getOpinionIndex = (score?: string): number => {
+        if (!score) return 2;
+        const n = parseFloat(score);
+        if (isNaN(n)) return 2;
+        return Math.min(4, Math.max(0, Math.round(n) - 1));
+    };
+
     const getPricePosition = (current?: string, low?: string, high?: string): number => {
         if (!current || !low || !high) return 50;
         const c = parseFloat(current.replace(/,/g, ""));
@@ -397,6 +404,36 @@ export default function StockInfoPanel() {
                         </div>
 
                         <div className="price-right">
+                            <div className="consensus-header">
+                                <span>컨센서스</span>
+                            </div>
+
+                            <div className="consensus-rating-bar">
+                                {["적극매도", "매도", "중립", "매수", "적극매수"].map((label, i) => {
+                                    const isActive = i === getOpinionIndex(info.opinion);
+                                    return (
+                                        <div key={label} className="consensus-rating-item">
+                                            <div className={`consensus-rating-badge ${isActive ? "consensus-rating-badge--active" : ""}`}>
+                                                {isActive ? Number(info.opinion).toFixed(2) : ""}
+                                            </div>
+                                            <span className="consensus-rating-label">{label}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="consensus-target">
+                                <div className="consensus-target-title">목표주가</div>
+                                <div className="consensus-target-value">{formatWon(info.targetPrice)}</div>
+                            </div>
+
+                            <div className="consensus-desc">
+                                최근 3개월간 증권사에서 발표한 전망치의 평균값입니다.
+                            </div>
+
+                            <div className="consensus-date">
+                                {info.consensusDate} 기준 · 에프앤가이드 제공
+                            </div>
                         </div>
                     </div>
                 )}
