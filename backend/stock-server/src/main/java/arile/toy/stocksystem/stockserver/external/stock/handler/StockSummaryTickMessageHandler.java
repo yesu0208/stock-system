@@ -33,7 +33,7 @@ public class StockSummaryTickMessageHandler {
         String[] fields = payload.split("\\^");
         int offset;
 
-        int fieldSize = 46;
+        int fieldSize = 47;
 
         for (int i = 0; i < count; i++) {
             offset = i * fieldSize;

@@ -35,7 +35,7 @@ public class BidAskPriceTickMessageHandler {
 //      }
 
         String[] fields = payload.split("\\^");
-        int fieldSize = 59;
+        int fieldSize = 60;
         int offset;
 
         for (int i = 0; i < count; i++) {
