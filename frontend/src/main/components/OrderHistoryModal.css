@@ -167,6 +167,12 @@
     flex-shrink: 0;
     transition: color 0.15s;
     line-height: 1;
+    outline: none;
+}
+
+.oh-search-reset:focus,
+.oh-search-reset:focus-visible {
+    outline: none;
 }
 
 .oh-search-reset:hover {
@@ -661,4 +667,20 @@
     padding: 10px;
     color: #64748b;
     font-size: 11px;
+}
+
+.oh-search-selected,
+.oh-search-selected-clear,
+.oh-search-dropdown-item,
+.oh-search-input {
+    outline: none;
+}
+
+.oh-search-selected:focus,
+.oh-search-selected:focus-visible,
+.oh-search-selected-clear:focus,
+.oh-search-selected-clear:focus-visible,
+.oh-search-dropdown-item:focus,
+.oh-search-dropdown-item:focus-visible {
+    outline: none;
 }
