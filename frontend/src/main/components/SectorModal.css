@@ -7,13 +7,6 @@
     box-sizing: border-box;
 }
 
-.sector-loading {
-    text-align: center;
-    padding: 20px 0;
-    color: #888;
-    font-size: 13px;
-}
-
 .sector-wrap .sector-slider {
     display: flex;
 

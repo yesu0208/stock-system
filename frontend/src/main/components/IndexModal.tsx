@@ -1,5 +1,6 @@
 import "./IndexModal.css";
 import ModalV2 from "../../components/ModalV2";
+import Spinner from "../../components/Spinner";
 import { useMarketData } from "../context/MarketDataContext";
 import { useState } from "react";
 
@@ -61,7 +62,7 @@ export default function IndexModal({ open, onClose }: Props) {
         <ModalV2 open={open} title="지수" onClose={onClose}>
             {!marketMain ? (
                 <div className="index-wrap">
-                    <div className="box">로딩 중...</div>
+                    <Spinner />
                 </div>
             ) : (
                 <div className="index-wrap">

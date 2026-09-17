@@ -1,5 +1,6 @@
 import "./InvestorModal.css";
 import ModalV2 from "../../components/ModalV2";
+import Spinner from "../../components/Spinner";
 import { useEffect, useRef, useState } from "react";
 import { getInvestorTrend } from "../../api/marketInfo";
 import type { InvestorTrendMarket } from "../../api/marketInfo";
@@ -190,9 +191,7 @@ export default function InvestorModal({ open, onClose }: Props) {
                 <div className={`content-area ${animating ? "animating" : ""}`}>
                     <div className="table-wrap" ref={tableWrapRef}>
                         {current.loading && current.data.length === 0 ? (
-                            <div className="loading-center">
-                                <span className="loading-spinner" />
-                            </div>
+                            <Spinner />
                         ) : (
                             <>
                                 <table>
@@ -265,11 +264,11 @@ export default function InvestorModal({ open, onClose }: Props) {
                                 <div ref={sentinelRef} className="scroll-sentinel">
                                     {current.loading && (
                                         <div className="loading-indicator">
-                                            <span className="loading-spinner" />
+                                            <Spinner size={14} thickness={2} center={false} />
                                         </div>
                                     )}
                                     {!current.hasNext && current.data.length > 0 && (
-                                        <div className="end-of-list">— 더 이상 데이터가 없습니다 —</div>
+                                        <div className="end-of-list">마지막 데이터</div>
                                     )}
                                 </div>
                             </>

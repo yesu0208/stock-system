@@ -1,6 +1,7 @@
 import './HotStocksModal.css'
 import { useEffect, useState } from 'react'
 import ModalV2 from '../../components/ModalV2'
+import Spinner from '../../components/Spinner'
 import { getPopularStocks, getDealRank } from '../../api/marketInfo'
 import type {
     PopularStock,
@@ -151,7 +152,7 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                 <div className="list">
                     {tab === 'popular' && (
                         loading ? (
-                            <div className="empty">불러오는 중...</div>
+                            <Spinner />
                         ) : (
                             <div className="hot-list">
                                 {stocks.map(s => (
@@ -175,7 +176,7 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
 
                     {(tab === 'foreign' || tab === 'institution') && (
                         dealLoading ? (
-                            <div className="empty">불러오는 중...</div>
+                            <Spinner />
                         ) : (
                             dealDays.map(day => (
                                 <div key={day.dealDate}>

@@ -1,5 +1,6 @@
 import "./SectorModal.css";
 import ModalV2 from "../../components/ModalV2";
+import Spinner from "../../components/Spinner";
 import { useEffect, useState } from "react";
 import { FiArrowLeft, FiSearch } from "react-icons/fi";
 import { getUpjongs, getUpjongStocks } from "../../api/marketInfo";
@@ -154,7 +155,7 @@ export default function SectorModal({ open, onClose }: Props) {
         <ModalV2 open={open} title="업종" onClose={onClose}>
             <div className="sector-wrap">
                 {loading ? (
-                    <div className="sector-loading">불러오는 중...</div>
+                    <Spinner />
                 ) : (
                     <div className={`sector-slider ${selectedUpjong ? "show-stock" : ""}`}>
                         <div className="sector-page">
@@ -235,7 +236,7 @@ export default function SectorModal({ open, onClose }: Props) {
 
                             <div className="stock-list">
                                 {stockLoading ? (
-                                    <div className="sector-loading">불러오는 중...</div>
+                                    <Spinner />
                                 ) : (
                                     filteredStocks.map((stock) => {
                                         const rate = parseFloat(stock.rate);
