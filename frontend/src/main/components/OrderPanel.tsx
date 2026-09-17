@@ -18,6 +18,7 @@ import type { LeverageRatio, OrderResultResponse } from "../../types/order";
 import type { CancelResultResponse } from "../../types/cancel";
 import type { AutoOrderResultResponse } from "../../types/autoOrder";
 import type { AutoCancelResultResponse } from "../../types/autoCancel";
+import type { TradeResponse } from "../../types/trade";
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -200,11 +201,20 @@ export default function OrderPanel() {
             }
         );
 
+        const unsubTrade = subscribeDestination(
+            "/user/sub/trade",
+            (data: TradeResponse) => {
+                const sideLabel = data.tradeType === "BUY" ? "매수" : "매도";
+                success(`${data.stockCode} ${data.tradePrice.toLocaleString()}원 ${data.tradeQuantity}주 ${sideLabel} 체결`);
+            }
+        );
+
         return () => {
             unsubOrder();
             unsubCancel();
             unsubAutoOrder();
             unsubAutoCancel();
+            unsubTrade();
         };
     }, [subscribeDestination, success, error]);
 
