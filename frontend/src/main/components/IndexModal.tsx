@@ -116,7 +116,7 @@ export default function IndexModal({ open, onClose }: Props) {
                                                 {stripSign(current.changeValue)} ({Number(current.changeRate) > 0 ? "+" : ""}{current.changeRate}%)
                                             </div>
 
-                                            <div className="time">기준 {formatBaseTime(current.baseTime)}</div>
+                                            <div className="time">{formatBaseTime(current.baseTime)}</div>
                                         </div>
                                     </div>
 
