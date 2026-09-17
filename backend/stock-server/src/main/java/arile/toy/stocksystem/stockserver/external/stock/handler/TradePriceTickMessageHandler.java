@@ -51,56 +51,62 @@ public class TradePriceTickMessageHandler {
 
         String[] fields = payload.split("\\^");
         int offset;
-        int fieldSize = 46;
+        int fieldSize = 47;
 
         for (int i = 0; i < count; i++) {
             offset = i * fieldSize;
 
             String stockCode = fields[offset];
 
-            Integer curPrice = Integer.parseInt(fields[offset + 2]);
-            Integer prevCloseDiff = Integer.parseInt(fields[offset + 4]);
-            Integer prevClosePrice = curPrice - prevCloseDiff;
-            String prevCloseRate = (prevClosePrice != 0)
-                    ? String.format("%.2f", (prevCloseDiff * 100.0) / prevClosePrice)
-                    : "0.00";
+            try {
+                Integer curPrice = Integer.parseInt(fields[offset + 2]);
+                Integer prevCloseDiff = Integer.parseInt(fields[offset + 4]);
+                Integer prevClosePrice = curPrice - prevCloseDiff;
+                String prevCloseRate = (prevClosePrice != 0)
+                        ? String.format("%.2f", (prevCloseDiff * 100.0) / prevClosePrice)
+                        : "0.00";
 
-            TradePriceTickMessage tradePriceTickMessage = new TradePriceTickMessage(
-                    TickMessageType.TRADEPRICE,
-                    stockCode,
-                    fields[offset + 1],
-                    curPrice,
-                    prevCloseDiff,
-                    prevClosePrice,
-                    prevCloseRate,
-                    Integer.parseInt(fields[offset + 7]),
-                    Integer.parseInt(fields[offset + 8]),
-                    Integer.parseInt(fields[offset + 9]),
-                    Integer.parseInt(fields[offset + 12]),
-                    Integer.parseInt(fields[offset + 13]),
-                    Long.parseLong(fields[offset + 14]),
-                    Integer.parseInt(fields[offset + 19]),
-                    Integer.parseInt(fields[offset + 20]),
-                    fields[offset + 21],
-                    Integer.parseInt(fields[offset + 41])
-            );
+                TradePriceTickMessage tradePriceTickMessage = new TradePriceTickMessage(
+                        TickMessageType.TRADEPRICE,
+                        stockCode,
+                        fields[offset + 1],
+                        curPrice,
+                        prevCloseDiff,
+                        prevClosePrice,
+                        prevCloseRate,
+                        Integer.parseInt(fields[offset + 7]),
+                        Integer.parseInt(fields[offset + 8]),
+                        Integer.parseInt(fields[offset + 9]),
+                        Integer.parseInt(fields[offset + 12]),
+                        Integer.parseInt(fields[offset + 13]),
+                        Long.parseLong(fields[offset + 14]),
+                        Integer.parseInt(fields[offset + 19]),
+                        Integer.parseInt(fields[offset + 20]),
+                        fields[offset + 21],
+                        Integer.parseInt(fields[offset + 41])
+                );
 
-            stockServerTradePriceRepository.save(tradePriceTickMessage);
-            redisTradePriceEventPublisher.publish(
-                    TradePriceTickEvent.fromMessage(tradePriceTickMessage));
+                stockServerTradePriceRepository.save(tradePriceTickMessage);
+                redisTradePriceEventPublisher.publish(
+                        TradePriceTickEvent.fromMessage(tradePriceTickMessage));
 
-            autoOrderTriggerService.getExternalTickMessageAndTrigger(tradePriceTickMessage);
-            trailingStopTriggerService.getExternalTickMessageAndTrail(tradePriceTickMessage);
-            otocoEntryTriggerService.getExternalTickMessageAndTriggerEntry(tradePriceTickMessage);
-            otocoExitTriggerService.getExternalTickMessageAndSettleExit(tradePriceTickMessage);
-            tradeMatchingService.getExternalTickMessageAndTrade(tradePriceTickMessage);
-            alertTriggerService.getExternalTickMessageAndCheckAlerts(tradePriceTickMessage);
+                autoOrderTriggerService.getExternalTickMessageAndTrigger(tradePriceTickMessage);
+                trailingStopTriggerService.getExternalTickMessageAndTrail(tradePriceTickMessage);
+                otocoEntryTriggerService.getExternalTickMessageAndTriggerEntry(tradePriceTickMessage);
+                otocoExitTriggerService.getExternalTickMessageAndSettleExit(tradePriceTickMessage);
+                tradeMatchingService.getExternalTickMessageAndTrade(tradePriceTickMessage);
+                alertTriggerService.getExternalTickMessageAndCheckAlerts(tradePriceTickMessage);
 
-            marketPhaseService.closeMarketAfterClosingCall(tradePriceTickMessage.stockCode(),
-                    tradePriceTickMessage.tradeTime());
+                marketPhaseService.closeMarketAfterClosingCall(tradePriceTickMessage.stockCode(),
+                        tradePriceTickMessage.tradeTime());
 
-            liveDailyCandleService.buildAndPublish(stockCode, tradePriceTickMessage);
-            liveMinuteCandleService.updateAndPublish(stockCode, tradePriceTickMessage);
+                liveDailyCandleService.buildAndPublish(stockCode, tradePriceTickMessage);
+                liveMinuteCandleService.updateAndPublish(stockCode, tradePriceTickMessage);
+
+            } catch (NumberFormatException e) {
+                log.warn("[TICK 파싱 실패] 소수점 등 처리 불가 가격 데이터 무시. stockCode={}, message={}",
+                        stockCode, e.getMessage());
+            }
         }
     }
 }
