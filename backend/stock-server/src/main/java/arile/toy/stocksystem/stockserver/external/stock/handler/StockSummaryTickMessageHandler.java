@@ -40,15 +40,21 @@ public class StockSummaryTickMessageHandler {
 
             String stockCode = fields[offset];
 
-            StockSummaryTickMessage stockSummaryTickMessage = new StockSummaryTickMessage(
-                    stockCode,
-                    Integer.parseInt(fields[offset + 2]),
-                    Integer.parseInt(fields[offset + 4])
-            );
+            try {
+                StockSummaryTickMessage stockSummaryTickMessage = new StockSummaryTickMessage(
+                        stockCode,
+                        Integer.parseInt(fields[offset + 2]),
+                        Integer.parseInt(fields[offset + 4])
+                );
 
-            stockServerStockSummaryRepository.save(stockSummaryTickMessage);
-            redisStockSummaryEventPublisher.publish(
-                    StockSummaryTickEvent.fromMessage(stockSummaryTickMessage));
+                stockServerStockSummaryRepository.save(stockSummaryTickMessage);
+                redisStockSummaryEventPublisher.publish(
+                        StockSummaryTickEvent.fromMessage(stockSummaryTickMessage));
+
+            } catch (NumberFormatException e) {
+                log.warn("[SUMMARY 파싱 실패] 처리 불가 데이터 무시. stockCode={}, message={}",
+                        stockCode, e.getMessage());
+            }
         }
     }
 }
