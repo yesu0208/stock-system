@@ -200,22 +200,6 @@ tbody tr:hover {
     font-size: 13px;
 }
 
-.loading-spinner {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-
-    border: 2px solid #334155;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-
-    animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
 .end-of-list {
     color: #475569;
     font-size: 12px;

@@ -9,7 +9,7 @@ import HotStocksModal from "./HotStocksModal";
 import SectorModal from "./SectorModal";
 import InvestorModal from "./InvestorModal";
 
-type HoverType = "kospi" | "kosdaq" | "fx" | null;
+type HoverType = "kospi" | "kosdaq" | "kospi200" | "fx" | null;
 type ModalType = "index" | "investor" | "hot" | "sector" | null;
 
 function formatBaseTime(iso: string): string {
@@ -109,8 +109,15 @@ export default function Footer() {
         return "white";
     };
 
-    const Tooltip = ({ type }: { type: "kospi" | "kosdaq" | "fx" }) => {
-        const data = type === "kospi" ? marketMain?.kospi : type === "kosdaq" ? marketMain?.kosdaq : undefined;
+    const Tooltip = ({ type }: { type: "kospi" | "kosdaq" | "kospi200" | "fx" }) => {
+        const data =
+            type === "kospi"
+                ? marketMain?.kospi
+                : type === "kosdaq"
+                    ? marketMain?.kosdaq
+                    : type === "kospi200"
+                        ? marketMain?.kospi200
+                        : undefined;
 
         if (type === "fx") {
             return (
@@ -257,6 +264,23 @@ export default function Footer() {
                     </span>
 
                     {hovered === "kosdaq" && <Tooltip type="kosdaq" />}
+                </div>
+
+                <div className="divider" />
+
+                <div
+                    className="market-item"
+                    onMouseEnter={() => setHovered("kospi200")}
+                    onMouseLeave={() => setHovered(null)}
+                >
+                    <span style={labelStyle}>KOSPI200</span>
+                    <span style={{ color: getColor(marketMain?.kospi200.direction) }}>
+                        {marketMain?.kospi200.currentIndex ?? "-"}{" "}
+                        {getArrow(marketMain?.kospi200.direction)}{" "}
+                        {formatChange(marketMain?.kospi200.changeValue, marketMain?.kospi200.changeRate)}
+                    </span>
+
+                    {hovered === "kospi200" && <Tooltip type="kospi200" />}
                 </div>
 
                 <div className="divider" />

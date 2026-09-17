@@ -1,5 +1,6 @@
 import "./InvestorModal.css";
 import ModalV2 from "../../components/ModalV2";
+import Spinner from "../../components/Spinner";
 import { useEffect, useRef, useState } from "react";
 import { getInvestorTrend } from "../../api/marketInfo";
 import type { InvestorTrendMarket } from "../../api/marketInfo";
@@ -189,84 +190,89 @@ export default function InvestorModal({ open, onClose }: Props) {
 
                 <div className={`content-area ${animating ? "animating" : ""}`}>
                     <div className="table-wrap" ref={tableWrapRef}>
-                        <table>
-                            <thead>
-                            <tr>
-                                <th rowSpan={2}>시간</th>
-                                <th rowSpan={2}>개인</th>
-                                <th rowSpan={2}>외국인</th>
-                                <th colSpan={7}>기관계</th>
-                                <th rowSpan={2}>기타법인</th>
-                            </tr>
-                            <tr>
-                                <th>기관</th>
-                                <th>금융투자</th>
-                                <th>보험</th>
-                                <th>투신(사모)</th>
-                                <th>은행</th>
-                                <th>기타금융</th>
-                                <th>연기금등</th>
-                            </tr>
-                            </thead>
+                        {current.loading && current.data.length === 0 ? (
+                            <Spinner />
+                        ) : (
+                            <>
+                                <table>
+                                    <thead>
+                                    <tr>
+                                        <th rowSpan={2}>시간</th>
+                                        <th rowSpan={2}>개인</th>
+                                        <th rowSpan={2}>외국인</th>
+                                        <th colSpan={7}>기관계</th>
+                                        <th rowSpan={2}>기타법인</th>
+                                    </tr>
+                                    <tr>
+                                        <th>기관</th>
+                                        <th>금융투자</th>
+                                        <th>보험</th>
+                                        <th>투신(사모)</th>
+                                        <th>은행</th>
+                                        <th>기타금융</th>
+                                        <th>연기금등</th>
+                                    </tr>
+                                    </thead>
 
-                            <tbody>
-                            {current.data.map((row, i) => (
-                                <tr key={i}>
-                                    <td className="time">{formatDateOrTime(row.dateOrTime)}</td>
-                                    <td style={{ color: color(row.individual) }}>
-                                        {fmt(row.individual)}
-                                    </td>
-                                    <td style={{ color: color(row.foreigner) }}>
-                                        {fmt(row.foreigner)}
-                                    </td>
-                                    <td style={{ color: color(row.institution) }}>
-                                        {fmt(row.institution)}
-                                    </td>
-                                    <td style={{ color: color(row.financeInvestment) }}>
-                                        {fmt(row.financeInvestment)}
-                                    </td>
-                                    <td style={{ color: color(row.insurance) }}>
-                                        {fmt(row.insurance)}
-                                    </td>
-                                    <td style={{ color: color(row.fund) }}>
-                                        {fmt(row.fund)}
-                                    </td>
-                                    <td style={{ color: color(row.bank) }}>
-                                        {fmt(row.bank)}
-                                    </td>
-                                    <td style={{ color: color(row.etcFinance) }}>
-                                        {fmt(row.etcFinance)}
-                                    </td>
-                                    <td style={{ color: color(row.pension) }}>
-                                        {fmt(row.pension)}
-                                    </td>
-                                    <td style={{ color: color(row.corporation) }}>
-                                        {fmt(row.corporation)}
-                                    </td>
-                                </tr>
-                            ))}
+                                    <tbody>
+                                    {current.data.map((row, i) => (
+                                        <tr key={i}>
+                                            <td className="time">{formatDateOrTime(row.dateOrTime)}</td>
+                                            <td style={{ color: color(row.individual) }}>
+                                                {fmt(row.individual)}
+                                            </td>
+                                            <td style={{ color: color(row.foreigner) }}>
+                                                {fmt(row.foreigner)}
+                                            </td>
+                                            <td style={{ color: color(row.institution) }}>
+                                                {fmt(row.institution)}
+                                            </td>
+                                            <td style={{ color: color(row.financeInvestment) }}>
+                                                {fmt(row.financeInvestment)}
+                                            </td>
+                                            <td style={{ color: color(row.insurance) }}>
+                                                {fmt(row.insurance)}
+                                            </td>
+                                            <td style={{ color: color(row.fund) }}>
+                                                {fmt(row.fund)}
+                                            </td>
+                                            <td style={{ color: color(row.bank) }}>
+                                                {fmt(row.bank)}
+                                            </td>
+                                            <td style={{ color: color(row.etcFinance) }}>
+                                                {fmt(row.etcFinance)}
+                                            </td>
+                                            <td style={{ color: color(row.pension) }}>
+                                                {fmt(row.pension)}
+                                            </td>
+                                            <td style={{ color: color(row.corporation) }}>
+                                                {fmt(row.corporation)}
+                                            </td>
+                                        </tr>
+                                    ))}
 
-                            {!current.loading && current.data.length === 0 && (
-                                <tr>
-                                    <td colSpan={10} className="empty-state">
-                                        데이터가 없습니다.
-                                    </td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
+                                    {!current.loading && current.data.length === 0 && (
+                                        <tr>
+                                            <td colSpan={10} className="empty-state">
+                                                데이터가 없습니다.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </tbody>
+                                </table>
 
-                        <div ref={sentinelRef} className="scroll-sentinel">
-                            {current.loading && (
-                                <div className="loading-indicator">
-                                    <span className="loading-spinner" />
-                                    로딩중입니다...
+                                <div ref={sentinelRef} className="scroll-sentinel">
+                                    {current.loading && (
+                                        <div className="loading-indicator">
+                                            <Spinner size={14} thickness={2} center={false} />
+                                        </div>
+                                    )}
+                                    {!current.hasNext && current.data.length > 0 && (
+                                        <div className="end-of-list">마지막 데이터</div>
+                                    )}
                                 </div>
-                            )}
-                            {!current.hasNext && current.data.length > 0 && (
-                                <div className="end-of-list">— 더 이상 데이터가 없습니다 —</div>
-                            )}
-                        </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
