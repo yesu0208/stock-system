@@ -78,15 +78,16 @@
     left: 0;
     bottom: -1px;
 
-    width: 0%;
+    width: 100%;
     height: 2px;
 
     background: #3b82f6;
-    transition: width 0.25s ease;
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .stock-info-panel .tab.active::after {
-    width: 100%;
+    opacity: 1;
 }
 
 .stock-info-panel .tab:focus {
@@ -224,10 +225,15 @@
 }
 
 .stock-info-panel .company-summary p {
-    white-space: pre-line;
+    white-space: normal;
     line-height: 1.7;
     color: #cbd5e1;
     font-size: 13px;
+    margin: 0 0 1em 0;
+}
+
+.stock-info-panel .company-summary p::before {
+    content: "• ";
 }
 
 .stock-info-panel .trend-table {
