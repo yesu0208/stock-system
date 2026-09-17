@@ -790,7 +790,12 @@ function CancelTab({ orders }: { orders: PendingOrder[] }) {
                                     <span className="pending-item__stock-name">{order.stockName}</span>
                                     <span className="pending-item__stock-code">{order.stockCode}</span>
                                     <span className="pending-item__time">
-                                        {order.time.slice(11, 19)}
+                                        {new Date(order.time).toLocaleTimeString("ko-KR", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            second: "2-digit",
+                                            hour12: false,
+                                        })}
                                     </span>
                                 </div>
 
