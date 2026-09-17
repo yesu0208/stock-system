@@ -136,10 +136,17 @@ export default function StockInfoPanel() {
         if (!value || !base) return "white";
         const v = parseFloat(value.replace(/,/g, ""));
         const b = parseFloat(base.replace(/,/g, ""));
-        if (isNaN(v) || isNaN(b)) return "white";
+        if (isNaN(v) || isNaN(b) || v === 0) return "white";
         if (v > b) return "#ff6347";
         if (v < b) return "#4f9dff";
         return "white";
+    };
+
+    const formatPriceValue = (value?: string): string => {
+        if (!value) return "-";
+        const n = parseFloat(value.replace(/,/g, ""));
+        if (isNaN(n) || n === 0) return "-";
+        return value;
     };
 
     const getRateColor = (value?: string): string => {
@@ -154,6 +161,12 @@ export default function StockInfoPanel() {
         const n = parseFloat(score);
         if (isNaN(n)) return 2;
         return Math.min(4, Math.max(0, Math.round(n) - 1));
+    };
+
+    const isOpinionEmpty = (score?: string): boolean => {
+        if (!score) return true;
+        const n = parseFloat(score);
+        return isNaN(n) || n === 0;
     };
 
     const getPricePosition = (current?: string, low?: string, high?: string): number => {
@@ -345,11 +358,9 @@ export default function StockInfoPanel() {
                                         }}
                                     >
                                         <span className="price-range-label-title">현재가</span>
-                                        <span
-                                            className="price-range-label-value"
-                                        >
-                {detail.currentPrice ?? "-"}
-            </span>
+                                        <span className="price-range-label-value">
+                                            {formatPriceValue(detail.currentPrice)}
+                                        </span>
                                     </div>
                                 </div>
 
@@ -365,12 +376,12 @@ export default function StockInfoPanel() {
                                 <div className="price-range-labels">
                                     <div className="price-range-label">
                                         <span className="price-range-label-title">52주 최저</span>
-                                        <span className="price-range-label-value">{info.low52}</span>
+                                        <span className="price-range-label-value">{formatPriceValue(info.low52)}</span>
                                     </div>
 
                                     <div className="price-range-label price-range-label--right">
                                         <span className="price-range-label-title">52주 최고</span>
-                                        <span className="price-range-label-value">{info.high52}</span>
+                                        <span className="price-range-label-value">{formatPriceValue(info.high52)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -380,23 +391,23 @@ export default function StockInfoPanel() {
                                 <tr>
                                     <td className="label">고가</td>
                                     <td className="value" style={{ color: getPriceColor(detail.highPrice, detail.prevPrice) }}>
-                                        {detail.highPrice ?? "-"}
+                                        {formatPriceValue(detail.highPrice)}
                                     </td>
 
                                     <td className="label">저가</td>
                                     <td className="value" style={{ color: getPriceColor(detail.lowPrice, detail.prevPrice) }}>
-                                        {detail.lowPrice ?? "-"}
+                                        {formatPriceValue(detail.lowPrice)}
                                     </td>
                                 </tr>
                                 <tr>
                                     <td className="label">상한가</td>
                                     <td className="value" style={{ color: getPriceColor(detail.upperLimit, detail.prevPrice) }}>
-                                        {detail.upperLimit ?? "-"}
+                                        {formatPriceValue(detail.upperLimit)}
                                     </td>
 
                                     <td className="label">하한가</td>
                                     <td className="value" style={{ color: getPriceColor(detail.lowerLimit, detail.prevPrice) }}>
-                                        {detail.lowerLimit ?? "-"}
+                                        {formatPriceValue(detail.lowerLimit)}
                                     </td>
                                 </tr>
                                 </tbody>
@@ -410,7 +421,8 @@ export default function StockInfoPanel() {
 
                             <div className="consensus-rating-bar">
                                 {["적극매도", "매도", "중립", "매수", "적극매수"].map((label, i) => {
-                                    const isActive = i === getOpinionIndex(info.opinion);
+                                    const empty = isOpinionEmpty(info.opinion);
+                                    const isActive = !empty && i === getOpinionIndex(info.opinion);
                                     return (
                                         <div key={label} className="consensus-rating-item">
                                             <div className={`consensus-rating-badge ${isActive ? "consensus-rating-badge--active" : ""}`}>
@@ -427,13 +439,17 @@ export default function StockInfoPanel() {
                                 <div className="consensus-target-value">{formatWon(info.targetPrice)}</div>
                             </div>
 
-                            <div className="consensus-desc">
-                                최근 3개월간 증권사에서 발표한 전망치의 평균값입니다.
-                            </div>
+                            {!isOpinionEmpty(info.opinion) && (
+                                <>
+                                    <div className="consensus-desc">
+                                        최근 3개월간 증권사에서 발표한 전망치의 평균값입니다.
+                                    </div>
 
-                            <div className="consensus-date">
-                                {info.consensusDate} 기준 · 에프앤가이드 제공
-                            </div>
+                                    <div className="consensus-date">
+                                        {info.consensusDate} 기준 · 에프앤가이드 제공
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
