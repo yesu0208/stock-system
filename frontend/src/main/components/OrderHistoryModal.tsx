@@ -1,24 +1,30 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
-import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory, cancelOrder } from "../../api/orderHistory";
-import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled, cancelAutoOrder } from "../../api/autoOrderHistory";
+import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory } from "../../api/orderHistory";
+import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled } from "../../api/autoOrderHistory";
 import { useRealtime } from "../context/RealtimeContext";
 import { STOCKS } from "../data/stocks";
 import { stockNameMap } from "../../constants/stocks";
 import type { OrderHistoryItem, TradeHistoryItem, AutoOrderHistoryItem, HistoryPageResponse } from "../../types/history";
 import "./OrderHistoryModal.css";
 import Tooltip from "../../tooltip/Tooltip";
+import CancelConfirmModal from "./modal/cancel/CancelConfirmModal";
 
 type MainTab = "주문" | "취소" | "미체결" | "체결";
 type SubTab = "일반" | "자동";
 
 type AnyOrderItem = OrderHistoryItem | AutoOrderHistoryItem | TradeHistoryItem;
+type PendingItem = OrderHistoryItem | AutoOrderHistoryItem;
 
 function isAutoOrder(item: AnyOrderItem): item is AutoOrderHistoryItem {
     return "autoOrderId" in item;
 }
 function isTrade(item: AnyOrderItem): item is TradeHistoryItem {
     return "tradeId" in item;
+}
+
+function pendingItemKey(item: PendingItem): string {
+    return isAutoOrder(item) ? `auto-${item.autoOrderId}` : `order-${item.orderId}`;
 }
 
 function formatTimeParts(isoString: string): { date: string; time: string } {
@@ -74,23 +80,6 @@ function MarginCell({ notionalValue, initialMargin }: { notionalValue: number | 
             <span className="oh-margin-initial">
                 {initialMargin != null ? initialMargin.toLocaleString() : <span className="oh-dash">-</span>}
             </span>
-        </span>
-    );
-}
-
-function CancelButton({ onCancel }: { onCancel: () => void }) {
-    return (
-        <span className="oh-col oh-cancel">
-            <button
-                type="button"
-                className="oh-cancel-btn"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onCancel();
-                }}
-            >
-                취소
-            </button>
         </span>
     );
 }
@@ -248,6 +237,9 @@ export default function OrderHistoryModal() {
     const [hasNext, setHasNext] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+
     const sentinelRef = useRef<HTMLDivElement>(null);
     const listWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -292,6 +284,7 @@ export default function OrderHistoryModal() {
 
         setItems([]);
         setHasNext(false);
+        setSelectedIds(new Set());
 
         const loadInitialPending = subTab === "일반"
             ? getUnfilledOrders({ page: 0, size: 100 })
@@ -336,26 +329,46 @@ export default function OrderHistoryModal() {
         if (t === "체결") setSubTab("일반");
     };
 
-    const handleCancel = async (auto: boolean, id: number, stockCode: string) => {
-        if (!window.confirm("주문을 취소하시겠습니까?")) return;
-        try {
-            if (auto) {
-                await cancelAutoOrder(id, stockCode);
-            } else {
-                await cancelOrder(id, stockCode);
-            }
-            setItems((prev) =>
-                prev.filter((item) => {
-                    if (isTrade(item)) return true;
-                    if (auto) return !isAutoOrder(item) || item.autoOrderId !== id;
-                    return isAutoOrder(item) || (item as OrderHistoryItem).orderId !== id;
-                })
-            );
-        } catch (e) {
-            console.error("[OrderHistoryModal] 취소 실패", e);
-            alert("취소에 실패했습니다.");
+    const pendingItems: PendingItem[] = isPending
+        ? (items.filter((item) => !isTrade(item)) as PendingItem[])
+        : [];
+
+    function toggleSelect(key: string) {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            next.has(key) ? next.delete(key) : next.add(key);
+            return next;
+        });
+    }
+
+    function toggleAll() {
+        if (selectedIds.size === pendingItems.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(pendingItems.map(pendingItemKey)));
         }
-    };
+    }
+
+    function handleCancelClick() {
+        if (selectedIds.size === 0) return;
+        setCancelConfirmOpen(true);
+    }
+
+    function handleCancelConfirmSuccess() {
+        setSelectedIds(new Set());
+    }
+
+    const selectedOrdersForCancel = pendingItems
+        .filter((item) => selectedIds.has(pendingItemKey(item)))
+        .map((item) => {
+            const auto = isAutoOrder(item);
+            return {
+                rawId: auto ? item.autoOrderId : (item as OrderHistoryItem).orderId,
+                stockCode: item.stockCode,
+                isAuto: auto,
+                orderId: pendingItemKey(item),
+            };
+        });
 
     const showTrigger = subTab === "자동" && mainTab !== "체결";
     const gridClass = isPending
@@ -363,6 +376,7 @@ export default function OrderHistoryModal() {
         : (showTrigger ? "oh-grid-cancelled" : "oh-grid-executed");
 
     const hasFilter = !!(filter.stockCode || filter.dateFrom || filter.dateTo);
+    const hasSelection = selectedIds.size > 0;
 
     return (
         <div className="oh-modal">
@@ -401,7 +415,24 @@ export default function OrderHistoryModal() {
                     />
                 )}
 
-                {!isPending && (
+                {isPending ? (
+                    <div className="oh-pending-header">
+                        <span className="oh-pending-header__count">미체결 주문 {pendingItems.length}건</span>
+                        <Tooltip
+                            text={selectedIds.size === pendingItems.length && pendingItems.length > 0 ? "전체 취소 해제" : "전체 취소"}
+                            placement="top"
+                        >
+                            <label className="oh-all-check">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.size === pendingItems.length && pendingItems.length > 0}
+                                    onChange={toggleAll}
+                                />
+                                전체 선택
+                            </label>
+                        </Tooltip>
+                    </div>
+                ) : (
                     <div className={`oh-header-row ${gridClass}`}>
                         <span className="oh-col oh-time">시간</span>
                         <span className="oh-col oh-name">종목</span>
@@ -420,32 +451,44 @@ export default function OrderHistoryModal() {
 
                 <div className="oh-list-wrapper" ref={listWrapperRef}>
                     {isPending ? (
-                        items.length === 0 && !loading ? (
+                        pendingItems.length === 0 && !loading ? (
                             <div className="oh-pending-empty">내역이 없습니다</div>
                         ) : (
                             <ul className="oh-pending-list">
-                                {items.map((item) => {
-                                    if (isTrade(item)) return null;
-
+                                {pendingItems.map((item) => {
                                     const stockCode = item.stockCode;
                                     const stockName = stockNameMap[stockCode] ?? stockCode;
                                     const auto = isAutoOrder(item);
-                                    const id = auto ? item.autoOrderId : (item as OrderHistoryItem).orderId;
+                                    const key = pendingItemKey(item);
                                     const side = auto ? item.autoOrderType : (item as OrderHistoryItem).orderType;
                                     const triggerPrice = auto ? (item as AutoOrderHistoryItem).triggerPrice : null;
                                     const remaining = !auto ? (item as OrderHistoryItem).remainingQuantity : item.orderQuantity;
                                     const total = item.orderQuantity;
                                     const fillPct = total > 0 ? Math.min(100, Math.max(0, (remaining / total) * 100)) : 0;
                                     const sideClass = side === "BUY" ? "bar--buy" : "bar--sell";
-                                    const { date, time } = formatTimeParts(item.orderTime);
+                                    const { time } = formatTimeParts(item.orderTime);
+                                    const selected = selectedIds.has(key);
 
                                     return (
-                                        <li key={`${auto ? "auto" : "order"}-${id}`} className="oh-pending-item">
+                                        <li
+                                            key={key}
+                                            className={`oh-pending-item ${selected ? "oh-pending-item--selected" : ""}`}
+                                            onClick={() => toggleSelect(key)}
+                                        >
+                                            <Tooltip text={selected ? "취소 해제" : "취소"} placement="top">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={() => toggleSelect(key)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            </Tooltip>
+
                                             <div className="oh-pending-item__info">
                                                 <div className="oh-pending-item__stock-name-row">
                                                     <span className="oh-pending-item__stock-name">{stockName}</span>
                                                     <span className="oh-pending-item__stock-code">{stockCode}</span>
-                                                    <span className="oh-pending-item__time">{date} {time}</span>
+                                                    <span className="oh-pending-item__time">{time}</span>
                                                 </div>
 
                                                 <div className="oh-pending-item__top">
@@ -489,8 +532,6 @@ export default function OrderHistoryModal() {
                                                     />
                                                 </div>
                                             </div>
-
-                                            <CancelButton onCancel={() => handleCancel(auto, id, stockCode)} />
                                         </li>
                                     );
                                 })}
@@ -567,7 +608,30 @@ export default function OrderHistoryModal() {
                         </div>
                     )}
                 </div>
+
+                {isPending && (
+                    <div className="oh-pending-footer">
+                        <span className={`oh-pending-footer__count ${hasSelection ? "oh-pending-footer__count--active" : ""}`}>
+                            {hasSelection ? `${selectedIds.size}건 선택됨` : "항목을 선택하세요"}
+                        </span>
+                        <button
+                            className={`oh-pending-cancel-btn ${!hasSelection ? "oh-pending-cancel-btn--disabled" : ""}`}
+                            onClick={handleCancelClick}
+                            disabled={!hasSelection}
+                        >
+                            주문 취소
+                        </button>
+                    </div>
+                )}
             </div>
+
+            <CancelConfirmModal
+                open={cancelConfirmOpen}
+                onClose={() => setCancelConfirmOpen(false)}
+                onConfirm={handleCancelConfirmSuccess}
+                count={selectedIds.size}
+                selectedOrders={selectedOrdersForCancel}
+            />
         </div>
     );
 }

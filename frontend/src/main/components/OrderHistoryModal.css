@@ -702,10 +702,11 @@
     list-style: none;
     margin: 0;
     padding: 8px;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
     flex: 1;
+    align-content: start;
 }
 
 .oh-pending-empty {
@@ -937,4 +938,169 @@
 
 .oh-pending-item > .oh-col.oh-cancel {
     align-self: center;
+}
+
+.oh-pending-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    flex-shrink: 0;
+}
+
+.oh-pending-header__count {
+    font-size: 13px;
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.oh-all-check {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: #cbd5e1;
+    cursor: pointer;
+    user-select: none;
+}
+
+.oh-all-check input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    border-radius: 4px;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.oh-all-check input[type="checkbox"]:hover {
+    border-color: #22c07a;
+}
+
+.oh-all-check input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5L6.5 11.5L12.5 4.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 10px 10px;
+    transform: scale(0);
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.oh-all-check input[type="checkbox"]:checked {
+    background: #22c07a;
+    border-color: #22c07a;
+    box-shadow: 0 0 0 3px rgba(34, 192, 122, 0.18);
+}
+
+.oh-all-check input[type="checkbox"]:checked::after {
+    transform: scale(1);
+}
+
+.oh-pending-item {
+    cursor: pointer;
+}
+
+.oh-pending-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    margin-top: 2px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.oh-pending-item input[type="checkbox"]:hover {
+    border-color: #22c07a;
+}
+
+.oh-pending-item input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5L6.5 11.5L12.5 4.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 10px 10px;
+    transform: scale(0);
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.oh-pending-item input[type="checkbox"]:checked {
+    background: #22c07a;
+    border-color: #22c07a;
+    box-shadow: 0 0 0 3px rgba(34, 192, 122, 0.18);
+}
+
+.oh-pending-item input[type="checkbox"]:checked::after {
+    transform: scale(1);
+}
+
+.oh-pending-item--selected {
+    border-color: #22c07a;
+    background: rgba(34, 192, 122, 0.07);
+}
+
+.oh-pending-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.oh-pending-footer__count {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+    transition: color 0.15s;
+}
+
+.oh-pending-footer__count--active {
+    color: #22c07a;
+    font-weight: 600;
+}
+
+.oh-pending-cancel-btn {
+    padding: 8px 20px;
+    background: #22c07a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s, opacity 0.15s, background 0.15s;
+}
+
+.oh-pending-cancel-btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.oh-pending-cancel-btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.oh-pending-cancel-btn--disabled,
+.oh-pending-cancel-btn:disabled {
+    background: rgba(255, 255, 255, 0.08);
+    color: #64748b;
+    cursor: not-allowed;
+    filter: none;
 }
