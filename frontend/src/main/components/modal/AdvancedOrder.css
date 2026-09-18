@@ -459,6 +459,7 @@
 .adv-order__order-panel .ratio-btn {
     flex: 1;
     height: 24px;
+    padding: 0;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-surface);
@@ -498,6 +499,8 @@
 .adv-order__order-panel .stepper__btn {
     width: 28px;
     height: 28px;
+    padding: 0;
+    box-sizing: border-box;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-surface);
@@ -704,6 +707,10 @@
     min-height: 0;
 }
 
+.adv-order__order-panel:not(.otoco-panel) .adv-order__summary {
+    margin-top: 95px;
+}
+
 .adv-order__summary-row {
     display: flex;
     justify-content: space-between;
@@ -807,7 +814,7 @@
 
 .adv-order__order-panel .order-btn-row > * { min-width: 0; }
 .adv-order__order-panel .order-btn-row > .credit-area { flex: 1.4; }
-.adv-order__order-panel .order-btn-row > .order-btn  { flex: 1; }
+.adv-order__order-panel .order-btn-row > .order-btn  { flex: 0.5; }
 
 .adv-order__order-panel .credit-area {
     display: flex;
@@ -939,8 +946,13 @@
     font-size: 11px;
 }
 
-.adv-order__order-panel .credit-area__margin-label { color: var(--color-text-muted); }
+.adv-order__order-panel .credit-area__margin-label { color: var(--color-text-secondary); }
 .adv-order__order-panel .credit-area__margin-value { font-weight: 700; color: #7c5cff; }
+
+/* 선택된 레버리지에 따라 개시증거금률 숫자 색상도 동일하게 */
+.adv-order__order-panel .credit-area__margin-value.lev-2 { color: #7dd3fc; }
+.adv-order__order-panel .credit-area__margin-value.lev-3 { color: #fbbf24; }
+.adv-order__order-panel .credit-area__margin-value.lev-5 { color: #f87171; }
 
 .adv-order__order-panel .credit-area__row2--disabled .credit-area__margin-label,
 .adv-order__order-panel .credit-area__row2--disabled .credit-area__margin-value {
@@ -951,7 +963,7 @@
 .adv-order__order-panel .order-btn {
     width: 100%;
     height: 100%;
-    padding: 16px 0;
+    padding: 0;
     border: none;
     border-radius: var(--radius-md);
     font-size: 14px;
@@ -961,6 +973,10 @@
     letter-spacing: -0.2px;
     flex-shrink: 0;
     font-family: var(--font-base);
+}
+
+.adv-order__order-panel .order-btn__line {
+    display: block;
 }
 
 .adv-order__order-panel .order-btn:active { transform: scale(0.98); }
@@ -1257,8 +1273,8 @@
 }
 
 .otoco-section__sub {
-    font-size: 10px;
-    color: var(--color-text-muted);
+    font-size: 11px;
+    color: var(--color-text-secondary);
 }
 
 .otoco-direction-group {
@@ -1320,30 +1336,50 @@
 .otoco-mode-toggle {
     display: flex;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     overflow: hidden;
     flex-shrink: 0;
+    background: var(--color-surface);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .otoco-mode-btn {
-    width: 28px;
+    width: 30px;
     height: 26px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: none;
-    background: var(--color-surface);
+    background: transparent;
     font-size: 11px;
     font-weight: 600;
     color: var(--color-text-secondary);
     cursor: pointer;
-    transition: background 0.12s, color 0.12s;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
     font-family: var(--font-base);
+    position: relative;
 }
 
-.otoco-mode-btn + .otoco-mode-btn { border-left: 1px solid var(--color-border); }
-.otoco-mode-btn:hover { background: var(--color-surface-2); }
+.otoco-mode-btn + .otoco-mode-btn {
+    border-left: 1px solid var(--color-border);
+}
+
+.otoco-mode-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-primary);
+}
 
 .otoco-mode-btn--active {
-    background: rgba(124, 92, 255, 0.14);
-    color: #b7a6ff;
+    background: linear-gradient(180deg, rgba(124, 92, 255, 0.22), rgba(124, 92, 255, 0.1));
+    color: #c9bcff;
+    box-shadow: inset 0 0 0 1px rgba(124, 92, 255, 0.4);
+    font-weight: 700;
+}
+
+.otoco-mode-btn--active:hover {
+    background: linear-gradient(180deg, rgba(124, 92, 255, 0.28), rgba(124, 92, 255, 0.14));
+    color: #d6ccff;
 }
 
 .otoco-price-input {
@@ -2022,4 +2058,84 @@
 
 .adv-order__stock-panel .adv-order__search-box {
     margin-bottom: 4px;
+}
+
+.adv-order__stock-name-row {
+    justify-content: center;
+    text-align: center;
+}
+
+.adv-order__stock-name-block {
+    align-items: center;
+}
+
+.adv-order__price-block {
+    align-items: center;
+    text-align: center;
+}
+
+.adv-order__price-change-row {
+    justify-content: center;
+}
+
+.adv-order__cond-header {
+    margin: 10px 14px 0;
+}
+
+.adv-order__order-panel .ratio-btn.accent--above:hover {
+    border-color: var(--color-trail-buy);
+    color: var(--color-trail-buy);
+}
+
+.adv-order__order-panel .ratio-btn.accent--below:hover {
+    border-color: var(--color-trail-sell);
+    color: var(--color-trail-sell);
+}
+
+.adv-order__order-panel .form-row .form-label,
+.adv-order__stop-row:not(.adv-order__stop-row--disabled) .adv-order__stop-label {
+    color: var(--color-text-primary);
+}
+
+.adv-order__order-panel .ratio-btn.accent--buy:hover,
+.adv-order__order-panel .stepper__btn.accent--buy:hover {
+    border-color: var(--color-buy);
+    color: var(--color-buy);
+}
+
+.adv-order__order-panel .ratio-btn.accent--sell:hover,
+.adv-order__order-panel .stepper__btn.accent--sell:hover {
+    border-color: var(--color-sell);
+    color: var(--color-sell);
+}
+
+.adv-order__order-panel .ratio-btn.accent--above:hover,
+.adv-order__order-panel .stepper__btn.accent--above:hover {
+    border-color: var(--color-trail-buy);
+    color: var(--color-trail-buy);
+}
+
+.adv-order__order-panel .ratio-btn.accent--below:hover,
+.adv-order__order-panel .stepper__btn.accent--below:hover {
+    border-color: var(--color-trail-sell);
+    color: var(--color-trail-sell);
+}
+
+/* 신용 패널 레버리지 버튼 - 활성 시 예상진입금액 태그와 동일 색상 */
+.adv-order__order-panel .leverage-btn.lev-2.leverage-btn--active {
+    background: rgba(125, 211, 252, 0.12);
+    border-color: #7dd3fc;
+    color: #7dd3fc;
+}
+
+.adv-order__order-panel .leverage-btn.lev-3.leverage-btn--active {
+    background: rgba(251, 191, 36, 0.12);
+    border-color: #fbbf24;
+    color: #fbbf24;
+}
+
+.adv-order__order-panel .leverage-btn.lev-5.leverage-btn--active {
+    background: rgba(248, 113, 113, 0.12);
+    border-color: #f87171;
+    color: #f87171;
 }

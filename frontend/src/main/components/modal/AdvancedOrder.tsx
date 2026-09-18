@@ -360,6 +360,10 @@ function TrailingOrderLayout() {
                 <StockInfoPanel />
 
                 <div className="adv-order__order-wrap">
+                    <div className="otoco-section__header adv-order__cond-header">
+                        <span className="otoco-section__title">매수/매도 조건</span>
+                    </div>
+
                     <label className="adv-order__mode-toggle">
                         <input
                             type="checkbox"
@@ -685,7 +689,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                 <span className="form-label">수량</span>
                 <div className="stepper">
                     <button
-                        className="stepper__btn"
+                        className={`stepper__btn ${accentClass}`}
                         onClick={() => setQuantity((q) => clampQty(q - 1))}
                     >
                         −
@@ -698,7 +702,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                         onChange={(e) => setQuantity(clampQty(parseNumber(e.target.value)))}
                     />
                     <button
-                        className="stepper__btn"
+                        className={`stepper__btn ${accentClass}`}
                         onClick={() => setQuantity((q) => clampQty(q + 1))}
                     >
                         +
@@ -835,24 +839,34 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                             </label>
                         </Tooltip>
                         <div className="leverage-group">
-                            {LEVERAGE_OPTIONS.map(({ leverage: lv, label }) => (
-                                <button
-                                    key={lv}
-                                    type="button"
-                                    disabled={!isCredit}
-                                    className={`leverage-btn ${
-                                        isCredit && leverage === lv ? "leverage-btn--active" : ""
-                                    }`}
-                                    onClick={() => setLeverage(lv)}
-                                >
-                                    {label}
-                                </button>
-                            ))}
+                            {LEVERAGE_OPTIONS.map(({ leverage: lv, label }) => {
+                                const levClass =
+                                    lv === 1.5 ? "lev-2" :
+                                        lv === 2   ? "lev-3" :
+                                            lv === 2.5 ? "lev-5" : "";
+                                return (
+                                    <button
+                                        key={lv}
+                                        type="button"
+                                        disabled={!isCredit}
+                                        className={`leverage-btn ${levClass} ${
+                                            isCredit && leverage === lv ? "leverage-btn--active" : ""
+                                        }`}
+                                        onClick={() => setLeverage(lv)}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                     <div className={`credit-area__row2 ${!isCredit ? "credit-area__row2--disabled" : ""}`}>
                         <span className="credit-area__margin-label">개시증거금률</span>
-                        <span className="credit-area__margin-value">
+                        <span className={`credit-area__margin-value ${
+                            selectedLeverageOption.leverage === 1.5 ? "lev-2" :
+                                selectedLeverageOption.leverage === 2   ? "lev-3" :
+                                    selectedLeverageOption.leverage === 2.5 ? "lev-5" : ""
+                        }`}>
                             {selectedLeverageOption.marginRate}%
                         </span>
                     </div>
@@ -862,7 +876,8 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                     className={`order-btn ${isBuy ? "order-btn--buy" : "order-btn--sell"}`}
                     onClick={openConfirm}
                 >
-                    {isCredit ? "신용" : "현금"} {isBuy ? "매수" : "매도"}
+                    <span className="order-btn__line">{isCredit ? "신용" : "현금"}</span>
+                    <span className="order-btn__line">{isBuy ? "매수" : "매도"}</span>
                 </button>
             </div>
 
@@ -989,7 +1004,7 @@ function OtocoInputPanel() {
             <div className="otoco-section">
                 <div className="otoco-section__header">
                     <span className="otoco-section__title">진입 조건</span>
-                    <span className="otoco-section__sub">현재가 기준 트리거</span>
+                    <span className="otoco-section__sub">(매수 진입 조건)</span>
                 </div>
 
                 <div className="otoco-direction-group">
@@ -1014,10 +1029,10 @@ function OtocoInputPanel() {
                 </div>
 
                 <div className="form-row">
-                    <span className={`form-label otoco-entry-label ${dirClass}`}>트리거가</span>
+                    <span className={`form-label otoco-entry-label ${dirClass}`}>감시가</span>
                     <div className="stepper">
                         <button
-                            className="stepper__btn"
+                            className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
                             onClick={() => setEntryPrice((p) => Math.max(0, p - 100))}
                         >
                             −
@@ -1030,7 +1045,7 @@ function OtocoInputPanel() {
                             onChange={(e) => setEntryPrice(Math.max(0, parseNumber(e.target.value)))}
                         />
                         <button
-                            className="stepper__btn"
+                            className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
                             onClick={() => setEntryPrice((p) => p + 100)}
                         >
                             +
@@ -1044,7 +1059,7 @@ function OtocoInputPanel() {
                         <button
                             key={label}
                             type="button"
-                            className="ratio-btn accent--buy"
+                            className={`ratio-btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
                             onClick={() => handleRatioClick(ratio)}
                         >
                             {label}
@@ -1056,7 +1071,7 @@ function OtocoInputPanel() {
                     <span className="form-label">수량</span>
                     <div className="stepper">
                         <button
-                            className="stepper__btn"
+                            className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
                             onClick={() => setEntryQty((q) => clampQty(q - 1))}
                         >
                             −
@@ -1069,7 +1084,7 @@ function OtocoInputPanel() {
                             onChange={(e) => setEntryQty(clampQty(parseNumber(e.target.value)))}
                         />
                         <button
-                            className="stepper__btn"
+                            className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
                             onClick={() => setEntryQty((q) => clampQty(q + 1))}
                         >
                             +
@@ -1084,7 +1099,7 @@ function OtocoInputPanel() {
             <div className="otoco-section">
                 <div className="otoco-section__header">
                     <span className="otoco-section__title">청산 조건</span>
-                    <span className="otoco-section__sub">익절 · 손절 OCO</span>
+                    <span className="otoco-section__sub">(익절 · 손절 조건)</span>
                 </div>
 
                 <div className="otoco-exit-row">
@@ -1226,26 +1241,36 @@ function OtocoInputPanel() {
                             </label>
                         </Tooltip>
                         <div className="leverage-group">
-                            {LEVERAGE_OPTIONS.map(({ leverage: lv, label }) => (
-                                <button
-                                    key={lv}
-                                    type="button"
-                                    disabled={!isCredit}
-                                    className={`leverage-btn ${
-                                        isCredit && leverage === lv ? "leverage-btn--active" : ""
-                                    }`}
-                                    onClick={() => setLeverage(lv)}
-                                >
-                                    {label}
-                                </button>
-                            ))}
+                            {LEVERAGE_OPTIONS.map(({ leverage: lv, label }) => {
+                                const levClass =
+                                    lv === 1.5 ? "lev-2" :
+                                        lv === 2   ? "lev-3" :
+                                            lv === 2.5 ? "lev-5" : "";
+                                return (
+                                    <button
+                                        key={lv}
+                                        type="button"
+                                        disabled={!isCredit}
+                                        className={`leverage-btn ${levClass} ${
+                                            isCredit && leverage === lv ? "leverage-btn--active" : ""
+                                        }`}
+                                        onClick={() => setLeverage(lv)}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                     <div className={`credit-area__row2 ${!isCredit ? "credit-area__row2--disabled" : ""}`}>
                         <span className="credit-area__margin-label">개시증거금률</span>
-                        <span className="credit-area__margin-value">
-                            {selectedLeverageOption.marginRate}%
-                        </span>
+                        <span className={`credit-area__margin-value ${
+                            selectedLeverageOption.leverage === 1.5 ? "lev-2" :
+                                selectedLeverageOption.leverage === 2   ? "lev-3" :
+                                    selectedLeverageOption.leverage === 2.5 ? "lev-5" : ""
+                        }`}>
+        {selectedLeverageOption.marginRate}%
+    </span>
                     </div>
                 </div>
 
@@ -1253,7 +1278,8 @@ function OtocoInputPanel() {
                     className="order-btn order-btn--buy"
                     onClick={openConfirm}
                 >
-                    {isCredit ? "신용 " : "현금 "} 매수
+                    <span className="order-btn__line">{isCredit ? "신용" : "현금"}</span>
+                    <span className="order-btn__line">매수</span>
                 </button>
             </div>
 
@@ -1747,7 +1773,7 @@ function OtocoInfo() {
                     <>
                         <li className="ao-info__point">
                             <span className="ao-info__point-dot otoco-point-dot--above" />
-                            현재가가 트리거가 이상으로 오르면 자동으로 매수 진입하고, 진입과 동시에 익절·손절 OCO 주문이 함께 등록됩니다.
+                            현재가가 감시가 이상으로 오르면 자동으로 매수 진입하고, 진입과 동시에 익절·손절 OCO 주문이 함께 등록됩니다.
                         </li>
                         <li className="ao-info__point">
                             <span className="ao-info__point-dot otoco-point-dot--above" />
@@ -1755,7 +1781,7 @@ function OtocoInfo() {
                         </li>
                         <li className="ao-info__point">
                             <span className="ao-info__point-dot otoco-point-dot--above" />
-                            익절·손절가는 원 단위 또는 트리거가 대비 % 단위로 설정할 수 있고, 진입 직후 자동으로 등록됩니다.
+                            익절·손절가는 원 단위 또는 감시가 대비 % 단위로 설정할 수 있고, 진입 직후 자동으로 등록됩니다.
                         </li>
                         <li className="ao-info__point">
                             <span className="ao-info__point-dot otoco-point-dot--above" />
@@ -1766,7 +1792,7 @@ function OtocoInfo() {
                     <>
                         <li className="ao-info__point">
                             <span className="ao-info__point-dot otoco-point-dot--below" />
-                            현재가가 트리거가 이하로 내리면 자동으로 매수 진입하고, 진입과 동시에 익절·손절 OCO 주문이 함께 등록됩니다.
+                            현재가가 감시가 이하로 내리면 자동으로 매수 진입하고, 진입과 동시에 익절·손절 OCO 주문이 함께 등록됩니다.
                         </li>
                         <li className="ao-info__point">
                             <span className="ao-info__point-dot otoco-point-dot--below" />
@@ -1774,7 +1800,7 @@ function OtocoInfo() {
                         </li>
                         <li className="ao-info__point">
                             <span className="ao-info__point-dot otoco-point-dot--below" />
-                            익절·손절가는 원 단위 또는 트리거가 대비 % 단위로 설정할 수 있고, 진입 직후 자동으로 등록됩니다.
+                            익절·손절가는 원 단위 또는 감시가 대비 % 단위로 설정할 수 있고, 진입 직후 자동으로 등록됩니다.
                         </li>
                         <li className="ao-info__point">
                             <span className="ao-info__point-dot otoco-point-dot--below" />
