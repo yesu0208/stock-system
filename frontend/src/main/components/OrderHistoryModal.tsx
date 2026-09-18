@@ -44,40 +44,35 @@ function TimeCell({ isoString }: { isoString: string }) {
 
 const LEVERAGE_NUM: Record<string, number> = { SPOT: 1, X1_5: 1.5, X2: 2, X2_5: 2.5 };
 
+function leverageClass(leverageRatio: string | null): string {
+    const ratio = leverageRatio ?? "SPOT";
+    const isCash = ratio === "SPOT";
+    const num = LEVERAGE_NUM[ratio] ?? 0;
+    return isCash ? "cash" : num === 1.5 ? "lev-2" : num === 2 ? "lev-3" : num === 2.5 ? "lev-5" : "lev-other";
+}
+
 function LeverageBadge({ leverageRatio }: { leverageRatio: string | null }) {
     const ratio = leverageRatio ?? "SPOT";
     const isCash = ratio === "SPOT";
     const num = LEVERAGE_NUM[ratio] ?? 0;
-    const levClass = isCash ? "cash" : num === 1.5 ? "lev-2" : num === 2 ? "lev-3" : num === 2.5 ? "lev-5" : "lev-other";
 
     return (
         <span className="oh-col oh-leverage">
-            <span className={`oh-leverage-badge ${levClass}`}>
+            <span className={`oh-leverage-badge ${leverageClass(leverageRatio)}`}>
                 {isCash ? "현금" : `${num}x`}
             </span>
         </span>
     );
 }
 
-function MarginCell({ notionalValue, initialMargin }: { notionalValue: number; initialMargin: number | null }) {
+function MarginCell({ notionalValue, initialMargin }: { notionalValue: number | null; initialMargin: number | null }) {
     return (
         <span className="oh-col oh-margin">
-            <span className="oh-margin-notional">{notionalValue.toLocaleString()}</span>
+            <span className="oh-margin-notional">
+                {notionalValue != null ? notionalValue.toLocaleString() : <span className="oh-dash">-</span>}
+            </span>
             <span className="oh-margin-initial">
                 {initialMargin != null ? initialMargin.toLocaleString() : <span className="oh-dash">-</span>}
-            </span>
-        </span>
-    );
-}
-
-function LiquidationCell({ maintenanceMarginRate, liquidationPrice }: { maintenanceMarginRate: number | null; liquidationPrice: number | null }) {
-    return (
-        <span className="oh-col oh-liquidation">
-            <span className="oh-liq-rate">
-                {maintenanceMarginRate != null ? `${(maintenanceMarginRate * 100).toFixed(0)}%` : <span className="oh-dash">-</span>}
-            </span>
-            <span className="oh-liq-price">
-                {liquidationPrice != null ? liquidationPrice.toLocaleString() : <span className="oh-dash">-</span>}
             </span>
         </span>
     );
@@ -298,6 +293,14 @@ export default function OrderHistoryModal() {
         setItems([]);
         setHasNext(false);
 
+        const loadInitialPending = subTab === "일반"
+            ? getUnfilledOrders({ page: 0, size: 100 })
+            : getAutoOrderUnfilled({ page: 0, size: 100 });
+
+        loadInitialPending
+            .then((res) => setItems(res.items))
+            .catch((e) => console.error("[OrderHistoryModal] 미체결 초기 조회 실패", e));
+
         if (subTab === "일반") {
             return subscribeDestination("/user/sub/order", (data: OrderHistoryItem[]) => {
                 setItems(data.filter((o) => o.remainingQuantity > 0));
@@ -398,27 +401,7 @@ export default function OrderHistoryModal() {
                     />
                 )}
 
-                {isPending ? (
-                    <div className={`oh-header-row ${gridClass}`}>
-                        <span className="oh-col oh-time">시간</span>
-                        <span className="oh-col oh-name">종목</span>
-                        <span className="oh-col oh-side">구분</span>
-                        <span className="oh-col oh-leverage">레버리지</span>
-                        {showTrigger && <span className="oh-col oh-order-type">주문구분</span>}
-                        {showTrigger && <span className="oh-col oh-trigger">감시가</span>}
-                        <span className="oh-col oh-qty">잔량/수량</span>
-                        <span className="oh-col oh-price">가격</span>
-                        <span className="oh-col oh-margin oh-header-split">
-                            <span className="oh-header-line">주문금액</span>
-                            <span className="oh-header-line">개시증거금</span>
-                        </span>
-                        <span className="oh-col oh-liquidation oh-header-split">
-                            <span className="oh-header-line">유지증거금률</span>
-                            <span className="oh-header-line">유지증거금 기준가</span>
-                        </span>
-                        <span className="oh-col oh-cancel">취소</span>
-                    </div>
-                ) : (
+                {!isPending && (
                     <div className={`oh-header-row ${gridClass}`}>
                         <span className="oh-col oh-time">시간</span>
                         <span className="oh-col oh-name">종목</span>
@@ -436,45 +419,117 @@ export default function OrderHistoryModal() {
                 )}
 
                 <div className="oh-list-wrapper" ref={listWrapperRef}>
-                    <ul className="oh-list">
-                        {items.length === 0 && !loading ? (
-                            <li className="oh-empty">
-                                {!isPending && hasFilter ? "검색 결과가 없습니다" : "내역이 없습니다"}
-                            </li>
+                    {isPending ? (
+                        items.length === 0 && !loading ? (
+                            <div className="oh-pending-empty">내역이 없습니다</div>
                         ) : (
-                            items.map((item) => {
-                                const stockCode = item.stockCode;
-                                const stockName = stockNameMap[stockCode] ?? stockCode;
+                            <ul className="oh-pending-list">
+                                {items.map((item) => {
+                                    if (isTrade(item)) return null;
 
-                                if (isTrade(item)) {
+                                    const stockCode = item.stockCode;
+                                    const stockName = stockNameMap[stockCode] ?? stockCode;
+                                    const auto = isAutoOrder(item);
+                                    const id = auto ? item.autoOrderId : (item as OrderHistoryItem).orderId;
+                                    const side = auto ? item.autoOrderType : (item as OrderHistoryItem).orderType;
+                                    const triggerPrice = auto ? (item as AutoOrderHistoryItem).triggerPrice : null;
+                                    const remaining = !auto ? (item as OrderHistoryItem).remainingQuantity : item.orderQuantity;
+                                    const total = item.orderQuantity;
+                                    const fillPct = total > 0 ? Math.min(100, Math.max(0, (remaining / total) * 100)) : 0;
+                                    const sideClass = side === "BUY" ? "bar--buy" : "bar--sell";
+                                    const { date, time } = formatTimeParts(item.orderTime);
+
                                     return (
-                                        <li key={`trade-${item.tradeId}`} className="oh-item oh-grid-executed">
-                                            <TimeCell isoString={item.executedAt} />
-                                            <span className="oh-col oh-name">
-                                                <span className="oh-stock-name">{stockName}</span>
-                                                <span className="oh-stock-code">{stockCode}</span>
-                                            </span>
-                                            <span className={`oh-col oh-side ${item.tradeType === "BUY" ? "buy" : "sell"}`}>
-                                                {item.tradeType === "BUY" ? "매수" : "매도"}
-                                            </span>
-                                            <span className="oh-col oh-leverage">—</span>
-                                            <span className="oh-col oh-qty">{item.tradeQuantity.toLocaleString()}주</span>
-                                            <span className="oh-col oh-price">{item.tradePrice.toLocaleString()}</span>
-                                            <span className="oh-col oh-margin">—</span>
+                                        <li key={`${auto ? "auto" : "order"}-${id}`} className="oh-pending-item">
+                                            <div className="oh-pending-item__info">
+                                                <div className="oh-pending-item__stock-name-row">
+                                                    <span className="oh-pending-item__stock-name">{stockName}</span>
+                                                    <span className="oh-pending-item__stock-code">{stockCode}</span>
+                                                    <span className="oh-pending-item__time">{date} {time}</span>
+                                                </div>
+
+                                                <div className="oh-pending-item__top">
+                                                    <span className={`oh-pending-item__badge ${side === "BUY" ? "badge--buy" : "badge--sell"}`}>
+                                                        {side === "BUY" ? "매수" : "매도"}
+                                                    </span>
+                                                    <span className={`oh-pending-item__leverage-badge ${leverageClass(item.leverageRatio)}`}>
+                                                        {(item.leverageRatio ?? "SPOT") === "SPOT" ? "현금" : `${LEVERAGE_NUM[item.leverageRatio ?? "SPOT"]}x`}
+                                                    </span>
+                                                    <span className="oh-pending-item__order-type">
+                                                        {auto ? "조건부" : "지정가"}
+                                                    </span>
+                                                </div>
+
+                                                <div className="oh-pending-item__price-row">
+                                                    <span className="oh-pending-item__price-label">주문가</span>
+                                                    <span className="oh-pending-item__price">{item.orderPrice.toLocaleString()}원</span>
+                                                    {auto && triggerPrice != null && (
+                                                        <>
+                                                            <span className="oh-pending-item__trigger-label">감시가</span>
+                                                            <span className="oh-pending-item__trigger-value">{triggerPrice.toLocaleString()}원</span>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                <div className="oh-pending-item__qty-row">
+                                                    <span className="oh-pending-item__remaining">{remaining.toLocaleString()}</span>
+                                                    <span className="oh-pending-item__unit">주</span>
+                                                    <span className="oh-pending-item__qty-sep">/</span>
+                                                    <span className="oh-pending-item__total"> {total.toLocaleString()}</span>
+                                                    <span className="oh-pending-item__unit">주</span>
+                                                    <span className={`oh-pending-item__fill-badge ${remaining === total ? "fill-badge--none" : "fill-badge--partial"}`}>
+                                                        {remaining === total ? "미체결" : "부분체결"}
+                                                    </span>
+                                                </div>
+
+                                                <div className="oh-pending-item__bar-track">
+                                                    <div
+                                                        className={`oh-pending-item__bar-fill ${sideClass}`}
+                                                        style={{ width: `${fillPct}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <CancelButton onCancel={() => handleCancel(auto, id, stockCode)} />
                                         </li>
                                     );
-                                }
+                                })}
+                            </ul>
+                        )
+                    ) : (
+                        <ul className="oh-list">
+                            {items.length === 0 && !loading ? (
+                                <li className="oh-empty">
+                                    {hasFilter ? "검색 결과가 없습니다" : "내역이 없습니다"}
+                                </li>
+                            ) : (
+                                items.map((item) => {
+                                    const stockCode = item.stockCode;
+                                    const stockName = stockNameMap[stockCode] ?? stockCode;
 
-                                const auto = isAutoOrder(item);
-                                const id = auto ? item.autoOrderId : (item as OrderHistoryItem).orderId;
-                                const side = auto ? item.autoOrderType : (item as OrderHistoryItem).orderType;
-                                const time = item.orderTime;
+                                    if (isTrade(item)) {
+                                        return (
+                                            <li key={`trade-${item.tradeId}`} className="oh-item oh-grid-executed">
+                                                <TimeCell isoString={item.executedAt} />
+                                                <span className="oh-col oh-name">
+                                                    <span className="oh-stock-name">{stockName}</span>
+                                                    <span className="oh-stock-code">{stockCode}</span>
+                                                </span>
+                                                <span className={`oh-col oh-side ${item.tradeType === "BUY" ? "buy" : "sell"}`}>
+                                                    {item.tradeType === "BUY" ? "매수" : "매도"}
+                                                </span>
+                                                <span className="oh-col oh-leverage">—</span>
+                                                <span className="oh-col oh-qty">{item.tradeQuantity.toLocaleString()}주</span>
+                                                <span className="oh-col oh-price">{item.tradePrice.toLocaleString()}</span>
+                                                <span className="oh-col oh-margin">—</span>
+                                            </li>
+                                        );
+                                    }
 
-                                if (isPending) {
-                                    const triggerPrice = auto ? (item as AutoOrderHistoryItem).triggerPrice : null;
-                                    const remainingQuantity = !auto
-                                        ? (item as OrderHistoryItem).remainingQuantity
-                                        : item.orderQuantity;
+                                    const auto = isAutoOrder(item);
+                                    const id = auto ? item.autoOrderId : (item as OrderHistoryItem).orderId;
+                                    const side = auto ? item.autoOrderType : (item as OrderHistoryItem).orderType;
+                                    const time = item.orderTime;
 
                                     return (
                                         <li key={`${auto ? "auto" : "order"}-${id}`} className={`oh-item ${gridClass}`}>
@@ -490,52 +545,20 @@ export default function OrderHistoryModal() {
                                             {showTrigger && <span className="oh-col oh-order-type">조건부</span>}
                                             {showTrigger && (
                                                 <span className="oh-col oh-trigger">
-                                                    {triggerPrice != null ? triggerPrice.toLocaleString() : <span className="oh-dash">-</span>}
+                                                    {auto && (item as AutoOrderHistoryItem).triggerPrice != null
+                                                        ? (item as AutoOrderHistoryItem).triggerPrice.toLocaleString()
+                                                        : <span className="oh-dash">-</span>}
                                                 </span>
                                             )}
-                                            <span className="oh-col oh-qty">
-                                                {remainingQuantity.toLocaleString()}
-                                                <span className="oh-qty-sep">/</span>
-                                                {item.orderQuantity.toLocaleString()}
-                                            </span>
+                                            <span className="oh-col oh-qty">{item.orderQuantity.toLocaleString()}주</span>
                                             <span className="oh-col oh-price">{item.orderPrice.toLocaleString()}</span>
                                             <MarginCell notionalValue={item.notionalValue} initialMargin={item.initialMargin} />
-                                            <LiquidationCell
-                                                maintenanceMarginRate={item.maintenanceMarginRate}
-                                                liquidationPrice={item.liquidationPrice}
-                                            />
-                                            <CancelButton onCancel={() => handleCancel(auto, id, stockCode)} />
                                         </li>
                                     );
-                                }
-
-                                return (
-                                    <li key={`${auto ? "auto" : "order"}-${id}`} className={`oh-item ${gridClass}`}>
-                                        <TimeCell isoString={time} />
-                                        <span className="oh-col oh-name">
-                                            <span className="oh-stock-name">{stockName}</span>
-                                            <span className="oh-stock-code">{stockCode}</span>
-                                        </span>
-                                        <span className={`oh-col oh-side ${side === "BUY" ? "buy" : "sell"}`}>
-                                            {side === "BUY" ? "매수" : "매도"}
-                                        </span>
-                                        <LeverageBadge leverageRatio={item.leverageRatio} />
-                                        {showTrigger && <span className="oh-col oh-order-type">조건부</span>}
-                                        {showTrigger && (
-                                            <span className="oh-col oh-trigger">
-                                                {auto && (item as AutoOrderHistoryItem).triggerPrice != null
-                                                    ? (item as AutoOrderHistoryItem).triggerPrice.toLocaleString()
-                                                    : <span className="oh-dash">-</span>}
-                                            </span>
-                                        )}
-                                        <span className="oh-col oh-qty">{item.orderQuantity.toLocaleString()}주</span>
-                                        <span className="oh-col oh-price">{item.orderPrice.toLocaleString()}</span>
-                                        <MarginCell notionalValue={item.notionalValue} initialMargin={item.initialMargin} />
-                                    </li>
-                                );
-                            })
-                        )}
-                    </ul>
+                                })
+                            )}
+                        </ul>
+                    )}
 
                     {!isPending && (
                         <div ref={sentinelRef} className="oh-sentinel">
