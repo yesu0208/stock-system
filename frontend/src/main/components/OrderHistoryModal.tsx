@@ -485,7 +485,7 @@ export default function OrderHistoryModal() {
                         ) : pendingItems.length === 0 ? (
                             <div className="oh-pending-empty">내역이 없습니다</div>
                         ) : (
-                            <ul className="oh-pending-list">
+                            <ul className="oh-pending-list oh-fade-in" key={`pending-${subTab}`}>
                                 {pendingItems.map((item) => {
                                     const stockCode = item.stockCode;
                                     const stockName = stockNameMap[stockCode] ?? stockCode;
@@ -569,7 +569,7 @@ export default function OrderHistoryModal() {
                             </ul>
                         )
                     ) : (
-                        <ul className="oh-list">
+                        <ul className="oh-list oh-fade-in" key={`${mainTab}-${subTab}`}>
                             {items.length === 0 && loading ? (
                                 <li className="oh-empty">
                                     <Spinner center={false} size={28} thickness={3} />

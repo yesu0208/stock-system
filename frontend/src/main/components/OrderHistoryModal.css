@@ -1110,3 +1110,22 @@
     cursor: not-allowed;
     filter: none;
 }
+
+.oh-fade-in {
+    animation: ohFadeIn 0.18s ease;
+}
+
+@keyframes ohFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .oh-fade-in {
+        animation: none;
+    }
+}
