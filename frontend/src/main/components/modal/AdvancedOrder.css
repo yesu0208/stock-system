@@ -74,7 +74,8 @@
 
 .ao-inner-tabs {
     display: flex;
-    border-bottom: 1px solid var(--color-border);
+    gap: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
     margin-bottom: 6px;
 }
@@ -84,30 +85,33 @@
     padding: 12px 0;
     background: none;
     border: none;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--color-text-secondary);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
+    outline: none;
+    appearance: none;
+    box-sizing: border-box;
+    border-radius: 0;
+
+    border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
     font-family: var(--font-base);
 }
 
+.ao-inner-tab:focus,
+.ao-inner-tab:focus-visible {
+    outline: none;
+}
+
+.ao-inner-tab:hover:not(.ao-inner-tab--active) {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: transparent;
+}
+
 .ao-inner-tab--active {
-    font-weight: 700;
-    border-bottom-color: #b7a6ff;
     color: #b7a6ff;
-}
-
-.ao-inner-tab--buy.ao-inner-tab--active {
-    border-bottom-color: var(--color-buy);
-    color: var(--color-buy);
-}
-
-.ao-inner-tab--sell.ao-inner-tab--active {
-    border-bottom-color: var(--color-sell);
-    color: var(--color-sell);
+    border-bottom-color: #7c5cff;
 }
 
 .ao-content {
