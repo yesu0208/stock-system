@@ -33,6 +33,11 @@ export interface TradeHistoryItem {
     tradePrice: number
     tradeQuantity: number
     executedAt: string
+    leverageRatio: 'SPOT' | 'X1_5' | 'X2' | 'X2_5' | null
+    notionalValue: number
+    initialMargin: number | null
+    maintenanceMarginRate: number | null
+    liquidationPrice: number | null
 }
 
 export type AutoOrderStatus = 'ACTIVE' | 'TRIGGERED' | 'CANCELED'

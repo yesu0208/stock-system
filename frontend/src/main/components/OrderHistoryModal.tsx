@@ -561,13 +561,13 @@ export default function OrderHistoryModal() {
                                                     <span className="oh-stock-name">{stockName}</span>
                                                     <span className="oh-stock-code">{stockCode}</span>
                                                 </span>
-                                                <span className={`oh-col oh-side ${item.tradeType === "BUY" ? "buy" : "sell"}`}>
+                                                                                    <span className={`oh-col oh-side ${item.tradeType === "BUY" ? "buy" : "sell"}`}>
                                                     {item.tradeType === "BUY" ? "매수" : "매도"}
                                                 </span>
-                                                <span className="oh-col oh-leverage">—</span>
+                                                <LeverageBadge leverageRatio={item.leverageRatio} />
                                                 <span className="oh-col oh-qty">{item.tradeQuantity.toLocaleString()}주</span>
                                                 <span className="oh-col oh-price">{item.tradePrice.toLocaleString()}</span>
-                                                <span className="oh-col oh-margin">—</span>
+                                                <MarginCell notionalValue={item.notionalValue} initialMargin={item.initialMargin} />
                                             </li>
                                         );
                                     }
