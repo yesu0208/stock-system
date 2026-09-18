@@ -11,7 +11,8 @@ public record StockServerOrderResponseMessage(
         Integer orderPrice,
         Integer orderQuantity,
         Integer remainingQuantity,
-        Instant orderTime
+        Instant orderTime,
+        OrderExecutionType orderExecutionType
 ) {
     public static StockServerOrderResponseMessage of(
             Long orderId,
@@ -22,7 +23,8 @@ public record StockServerOrderResponseMessage(
             Integer orderPrice,
             Integer orderQuantity,
             Integer remainingQuantity,
-            Instant orderTime
+            Instant orderTime,
+            OrderExecutionType orderExecutionType
     ) {
         return new StockServerOrderResponseMessage(
                 orderId,
@@ -33,7 +35,8 @@ public record StockServerOrderResponseMessage(
                 orderPrice,
                 orderQuantity,
                 remainingQuantity,
-                orderTime
+                orderTime,
+                orderExecutionType
         );
     }
 }
