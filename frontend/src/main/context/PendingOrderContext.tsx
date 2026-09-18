@@ -12,7 +12,7 @@ export interface PendingOrder {
     stockCode: string
     stockName: string
     side: 'BUY' | 'SELL'
-    orderType: 'LIMIT' | 'CONDITIONAL'
+    orderType: 'MARKET' | 'LIMIT' | 'CONDITIONAL'
     price: number
     triggerPrice?: number
     orderQty: number
@@ -63,7 +63,7 @@ export function PendingOrderProvider({ children }: { children: ReactNode }) {
             stockCode: o.stockCode,
             stockName: stockNameMap[o.stockCode] ?? o.stockCode,
             side: o.orderType,
-            orderType: 'LIMIT',
+            orderType: o.orderExecutionType,
             price: o.orderPrice,
             orderQty: o.orderQuantity,
             remainingQty: o.remainingQuantity,

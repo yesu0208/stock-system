@@ -499,7 +499,7 @@ export default function OrderHistoryModal() {
                                                         {(item.leverageRatio ?? "SPOT") === "SPOT" ? "현금" : `${LEVERAGE_NUM[item.leverageRatio ?? "SPOT"]}x`}
                                                     </span>
                                                     <span className="oh-pending-item__order-type">
-                                                        {auto ? "조건부" : "지정가"}
+                                                        {auto ? "조건부" : (item as OrderHistoryItem).orderExecutionType === "MARKET" ? "시장가" : "지정가"}
                                                     </span>
                                                 </div>
 

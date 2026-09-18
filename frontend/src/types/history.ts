@@ -22,6 +22,7 @@ export interface OrderHistoryItem {
     initialMargin: number | null
     maintenanceMarginRate: number | null
     liquidationPrice: number | null
+    orderExecutionType: 'MARKET' | 'LIMIT'
 }
 
 export interface TradeHistoryItem {

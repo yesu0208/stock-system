@@ -805,7 +805,7 @@ function CancelTab({ orders }: { orders: PendingOrder[] }) {
                                     </span>
                                     <LeverageBadge leverage={order.leverage} />
                                     <span className="pending-item__order-type">
-                                        {order.orderType === "LIMIT" ? "지정가" : "조건부"}
+                                        {order.orderType === "MARKET" ? "시장가" : order.orderType === "LIMIT" ? "지정가" : "조건부"}
                                     </span>
                                 </div>
 

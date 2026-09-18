@@ -1,5 +1,6 @@
 export type OrderType = 'BUY' | 'SELL'
 export type LeverageRatio = 'SPOT' | 'X1_5' | 'X2' | 'X2_5'
+export type OrderExecutionType = 'MARKET' | 'LIMIT'
 
 export interface OrderResultResponse {
     responseType: 'SUCCESS' | 'ERROR'
@@ -24,6 +25,7 @@ export interface OrderResponseMessage {
     orderQuantity: number
     remainingQuantity: number
     orderTime: string
+    orderExecutionType: OrderExecutionType
 }
 
 export interface OrderResponse {

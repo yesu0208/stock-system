@@ -100,6 +100,7 @@ export default function OrderConfirmModal({
                     orderPrice: price,
                     orderQuantity: quantity,
                     leverageRatio: isCredit ? toLeverageRatio(leverage) : null,
+                    orderExecutionType: orderType === 'market' ? 'MARKET' : 'LIMIT',
                 })
             }
 
