@@ -284,3 +284,19 @@
     width: 640px;
     height: 620px;
 }
+
+.modal-v2-box.toc-modal {
+    width: 380px;
+    min-height: 420px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-v2-box.occ-modal {
+    width: 420px;
+    min-height: 480px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
