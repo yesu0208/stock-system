@@ -1920,21 +1920,13 @@ interface OtocoOrderCardProps {
 function OtocoOrderCard({ order, selected, onToggle }: OtocoOrderCardProps) {
     const isAbove = order.entryDirection === "ABOVE";
 
-    const tpMain = order.tpMode === "PRICE"
-        ? `${order.tpPrice?.toLocaleString() ?? "—"}원`
-        : `+${order.tpPct?.toFixed(1) ?? "—"}%`;
+    const tpMain = order.tpTriggerPrice != null
+        ? `${order.tpTriggerPrice.toLocaleString()}원`
+        : "—";
 
-    const tpSub = order.tpMode === "PCT" && order.tpPct !== null
-        ? `≈ ${Math.round(order.triggerPrice * (1 + order.tpPct / 100)).toLocaleString()}원`
-        : null;
-
-    const slMain = order.slMode === "PRICE"
-        ? `${order.slPrice?.toLocaleString() ?? "—"}원`
-        : `-${order.slPct?.toFixed(1) ?? "—"}%`;
-
-    const slSub = order.slMode === "PCT" && order.slPct !== null
-        ? `≈ ${Math.round(order.triggerPrice * (1 - order.slPct / 100)).toLocaleString()}원`
-        : null;
+    const slMain = order.slTriggerPrice != null
+        ? `${order.slTriggerPrice.toLocaleString()}원`
+        : "—";
 
     return (
         <div
@@ -2000,22 +1992,12 @@ function OtocoOrderCard({ order, selected, onToggle }: OtocoOrderCardProps) {
                         <span className="ao-pending-card__field-value ao-pending-card__field-value--tp">
                             {tpMain}
                         </span>
-                        {tpSub && (
-                            <span className="ao-pending-card__field-sub ao-pending-card__field-sub--tp">
-                                {tpSub}
-                            </span>
-                        )}
                     </div>
                     <div className="ao-pending-card__exit-field">
                         <span className="ao-pending-card__field-label">손절</span>
                         <span className="ao-pending-card__field-value ao-pending-card__field-value--sl">
                             {slMain}
                         </span>
-                        {slSub && (
-                            <span className="ao-pending-card__field-sub ao-pending-card__field-sub--sl">
-                                {slSub}
-                            </span>
-                        )}
                     </div>
                 </div>
             </div>

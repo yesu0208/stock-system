@@ -6,6 +6,7 @@ import {
     type ReactNode,
 } from "react";
 import { useRealtime } from "./RealtimeContext";
+import { STOCKS } from "../data/stocks";
 
 export type Side = "BUY" | "SELL";
 export type EntryDirection = "ABOVE" | "BELOW";
@@ -32,12 +33,8 @@ export interface OtocoPendingOrder {
     entryDirection: EntryDirection;
     triggerPrice: number;
     quantity: number;
-    tpMode: ExitMode;
-    tpPrice: number | null;
-    tpPct: number | null;
-    slMode: ExitMode;
-    slPrice: number | null;
-    slPct: number | null;
+    tpTriggerPrice: number | null;
+    slTriggerPrice: number | null;
     credit: boolean;
     leverage: number;
     entryFilled: boolean;
@@ -52,6 +49,81 @@ type AdvancedOrderContextType = {
 
 const AdvancedOrderContext = createContext<AdvancedOrderContextType | undefined>(undefined);
 
+function findStockName(stockCode: string): string {
+    return STOCKS.find((s) => s.code === stockCode)?.name ?? stockCode;
+}
+
+function leverageRatioToNumber(leverageRatio: string | null | undefined): number {
+    switch (leverageRatio) {
+        case "X1_5": return 1.5;
+        case "X2":   return 2;
+        case "X2_5": return 2.5;
+        default:     return 1;
+    }
+}
+
+function isCreditLeverage(leverageRatio: string | null | undefined): boolean {
+    return leverageRatio != null && leverageRatio !== "SPOT";
+}
+
+interface RawTrailingStopMessage {
+    trailingStopId: number;
+    stockCode: string;
+    trailingStopType: Side;
+    leverageRatio: string | null;
+    orderQuantity: number;
+    stopPercent: number;
+    basePrice: number;
+    triggerPrice: number | null;
+    orderTime: string;
+}
+
+interface RawOtocoMessage {
+    otocoId: number;
+    stockCode: string;
+    entryDirection: EntryDirection;
+    leverageRatio: string | null;
+    orderQuantity: number;
+    entryTriggerPrice: number;
+    tpTriggerPrice: number | null;
+    slTriggerPrice: number | null;
+    otocoStatus: "WAITING_ENTRY" | "ENTRY_ORDER_PLACED" | "WAITING_EXIT" | "COMPLETED" | "CANCELED";
+    orderTime: string;
+}
+
+function toTrailingStopPendingOrder(raw: RawTrailingStopMessage): TrailingStopPendingOrder {
+    return {
+        orderId: String(raw.trailingStopId),
+        stockCode: raw.stockCode,
+        stockName: findStockName(raw.stockCode),
+        side: raw.trailingStopType,
+        credit: isCreditLeverage(raw.leverageRatio),
+        leverage: leverageRatioToNumber(raw.leverageRatio),
+        quantity: raw.orderQuantity,
+        stopPercent: raw.stopPercent,
+        basePrice: raw.basePrice,
+        triggerPrice: raw.triggerPrice ?? raw.basePrice,
+        createdAt: raw.orderTime,
+    };
+}
+
+function toOtocoPendingOrder(raw: RawOtocoMessage): OtocoPendingOrder {
+    return {
+        orderId: String(raw.otocoId),
+        stockCode: raw.stockCode,
+        stockName: findStockName(raw.stockCode),
+        entryDirection: raw.entryDirection,
+        triggerPrice: raw.entryTriggerPrice,
+        quantity: raw.orderQuantity,
+        tpTriggerPrice: raw.tpTriggerPrice,
+        slTriggerPrice: raw.slTriggerPrice,
+        credit: isCreditLeverage(raw.leverageRatio),
+        leverage: leverageRatioToNumber(raw.leverageRatio),
+        entryFilled: raw.otocoStatus === "WAITING_EXIT" || raw.otocoStatus === "COMPLETED",
+        createdAt: raw.orderTime,
+    };
+}
+
 export function AdvancedOrderProvider({ children }: { children: ReactNode }) {
     const [trailingOrders, setTrailingOrders] = useState<TrailingStopPendingOrder[]>([]);
     const [otocoOrders, setOtocoOrders] = useState<OtocoPendingOrder[]>([]);
@@ -61,15 +133,15 @@ export function AdvancedOrderProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const unsubTrailing = subscribeDestination(
             "/user/sub/trailing-stop",
-            (data: TrailingStopPendingOrder[]) => {
-                setTrailingOrders(data);
+            (data: RawTrailingStopMessage[]) => {
+                setTrailingOrders(data.map(toTrailingStopPendingOrder));
             }
         );
 
         const unsubOtoco = subscribeDestination(
             "/user/sub/otoco",
-            (data: OtocoPendingOrder[]) => {
-                setOtocoOrders(data);
+            (data: RawOtocoMessage[]) => {
+                setOtocoOrders(data.map(toOtocoPendingOrder));
             }
         );
 
