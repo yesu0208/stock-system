@@ -98,6 +98,40 @@ interface ScenarioOption<T extends string> {
     icon?: React.ReactNode;
 }
 
+function getTickSize(price: number): number {
+    if (price < 2_000) return 1;
+    if (price < 5_000) return 5;
+    if (price < 20_000) return 10;
+    if (price < 50_000) return 50;
+    if (price < 200_000) return 100;
+    if (price < 500_000) return 500;
+    return 1_000;
+}
+
+function getTickBaseline(price: number): number {
+    if (price < 2_000) return 0;
+    if (price < 5_000) return 2_000;
+    if (price < 20_000) return 5_000;
+    if (price < 50_000) return 20_000;
+    if (price < 200_000) return 50_000;
+    if (price < 500_000) return 200_000;
+    return 500_000;
+}
+
+function snapToTick(price: number): number {
+    const clamped = Math.min(MAX_QTY, Math.max(0, price));
+    const tick = getTickSize(clamped);
+    const baseline = getTickBaseline(clamped);
+    const offset = Math.round((clamped - baseline) / tick) * tick;
+    return Math.min(MAX_QTY, Math.max(0, baseline + offset));
+}
+
+function stepPrice(current: number, direction: 1 | -1): number {
+    const tick = getTickSize(current);
+    const next = current + direction * tick;
+    return snapToTick(next);
+}
+
 function ScenarioSelect<T extends string>({
                                               options,
                                               value,
@@ -974,9 +1008,9 @@ function OtocoInputPanel() {
         if (initializedRef.current) return;
         if (currentPrice <= 0) return;
         initializedRef.current = true;
-        setEntryPrice(currentPrice);
-        setTpPrice(Math.round(currentPrice * (1 + DEFAULT_TP_PCT / 100)));
-        setSlPrice(Math.round(currentPrice * (1 - DEFAULT_SL_PCT / 100)));
+        setEntryPrice(snapToTick(currentPrice));
+        setTpPrice(snapToTick(Math.round(currentPrice * (1 + DEFAULT_TP_PCT / 100))));
+        setSlPrice(snapToTick(Math.round(currentPrice * (1 - DEFAULT_SL_PCT / 100))));
     }, [currentPrice]);
 
     const entryAmountRaw   = entryPrice * entryQty;
@@ -1075,7 +1109,7 @@ function OtocoInputPanel() {
                     <div className="stepper">
                         <button
                             className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
-                            onClick={() => setEntryPrice((p) => Math.max(0, p - 100))}
+                            onClick={() => setEntryPrice((p) => stepPrice(p, -1))}
                         >
                             −
                         </button>
@@ -1084,11 +1118,11 @@ function OtocoInputPanel() {
                             type="text"
                             inputMode="numeric"
                             value={formatNumber(entryPrice)}
-                            onChange={(e) => setEntryPrice(Math.max(0, parseNumber(e.target.value)))}
+                            onChange={(e) => setEntryPrice(snapToTick(Math.max(0, parseNumber(e.target.value))))}
                         />
                         <button
                             className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
-                            onClick={() => setEntryPrice((p) => p + 100)}
+                            onClick={() => setEntryPrice((p) => stepPrice(p, 1))}
                         >
                             +
                         </button>
@@ -1169,7 +1203,7 @@ function OtocoInputPanel() {
                             inputMode="numeric"
                             placeholder="0"
                             value={tpPrice > 0 ? formatNumber(tpPrice) : ""}
-                            onChange={(e) => setTpPrice(Math.max(0, parseNumber(e.target.value)))}
+                            onChange={(e) => setTpPrice(snapToTick(Math.max(0, parseNumber(e.target.value))))}
                         />
                     ) : (
                         <input
@@ -1216,7 +1250,7 @@ function OtocoInputPanel() {
                             inputMode="numeric"
                             placeholder="0"
                             value={slPrice > 0 ? formatNumber(slPrice) : ""}
-                            onChange={(e) => setSlPrice(Math.max(0, parseNumber(e.target.value)))}
+                            onChange={(e) => setSlPrice(snapToTick(Math.max(0, parseNumber(e.target.value))))}
                         />
                     ) : (
                         <input
