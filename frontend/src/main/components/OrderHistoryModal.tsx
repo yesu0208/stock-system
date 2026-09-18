@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import { FiSearch } from "react-icons/fi";
 import { getOrderHistory, getOrderCancelHistory, getUnfilledOrders, getTradeHistory } from "../../api/orderHistory";
 import { getAutoOrderHistory, getAutoOrderCancelHistory, getAutoOrderUnfilled } from "../../api/autoOrderHistory";
@@ -240,6 +240,8 @@ export default function OrderHistoryModal() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
+    const [isScrollable, setIsScrollable] = useState(false);
+
     const sentinelRef = useRef<HTMLDivElement>(null);
     const listWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -323,6 +325,23 @@ export default function OrderHistoryModal() {
         observer.observe(sentinel);
         return () => observer.disconnect();
     }, [isPending, hasNext, loading, page, loadPage]);
+
+    useLayoutEffect(() => {
+        if (isPending) return;
+        const listWrapper = listWrapperRef.current;
+        if (!listWrapper) return;
+
+        const checkScrollable = () => {
+            setIsScrollable(listWrapper.scrollHeight > listWrapper.clientHeight + 1);
+        };
+
+        checkScrollable();
+
+        const observer = new ResizeObserver(checkScrollable);
+        observer.observe(listWrapper);
+
+        return () => observer.disconnect();
+    }, [isPending, items]);
 
     const handleMainTabChange = (t: MainTab) => {
         setMainTab(t);
@@ -561,7 +580,7 @@ export default function OrderHistoryModal() {
                                                     <span className="oh-stock-name">{stockName}</span>
                                                     <span className="oh-stock-code">{stockCode}</span>
                                                 </span>
-                                                                                    <span className={`oh-col oh-side ${item.tradeType === "BUY" ? "buy" : "sell"}`}>
+                                                <span className={`oh-col oh-side ${item.tradeType === "BUY" ? "buy" : "sell"}`}>
                                                     {item.tradeType === "BUY" ? "매수" : "매도"}
                                                 </span>
                                                 <LeverageBadge leverageRatio={item.leverageRatio} />
@@ -613,7 +632,7 @@ export default function OrderHistoryModal() {
                     {!isPending && (
                         <div ref={sentinelRef} className="oh-sentinel">
                             {loading && <span className="oh-loading">불러오는 중…</span>}
-                            {!hasNext && items.length > 0 && <span className="oh-end-mark">마지막 데이터입니다</span>}
+                            {!hasNext && items.length > 0 && isScrollable && <span className="oh-end-mark">마지막 데이터</span>}
                         </div>
                     )}
                 </div>
