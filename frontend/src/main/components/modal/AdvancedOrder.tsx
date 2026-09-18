@@ -462,11 +462,15 @@ function StockInfoPanel() {
 
             <div className="adv-order__stock-name-row">
                 <img
+                    key={selectedStock.code}
                     className="adv-order__stock-mark"
-                    src={`/marks/${selectedStock.code}.svg`}
+                    src={`https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock${selectedStock.code}.svg`}
                     alt={selectedStock.name ?? ""}
                     onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = "/marks/default.svg";
+                        const img = e.currentTarget as HTMLImageElement;
+                        if (img.dataset.fallback) return;
+                        img.dataset.fallback = "1";
+                        img.src = "/marks/default.svg";
                     }}
                 />
                 <div className="adv-order__stock-name-block">
