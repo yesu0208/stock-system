@@ -9,6 +9,7 @@ import type { OrderHistoryItem, TradeHistoryItem, AutoOrderHistoryItem, HistoryP
 import "./OrderHistoryModal.css";
 import Tooltip from "../../tooltip/Tooltip";
 import CancelConfirmModal from "./modal/cancel/CancelConfirmModal";
+import Spinner from "../../components/Spinner";
 
 type MainTab = "주문" | "취소" | "미체결" | "체결";
 type SubTab = "일반" | "자동";
@@ -237,6 +238,8 @@ export default function OrderHistoryModal() {
     const [hasNext, setHasNext] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    const [pendingLoading, setPendingLoading] = useState(false);
+
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
@@ -287,6 +290,7 @@ export default function OrderHistoryModal() {
         setItems([]);
         setHasNext(false);
         setSelectedIds(new Set());
+        setPendingLoading(true);
 
         const loadInitialPending = subTab === "일반"
             ? getUnfilledOrders({ page: 0, size: 100 })
@@ -294,7 +298,8 @@ export default function OrderHistoryModal() {
 
         loadInitialPending
             .then((res) => setItems(res.items))
-            .catch((e) => console.error("[OrderHistoryModal] 미체결 초기 조회 실패", e));
+            .catch((e) => console.error("[OrderHistoryModal] 미체결 초기 조회 실패", e))
+            .finally(() => setPendingLoading(false));
 
         if (subTab === "일반") {
             return subscribeDestination("/user/sub/order", (data: OrderHistoryItem[]) => {
@@ -475,7 +480,9 @@ export default function OrderHistoryModal() {
 
                 <div className="oh-list-wrapper" ref={listWrapperRef}>
                     {isPending ? (
-                        pendingItems.length === 0 && !loading ? (
+                        pendingItems.length === 0 && pendingLoading ? (
+                            <Spinner center minHeight={200} />
+                        ) : pendingItems.length === 0 ? (
                             <div className="oh-pending-empty">내역이 없습니다</div>
                         ) : (
                             <ul className="oh-pending-list">
@@ -563,7 +570,11 @@ export default function OrderHistoryModal() {
                         )
                     ) : (
                         <ul className="oh-list">
-                            {items.length === 0 && !loading ? (
+                            {items.length === 0 && loading ? (
+                                <li className="oh-empty">
+                                    <Spinner center={false} size={28} thickness={3} />
+                                </li>
+                            ) : items.length === 0 ? (
                                 <li className="oh-empty">
                                     {hasFilter ? "검색 결과가 없습니다" : "내역이 없습니다"}
                                 </li>
@@ -631,7 +642,7 @@ export default function OrderHistoryModal() {
 
                     {!isPending && (
                         <div ref={sentinelRef} className="oh-sentinel">
-                            {loading && <span className="oh-loading">불러오는 중…</span>}
+                            {loading && items.length > 0 && <Spinner center={false} size={18} thickness={2} />}
                             {!hasNext && items.length > 0 && isScrollable && <span className="oh-end-mark">마지막 데이터</span>}
                         </div>
                     )}
