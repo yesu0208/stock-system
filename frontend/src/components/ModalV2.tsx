@@ -63,6 +63,7 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "주문내역": "order-history-modal",
     "주문 취소": "cancel-confirm-modal",
     "주문 확인": "order-confirm-modal",
+    "고급 주문": "advanced-order-modal",
 };
 
 export default function ModalV2({
