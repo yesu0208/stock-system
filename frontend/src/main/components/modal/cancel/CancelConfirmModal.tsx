@@ -42,7 +42,7 @@ export default function CancelConfirmModal({ open, onClose, onConfirm, count, se
     }
 
     return (
-        <ModalV2 open={open} title="주문 취소" onClose={onClose} extraClass="ccm-modal">
+        <ModalV2 open={open} title="주문 취소" onClose={onClose}>
             <div className="ccm">
                 <p className="ccm__message">
                     <span className="ccm__count">{count}건</span>의 주문을 취소하시겠습니까?

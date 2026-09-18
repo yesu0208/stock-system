@@ -86,4 +86,5 @@
 .ccm__btn--close:hover:not(:disabled) {
     background: #3a3d44;
     color: var(--color-text-primary);
+    border-color: #3a3d44;
 }
