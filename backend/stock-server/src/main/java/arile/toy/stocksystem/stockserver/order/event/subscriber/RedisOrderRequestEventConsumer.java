@@ -2,6 +2,7 @@ package arile.toy.stocksystem.stockserver.order.event.subscriber;
 
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.dto.OrderExecutionType;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
@@ -217,6 +218,18 @@ public class RedisOrderRequestEventConsumer {
             return;
         }
 
+        // orderExecutionType 파싱 — 없으면(구버전 프론트 호환) LIMIT으로 간주
+        OrderExecutionType orderExecutionType;
+        String orderExecutionTypeStr = (String) value.get("orderExecutionType");
+        try {
+            orderExecutionType = orderExecutionTypeStr == null
+                    ? OrderExecutionType.LIMIT
+                    : OrderExecutionType.valueOf(orderExecutionTypeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid orderExecutionType: {}", orderExecutionTypeStr);
+            return;
+        }
+
         Object rawOrderPrice = value.get("orderPrice");
         Integer orderPrice = null;
 
@@ -238,7 +251,7 @@ public class RedisOrderRequestEventConsumer {
         log.info("Processing order username: {} for stock {}", username, stockCode);
 
         orderService.registerOrder(StockServerOrderRequestEvent
-                .of(username, stockCode, orderType, orderPrice, orderQuantity, leverageRatio), false);
+                .of(username, stockCode, orderType, orderPrice, orderQuantity, leverageRatio, orderExecutionType), false);
     }
 
     private String retryKey(RecordId id) {

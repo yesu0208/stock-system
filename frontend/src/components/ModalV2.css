@@ -266,3 +266,16 @@
     display: flex;
     flex-direction: column;
 }
+
+.modal-v2-box.cancel-confirm-modal {
+    width: 300px;
+    height: 165px;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-v2-box.order-confirm-modal {
+    width: 310px;
+    display: flex;
+    flex-direction: column;
+}

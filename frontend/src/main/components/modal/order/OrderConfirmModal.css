@@ -196,6 +196,7 @@
 .ocm__btn--cancel:hover:not(:disabled) {
     background: #3a3d44;
     color: var(--color-text-primary);
+    border-color: #3a3d44;
 }
 
 .ocm__btn--confirm-buy {
@@ -266,7 +267,7 @@
 
 .ocm__notice--sub {
     font-size: 11px;
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
     display: block;
     margin-top: 4px;
     line-height: 1.4;

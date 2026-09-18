@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.bffserver.trade.dto;
 
+import arile.toy.stocksystem.bffserver.leverage.dto.LeverageRatio;
+
 import java.time.Instant;
 
 public record TradeHistoryItem(
@@ -9,6 +11,11 @@ public record TradeHistoryItem(
         TradeType tradeType,
         Integer tradePrice,
         Integer tradeQuantity,
-        Instant executedAt
+        Instant executedAt,
+        LeverageRatio leverageRatio,
+        Long notionalValue,
+        Long initialMargin,
+        Double maintenanceMarginRate,
+        Long liquidationPrice
 ) {
 }

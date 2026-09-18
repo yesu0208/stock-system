@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.trade.entity;
 
+import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.trade.dto.TradeType;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
@@ -41,8 +42,13 @@ public class TradeEntity {
     @Column(nullable = false)
     private Instant executedAt;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private LeverageRatio leverageRatio;
+
     public static TradeEntity of(Long orderId, String username, String stockCode,
-                                 TradeType tradeType, Integer orderPrice, Integer orderQuantity) {
+                                 TradeType tradeType, Integer orderPrice, Integer orderQuantity,
+                                 LeverageRatio leverageRatio) {
         var tradeEntity = new TradeEntity();
         tradeEntity.setOrderId(orderId);
         tradeEntity.setUsername(username);
@@ -50,9 +56,10 @@ public class TradeEntity {
         tradeEntity.setTradeType(tradeType);
         tradeEntity.setTradePrice(orderPrice);
         tradeEntity.setTradeQuantity(orderQuantity);
+        tradeEntity.setLeverageRatio(leverageRatio);
         return tradeEntity;
     }
-    
+
     @PrePersist
     private void prePersist() {
         this.executedAt = Instant.now();

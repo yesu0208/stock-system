@@ -1,5 +1,5 @@
 import api from '../lib/api'
-import type { OrderResponse, OrderType, LeverageRatio } from '../types/order'
+import type { OrderResponse, OrderType, LeverageRatio, OrderExecutionType } from '../types/order'
 
 export interface PlaceOrderRequest {
     stockCode: string
@@ -7,6 +7,7 @@ export interface PlaceOrderRequest {
     orderPrice: number
     orderQuantity: number
     leverageRatio: LeverageRatio | null
+    orderExecutionType: OrderExecutionType
 }
 
 export async function placeOrder(req: PlaceOrderRequest): Promise<OrderResponse> {

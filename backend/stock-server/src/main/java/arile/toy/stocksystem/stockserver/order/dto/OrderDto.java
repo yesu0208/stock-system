@@ -14,7 +14,8 @@ public record OrderDto(
         Integer orderQuantity,
         Integer remainingQuantity,
         OrderStatus orderStatus,
-        Instant orderTime
+        Instant orderTime,
+        OrderExecutionType orderExecutionType
 ) {
     public static OrderDto fromEntity(OrderEntity orderEntity) {
         return new OrderDto(orderEntity.getOrderId(),
@@ -26,6 +27,7 @@ public record OrderDto(
                 orderEntity.getOrderQuantity(),
                 orderEntity.getRemainingQuantity(),
                 orderEntity.getOrderStatus(),
-                orderEntity.getOrderTime());
+                orderEntity.getOrderTime(),
+                orderEntity.getOrderExecutionType());
     }
 }

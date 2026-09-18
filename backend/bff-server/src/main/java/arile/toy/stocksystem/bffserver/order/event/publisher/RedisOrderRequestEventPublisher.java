@@ -30,7 +30,8 @@ public class RedisOrderRequestEventPublisher implements OrderRequestEventPublish
                 "orderType", String.valueOf(event.orderType()),
                 "orderPrice", String.valueOf(event.orderPrice()),
                 "orderQuantity", String.valueOf(event.orderQuantity()),
-                "leverageRatio", String.valueOf(event.leverageRatio())
+                "leverageRatio", String.valueOf(event.leverageRatio()),
+                "orderExecutionType", String.valueOf(event.orderExecutionType())
         );
 
         RecordId recordId = streamRedisTemplate.opsForStream().add(

@@ -2,6 +2,7 @@ package arile.toy.stocksystem.stockserver.order.event;
 
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderDto;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.dto.OrderExecutionType;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoDto;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.TrailingStopDto;
@@ -12,13 +13,17 @@ public record StockServerOrderRequestEvent(
         OrderType orderType,
         Integer orderPrice,
         Integer orderQuantity,
-        LeverageRatio leverageRatio
+        LeverageRatio leverageRatio,
+        OrderExecutionType orderExecutionType
 ) {
     public static StockServerOrderRequestEvent of(String username, String stockCode, OrderType orderType,
-                                                  Integer orderPrice, Integer orderQuantity, LeverageRatio leverageRatio) {
-        return new StockServerOrderRequestEvent(username, stockCode, orderType, orderPrice, orderQuantity, leverageRatio);
+                                                  Integer orderPrice, Integer orderQuantity, LeverageRatio leverageRatio,
+                                                  OrderExecutionType orderExecutionType) {
+        return new StockServerOrderRequestEvent(username, stockCode, orderType, orderPrice, orderQuantity,
+                leverageRatio, orderExecutionType);
     }
 
+    // 자동주문/트레일링스탑/OTOCO는 트리거된 시점의 지정가 체결로 취급 — LIMIT 고정
     public static StockServerOrderRequestEvent fromAutoOrderDto(AutoOrderDto autoOrderDto) {
         return new StockServerOrderRequestEvent(
                 autoOrderDto.username(),
@@ -26,7 +31,8 @@ public record StockServerOrderRequestEvent(
                 autoOrderDto.autoOrderType().toOrderType(),
                 autoOrderDto.orderPrice(),
                 autoOrderDto.orderQuantity(),
-                autoOrderDto.leverageRatio()
+                autoOrderDto.leverageRatio(),
+                OrderExecutionType.LIMIT
         );
     }
 
@@ -37,7 +43,8 @@ public record StockServerOrderRequestEvent(
                 trailingStopDto.trailingStopType().toOrderType(),
                 trailingStopDto.triggerPrice(),
                 trailingStopDto.orderQuantity(),
-                trailingStopDto.leverageRatio()
+                trailingStopDto.leverageRatio(),
+                OrderExecutionType.LIMIT
         );
     }
 
@@ -48,7 +55,8 @@ public record StockServerOrderRequestEvent(
                 OrderType.BUY,
                 otocoDto.entryTriggerPrice(),
                 otocoDto.orderQuantity(),
-                otocoDto.leverageRatio()
+                otocoDto.leverageRatio(),
+                OrderExecutionType.LIMIT
         );
     }
 
@@ -59,7 +67,8 @@ public record StockServerOrderRequestEvent(
                 OrderType.SELL,
                 exitPrice,
                 otocoDto.orderQuantity(),
-                otocoDto.leverageRatio()
+                otocoDto.leverageRatio(),
+                OrderExecutionType.LIMIT
         );
     }
 }

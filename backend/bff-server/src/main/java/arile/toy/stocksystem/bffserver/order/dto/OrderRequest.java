@@ -10,10 +10,16 @@ public record OrderRequest(
         @NotNull OrderType orderType,
         @NotNull @Positive Integer orderPrice,
         @NotNull @Positive Integer orderQuantity,
-        LeverageRatio leverageRatio
+        LeverageRatio leverageRatio,
+        OrderExecutionType orderExecutionType
 ) {
     /** leverageRatio가 null이면 spot으로 간주 */
     public LeverageRatio leverageRatioOrDefault() {
         return leverageRatio == null ? LeverageRatio.SPOT : leverageRatio;
+    }
+
+    /** orderExecutionType이 null이면 기존 클라이언트 호환을 위해 LIMIT으로 간주 */
+    public OrderExecutionType orderExecutionTypeOrDefault() {
+        return orderExecutionType == null ? OrderExecutionType.LIMIT : orderExecutionType;
     }
 }

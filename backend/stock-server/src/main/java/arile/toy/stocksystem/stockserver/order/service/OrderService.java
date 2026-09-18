@@ -61,7 +61,8 @@ public class OrderService {
                     request.orderPrice(),
                     request.orderQuantity(),
                     OrderStatus.OPEN,
-                    request.orderQuantity()
+                    request.orderQuantity(),
+                    request.orderExecutionType()
             );
             savedOrder = orderRepository.save(orderEntity);
 
@@ -90,7 +91,7 @@ public class OrderService {
                 savedOrder.getUsername(), savedOrder.getStockCode(),
                 savedOrder.getOrderType(), savedOrder.getLeverageRatio(), savedOrder.getOrderPrice(),
                 savedOrder.getOrderQuantity(), savedOrder.getRemainingQuantity(),
-                savedOrder.getOrderTime());
+                savedOrder.getOrderTime(), savedOrder.getOrderExecutionType());
 
         stockServerOrderResponseRepository.save(orderResponseMessage);
         orderResponseEventPublisher.publish(orderResponseMessage);

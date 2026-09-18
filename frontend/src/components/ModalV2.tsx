@@ -61,6 +61,8 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "종목톡": "stock-talk-modal",
     "종목토론": "discussion-modal",
     "주문내역": "order-history-modal",
+    "주문 취소": "cancel-confirm-modal",
+    "주문 확인": "order-confirm-modal",
 };
 
 export default function ModalV2({
