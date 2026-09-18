@@ -123,11 +123,6 @@ export default function OrderConfirmModal({
             open={open}
             title="주문 확인"
             onClose={onClose}
-            extraClass={
-                orderType === 'market'      ? `ocm-modal--market ocm-modal--market--${side}` :
-                    orderType === 'conditional' ? `ocm-modal--conditional ocm-modal--conditional--${side}` :
-                        `ocm-modal--limit ocm-modal--limit--${side}`
-            }
         >
             <div className="ocm">
 
@@ -256,7 +251,13 @@ export default function OrderConfirmModal({
                     <p className="ocm__market-notice">
                         <strong>
                             <span style={{ color: 'var(--color-text-primary)' }}>
-                                종목 가격이 {watchPrice?.toLocaleString()}원 도달 시&nbsp;
+                                종목 가격이&nbsp;
+                            </span>
+                            <span className={isBuy ? 'ocm__notice--buy' : 'ocm__notice--sell'}>
+                                {watchPrice?.toLocaleString()}원 {isBuy ? '이상' : '이하'}
+                            </span>
+                            <span style={{ color: 'var(--color-text-primary)' }}>
+                                &nbsp;도달 시&nbsp;
                             </span>
                             <br />
                             <span className={isBuy ? 'ocm__notice--buy' : 'ocm__notice--sell'}>
