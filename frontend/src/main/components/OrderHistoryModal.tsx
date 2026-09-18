@@ -371,9 +371,14 @@ export default function OrderHistoryModal() {
         });
 
     const showTrigger = subTab === "자동" && mainTab !== "체결";
+    const showOrderType = mainTab === "주문" || mainTab === "취소";
     const gridClass = isPending
         ? (showTrigger ? "oh-grid-pending" : "oh-grid-pending-general")
-        : (showTrigger ? "oh-grid-cancelled" : "oh-grid-executed");
+        : mainTab === "체결"
+            ? "oh-grid-executed"
+            : showTrigger
+                ? "oh-grid-cancelled"
+                : "oh-grid-with-type";
 
     const hasFilter = !!(filter.stockCode || filter.dateFrom || filter.dateTo);
     const hasSelection = selectedIds.size > 0;
@@ -438,7 +443,7 @@ export default function OrderHistoryModal() {
                         <span className="oh-col oh-name">종목</span>
                         <span className="oh-col oh-side">구분</span>
                         <span className="oh-col oh-leverage">레버리지</span>
-                        {showTrigger && <span className="oh-col oh-order-type">주문구분</span>}
+                        {showOrderType && <span className="oh-col oh-order-type">주문구분</span>}
                         {showTrigger && <span className="oh-col oh-trigger">감시가</span>}
                         <span className="oh-col oh-qty">수량</span>
                         <span className="oh-col oh-price">가격</span>
@@ -583,7 +588,11 @@ export default function OrderHistoryModal() {
                                                 {side === "BUY" ? "매수" : "매도"}
                                             </span>
                                             <LeverageBadge leverageRatio={item.leverageRatio} />
-                                            {showTrigger && <span className="oh-col oh-order-type">조건부</span>}
+                                            <span className="oh-col oh-order-type">
+                                                {auto
+                                                    ? "조건부"
+                                                    : (item as OrderHistoryItem).orderExecutionType === "MARKET" ? "시장가" : "지정가"}
+                                            </span>
                                             {showTrigger && (
                                                 <span className="oh-col oh-trigger">
                                                     {auto && (item as AutoOrderHistoryItem).triggerPrice != null
