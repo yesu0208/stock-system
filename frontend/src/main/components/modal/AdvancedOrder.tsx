@@ -8,6 +8,8 @@ import { useAccount } from "../../context/AccountContext";
 import { STOCKS } from "../../data/stocks";
 import type { StockInfo } from "../../types/stock";
 import MiniLineChart from "./advancedorder/MiniLineChart";
+import { useUser } from "../../context/UserContext";
+import type { RankTier } from "../../../types/rank";
 
 import { AdvancedOrderProvider, useAdvancedOrders,
     type TrailingStopPendingOrder, type OtocoPendingOrder }
@@ -52,6 +54,19 @@ const LEVERAGE_OPTIONS: { leverage: number; label: string; marginRate: number }[
     { leverage: 2,   label: "2x",   marginRate: 50   },
     { leverage: 2.5, label: "2.5x", marginRate: 40   },
 ];
+
+const RANK_ORDER: RankTier[] = ["UNRANKED", "BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "MASTER"];
+
+const LEVERAGE_REQUIRED_TIER: Record<number, RankTier | null> = {
+    1.5: null,
+    2:   "GOLD",
+    2.5: "PLATINUM",
+};
+
+function isRankAtLeast(current: RankTier | undefined, required: RankTier): boolean {
+    if (!current) return false;
+    return RANK_ORDER.indexOf(current) >= RANK_ORDER.indexOf(required);
+}
 
 function toLeverageRatio(leverage: number): "X1_5" | "X2" | "X2_5" | null {
     switch (leverage) {
@@ -597,6 +612,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     const { account }       = useAccount();
     const { selectedStock } = useStock();
     const { priceTick }     = useStockRealtime();
+    const { user }          = useUser();
 
     const currentPrice = priceTick?.curPrice ?? 0;
 
@@ -668,6 +684,17 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     const orderableLabel = isBuy
         ? `${orderableAmount.toLocaleString()} 원`
         : `${holdingAvailableQty.toLocaleString()} 주`;
+
+    const requiredTier = isCredit ? LEVERAGE_REQUIRED_TIER[leverage] : null;
+    const isLeverageAllowed = !requiredTier || isRankAtLeast(user?.rank?.tier, requiredTier);
+
+    const leverageDisabledReason =
+        isCredit && !isLeverageAllowed ? `${requiredTier} 등급 이상 가능` : null;
+    const quantityDisabledReason =
+        quantity <= 0 ? "수량 입력 필요" : null;
+
+    const disabledTooltipText = leverageDisabledReason ?? quantityDisabledReason ?? "";
+    const isOrderDisabled = leverageDisabledReason !== null || quantityDisabledReason !== null;
 
     return (
         <div className="adv-order__order-panel">
@@ -872,13 +899,16 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                     </div>
                 </div>
 
-                <button
-                    className={`order-btn ${isBuy ? "order-btn--buy" : "order-btn--sell"}`}
-                    onClick={openConfirm}
-                >
-                    <span className="order-btn__line">{isCredit ? "신용" : "현금"}</span>
-                    <span className="order-btn__line">{isBuy ? "매수" : "매도"}</span>
-                </button>
+                <Tooltip text={disabledTooltipText} placement="top">
+                    <button
+                        className={`order-btn ${isBuy ? "order-btn--buy" : "order-btn--sell"}`}
+                        onClick={openConfirm}
+                        disabled={isOrderDisabled}
+                    >
+                        <span className="order-btn__line">{isCredit ? "신용" : "현금"}</span>
+                        <span className="order-btn__line">{isBuy ? "매수" : "매도"}</span>
+                    </button>
+                </Tooltip>
             </div>
 
             <TrailingOrderConfirmModal
@@ -926,6 +956,7 @@ function OtocoInputPanel() {
     const { account }       = useAccount();
     const { priceTick }     = useStockRealtime();
     const { selectedStock } = useStock();
+    const { user }          = useUser();
 
     const currentPrice = priceTick?.curPrice ?? 0;
     const orderableAmount = account?.availableCash ?? 0;
@@ -997,6 +1028,17 @@ function OtocoInputPanel() {
     }
 
     const dirClass = entryDirection === "above" ? "otoco-dir--above" : "otoco-dir--below";
+
+    const requiredTier = isCredit ? LEVERAGE_REQUIRED_TIER[leverage] : null;
+    const isLeverageAllowed = !requiredTier || isRankAtLeast(user?.rank?.tier, requiredTier);
+
+    const leverageDisabledReason =
+        isCredit && !isLeverageAllowed ? `${requiredTier} 등급 이상 가능` : null;
+    const quantityDisabledReason =
+        entryQty <= 0 ? "수량 입력 필요" : null;
+
+    const disabledTooltipText = leverageDisabledReason ?? quantityDisabledReason ?? "";
+    const isOrderDisabled = leverageDisabledReason !== null || quantityDisabledReason !== null;
 
     return (
         <div className="adv-order__order-panel otoco-panel">
@@ -1274,13 +1316,16 @@ function OtocoInputPanel() {
                     </div>
                 </div>
 
-                <button
-                    className="order-btn order-btn--buy"
-                    onClick={openConfirm}
-                >
-                    <span className="order-btn__line">{isCredit ? "신용" : "현금"}</span>
-                    <span className="order-btn__line">매수</span>
-                </button>
+                <Tooltip text={disabledTooltipText} placement="top">
+                    <button
+                        className="order-btn order-btn--buy"
+                        onClick={openConfirm}
+                        disabled={isOrderDisabled}
+                    >
+                        <span className="order-btn__line">{isCredit ? "신용" : "현금"}</span>
+                        <span className="order-btn__line">매수</span>
+                    </button>
+                </Tooltip>
             </div>
 
             <OtocoOrderConfirmModal
