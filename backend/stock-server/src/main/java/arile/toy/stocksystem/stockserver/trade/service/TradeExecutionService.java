@@ -50,7 +50,8 @@ public class TradeExecutionService {
 
         TradeEntity tradeEntity = tradeRepository.save(
                 TradeEntity.of(orderDto.orderId(), orderDto.username(),
-                        orderDto.stockCode(), tradeType, tradePrice, executable)
+                        orderDto.stockCode(), tradeType, tradePrice, executable,
+                        orderDto.leverageRatio())
         );
 
         int remainingQuantity = orderDto.remainingQuantity() - executable;
