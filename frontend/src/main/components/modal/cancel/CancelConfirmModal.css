@@ -88,3 +88,12 @@
     color: var(--color-text-primary);
     border-color: #3a3d44;
 }
+
+.ccm__btn {
+    outline: none;
+}
+
+.ccm__btn:focus,
+.ccm__btn:focus-visible {
+    outline: none;
+}
