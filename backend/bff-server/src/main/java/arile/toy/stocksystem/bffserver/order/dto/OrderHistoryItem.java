@@ -17,6 +17,7 @@ public record OrderHistoryItem(
         Long notionalValue,
         Long initialMargin,
         Double maintenanceMarginRate,
-        Long liquidationPrice
+        Long liquidationPrice,
+        OrderExecutionType orderExecutionType
 ) {
 }

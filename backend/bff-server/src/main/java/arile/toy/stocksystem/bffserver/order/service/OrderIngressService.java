@@ -16,6 +16,7 @@ public class OrderIngressService {
     public OrderResponse receive(String username, OrderRequest request) {
 
         var leverageRatio = request.leverageRatioOrDefault();
+        var orderExecutionType = request.orderExecutionTypeOrDefault();
 
         OrderRequestEvent event = new OrderRequestEvent(
                 username,
@@ -23,7 +24,8 @@ public class OrderIngressService {
                 request.orderType(),
                 request.orderPrice(),
                 request.orderQuantity(),
-                leverageRatio
+                leverageRatio,
+                orderExecutionType
         );
 
         orderRequestEventPublisher.publishOrder(event);

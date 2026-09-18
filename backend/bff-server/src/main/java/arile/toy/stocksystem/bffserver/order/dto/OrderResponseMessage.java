@@ -17,9 +17,10 @@ public record OrderResponseMessage(
         Long notionalValue,
         Long initialMargin,
         Double maintenanceMarginRate,
-        Long liquidationPrice
+        Long liquidationPrice,
+        OrderExecutionType orderExecutionType
 ) {
-    private static final double MAINTENANCE_RATIO = 1.4; // 140%
+    private static final double MAINTENANCE_RATIO = 1.4;
 
     private static double marginRateOf(LeverageRatio ratio) {
         return switch (ratio) {
@@ -33,7 +34,7 @@ public record OrderResponseMessage(
     public static OrderResponseMessage of(
             Long orderId, String username, String stockCode, OrderType orderType,
             LeverageRatio leverageRatio, Integer orderPrice, Integer orderQuantity,
-            Integer remainingQuantity, Instant orderTime
+            Integer remainingQuantity, Instant orderTime, OrderExecutionType orderExecutionType
     ) {
         long notionalValue = (long) orderPrice * orderQuantity;
 
@@ -55,7 +56,8 @@ public record OrderResponseMessage(
         return new OrderResponseMessage(
                 orderId, username, stockCode, orderType, leverageRatio,
                 orderPrice, orderQuantity, remainingQuantity, orderTime,
-                notionalValue, initialMargin, maintenanceMarginRate, liquidationPrice
+                notionalValue, initialMargin, maintenanceMarginRate, liquidationPrice,
+                orderExecutionType
         );
     }
 }

@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.bffserver.order.event;
 
 import arile.toy.stocksystem.bffserver.leverage.dto.LeverageRatio;
+import arile.toy.stocksystem.bffserver.order.dto.OrderExecutionType;
 import arile.toy.stocksystem.bffserver.order.dto.OrderType;
 
 public record OrderRequestEvent(
@@ -9,6 +10,7 @@ public record OrderRequestEvent(
         OrderType orderType,
         Integer orderPrice,
         Integer orderQuantity,
-        LeverageRatio leverageRatio
+        LeverageRatio leverageRatio,
+        OrderExecutionType orderExecutionType
 ) {
 }
