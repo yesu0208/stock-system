@@ -134,7 +134,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
 
             {/* ════ 계좌 탭 ════ */}
             {tab === "account" && (
-                <div className="mam-account">
+                <div className="mam-account mam-tab-content" key="account">
                     {account ? (
                         <>
                             <div className="mam-top-row">
@@ -245,7 +245,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
 
             {/* ════ 보유주식 탭 (현물 전용) ════ */}
             {tab === "holdings" && (
-                <div className="mam-holdings mam-holdings--tab">
+                <div className="mam-holdings mam-holdings--tab mam-tab-content" key="holdings">
                     {account ? (
                         holdings.length > 0 ? (
                             <div className="mam-holdings-body">
@@ -326,7 +326,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
 
             {/* ════ 레버리지 탭 (별도 분리) ════ */}
             {tab === "leverage" && (
-                <div className="mam-holdings mam-holdings--tab">
+                <div className="mam-holdings mam-holdings--tab mam-tab-content" key="leverage">
                     {account ? (
                         leveragePositions.length > 0 ? (
                             <div className="mam-holdings-body">
@@ -439,7 +439,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
 
             {/* ════ 수익률 탭 ════ */}
             {tab === "profit" && (
-                <div className="mam-profit" ref={scrollRef}>
+                <div className="mam-profit mam-tab-content" ref={scrollRef} key="profit">
                     {profitItems.length > 0 && (
                         <div className="mam-profit-header">
                             <span>일자</span>
