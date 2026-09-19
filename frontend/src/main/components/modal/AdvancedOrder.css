@@ -1371,9 +1371,22 @@
 .otoco-exit-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
     flex-wrap: wrap;
     min-width: 0;
+}
+
+.otoco-exit-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.otoco-exit-row__top {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
 }
 
 .otoco-exit-label {

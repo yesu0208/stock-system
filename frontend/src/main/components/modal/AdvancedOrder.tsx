@@ -1145,11 +1145,11 @@ function OtocoInputPanel() {
 
     const tpDerivedPrice = tpMode === "price"
         ? tpPrice
-        : Math.round(entryPrice * (1 + tpPct / 100));
+        : ceilToTick(entryPrice * (1 + tpPct / 100));
 
     const slDerivedPrice = slMode === "price"
         ? slPrice
-        : Math.round(entryPrice * (1 - slPct / 100));
+        : floorToTick(entryPrice * (1 - slPct / 100));
 
     const { error } = useMsg();
 
@@ -1162,8 +1162,8 @@ function OtocoInputPanel() {
         if (currentPrice <= 0) return;
         initializedRef.current = true;
         setEntryPrice(snapToTick(currentPrice));
-        setTpPrice(snapToTick(Math.round(currentPrice * (1 + DEFAULT_TP_PCT / 100))));
-        setSlPrice(snapToTick(Math.round(currentPrice * (1 - DEFAULT_SL_PCT / 100))));
+        setTpPrice(ceilToTick(currentPrice * (1 + DEFAULT_TP_PCT / 100)));
+        setSlPrice(floorToTick(currentPrice * (1 - DEFAULT_SL_PCT / 100)));
     }, [currentPrice]);
 
     const entryAmountRaw   = entryPrice * entryQty;
@@ -1175,7 +1175,8 @@ function OtocoInputPanel() {
     function handleRatioClick(ratio: number) {
         const basePrice = entryPrice > 0 ? entryPrice : currentPrice;
         if (basePrice <= 0) { setEntryQty(0); return; }
-        const qty = Math.floor((orderableAmount * ratio) / basePrice);
+        const budgetAmount = orderableAmount * (isCredit ? leverage : 1);
+        const qty = Math.floor((budgetAmount * ratio) / basePrice);
         setEntryQty(clampQty(qty));
     }
 
@@ -1189,7 +1190,7 @@ function OtocoInputPanel() {
             error("손절가는 진입가보다 낮아야 합니다.");
             return;
         }
-        
+
         setConfirmData({
             stockName:      selectedStock.name ?? "",
             stockCode:      selectedStock.code ?? "",
@@ -1244,6 +1245,7 @@ function OtocoInputPanel() {
                 <div className="otoco-section__header">
                     <span className="otoco-section__title">진입 조건</span>
                     <span className="otoco-section__sub">(매수 진입 조건)</span>
+                    <HelpIcon text={"- 진입가: 매수 주문이 실행될 감시 가격\n- 이상: 현재가가 진입가 이상으로 오르면 매수 진입\n- 이하: 현재가가 진입가 이하로 내리면 매수 진입\n- 진입과 동시에 익절·손절 주문이 함께 등록됩니다."} />
                 </div>
 
                 <div className="otoco-direction-group">
@@ -1341,102 +1343,166 @@ function OtocoInputPanel() {
                     <span className="otoco-section__sub">(익절 · 손절 조건)</span>
                 </div>
 
-                <div className="otoco-exit-row">
-                    <span className="otoco-exit-label otoco-exit-label--tp">익절</span>
-                    <div className="otoco-mode-toggle">
-                        <button
-                            type="button"
-                            className={`otoco-mode-btn ${tpMode === "price" ? "otoco-mode-btn--active" : ""}`}
-                            onClick={() => setTpMode("price")}
-                        >
-                            원
-                        </button>
-                        <button
-                            type="button"
-                            className={`otoco-mode-btn ${tpMode === "pct" ? "otoco-mode-btn--active" : ""}`}
-                            onClick={() => setTpMode("pct")}
-                        >
-                            %
-                        </button>
+                <div className="otoco-exit-group">
+                    <div className="otoco-exit-row__top">
+                        <span className="otoco-exit-label otoco-exit-label--tp">익절</span>
+                        <span className="otoco-derived-preview otoco-derived-preview--tp">
+                            ≈ {entryPrice > 0 ? `${tpDerivedPrice.toLocaleString()}원` : "—"}
+                        </span>
                     </div>
-                    {tpMode === "price" ? (
-                        <input
-                            className="otoco-price-input"
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={tpPrice > 0 ? formatNumber(tpPrice) : ""}
-                            onChange={(e) => setTpPrice(
-                                Math.max(entryPrice + getTickSize(entryPrice), snapToTick(Math.max(0, parseNumber(e.target.value))))
+                    <div className="otoco-exit-row">
+                        <div className="otoco-mode-toggle">
+                            <button
+                                type="button"
+                                className={`otoco-mode-btn ${tpMode === "price" ? "otoco-mode-btn--active" : ""}`}
+                                onClick={() => setTpMode("price")}
+                            >
+                                원
+                            </button>
+                            <button
+                                type="button"
+                                className={`otoco-mode-btn ${tpMode === "pct" ? "otoco-mode-btn--active" : ""}`}
+                                onClick={() => setTpMode("pct")}
+                            >
+                                %
+                            </button>
+                        </div>
+                        <div className="stepper">
+                            <button
+                                type="button"
+                                className="stepper__btn"
+                                onClick={() => {
+                                    if (tpMode === "price") {
+                                        setTpPrice((p) =>
+                                            Math.max(entryPrice + getTickSize(entryPrice), stepPrice(p, -1))
+                                        );
+                                    } else {
+                                        setTpPct((p) => clampOtocoPct(p - OTOCO_STEP_PCT));
+                                    }
+                                }}
+                            >
+                                −
+                            </button>
+                            {tpMode === "price" ? (
+                                <input
+                                    className="stepper__input"
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="0"
+                                    value={tpPrice > 0 ? formatNumber(tpPrice) : ""}
+                                    onChange={(e) => setTpPrice(
+                                        Math.max(entryPrice + getTickSize(entryPrice), ceilToTick(Math.max(0, parseNumber(e.target.value))))
+                                    )}
+                                />
+                            ) : (
+                                <input
+                                    className="stepper__input"
+                                    type="number"
+                                    min={OTOCO_MIN_PCT}
+                                    max={OTOCO_MAX_PCT}
+                                    step={OTOCO_STEP_PCT}
+                                    placeholder={`+${DEFAULT_TP_PCT}`}
+                                    value={tpPct}
+                                    onChange={(e) => setTpPct(clampOtocoPct(Number(e.target.value)))}
+                                />
                             )}
-                        />
-                    ) : (
-                        <input
-                            className="otoco-price-input"
-                            type="number"
-                            min={OTOCO_MIN_PCT}
-                            max={OTOCO_MAX_PCT}
-                            step={OTOCO_STEP_PCT}
-                            placeholder={`+${DEFAULT_TP_PCT}`}
-                            value={tpPct}
-                            onChange={(e) => setTpPct(clampOtocoPct(Number(e.target.value)))}
-                        />
-                    )}
-                    <span className="otoco-price-unit">
-                        {tpMode === "price" ? "원" : "%"}
-                    </span>
-                    <span className="otoco-derived-preview otoco-derived-preview--tp">
-                        ≈ {entryPrice > 0 ? `${tpDerivedPrice.toLocaleString()}원` : "—"}
-                    </span>
+                            <button
+                                type="button"
+                                className="stepper__btn"
+                                onClick={() => {
+                                    if (tpMode === "price") {
+                                        setTpPrice((p) => stepPrice(p, 1));
+                                    } else {
+                                        setTpPct((p) => clampOtocoPct(p + OTOCO_STEP_PCT));
+                                    }
+                                }}
+                            >
+                                +
+                            </button>
+                            <span className="stepper__unit">{tpMode === "price" ? "원" : "%"}</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="otoco-exit-row">
-                    <span className="otoco-exit-label otoco-exit-label--sl">손절</span>
-                    <div className="otoco-mode-toggle">
-                        <button
-                            type="button"
-                            className={`otoco-mode-btn ${slMode === "price" ? "otoco-mode-btn--active" : ""}`}
-                            onClick={() => setSlMode("price")}
-                        >
-                            원
-                        </button>
-                        <button
-                            type="button"
-                            className={`otoco-mode-btn ${slMode === "pct" ? "otoco-mode-btn--active" : ""}`}
-                            onClick={() => setSlMode("pct")}
-                        >
-                            %
-                        </button>
+                <div className="otoco-exit-group">
+                    <div className="otoco-exit-row__top">
+                        <span className="otoco-exit-label otoco-exit-label--sl">손절</span>
+                        <span className="otoco-derived-preview otoco-derived-preview--sl">
+                            ≈ {entryPrice > 0 ? `${slDerivedPrice.toLocaleString()}원` : "—"}
+                        </span>
                     </div>
-                    {slMode === "price" ? (
-                        <input
-                            className="otoco-price-input"
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={slPrice > 0 ? formatNumber(slPrice) : ""}
-                            onChange={(e) => setSlPrice(
-                                Math.min(Math.max(0, entryPrice - getTickSize(entryPrice)), snapToTick(Math.max(0, parseNumber(e.target.value))))
+                    <div className="otoco-exit-row">
+                        <div className="otoco-mode-toggle">
+                            <button
+                                type="button"
+                                className={`otoco-mode-btn ${slMode === "price" ? "otoco-mode-btn--active" : ""}`}
+                                onClick={() => setSlMode("price")}
+                            >
+                                원
+                            </button>
+                            <button
+                                type="button"
+                                className={`otoco-mode-btn ${slMode === "pct" ? "otoco-mode-btn--active" : ""}`}
+                                onClick={() => setSlMode("pct")}
+                            >
+                                %
+                            </button>
+                        </div>
+                        <div className="stepper">
+                            <button
+                                type="button"
+                                className="stepper__btn"
+                                onClick={() => {
+                                    if (slMode === "price") {
+                                        setSlPrice((p) => stepPrice(p, -1));
+                                    } else {
+                                        setSlPct((p) => clampOtocoPct(p - OTOCO_STEP_PCT));
+                                    }
+                                }}
+                            >
+                                −
+                            </button>
+                            {slMode === "price" ? (
+                                <input
+                                    className="stepper__input"
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="0"
+                                    value={slPrice > 0 ? formatNumber(slPrice) : ""}
+                                    onChange={(e) => setSlPrice(
+                                        Math.min(Math.max(0, entryPrice - getTickSize(entryPrice)), floorToTick(Math.max(0, parseNumber(e.target.value))))
+                                    )}
+                                />
+                            ) : (
+                                <input
+                                    className="stepper__input"
+                                    type="number"
+                                    min={OTOCO_MIN_PCT}
+                                    max={OTOCO_MAX_PCT}
+                                    step={OTOCO_STEP_PCT}
+                                    placeholder={`-${DEFAULT_SL_PCT}`}
+                                    value={slPct}
+                                    onChange={(e) => setSlPct(clampOtocoPct(Number(e.target.value)))}
+                                />
                             )}
-                        />
-                    ) : (
-                        <input
-                            className="otoco-price-input"
-                            type="number"
-                            min={OTOCO_MIN_PCT}
-                            max={OTOCO_MAX_PCT}
-                            step={OTOCO_STEP_PCT}
-                            placeholder={`-${DEFAULT_SL_PCT}`}
-                            value={slPct}
-                            onChange={(e) => setSlPct(clampOtocoPct(Number(e.target.value)))}
-                        />
-                    )}
-                    <span className="otoco-price-unit">
-                        {slMode === "price" ? "원" : "%"}
-                    </span>
-                    <span className="otoco-derived-preview otoco-derived-preview--sl">
-                        ≈ {entryPrice > 0 ? `${slDerivedPrice.toLocaleString()}원` : "—"}
-                    </span>
+                            <button
+                                type="button"
+                                className="stepper__btn"
+                                onClick={() => {
+                                    if (slMode === "price") {
+                                        setSlPrice((p) =>
+                                            Math.min(Math.max(0, entryPrice - getTickSize(entryPrice)), stepPrice(p, 1))
+                                        );
+                                    } else {
+                                        setSlPct((p) => clampOtocoPct(p + OTOCO_STEP_PCT));
+                                    }
+                                }}
+                            >
+                                +
+                            </button>
+                            <span className="stepper__unit">{slMode === "price" ? "원" : "%"}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1450,7 +1516,8 @@ function OtocoInputPanel() {
 
                 <div className="adv-order__summary-row adv-order__summary-row--stacked">
                     <span className="adv-order__summary-label">
-                        진입금액
+                        주문금액
+                        <HelpIcon text={"- 진입가 × 수량으로 계산된 예상 주문금액입니다.\n- 실제 체결가가 진입가보다 낮으면 차액은 반환됩니다."} />
                         <LeverageTag leverage={isCredit ? leverage : 1} />
                     </span>
                     <span className="adv-order__summary-value adv-order__summary-value--fill adv-order__summary-value--fill-buy">
