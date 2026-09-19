@@ -635,6 +635,10 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     const [isCredit, setIsCredit] = useState<boolean>(false);
     const [leverage, setLeverage] = useState<number>(1.5);
 
+    useEffect(() => {
+        setQuantity(0);
+    }, [mode]);
+
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [confirmData, setConfirmData] = useState<TrailingConfirmData | null>(null);
 
@@ -999,6 +1003,10 @@ function OtocoInputPanel() {
     const [entryDirection, setEntryDirection] = useState<EntryDirection>("above");
     const [entryPrice, setEntryPrice] = useState<number>(0);
     const [entryQty,   setEntryQty]   = useState<number>(0);
+
+    useEffect(() => {
+        setEntryQty(0);
+    }, [entryDirection]);
 
     const [tpMode, setTpMode] = useState<ExitMode>("price");
     const [slMode, setSlMode] = useState<ExitMode>("price");
