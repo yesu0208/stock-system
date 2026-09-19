@@ -665,14 +665,26 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     const orderableAmount = account?.availableCash ?? 0;
     const holdingAvailableQty = holding?.availableQuantity ?? 0;
 
+    const leveragePosition = account?.leveragePositions?.find(
+        (p) => p.stockCode === selectedStock.code && p.leverageRatio === toLeverageRatio(leverage)
+    );
+
+    const sellAvailableQty = isCredit
+        ? (leveragePosition?.availableQuantity ?? 0)
+        : holdingAvailableQty;
+
+    function clampSellQty(value: number): number {
+        return isBuy ? clampQty(value) : Math.min(sellAvailableQty, clampQty(value));
+    }
+
     function handleRatioClick(ratio: number) {
         if (isBuy) {
             if (currentPrice <= 0) { setQuantity(0); return; }
             const qty = Math.floor((orderableAmount * ratio) / currentPrice);
             setQuantity(clampQty(qty));
         } else {
-            const qty = Math.floor(holdingAvailableQty * ratio);
-            setQuantity(clampQty(qty));
+            const qty = Math.floor(sellAvailableQty * ratio);
+            setQuantity(clampSellQty(qty));
         }
     }
 
@@ -718,7 +730,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
 
     const orderableLabel = isBuy
         ? `${orderableAmount.toLocaleString()} 원`
-        : `${holdingAvailableQty.toLocaleString()} 주`;
+        : `${sellAvailableQty.toLocaleString()} 주`;
 
     const requiredTier = isCredit ? LEVERAGE_REQUIRED_TIER[leverage] : null;
     const isLeverageAllowed = !requiredTier || isRankAtLeast(user?.rank?.tier, requiredTier);
@@ -752,7 +764,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                 <div className="stepper">
                     <button
                         className={`stepper__btn ${accentClass}`}
-                        onClick={() => setQuantity((q) => clampQty(q - 1))}
+                        onClick={() => setQuantity((q) => clampSellQty(q - 1))}
                     >
                         −
                     </button>
@@ -761,11 +773,11 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                         type="text"
                         inputMode="numeric"
                         value={formatNumber(quantity)}
-                        onChange={(e) => setQuantity(clampQty(parseNumber(e.target.value)))}
+                        onChange={(e) => setQuantity(clampSellQty(parseNumber(e.target.value)))}
                     />
                     <button
                         className={`stepper__btn ${accentClass}`}
-                        onClick={() => setQuantity((q) => clampQty(q + 1))}
+                        onClick={() => setQuantity((q) => clampSellQty(q + 1))}
                     >
                         +
                     </button>
