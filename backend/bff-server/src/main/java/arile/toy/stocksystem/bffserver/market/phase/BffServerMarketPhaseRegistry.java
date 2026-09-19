@@ -43,22 +43,18 @@ public class BffServerMarketPhaseRegistry {
         }
     }
 
-    public void setClosed(String stockCode) {
-        phaseMap.put(stockCode, BffServerMarketPhase.CLOSED);
-    }
-
-    public void setOpen(String stockCode) {
-        phaseMap.put(stockCode, BffServerMarketPhase.OPEN);
-    }
-
     public boolean isClosed(String stockCode) {
         BffServerMarketPhase phase = phaseMap.get(stockCode);
-        return phase == BffServerMarketPhase.CLOSED;
+        return phase == null || phase == BffServerMarketPhase.CLOSED;
     }
 
-    public boolean isOpen(String stockCode) {
+    public boolean isOrderable(String stockCode) {
         BffServerMarketPhase phase = phaseMap.get(stockCode);
-        return phase == BffServerMarketPhase.OPEN;
+        return phase != null && phase.isOrderable();
+    }
+
+    public BffServerMarketPhase getPhase(String stockCode) {
+        return phaseMap.get(stockCode);
     }
 
     public void setPhase(String stockCode, BffServerMarketPhase phase) {

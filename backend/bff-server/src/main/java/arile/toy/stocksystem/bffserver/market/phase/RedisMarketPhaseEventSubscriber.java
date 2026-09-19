@@ -19,28 +19,14 @@ public class RedisMarketPhaseEventSubscriber implements MessageListener {
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
-
         try {
-            String body = new String(
-                    message.getBody(),
-                    StandardCharsets.UTF_8
-            );
+            String body = new String(message.getBody(), StandardCharsets.UTF_8);
 
-            MarketPhaseEvent event =
-                    objectMapper.readValue(
-                            body,
-                            MarketPhaseEvent.class
-                    );
+            MarketPhaseEvent event = objectMapper.readValue(body, MarketPhaseEvent.class);
 
-            String stockCode = event.stockCode();
-            BffServerMarketPhase phase = event.marketPhase();
+            registry.setPhase(event.stockCode(), event.marketPhase());
 
-            switch (phase) {
-                case OPEN -> registry.setOpen(stockCode);
-                case CLOSED -> registry.setClosed(stockCode);
-            }
-
-            log.info("Market phase updated: {} -> {}", stockCode, phase);
+            log.info("Market phase updated: {} -> {}", event.stockCode(), event.marketPhase());
 
         } catch (Exception e) {
             log.warn("MarketPhaseEvent readValue error", e);
