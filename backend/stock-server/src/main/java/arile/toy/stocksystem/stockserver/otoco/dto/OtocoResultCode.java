@@ -8,6 +8,7 @@ public enum OtocoResultCode {
     ENTRY_TRIGGERED,
     ENTRY_FILLED,
     ENTRY_FAILED,
+    ENTRY_CANCELED,
     TP_TRIGGERED,
     SL_TRIGGERED
 }

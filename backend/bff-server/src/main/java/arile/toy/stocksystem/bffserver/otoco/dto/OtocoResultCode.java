@@ -8,6 +8,7 @@ public enum OtocoResultCode {
     ENTRY_TRIGGERED("진입 조건이 충족되어 주문이 접수되었습니다."),
     ENTRY_FILLED("진입 주문이 체결되어 TP/SL 감시를 시작합니다."),
     ENTRY_FAILED("[OTOCO 거절] 진입 처리 중 오류가 발생했습니다."),
+    ENTRY_CANCELED("진입 주문이 취소되어 OTOCO 주문이 종료되었습니다."),
     TP_TRIGGERED("익절(TP) 조건이 충족되어 청산되었습니다."),
     SL_TRIGGERED("손절(SL) 조건이 충족되어 청산되었습니다.");
 

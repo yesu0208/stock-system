@@ -89,6 +89,7 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
         otocoRepository.save(entity);
 
         stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
-        otocoResponseEventPublisher.publishEntryFailed(OtocoDto.fromEntity(entity), OtocoResultCode.ENTRY_FAILED);
+
+        otocoResponseEventPublisher.publishEntryFailed(OtocoDto.fromEntity(entity), OtocoResultCode.ENTRY_CANCELED);
     }
 }
