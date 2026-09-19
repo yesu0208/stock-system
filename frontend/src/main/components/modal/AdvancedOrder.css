@@ -58,8 +58,14 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    outline: none;
     transition: all 0.15s;
     font-family: var(--font-base);
+}
+
+.ao-outer-tab:focus,
+.ao-outer-tab:focus-visible {   /* [추가] */
+    outline: none;
 }
 
 .ao-outer-tab:hover {
