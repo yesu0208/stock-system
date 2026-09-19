@@ -6,6 +6,7 @@ import type { DailyReturnHistoryItem } from "../../types/dailyReturn";
 import type { MarginStatus, AccountStatus } from "../../types/account";
 import { stockNameMap } from "../../constants/stocks";
 import "./MyAccountModal.css";
+import Spinner from "../../components/Spinner";
 
 interface Props {
     open: boolean;
@@ -237,7 +238,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                             </div>
                         </>
                     ) : (
-                        <div className="mam-loading">불러오는 중...</div>
+                        <div className="mam-loading"><Spinner /></div>
                     )}
                 </div>
             )}
@@ -318,7 +319,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                             <div className="mam-empty">보유 중인 주식이 없습니다</div>
                         )
                     ) : (
-                        <div className="mam-loading">불러오는 중...</div>
+                        <div className="mam-loading"><Spinner /></div>
                     )}
                 </div>
             )}
@@ -431,7 +432,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                             <div className="mam-empty">보유 중인 레버리지 포지션이 없습니다</div>
                         )
                     ) : (
-                        <div className="mam-loading">불러오는 중...</div>
+                        <div className="mam-loading"><Spinner /></div>
                     )}
                 </div>
             )}
@@ -460,7 +461,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                         </div>
                     ))}
 
-                    {profitLoading && <div className="mam-loading">불러오는 중...</div>}
+                    {profitLoading && <div className="mam-loading"><Spinner /></div>}
                     {!profitLoading && !profitHasNext && profitItems.length > 0 && (
                         <div className="mam-end-of-list">마지막 데이터입니다</div>
                     )}

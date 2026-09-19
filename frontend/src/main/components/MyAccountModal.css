@@ -379,10 +379,11 @@
 }
 
 .mam-loading {
-    text-align: center;
-    font-size: 12px;
-    opacity: 0.4;
-    padding: 16px 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
 }
 
 .mam-profit {
