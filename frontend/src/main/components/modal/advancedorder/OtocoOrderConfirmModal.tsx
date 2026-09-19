@@ -1,5 +1,7 @@
+import { useState } from "react";
 import ModalV2 from "../../../../components/ModalV2";
 import "./OtocoOrderConfirmModal.css";
+import { useMsg } from "../../../context/MsgContext";
 
 export interface OtocoConfirmData {
     stockName:      string;
@@ -21,7 +23,7 @@ interface OtocoOrderConfirmModalProps {
     open:      boolean;
     data:      OtocoConfirmData | null;
     onClose:   () => void;
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
 }
 
 function fmt(n: number): string {
@@ -31,6 +33,9 @@ function fmt(n: number): string {
 export default function OtocoOrderConfirmModal({
                                                    open, data, onClose, onConfirm,
                                                }: OtocoOrderConfirmModalProps) {
+    const [loading, setLoading] = useState(false);
+    const { error } = useMsg();
+
     if (!data) return null;
 
     const isAbove = data.entryDirection === "ABOVE";
@@ -66,7 +71,17 @@ export default function OtocoOrderConfirmModal({
         : rawAmount;
     const showBeforeAfter = data.credit;
 
-    const handleConfirm = () => { onConfirm(); onClose(); };
+    async function handleConfirm() {
+        setLoading(true);
+        try {
+            await onConfirm();
+            onClose();
+        } catch (e: any) {
+            error(e.response?.data?.message ?? e.message ?? "OTOCO 주문 등록 중 오류가 발생했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
         <ModalV2 open={open} title="주문 확인" onClose={onClose} extraClass="occ-modal">
@@ -172,10 +187,14 @@ export default function OtocoOrderConfirmModal({
                 </p>
 
                 <div className="occ__btn-row">
-                    <button className="occ__btn occ__btn--confirm" onClick={handleConfirm}>
-                        매수 확정
+                    <button
+                        className="occ__btn occ__btn--confirm"
+                        onClick={handleConfirm}
+                        disabled={loading}
+                    >
+                        {loading ? "처리 중..." : "매수 확정"}
                     </button>
-                    <button className="occ__btn occ__btn--cancel" onClick={onClose}>
+                    <button className="occ__btn occ__btn--cancel" onClick={onClose} disabled={loading}>
                         취소
                     </button>
                 </div>

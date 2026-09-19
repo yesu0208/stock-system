@@ -1,5 +1,7 @@
+import { useState } from "react";
 import ModalV2 from "../../../../components/ModalV2";
 import "./TrailingOrderConfirmModal.css";
+import { useMsg } from "../../../context/MsgContext";
 
 export interface TrailingConfirmData {
     stockName:   string;
@@ -16,7 +18,7 @@ interface TrailingOrderConfirmModalProps {
     open:      boolean;
     data:      TrailingConfirmData | null;
     onClose:   () => void;
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
 }
 
 function fmt(n: number): string {
@@ -41,6 +43,9 @@ function LeverageTag({ leverage }: { leverage: number }) {
 export default function TrailingOrderConfirmModal({
                                                       open, data, onClose, onConfirm,
                                                   }: TrailingOrderConfirmModalProps) {
+    const [loading, setLoading] = useState(false);
+    const { error } = useMsg();
+
     if (!data) return null;
 
     const isBuy       = data.side === "BUY";
@@ -58,7 +63,17 @@ export default function TrailingOrderConfirmModal({
 
     const showBeforeAfter = isBuy && data.credit;
 
-    const handleConfirm = () => { onConfirm(); onClose(); };
+    async function handleConfirm() {
+        setLoading(true);
+        try {
+            await onConfirm();
+            onClose();
+        } catch (e: any) {
+            error(e.response?.data?.message ?? e.message ?? "트레일링 스탑 등록 중 오류가 발생했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
         <ModalV2 open={open} title="주문 확인" onClose={onClose} extraClass="toc-modal">
@@ -142,10 +157,11 @@ export default function TrailingOrderConfirmModal({
                     <button
                         className={`toc__btn toc__btn--confirm-${isBuy ? "buy" : "sell"}`}
                         onClick={handleConfirm}
+                        disabled={loading}
                     >
-                        {sideLabel} 확정
+                        {loading ? "처리 중..." : `${sideLabel} 확정`}
                     </button>
-                    <button className="toc__btn toc__btn--cancel" onClick={onClose}>
+                    <button className="toc__btn toc__btn--cancel" onClick={onClose} disabled={loading}>
                         취소
                     </button>
                 </div>
