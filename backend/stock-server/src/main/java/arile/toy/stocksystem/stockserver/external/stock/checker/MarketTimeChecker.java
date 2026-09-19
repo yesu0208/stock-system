@@ -50,4 +50,19 @@ public class MarketTimeChecker {
     public boolean isMarketOpenNow() {
         return resolvePhase().isOrderable();
     }
+
+    public boolean shouldMaintainConnection() {
+        ZonedDateTime now = ZonedDateTime.now(KST);
+        DayOfWeek day = now.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return false;
+        }
+
+        if (resolvePhase(now).isOrderable()) {
+            return true;
+        }
+
+        LocalTime time = now.toLocalTime();
+        return !time.isBefore(CLOSING_CALL_END) && time.isBefore(AFTER_START);
+    }
 }

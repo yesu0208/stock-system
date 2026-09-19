@@ -36,6 +36,12 @@ public class ExternalStockWebSocketOrchestrator {
         }
     }
 
+    @Scheduled(cron = "35 49 8 ? * MON-FRI", zone = "Asia/Seoul")
+    public void preConnectBeforeMorningCall() {
+        log.info("Pre-connect before morning call (30s buffer)");
+        connectAndSubscribeIfNeeded();
+    }
+
     @Scheduled(cron = "5 50 8 ? * MON-FRI", zone = "Asia/Seoul")
     public void connectAtMorningCall() {
         log.info("Morning call trigger");
@@ -68,10 +74,10 @@ public class ExternalStockWebSocketOrchestrator {
 
     @Scheduled(fixedDelay = 5_000)
     public void reconnectIfDisconnected() {
-        if (!marketTimeChecker.isMarketOpenNow()) return;
+        if (!marketTimeChecker.shouldMaintainConnection()) return;
         if (externalStockWebSocketClient.isConnected()) return;
 
-        log.warn("WebSocket disconnected during market hours. Reconnecting...");
+        log.warn("WebSocket disconnected. Reconnecting...");
         connectAndSubscribeIfNeeded();
         marketPhaseService.setScheduledMarkets();
     }
