@@ -65,10 +65,31 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
 
         otocoExitBookRegistry.register(OtocoDto.fromEntity(entity));
 
+        // 완전체결되었으므로 잔량 개념이 사라짐 — 캐시에도 entryRemainingQuantity 없이 저장
         stockServerOtocoResponseRepository.update(entity.getUsername(), entity.getOtocoId(),
                 StockServerOtocoResponseMessage.fromEntity(entity));
 
         otocoResponseEventPublisher.publishEntryFilled(OtocoDto.fromEntity(entity));
+    }
+
+    //  진입 주문이 부분체결될 때마다(완전체결 전) TradeExecutionService로부터 호출됨
+    @Override
+    public void onOrderPartiallyFilled(Long orderId, int remainingQuantity) {
+
+        Optional<OtocoEntity> optionalOtoco = otocoRepository.findByEntryOrderIdForUpdate(orderId);
+        if (optionalOtoco.isEmpty()) {
+            return; // OTOCO와 무관한 일반 주문
+        }
+
+        OtocoEntity entity = optionalOtoco.get();
+        if (entity.getOtocoStatus() != OtocoStatus.ENTRY_ORDER_PLACED) {
+            return; // 이미 취소/완전체결 등으로 상태가 바뀐 경우 — 오작동 방지
+        }
+
+        stockServerOtocoResponseRepository.update(entity.getUsername(), entity.getOtocoId(),
+                StockServerOtocoResponseMessage.fromEntity(entity, remainingQuantity));
+
+        otocoResponseEventPublisher.publishEntryPartiallyFilled(OtocoDto.fromEntity(entity, remainingQuantity));
     }
 
     @Override
@@ -84,11 +105,11 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
             return;
         }
 
-        // 표준 취소 흐름(CancelService)이 이미 예약 현금을 환불했으므로 여기서는 상태만 정리
         entity.changeStatus(OtocoStatus.CANCELED);
         otocoRepository.save(entity);
 
         stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
-        otocoResponseEventPublisher.publishEntryFailed(OtocoDto.fromEntity(entity), OtocoResultCode.ENTRY_FAILED);
+
+        otocoResponseEventPublisher.publishEntryCanceled(OtocoDto.fromEntity(entity));
     }
 }

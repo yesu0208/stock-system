@@ -43,6 +43,25 @@ public class OtocoResponsePushService {
             return;
         }
 
+        if (event.resultCode() == OtocoResultCode.ENTRY_PARTIALLY_FILLED) {
+
+            // 트레일링 스탑의 /update 채널과 동일한 패턴 — 부분체결마다 토스트/전체목록 갱신을
+            // 반복해서 보내면 과도하므로, 단건 갱신 메시지만 별도 채널로 보냄
+            OtocoResponseMessage updated = new OtocoResponseMessage(
+                    event.otocoId(), event.username(), event.stockCode(), event.entryDirection(),
+                    event.leverageRatio(), event.orderQuantity(), event.entryTriggerPrice(),
+                    event.tpTriggerPrice(), event.slTriggerPrice(), event.otocoStatus(), event.orderTime(),
+                    event.entryRemainingQuantity()
+            );
+
+            messagingTemplate.convertAndSendToUser(
+                    event.username(),
+                    "/sub/otoco/update",
+                    updated
+            );
+            return;
+        }
+
         if (event.resultCode() != null && LIST_REFRESH_CODES.contains(event.resultCode())) {
 
             // 단계 전환 알림(진입발동/진입체결/TP·SL체결)은 결과 메시지 + 목록 갱신을 함께 보냄.

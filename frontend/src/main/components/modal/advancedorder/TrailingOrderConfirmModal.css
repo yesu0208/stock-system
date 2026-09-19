@@ -1,0 +1,289 @@
+.modal-box.toc-modal {
+    width: 300px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.toc {
+    --toc-buy:          #f04a4a;
+    --toc-sell:         #4d8ef5;
+    --toc-surface:      #1e2024;
+    --toc-surface-2:    #26292e;
+    --toc-border:       #2e3138;
+    --toc-text-primary: #e8eaed;
+    --toc-text-sub:     #8d929b;
+    --toc-text-muted:   #565c66;
+    --toc-trail-buy:    #f59e0b;
+    --toc-trail-sell:   #38bdf8;
+    --toc-radius-sm:    6px;
+    --toc-radius-md:    10px;
+    --toc-font:         "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: var(--toc-font);
+    color: var(--toc-text-primary);
+}
+
+.toc__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--toc-border);
+}
+
+.toc__side-badge {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: var(--toc-radius-sm);
+    letter-spacing: 0.5px;
+}
+
+.toc__side-badge--buy {
+    background: rgba(240, 74, 74, 0.15);
+    color: var(--toc-buy);
+    border: 1px solid rgba(240, 74, 74, 0.3);
+}
+
+.toc__side-badge--sell {
+    background: rgba(77, 142, 245, 0.15);
+    color: var(--toc-sell);
+    border: 1px solid rgba(77, 142, 245, 0.3);
+}
+
+.toc__stock-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.toc__stock-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--toc-text-primary);
+}
+
+.toc__stock-code {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--toc-text-sub);
+    letter-spacing: 0.5px;
+}
+
+.toc__tag-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.toc__tag {
+    font-size: 12px;
+    color: #b7a6ff;
+    background: rgba(183, 166, 255, 0.12);
+    padding: 2px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(183, 166, 255, 0.3);
+}
+
+.toc__tag-sep {
+    font-size: 11px;
+    color: var(--toc-text-muted);
+}
+
+.toc__leverage-tag {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+}
+
+.toc__leverage-tag.cash {
+    color: #b4b9c2;
+    background: rgba(141, 146, 155, 0.14);
+    border-color: rgba(141, 146, 155, 0.35);
+}
+.toc__leverage-tag.lev-2 {
+    color: #7dd3fc;
+    background: rgba(125, 211, 252, 0.12);
+    border-color: rgba(125, 211, 252, 0.3);
+}
+.toc__leverage-tag.lev-3 {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+.toc__leverage-tag.lev-5 {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.3);
+}
+.toc__leverage-tag.lev-other {
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.12);
+    border-color: rgba(244, 114, 182, 0.3);
+}
+
+.toc__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toc__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.toc__row-label {
+    font-size: 13px;
+    color: var(--toc-text-sub);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.toc__row-label-hint {
+    font-size: 10px;
+    color: var(--toc-text-muted);
+    font-weight: 400;
+}
+
+.toc__row-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--toc-text-primary);
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    text-align: right;
+}
+
+.toc__row-value--amount {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.toc__row-value--amount.buy  { color: var(--toc-trail-buy);  }
+.toc__row-value--amount.sell { color: var(--toc-trail-sell); }
+
+.toc__stop--buy  { color: var(--toc-trail-buy);  }
+.toc__stop--sell { color: var(--toc-trail-sell); }
+
+.toc__value--after {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--toc-text-primary);
+    white-space: nowrap;
+}
+
+.toc__value--before {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--toc-text-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--toc-text-muted);
+    white-space: nowrap;
+    margin-left: 5px;
+}
+
+.toc__divider {
+    width: 100%;
+    height: 1px;
+    background: var(--toc-border);
+    flex-shrink: 0;
+}
+
+.toc__notice {
+    margin: 0;
+    padding: 9px 11px;
+    border-radius: var(--toc-radius-sm);
+    background: var(--toc-surface);
+    border: 1px solid var(--toc-border);
+    font-size: 11px;
+    line-height: 1.65;
+    color: var(--toc-text-primary);
+    text-align: center; /* 추가 */
+}
+
+.toc__notice-main {
+    font-weight: 600;
+}
+
+.toc__footer {
+    display: flex;
+    gap: 8px;
+}
+
+.toc__btn {
+    flex: 1;
+    height: 42px;
+    border: none;
+    border-radius: var(--toc-radius-md);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+    font-family: var(--toc-font);
+}
+
+.toc__btn:active { transform: scale(0.98); }
+
+.toc__btn--cancel {
+    background: var(--toc-surface-2);
+    color: var(--toc-text-sub);
+    border: 1px solid var(--toc-border);
+    transition: background 0.15s, color 0.15s;
+}
+
+.toc__btn--cancel:hover {
+    background: #2e3138;
+    color: var(--toc-text-primary);
+}
+
+.toc__btn--confirm-buy {
+    background: var(--toc-buy);
+    color: #fff;
+}
+.toc__btn--confirm-buy:hover { filter: brightness(1.1); }
+
+.toc__btn--confirm-sell {
+    background: var(--toc-sell);
+    color: #fff;
+}
+.toc__btn--confirm-sell:hover { filter: brightness(1.12); }
+
+.toc__rows .toc__row--fill .toc__row-value,
+.toc__rows .toc__row--fill .toc__row-value.toc__stop--buy,
+.toc__rows .toc__row--fill .toc__row-value.toc__stop--sell,
+.toc__rows .toc__row--fill .toc__row-value--amount.buy,
+.toc__rows .toc__row--fill .toc__row-value--amount.sell {
+    color: var(--toc-text-primary);
+}
+
+.toc__row-label-hint {
+    color: var(--toc-text-sub);
+}
+
+.toc__rows .toc__row .toc__profit.profit { color: var(--toc-buy); }
+.toc__rows .toc__row .toc__profit.loss   { color: var(--toc-sell); }
+
+.toc__btn--cancel:hover {
+    border-color: transparent;
+}
+
+.toc__value--before {
+    color: var(--toc-text-sub);
+    text-decoration-color: var(--toc-text-sub);
+}

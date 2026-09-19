@@ -6,9 +6,10 @@ interface TooltipProps {
     text: string;
     children: React.ReactNode;
     placement?: "top" | "bottom" | "left" | "right";
+    multiline?: boolean;
 }
 
-export default function Tooltip({ text, children, placement = "top" }: TooltipProps) {
+export default function Tooltip({ text, children, placement = "top", multiline = false }: TooltipProps) {
     const [visible, setVisible] = useState(false);
     const [coords, setCoords] = useState({ top: 0, left: 0 });
     const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -36,7 +37,7 @@ export default function Tooltip({ text, children, placement = "top" }: TooltipPr
             {children}
             {visible && text && createPortal(
                 <span
-                    className={`tt-box tt-${placement}`}
+                    className={`tt-box tt-${placement}${multiline ? " tt-multiline" : ""}`}
                     style={{ top: coords.top, left: coords.left }}
                 >
                     {text}

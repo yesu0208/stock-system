@@ -36,6 +36,15 @@ public class OtocoService {
         Integer slTriggerPrice = OtocoPriceResolver.resolveStopLoss(
                 request.entryTriggerPrice(), request.slMode(), request.slPrice(), request.slPct());
 
+        if (tpTriggerPrice <= request.entryTriggerPrice()) {
+            otocoResponseEventPublisher.publishError(request, OtocoResultCode.INVALID_TP_PRICE);
+            return;
+        }
+        if (slTriggerPrice >= request.entryTriggerPrice()) {
+            otocoResponseEventPublisher.publishError(request, OtocoResultCode.INVALID_SL_PRICE);
+            return;
+        }
+
         long orderAmount = (long) request.entryTriggerPrice() * request.orderQuantity();
         long reserveAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
 

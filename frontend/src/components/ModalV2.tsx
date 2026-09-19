@@ -1,5 +1,6 @@
 import "./ModalV2.css";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 let modalStack: symbol[] = [];
 
@@ -63,6 +64,7 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "주문내역": "order-history-modal",
     "주문 취소": "cancel-confirm-modal",
     "주문 확인": "order-confirm-modal",
+    "고급 주문": "advanced-order-modal",
 };
 
 export default function ModalV2({
@@ -110,7 +112,7 @@ export default function ModalV2({
 
     const sizeClass = TITLE_TO_CLASS[title] ?? "";
 
-    return (
+    return createPortal(
         <div className={`modal-v2-overlay ${open ? "show" : render ? "hide" : ""}`}>
             <div
                 ref={boxRef}
@@ -132,6 +134,7 @@ export default function ModalV2({
                     {children}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

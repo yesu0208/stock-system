@@ -4,6 +4,7 @@ import { placeOrder } from '../../../../api/order'
 import { placeAutoOrder } from '../../../../api/autoOrder'
 import { tokenStorage } from '../../../../utils/token'
 import './OrderConfirmModal.css'
+import { useMsg } from "../../../context/MsgContext";
 import type { LeverageRatio, OrderType as ApiOrderType } from '../../../../types/order'
 
 type OrderType = 'market' | 'limit' | 'conditional'
@@ -66,7 +67,8 @@ export default function OrderConfirmModal({
                                               profitAmount, profitRate,
                                           }: Props) {
     const [loading, setLoading] = useState(false)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+    const { error } = useMsg();
 
     const isBuy = side === 'buy'
     const sideLabel = isBuy ? '매수' : '매도'
@@ -75,12 +77,11 @@ export default function OrderConfirmModal({
 
     async function handleConfirmClick() {
         setLoading(true)
-        setErrorMsg(null)
 
         try {
             if (orderType === 'conditional') {
                 if (watchPrice == null) {
-                    setErrorMsg('감시가가 올바르지 않습니다.')
+                    error('감시가가 올바르지 않습니다.')
                     setLoading(false)
                     return
                 }
@@ -113,7 +114,8 @@ export default function OrderConfirmModal({
                 onClose()
                 return
             }
-            setErrorMsg(e.response?.data?.message ?? e.message ?? '주문 처리 중 오류가 발생했습니다.')
+            const errMessage = e.response?.data?.message ?? e.message ?? '주문 처리 중 오류가 발생했습니다.'
+            error(errMessage)
         } finally {
             setLoading(false)
         }
@@ -275,8 +277,6 @@ export default function OrderConfirmModal({
                         </span>
                     </p>
                 )}
-
-                {errorMsg && <p className="ocm__error">{errorMsg}</p>}
 
                 <div className="ocm__footer">
                     <button

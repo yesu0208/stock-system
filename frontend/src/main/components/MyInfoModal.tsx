@@ -291,7 +291,7 @@ export default function MyInfoModal({ open, onClose }: Props) {
                             <img
                                 src={resolveProfileImageUrl(user?.profileImageUrl)}
                                 alt="프로필"
-                                className="avatar"
+                                className="profile-avatar"
                                 onError={(e) => { e.currentTarget.src = DEFAULT_AVATAR; }}
                             />
                             <Tooltip text="사진 변경" placement="top">

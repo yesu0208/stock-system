@@ -41,6 +41,10 @@ public class RedisOtocoResponseEventPublisher implements OtocoResponseEventPubli
         publishFromDto(dto, true, OtocoResultCode.ENTRY_TRIGGERED);
     }
 
+    public void publishEntryPartiallyFilled(OtocoDto dto) {
+        publishFromDto(dto, true, OtocoResultCode.ENTRY_PARTIALLY_FILLED);
+    }
+
     public void publishEntryFilled(OtocoDto dto) {
         publishFromDto(dto, true, OtocoResultCode.ENTRY_FILLED);
     }
@@ -49,8 +53,13 @@ public class RedisOtocoResponseEventPublisher implements OtocoResponseEventPubli
         publishFromDto(dto, false, resultCode);
     }
 
+    public void publishEntryCanceled(OtocoDto dto) {
+        publishFromDto(dto, true, OtocoResultCode.ENTRY_CANCELED);
+    }
+
     public void publishExitTriggered(OtocoDto dto, OtocoLeg leg) {
-        publishFromDto(dto, true, leg == OtocoLeg.TAKE_PROFIT ? OtocoResultCode.TP_TRIGGERED : OtocoResultCode.SL_TRIGGERED);
+        publishFromDto(dto, true, leg == OtocoLeg.TAKE_PROFIT ?
+                OtocoResultCode.TP_TRIGGERED : OtocoResultCode.SL_TRIGGERED);
     }
 
     public void publishExitFailed(OtocoDto dto, OtocoResultCode resultCode) {
@@ -62,7 +71,7 @@ public class RedisOtocoResponseEventPublisher implements OtocoResponseEventPubli
             OtocoResponseEvent event = OtocoResponseEvent.of(
                     dto.otocoId(), dto.username(), dto.stockCode(), dto.entryDirection(), dto.leverageRatio(),
                     dto.orderQuantity(), dto.entryTriggerPrice(), dto.tpTriggerPrice(), dto.slTriggerPrice(),
-                    dto.otocoStatus(), dto.orderTime(), success, resultCode
+                    dto.otocoStatus(), dto.orderTime(), success, resultCode, dto.entryRemainingQuantity()
             );
             redisOtocoResponseEventRedisTemplate.convertAndSend(resolveChannel(event.username()), event);
         } catch (Exception e) {

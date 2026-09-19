@@ -21,19 +21,30 @@ public record OtocoResponseEvent(
         OtocoStatus otocoStatus,
         Instant orderTime,
         boolean success,
-        OtocoResultCode resultCode
+        OtocoResultCode resultCode,
+        Integer entryRemainingQuantity
 ) {
     public static OtocoResponseEvent fromMessage(StockServerOtocoResponseMessage m, boolean success, OtocoResultCode resultCode) {
         return new OtocoResponseEvent(m.otocoId(), m.username(), m.stockCode(), m.entryDirection(), m.leverageRatio(),
                 m.orderQuantity(), m.entryTriggerPrice(), m.tpTriggerPrice(), m.slTriggerPrice(), m.otocoStatus(),
-                m.orderTime(), success, resultCode);
+                m.orderTime(), success, resultCode, m.entryRemainingQuantity());
     }
 
     public static OtocoResponseEvent of(Long otocoId, String username, String stockCode, OtocoEntryDirection entryDirection,
                                         LeverageRatio leverageRatio, Integer orderQuantity, Integer entryTriggerPrice,
                                         Integer tpTriggerPrice, Integer slTriggerPrice, OtocoStatus otocoStatus,
                                         Instant orderTime, boolean success, OtocoResultCode resultCode) {
+        return of(otocoId, username, stockCode, entryDirection, leverageRatio, orderQuantity, entryTriggerPrice,
+                tpTriggerPrice, slTriggerPrice, otocoStatus, orderTime, success, resultCode, null);
+    }
+
+    public static OtocoResponseEvent of(Long otocoId, String username, String stockCode, OtocoEntryDirection entryDirection,
+                                        LeverageRatio leverageRatio, Integer orderQuantity, Integer entryTriggerPrice,
+                                        Integer tpTriggerPrice, Integer slTriggerPrice, OtocoStatus otocoStatus,
+                                        Instant orderTime, boolean success, OtocoResultCode resultCode,
+                                        Integer entryRemainingQuantity) {
         return new OtocoResponseEvent(otocoId, username, stockCode, entryDirection, leverageRatio, orderQuantity,
-                entryTriggerPrice, tpTriggerPrice, slTriggerPrice, otocoStatus, orderTime, success, resultCode);
+                entryTriggerPrice, tpTriggerPrice, slTriggerPrice, otocoStatus, orderTime, success, resultCode,
+                entryRemainingQuantity);
     }
 }

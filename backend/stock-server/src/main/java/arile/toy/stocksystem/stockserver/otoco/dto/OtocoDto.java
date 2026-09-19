@@ -17,14 +17,19 @@ public record OtocoDto(
         Integer slTriggerPrice,
         Long entryOrderId,
         OtocoStatus otocoStatus,
-        Instant orderTime
+        Instant orderTime,
+        Integer entryRemainingQuantity
 ) {
     public static OtocoDto fromEntity(OtocoEntity entity) {
+        return fromEntity(entity, null);
+    }
+
+    public static OtocoDto fromEntity(OtocoEntity entity, Integer entryRemainingQuantity) {
         return new OtocoDto(
                 entity.getOtocoId(), entity.getUsername(), entity.getStockCode(), entity.getEntryDirection(),
                 entity.getLeverageRatio(), entity.getOrderQuantity(), entity.getEntryTriggerPrice(),
                 entity.getTpTriggerPrice(), entity.getSlTriggerPrice(), entity.getEntryOrderId(),
-                entity.getOtocoStatus(), entity.getOrderTime()
+                entity.getOtocoStatus(), entity.getOrderTime(), entryRemainingQuantity
         );
     }
 }

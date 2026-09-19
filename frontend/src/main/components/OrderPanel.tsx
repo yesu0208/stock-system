@@ -19,6 +19,8 @@ import type { CancelResultResponse } from "../../types/cancel";
 import type { AutoOrderResultResponse } from "../../types/autoOrder";
 import type { AutoCancelResultResponse } from "../../types/autoCancel";
 import type { TradeResponse } from "../../types/trade";
+import type { TrailingStopResultResponse, TrailingStopCancelResultResponse } from "../../types/trailingStop";
+import type { OtocoResultResponse, OtocoCancelResultResponse } from "../../types/otoco";
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -209,12 +211,78 @@ export default function OrderPanel() {
             }
         );
 
+        const unsubTrailingResult = subscribeDestination(
+            "/user/sub/trailing-stop/result",
+            (data: TrailingStopResultResponse) => {
+                const sideLabel = data.trailingStopType === "BUY" ? "매수" : "매도";
+
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} 트레일링 ${sideLabel} 주문이 등록되었습니다.`);
+                } else {
+                    error(`트레일링 ${sideLabel} 등록 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        const unsubTrailingCancel = subscribeDestination(
+            "/user/sub/trailing-stop/cancel",
+            (data: TrailingStopCancelResultResponse) => {
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} 트레일링 주문이 취소되었습니다.`);
+                } else {
+                    error(`트레일링 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
+        const unsubOtocoResult = subscribeDestination(
+            "/user/sub/otoco/result",
+            (data: OtocoResultResponse) => {
+                if (data.responseType === "ERROR") {
+                    error(`OTOCO 등록 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                    return;
+                }
+
+                switch (data.otocoStatus) {
+                    case "WAITING_ENTRY":
+                        success(`${data.stockCode} OTOCO 주문이 등록되었습니다.`);
+                        break;
+                    case "ENTRY_ORDER_PLACED":
+                        success(`${data.stockCode} 진입 조건이 충족되어 주문이 접수되었습니다.`);
+                        break;
+                    case "WAITING_EXIT":
+                        success(`${data.stockCode} 진입 주문이 체결되어 익절·손절 감시를 시작합니다.`);
+                        break;
+                    case "COMPLETED":
+                        success(`${data.stockCode} 익절 또는 손절 조건이 충족되어 청산되었습니다.`);
+                        break;
+                    default:
+                        success(`${data.stockCode} OTOCO 주문 상태가 갱신되었습니다.`);
+                }
+            }
+        );
+
+        const unsubOtocoCancel = subscribeDestination(
+            "/user/sub/otoco/cancel",
+            (data: OtocoCancelResultResponse) => {
+                if (data.responseType === "SUCCESS") {
+                    success(`${data.stockCode} OTOCO 주문이 취소되었습니다.`);
+                } else {
+                    error(`OTOCO 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
+                }
+            }
+        );
+
         return () => {
             unsubOrder();
             unsubCancel();
             unsubAutoOrder();
             unsubAutoCancel();
             unsubTrade();
+            unsubTrailingResult();
+            unsubTrailingCancel();
+            unsubOtocoResult();
+            unsubOtocoCancel();
         };
     }, [subscribeDestination, success, error]);
 
