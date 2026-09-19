@@ -702,6 +702,11 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
         ? (leveragePosition?.availableQuantity ?? 0)
         : holdingAvailableQty;
 
+    useEffect(() => {
+        if (isBuy) return;
+        setQuantity((q) => (q > sellAvailableQty ? sellAvailableQty : q));
+    }, [isCredit, leverage, sellAvailableQty, isBuy]);
+
     const sellAvgBuyPrice = isCredit
         ? (leveragePosition && leveragePosition.quantity > 0
             ? Math.round(leveragePosition.purchaseAmount / leveragePosition.quantity)
