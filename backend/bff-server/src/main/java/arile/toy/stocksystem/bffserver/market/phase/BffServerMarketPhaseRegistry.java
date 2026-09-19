@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 @RequiredArgsConstructor
@@ -20,6 +21,8 @@ public class BffServerMarketPhaseRegistry {
     private final StringRedisTemplate redisTemplate;
 
     private final ConcurrentHashMap<String, BffServerMarketPhase> phaseMap = new ConcurrentHashMap<>();
+
+    private final AtomicReference<BffServerMarketPhase> globalPhase = new AtomicReference<>(BffServerMarketPhase.CLOSED);
 
     @PostConstruct
     public void init() {
@@ -59,5 +62,13 @@ public class BffServerMarketPhaseRegistry {
 
     public void setPhase(String stockCode, BffServerMarketPhase phase) {
         phaseMap.put(stockCode, phase);
+    }
+
+    public BffServerMarketPhase getGlobalPhase() {
+        return globalPhase.get();
+    }
+
+    public void setGlobalPhase(BffServerMarketPhase phase) {
+        globalPhase.set(phase);
     }
 }
