@@ -13,6 +13,8 @@ export interface TrailingConfirmData {
     stopPercent: number;
     basePrice:   number;
     expectedFillPrice: number;
+    minProfitAmount?: number;
+    minProfitRate?:   number;
 }
 
 interface TrailingOrderConfirmModalProps {
@@ -60,6 +62,13 @@ export default function TrailingOrderConfirmModal({
 
     const showBeforeAfter = isBuy && data.credit;
 
+    const showProfit  = !isBuy && data.minProfitAmount !== undefined;
+    const profitAmt   = data.minProfitAmount ?? 0;
+    const profitRate  = data.minProfitRate ?? 0;
+    const profitSign  = profitAmt > 0 ? "+" : profitAmt < 0 ? "−" : "";
+    const rateSign    = profitRate > 0 ? "+" : profitRate < 0 ? "−" : "";
+    const profitClass = profitAmt > 0 ? "profit" : profitAmt < 0 ? "loss" : "";
+
     async function handleConfirm() {
         setLoading(true);
         try {
@@ -101,7 +110,7 @@ export default function TrailingOrderConfirmModal({
                     </div>
 
                     <div className="toc__row">
-                        <span className="toc__row-label">기준가</span>
+                        <span className="toc__row-label">진입가</span>
                         <span className="toc__row-value">{fmt(data.basePrice)} 원</span>
                     </div>
 
@@ -114,19 +123,19 @@ export default function TrailingOrderConfirmModal({
 
                     <div className="toc__divider" />
 
-                    <div className="toc__row">
+                    <div className="toc__row toc__row--fill">
                         <span className="toc__row-label">
-                            {isBuy ? "예상 최대 체결가" : "예상 최소 체결가"}
-                            <span className="toc__row-label-hint">(기준가 기준)</span>
+                            {isBuy ? "최대 체결가" : "최소 체결가"}
+                            <span className="toc__row-label-hint">(진입가 기준)</span>
                         </span>
                         <span className={`toc__row-value toc__stop--${isBuy ? "buy" : "sell"}`}>
                             {fmt(data.expectedFillPrice)} 원
                         </span>
                     </div>
 
-                    <div className="toc__row">
+                    <div className="toc__row toc__row--fill">
                         <span className="toc__row-label">
-                            {isBuy ? "예상 최대 금액" : "예상 최소 금액"}
+                            {isBuy ? "최대 체결금액" : "최소 체결금액"}
                         </span>
                         <span className={`toc__row-value toc__row-value--amount ${isBuy ? "buy" : "sell"}`}>
                             {showBeforeAfter ? (
@@ -140,13 +149,27 @@ export default function TrailingOrderConfirmModal({
                         </span>
                     </div>
 
+                    {showProfit && (
+                        <div className="toc__row">
+                            <span className="toc__row-label">
+                                최소 예상손익
+                            </span>
+                            <span className={`toc__row-value toc__profit ${profitClass}`}>
+                                {profitSign}{Math.abs(profitAmt).toLocaleString()}원
+                                ({rateSign}{Math.abs(profitRate).toFixed(2)}%)
+                            </span>
+                        </div>
+                    )}
+
                 </div>
 
                 <p className="toc__notice">
-                    {isBuy
-                        ? `최저가 대비 ${data.stopPercent.toFixed(1)}% 반등 시 자동 매수됩니다.`
-                        : `최고가 대비 ${data.stopPercent.toFixed(1)}% 하락 시 자동 매도됩니다.`
-                    }
+                    <span className={`toc__notice-main toc__stop--${isBuy ? "buy" : "sell"}`}>
+                        {isBuy
+                            ? `최저가 대비 ${data.stopPercent.toFixed(1)}% 반등 시 자동 매수됩니다.`
+                            : `최고가 대비 ${data.stopPercent.toFixed(1)}% 하락 시 자동 매도됩니다.`
+                        }
+                    </span>
                     <br />체결가는 실제 체결 시점에 따라 달라질 수 있습니다.
                 </p>
 

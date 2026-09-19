@@ -758,6 +758,8 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
             stopPercent: isBuy ? buyStop : sellStop,
             basePrice:   currentPrice,
             expectedFillPrice,
+            minProfitAmount: !isBuy ? minProfitAmount : undefined,
+            minProfitRate:   !isBuy ? minProfitRate   : undefined,
         });
         setConfirmOpen(true);
     }

@@ -288,7 +288,7 @@
 }
 
 .modal-v2-box.toc-modal {
-    width: 380px;
+    width: 300px;
     min-height: 420px;
     max-height: 85vh;
     display: flex;

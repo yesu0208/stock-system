@@ -73,7 +73,7 @@
 .toc__stock-code {
     font-size: 11px;
     font-weight: 500;
-    color: var(--toc-text-muted);
+    color: var(--toc-text-sub);
     letter-spacing: 0.5px;
 }
 
@@ -106,9 +106,9 @@
 }
 
 .toc__leverage-tag.cash {
-    color: var(--toc-text-muted);
-    background: rgba(141, 146, 155, 0.1);
-    border-color: rgba(141, 146, 155, 0.25);
+    color: #b4b9c2;
+    background: rgba(141, 146, 155, 0.14);
+    border-color: rgba(141, 146, 155, 0.35);
 }
 .toc__leverage-tag.lev-2 {
     color: #7dd3fc;
@@ -213,8 +213,12 @@
     border: 1px solid var(--toc-border);
     font-size: 11px;
     line-height: 1.65;
-    color: var(--toc-text-muted);
+    color: var(--toc-text-primary);
     text-align: center; /* 추가 */
+}
+
+.toc__notice-main {
+    font-weight: 600;
 }
 
 .toc__footer {
@@ -259,3 +263,22 @@
     color: #fff;
 }
 .toc__btn--confirm-sell:hover { filter: brightness(1.12); }
+
+.toc__rows .toc__row--fill .toc__row-value,
+.toc__rows .toc__row--fill .toc__row-value.toc__stop--buy,
+.toc__rows .toc__row--fill .toc__row-value.toc__stop--sell,
+.toc__rows .toc__row--fill .toc__row-value--amount.buy,
+.toc__rows .toc__row--fill .toc__row-value--amount.sell {
+    color: var(--toc-text-primary);
+}
+
+.toc__row-label-hint {
+    color: var(--toc-text-sub);
+}
+
+.toc__rows .toc__row .toc__profit.profit { color: var(--toc-buy); }
+.toc__rows .toc__row .toc__profit.loss   { color: var(--toc-sell); }
+
+.toc__btn--cancel:hover {
+    border-color: transparent;
+}
