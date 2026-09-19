@@ -352,3 +352,39 @@
     color: #fff;
 }
 .occ__btn--confirm:hover { filter: brightness(1.1); }
+
+.occ__stock-code {
+    color: var(--occ-text-sub);
+}
+
+.occ__tag--leverage.cash {
+    color: #b4b9c2;
+    background: rgba(141, 146, 155, 0.14);
+    border-color: rgba(141, 146, 155, 0.35);
+}
+
+.occ__section-title {
+    color: var(--occ-text-sub);
+}
+
+.occ__notice {
+    color: var(--occ-text-primary);
+}
+
+.occ__value--above .occ__unit { color: var(--occ-above); }
+.occ__value--below .occ__unit { color: var(--occ-below); }
+
+.occ__value--above .occ__unit,
+.occ__value--below .occ__unit {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.occ__value--before {
+    color: var(--occ-text-sub);
+    text-decoration-color: var(--occ-text-sub);
+}
+
+.occ__btn--cancel:hover {
+    border-color: transparent;
+}

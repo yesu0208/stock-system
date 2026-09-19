@@ -107,12 +107,14 @@ export default function OtocoOrderConfirmModal({
                     <div className="occ__table">
 
                         <div className="occ__row">
-                            <span className="occ__label">트리거가</span>
+                            <span className="occ__label">
+                                진입가 (조건)
+                            </span>
                             <span className={`occ__value ${isAbove ? "occ__value--above" : "occ__value--below"}`}>
                                 {fmt(data.triggerPrice)}
                                 <span className="occ__unit">원</span>
                                 <span className={`occ__trigger-dir ${isAbove ? "occ__value--above" : "occ__value--below"}`}>
-                                    {isAbove ? "이상" : "이하"}
+                                    ({isAbove ? "이상" : "이하"})
                                 </span>
                             </span>
                         </div>
