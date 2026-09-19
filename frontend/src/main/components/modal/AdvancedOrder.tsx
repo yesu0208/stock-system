@@ -10,6 +10,7 @@ import type { StockInfo } from "../../types/stock";
 import MiniLineChart from "./advancedorder/MiniLineChart";
 import { useUser } from "../../context/UserContext";
 import type { RankTier } from "../../../types/rank";
+import { useMsg } from "../../context/MsgContext";
 
 import { AdvancedOrderProvider, useAdvancedOrders,
     type TrailingStopPendingOrder, type OtocoPendingOrder }
@@ -1019,6 +1020,11 @@ function OtocoInputPanel() {
         ? slPrice
         : Math.round(entryPrice * (1 - slPct / 100));
 
+    const { error } = useMsg();
+
+    const tpInvalid = tpDerivedPrice <= entryPrice;
+    const slInvalid = slDerivedPrice >= entryPrice;
+
     const initializedRef = useRef(false);
     useEffect(() => {
         if (initializedRef.current) return;
@@ -1043,6 +1049,16 @@ function OtocoInputPanel() {
     }
 
     function openConfirm() {
+
+        if (tpInvalid) {
+            error("익절가는 진입가보다 높아야 합니다.");
+            return;
+        }
+        if (slInvalid) {
+            error("손절가는 진입가보다 낮아야 합니다.");
+            return;
+        }
+        
         setConfirmData({
             stockName:      selectedStock.name ?? "",
             stockCode:      selectedStock.code ?? "",
@@ -1219,7 +1235,9 @@ function OtocoInputPanel() {
                             inputMode="numeric"
                             placeholder="0"
                             value={tpPrice > 0 ? formatNumber(tpPrice) : ""}
-                            onChange={(e) => setTpPrice(snapToTick(Math.max(0, parseNumber(e.target.value))))}
+                            onChange={(e) => setTpPrice(
+                                Math.max(entryPrice + getTickSize(entryPrice), snapToTick(Math.max(0, parseNumber(e.target.value))))
+                            )}
                         />
                     ) : (
                         <input
@@ -1266,7 +1284,9 @@ function OtocoInputPanel() {
                             inputMode="numeric"
                             placeholder="0"
                             value={slPrice > 0 ? formatNumber(slPrice) : ""}
-                            onChange={(e) => setSlPrice(snapToTick(Math.max(0, parseNumber(e.target.value))))}
+                            onChange={(e) => setSlPrice(
+                                Math.min(Math.max(0, entryPrice - getTickSize(entryPrice)), snapToTick(Math.max(0, parseNumber(e.target.value))))
+                            )}
                         />
                     ) : (
                         <input
