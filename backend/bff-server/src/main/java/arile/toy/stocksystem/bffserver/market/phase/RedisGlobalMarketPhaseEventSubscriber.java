@@ -1,6 +1,5 @@
 package arile.toy.stocksystem.bffserver.market.phase;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
@@ -12,9 +11,9 @@ import java.nio.charset.StandardCharsets;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class RedisMarketPhaseEventSubscriber implements MessageListener {
+public class RedisGlobalMarketPhaseEventSubscriber implements MessageListener {
 
-    private final ObjectMapper objectMapper;
+    private final GlobalMarketPhasePushService globalMarketPhasePushService;
     private final BffServerMarketPhaseRegistry registry;
 
     @Override
@@ -22,14 +21,15 @@ public class RedisMarketPhaseEventSubscriber implements MessageListener {
         try {
             String body = new String(message.getBody(), StandardCharsets.UTF_8);
 
-            MarketPhaseEvent event = objectMapper.readValue(body, MarketPhaseEvent.class);
+            try {
+                registry.setGlobalPhase(BffServerMarketPhase.valueOf(body));
+            } catch (IllegalArgumentException e) {
+                log.warn("알 수 없는 global market phase 값: {}", body);
+            }
 
-            registry.setPhase(event.stockCode(), event.marketPhase());
-
-            log.info("Market phase updated: {} -> {}", event.stockCode(), event.marketPhase());
-
+            globalMarketPhasePushService.push(body);
         } catch (Exception e) {
-            log.warn("MarketPhaseEvent readValue error", e);
+            log.warn("RedisGlobalMarketPhaseEventSubscriber error", e);
         }
     }
 }

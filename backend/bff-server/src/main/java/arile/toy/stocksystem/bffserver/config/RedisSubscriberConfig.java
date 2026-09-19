@@ -1,8 +1,7 @@
 package arile.toy.stocksystem.bffserver.config;
 
 import arile.toy.stocksystem.bffserver.external.stock.event.subscriber.RedisStockSummaryEventSubscriber;
-import arile.toy.stocksystem.bffserver.market.phase.RedisMarketCloseEventSubscriber;
-import arile.toy.stocksystem.bffserver.market.phase.RedisMarketPhaseEventSubscriber;
+import arile.toy.stocksystem.bffserver.market.phase.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +17,9 @@ public class RedisSubscriberConfig {
     private final RedisStockSummaryEventSubscriber redisStockSummaryEventSubscriber;
     private final RedisMarketCloseEventSubscriber redisMarketCloseEventSubscriber;
     private final RedisMarketPhaseEventSubscriber redisMarketPhaseEventSubscriber;
+    private final RedisGlobalMarketPhaseEventSubscriber redisGlobalMarketPhaseEventSubscriber;
+    private final RedisInterestAppliedEventSubscriber redisInterestAppliedEventSubscriber;
+    private final RedisRankUpdatedEventSubscriber redisRankUpdatedEventSubscriber;
 
     @Bean
     public RedisMessageListenerContainer redisContainer() {
@@ -40,6 +42,21 @@ public class RedisSubscriberConfig {
         container.addMessageListener(
                 redisMarketPhaseEventSubscriber,
                 new ChannelTopic("market-phase")
+        );
+
+        container.addMessageListener(
+                redisGlobalMarketPhaseEventSubscriber,
+                new ChannelTopic("market:global-phase")
+        );
+
+        container.addMessageListener(
+                redisInterestAppliedEventSubscriber,
+                new ChannelTopic("account:interest-applied")
+        );
+
+        container.addMessageListener(
+                redisRankUpdatedEventSubscriber,
+                new ChannelTopic("account:rank-updated")
         );
 
         return container;

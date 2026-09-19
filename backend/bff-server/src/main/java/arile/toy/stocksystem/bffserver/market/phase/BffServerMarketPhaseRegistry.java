@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 @RequiredArgsConstructor
@@ -20,6 +21,8 @@ public class BffServerMarketPhaseRegistry {
     private final StringRedisTemplate redisTemplate;
 
     private final ConcurrentHashMap<String, BffServerMarketPhase> phaseMap = new ConcurrentHashMap<>();
+
+    private final AtomicReference<BffServerMarketPhase> globalPhase = new AtomicReference<>(BffServerMarketPhase.CLOSED);
 
     @PostConstruct
     public void init() {
@@ -43,25 +46,29 @@ public class BffServerMarketPhaseRegistry {
         }
     }
 
-    public void setClosed(String stockCode) {
-        phaseMap.put(stockCode, BffServerMarketPhase.CLOSED);
-    }
-
-    public void setOpen(String stockCode) {
-        phaseMap.put(stockCode, BffServerMarketPhase.OPEN);
-    }
-
     public boolean isClosed(String stockCode) {
         BffServerMarketPhase phase = phaseMap.get(stockCode);
-        return phase == BffServerMarketPhase.CLOSED;
+        return phase == null || phase == BffServerMarketPhase.CLOSED;
     }
 
-    public boolean isOpen(String stockCode) {
+    public boolean isOrderable(String stockCode) {
         BffServerMarketPhase phase = phaseMap.get(stockCode);
-        return phase == BffServerMarketPhase.OPEN;
+        return phase != null && phase.isOrderable();
+    }
+
+    public BffServerMarketPhase getPhase(String stockCode) {
+        return phaseMap.get(stockCode);
     }
 
     public void setPhase(String stockCode, BffServerMarketPhase phase) {
         phaseMap.put(stockCode, phase);
+    }
+
+    public BffServerMarketPhase getGlobalPhase() {
+        return globalPhase.get();
+    }
+
+    public void setGlobalPhase(BffServerMarketPhase phase) {
+        globalPhase.set(phase);
     }
 }
