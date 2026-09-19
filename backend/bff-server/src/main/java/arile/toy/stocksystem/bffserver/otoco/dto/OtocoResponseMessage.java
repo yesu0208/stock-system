@@ -15,6 +15,7 @@ public record OtocoResponseMessage(
         Integer tpTriggerPrice,
         Integer slTriggerPrice,
         OtocoStatus otocoStatus,
-        Instant orderTime
+        Instant orderTime,
+        Integer entryRemainingQuantity
 ) {
 }

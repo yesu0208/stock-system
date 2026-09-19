@@ -20,6 +20,7 @@ public record OtocoResponseEvent(
         OtocoStatus otocoStatus,
         Instant orderTime,
         boolean success,
-        OtocoResultCode resultCode
+        OtocoResultCode resultCode,
+        Integer entryRemainingQuantity
 ) {
 }

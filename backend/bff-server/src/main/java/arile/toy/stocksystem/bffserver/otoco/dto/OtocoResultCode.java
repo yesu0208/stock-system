@@ -6,6 +6,7 @@ public enum OtocoResultCode {
     INVALID_TP_PRICE("[OTOCO 거절] 익절가는 진입가보다 높아야 합니다."),
     INVALID_SL_PRICE("[OTOCO 거절] 손절가는 진입가보다 낮아야 합니다."),
     ENTRY_TRIGGERED("진입 조건이 충족되어 주문이 접수되었습니다."),
+    ENTRY_PARTIALLY_FILLED("진입 주문이 부분체결되었습니다."),
     ENTRY_FILLED("진입 주문이 체결되어 TP/SL 감시를 시작합니다."),
     ENTRY_FAILED("[OTOCO 거절] 진입 처리 중 오류가 발생했습니다."),
     ENTRY_CANCELED("진입 주문이 취소되어 OTOCO 주문이 종료되었습니다."),
