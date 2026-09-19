@@ -702,6 +702,34 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
         ? (leveragePosition?.availableQuantity ?? 0)
         : holdingAvailableQty;
 
+    const sellAvgBuyPrice = isCredit
+        ? (leveragePosition && leveragePosition.quantity > 0
+            ? Math.round(leveragePosition.purchaseAmount / leveragePosition.quantity)
+            : 0)
+        : (holding && holding.quantity > 0
+            ? Math.round(holding.totalAmount / holding.quantity)
+            : 0);
+
+    const minProfitAmount = !isBuy ? (expectedFillPrice - sellAvgBuyPrice) * quantity : 0;
+
+    const marginPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
+        ? leveragePosition.initialMargin / leveragePosition.quantity
+        : sellAvgBuyPrice;
+
+    const minProfitRate = minProfitAmount === 0
+        ? 0
+        : marginPerShare !== 0
+            ? (minProfitAmount / (marginPerShare * quantity)) * 100
+            : 0;
+
+    const minProfitSign = minProfitAmount > 0 ? "+" : minProfitAmount < 0 ? "−" : "";
+    const minProfitText = `${minProfitSign}${Math.abs(minProfitAmount).toLocaleString()}원`;
+    const minRateSign   = minProfitRate > 0 ? "+" : minProfitRate < 0 ? "−" : "";
+    const minRateText   = `${minRateSign}${Math.abs(minProfitRate).toFixed(2)}%`;
+    const minProfitColorClass =
+        minProfitAmount > 0 ? "adv-order__summary-value--profit" :
+            minProfitAmount < 0 ? "adv-order__summary-value--loss" : "";
+
     function clampSellQty(value: number): number {
         return isBuy ? clampQty(value) : Math.min(sellAvailableQty, clampQty(value));
     }
@@ -982,6 +1010,19 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                         )}
                     </span>
                 </div>
+
+                {!isBuy && (
+                    <div className="adv-order__summary-row adv-order__summary-row--stacked">
+                        <span className="adv-order__summary-label">
+                            최소 예상손익
+                            <span className="adv-order__summary-hint">(최소 체결가 기준)</span>
+                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                        </span>
+                        <span className={`adv-order__summary-value ${minProfitColorClass}`}>
+                            {minProfitText} ({minRateText})
+                        </span>
+                    </div>
+                )}
             </div>
 
             <div className="order-btn-row">

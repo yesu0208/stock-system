@@ -2258,3 +2258,13 @@
 .adv-order__slider:disabled:hover::-moz-range-thumb {
     transform: none;
 }
+
+.adv-order__summary-value--profit { color: var(--color-buy); }
+.adv-order__summary-value--loss   { color: var(--color-sell); }
+
+.adv-order__summary-row--stacked .adv-order__summary-value.adv-order__summary-value--profit {
+    color: var(--color-buy);
+}
+.adv-order__summary-row--stacked .adv-order__summary-value.adv-order__summary-value--loss {
+    color: var(--color-sell);
+}
