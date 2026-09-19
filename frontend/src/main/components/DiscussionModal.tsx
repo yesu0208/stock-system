@@ -10,6 +10,7 @@ import * as discussionApi from '../../api/discussion';
 import type { PostSummary, PostDetail, CommentResponse, ReactionType } from '../../types/discussion';
 import './DiscussionModal.css';
 import Tooltip from '../../tooltip/Tooltip';
+import Spinner from '../../components/Spinner';
 
 const MAX_TITLE_LENGTH = 50;
 const MAX_CONTENT_LENGTH = 500;
@@ -745,7 +746,7 @@ export default function DiscussionModal() {
 
                     <div className="detail-scroll-area">
                         {detailLoading || !detail ? (
-                            <div className="discussion-empty"><span>불러오는 중...</span></div>
+                            <div className="discussion-empty"><Spinner /></div>
                         ) : (
                             <>
                                 <div className="detail-post">
@@ -933,7 +934,7 @@ export default function DiscussionModal() {
 
                     <ul className="discussion-list">
                         {listLoading && posts.length === 0 && (
-                            <li className="discussion-empty"><span>불러오는 중...</span></li>
+                            <li className="discussion-empty"><Spinner /></li>
                         )}
                         {!listLoading && visiblePosts.length === 0 && (
                             <li className="discussion-empty">
@@ -955,7 +956,7 @@ export default function DiscussionModal() {
 
                         {listLoading && posts.length > 0 && (
                             <li className="discussion-empty" style={{ minHeight: 32 }}>
-                                <span style={{ fontSize: 11 }}>로딩 중...</span>
+                                <Spinner />
                             </li>
                         )}
                         {!hasNext && posts.length > 0 && !listLoading && (

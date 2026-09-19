@@ -209,6 +209,32 @@ export default function Footer() {
         );
     };
 
+    const MarketValues = ({
+                              color,
+                              index,
+                              direction,
+                              changeValue,
+                              changeRate,
+                          }: {
+        color: string;
+        index?: string;
+        direction?: string;
+        changeValue?: string;
+        changeRate?: string;
+    }) => (
+        <span className="market-item__values">
+            <span className="market-item__index" style={{ color }}>
+                {index ?? "-"}
+            </span>
+            <span className="market-item__arrow" style={{ color }}>
+                {getArrow(direction)}
+            </span>
+            <span className="market-item__change" style={{ color }}>
+                {formatChange(changeValue, changeRate)}
+            </span>
+        </span>
+    );
+
     return (
         <div className="footer-wrapper">
             <footer className="footer">
@@ -240,11 +266,13 @@ export default function Footer() {
                     onMouseLeave={() => setHovered(null)}
                 >
                     <span style={labelStyle}>KOSPI</span>
-                    <span style={{ color: getColor(marketMain?.kospi.direction) }}>
-                        {marketMain?.kospi.currentIndex ?? "-"}{" "}
-                        {getArrow(marketMain?.kospi.direction)}{" "}
-                        {formatChange(marketMain?.kospi.changeValue, marketMain?.kospi.changeRate)}
-                    </span>
+                    <MarketValues
+                        color={getColor(marketMain?.kospi.direction)}
+                        index={marketMain?.kospi.currentIndex}
+                        direction={marketMain?.kospi.direction}
+                        changeValue={marketMain?.kospi.changeValue}
+                        changeRate={marketMain?.kospi.changeRate}
+                    />
 
                     {hovered === "kospi" && <Tooltip type="kospi" />}
                 </div>
@@ -257,11 +285,13 @@ export default function Footer() {
                     onMouseLeave={() => setHovered(null)}
                 >
                     <span style={labelStyle}>KOSDAQ</span>
-                    <span style={{ color: getColor(marketMain?.kosdaq.direction) }}>
-                        {marketMain?.kosdaq.currentIndex ?? "-"}{" "}
-                        {getArrow(marketMain?.kosdaq.direction)}{" "}
-                        {formatChange(marketMain?.kosdaq.changeValue, marketMain?.kosdaq.changeRate)}
-                    </span>
+                    <MarketValues
+                        color={getColor(marketMain?.kosdaq.direction)}
+                        index={marketMain?.kosdaq.currentIndex}
+                        direction={marketMain?.kosdaq.direction}
+                        changeValue={marketMain?.kosdaq.changeValue}
+                        changeRate={marketMain?.kosdaq.changeRate}
+                    />
 
                     {hovered === "kosdaq" && <Tooltip type="kosdaq" />}
                 </div>
@@ -274,11 +304,13 @@ export default function Footer() {
                     onMouseLeave={() => setHovered(null)}
                 >
                     <span style={labelStyle}>KOSPI200</span>
-                    <span style={{ color: getColor(marketMain?.kospi200.direction) }}>
-                        {marketMain?.kospi200.currentIndex ?? "-"}{" "}
-                        {getArrow(marketMain?.kospi200.direction)}{" "}
-                        {formatChange(marketMain?.kospi200.changeValue, marketMain?.kospi200.changeRate)}
-                    </span>
+                    <MarketValues
+                        color={getColor(marketMain?.kospi200.direction)}
+                        index={marketMain?.kospi200.currentIndex}
+                        direction={marketMain?.kospi200.direction}
+                        changeValue={marketMain?.kospi200.changeValue}
+                        changeRate={marketMain?.kospi200.changeRate}
+                    />
 
                     {hovered === "kospi200" && <Tooltip type="kospi200" />}
                 </div>
@@ -292,10 +324,16 @@ export default function Footer() {
                 >
                     <span style={labelStyle}>{fx?.currencyName ?? "환율"}</span>
 
-                    <span style={{ color: getColor(fx?.direction) }}>
-                        {fx?.rate ? `${fx.rate} ` : "-"}
-                        {getArrow(fx?.direction)}{" "}
-                        {fx?.change ?? ""}
+                    <span className="market-item__values">
+                        <span className="market-item__index" style={{ color: getColor(fx?.direction) }}>
+                            {fx?.rate ? `${fx.rate}` : "-"}
+                        </span>
+                        <span className="market-item__arrow" style={{ color: getColor(fx?.direction) }}>
+                            {getArrow(fx?.direction)}
+                        </span>
+                        <span className="market-item__change" style={{ color: getColor(fx?.direction) }}>
+                            {fx?.change ?? ""}
+                        </span>
                     </span>
 
                     {hovered === "fx" && <Tooltip type="fx" />}

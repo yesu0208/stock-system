@@ -6,6 +6,7 @@ import type { DailyReturnHistoryItem } from "../../types/dailyReturn";
 import type { MarginStatus, AccountStatus } from "../../types/account";
 import { stockNameMap } from "../../constants/stocks";
 import "./MyAccountModal.css";
+import Spinner from "../../components/Spinner";
 
 interface Props {
     open: boolean;
@@ -133,7 +134,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
 
             {/* ════ 계좌 탭 ════ */}
             {tab === "account" && (
-                <div className="mam-account">
+                <div className="mam-account mam-tab-content" key="account">
                     {account ? (
                         <>
                             <div className="mam-top-row">
@@ -237,14 +238,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                             </div>
                         </>
                     ) : (
-                        <div className="mam-loading">불러오는 중...</div>
+                        <div className="mam-loading"><Spinner /></div>
                     )}
                 </div>
             )}
 
             {/* ════ 보유주식 탭 (현물 전용) ════ */}
             {tab === "holdings" && (
-                <div className="mam-holdings mam-holdings--tab">
+                <div className="mam-holdings mam-holdings--tab mam-tab-content" key="holdings">
                     {account ? (
                         holdings.length > 0 ? (
                             <div className="mam-holdings-body">
@@ -318,14 +319,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                             <div className="mam-empty">보유 중인 주식이 없습니다</div>
                         )
                     ) : (
-                        <div className="mam-loading">불러오는 중...</div>
+                        <div className="mam-loading"><Spinner /></div>
                     )}
                 </div>
             )}
 
             {/* ════ 레버리지 탭 (별도 분리) ════ */}
             {tab === "leverage" && (
-                <div className="mam-holdings mam-holdings--tab">
+                <div className="mam-holdings mam-holdings--tab mam-tab-content" key="leverage">
                     {account ? (
                         leveragePositions.length > 0 ? (
                             <div className="mam-holdings-body">
@@ -431,14 +432,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                             <div className="mam-empty">보유 중인 레버리지 포지션이 없습니다</div>
                         )
                     ) : (
-                        <div className="mam-loading">불러오는 중...</div>
+                        <div className="mam-loading"><Spinner /></div>
                     )}
                 </div>
             )}
 
             {/* ════ 수익률 탭 ════ */}
             {tab === "profit" && (
-                <div className="mam-profit" ref={scrollRef}>
+                <div className="mam-profit mam-tab-content" ref={scrollRef} key="profit">
                     {profitItems.length > 0 && (
                         <div className="mam-profit-header">
                             <span>일자</span>
@@ -460,7 +461,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                         </div>
                     ))}
 
-                    {profitLoading && <div className="mam-loading">불러오는 중...</div>}
+                    {profitLoading && <div className="mam-loading"><Spinner /></div>}
                     {!profitLoading && !profitHasNext && profitItems.length > 0 && (
                         <div className="mam-end-of-list">마지막 데이터입니다</div>
                     )}

@@ -379,10 +379,11 @@
 }
 
 .mam-loading {
-    text-align: center;
-    font-size: 12px;
-    opacity: 0.4;
-    padding: 16px 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
 }
 
 .mam-profit {
@@ -449,3 +450,22 @@
     border-color: rgba(255, 255, 255, 0.08);
 }
 .mam-cumulative--neutral::before { background: #9ca3af; }
+
+.mam-tab-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    animation: mam-tab-in 0.2s ease both;
+}
+
+@keyframes mam-tab-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mam-tab-content {
+        animation: none;
+    }
+}

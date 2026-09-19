@@ -915,14 +915,14 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: #334155;
+    color: #64748b;
     min-height: 80px;
 }
 
 .discussion-empty svg {
     width: 28px;
     height: 28px;
-    opacity: 0.4;
+    opacity: 0.6;
 }
 
 .discussion-empty span {

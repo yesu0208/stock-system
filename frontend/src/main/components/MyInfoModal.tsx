@@ -11,6 +11,7 @@ import Tooltip from "../../tooltip/Tooltip";
 import PasswordModifyModal from "./PasswordModifyModal";
 import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import "./MyInfoModal.css";
+import Spinner from "../../components/Spinner";
 
 interface Props {
     open: boolean;
@@ -335,7 +336,7 @@ export default function MyInfoModal({ open, onClose }: Props) {
                                                 onClick={handleNicknameSave}
                                                 disabled={savingNickname || nicknameAvailability === "checking"}
                                             >
-                                                <FiCheck />
+                                                <FiCheck className="icon" />
                                             </button>
                                         </Tooltip>
                                         <Tooltip text="취소" placement="top">
@@ -345,7 +346,7 @@ export default function MyInfoModal({ open, onClose }: Props) {
                                                 onClick={handleNicknameCancel}
                                                 disabled={savingNickname}
                                             >
-                                                <FiX />
+                                                <FiX className="icon" />
                                             </button>
                                         </Tooltip>
                                     </div>
@@ -471,7 +472,11 @@ export default function MyInfoModal({ open, onClose }: Props) {
                                         </div>
                                     ))}
 
-                                    {loading && <div className="history-loading">불러오는 중...</div>}
+                                    {loading && (
+                                        <div className="history-loading">
+                                            <Spinner />
+                                        </div>
+                                    )}
 
                                     {!hasNext && history.length > 0 && (
                                         <div className="history-end">마지막 기록입니다</div>

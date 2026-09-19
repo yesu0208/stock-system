@@ -71,8 +71,9 @@
 }
 
 .nm-status {
-    text-align: center;
-    padding: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: 13px;
     color: #64748b;
 
@@ -189,4 +190,17 @@
 .nm-news-link:focus,
 .nm-news-link:focus-visible {
     outline: none;
+}
+
+.fade {
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }

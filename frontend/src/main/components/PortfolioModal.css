@@ -317,6 +317,8 @@
     gap: 10px;
     padding: 28px 0;
     color: #64748b;
+    flex: 1;
+    min-height: 0;
 }
 
 .portfolio__empty-icon {
