@@ -395,19 +395,24 @@ export default function AdvancedOrder({ open, onClose }: AdvancedOrderProps) {
                     </div>
 
                     <div className="ao-content">
-                        {outerTab === "trailing" ? (
-                            <>
-                                {innerTab === "info"    && <TrailingStopInfo />}
-                                {innerTab === "order"   && <TrailingOrderLayout />}
-                                {innerTab === "pending" && <TrailingStopPendingList />}
-                            </>
-                        ) : (
-                            <>
-                                {innerTab === "info"    && <OtocoInfo />}
-                                {innerTab === "order"   && <OtocoOrderLayout />}
-                                {innerTab === "pending" && <OtocoPendingList />}
-                            </>
-                        )}
+                        <div
+                            className="ao-content__panel"
+                            key={`${outerTab}-${innerTab}`}
+                        >
+                            {outerTab === "trailing" ? (
+                                <>
+                                    {innerTab === "info"    && <TrailingStopInfo />}
+                                    {innerTab === "order"   && <TrailingOrderLayout />}
+                                    {innerTab === "pending" && <TrailingStopPendingList />}
+                                </>
+                            ) : (
+                                <>
+                                    {innerTab === "info"    && <OtocoInfo />}
+                                    {innerTab === "order"   && <OtocoOrderLayout />}
+                                    {innerTab === "pending" && <OtocoPendingList />}
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </AdvancedOrderProvider>

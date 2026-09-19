@@ -2307,3 +2307,40 @@
     color: var(--color-text-secondary);
     margin-left: 3px;
 }
+
+.ao-outer-tab:not(.ao-outer-tab--active):hover {
+    background: var(--color-surface-2);
+    border-color: #4a5060;
+    color: var(--color-text-primary);
+}
+
+.ao-outer-tab.ao-outer-tab--active,
+.ao-outer-tab.ao-outer-tab--active:hover {
+    background: rgba(124, 92, 255, 0.1);
+    border-color: #7c5cff;
+    color: #b7a6ff;
+}
+
+.ao-content__panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    animation: ao-tab-in 0.22s ease both;
+}
+
+@keyframes ao-tab-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ao-content__panel {
+        animation: none;
+    }
+}
