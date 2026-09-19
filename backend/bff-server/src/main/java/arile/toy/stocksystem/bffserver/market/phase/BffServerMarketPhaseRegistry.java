@@ -24,6 +24,8 @@ public class BffServerMarketPhaseRegistry {
 
     private final AtomicReference<BffServerMarketPhase> globalPhase = new AtomicReference<>(BffServerMarketPhase.CLOSED);
 
+    private static final String GLOBAL_SNAPSHOT_KEY = "market:global-phase:snapshot";
+
     @PostConstruct
     public void init() {
         resync();
@@ -33,7 +35,6 @@ public class BffServerMarketPhaseRegistry {
     public void resync() {
         try {
             Map<Object, Object> snapshot = redisTemplate.opsForHash().entries(SNAPSHOT_KEY);
-
             snapshot.forEach((stockCode, phase) -> {
                 try {
                     phaseMap.put((String) stockCode, BffServerMarketPhase.valueOf((String) phase));
@@ -43,6 +44,15 @@ public class BffServerMarketPhaseRegistry {
             });
         } catch (Exception e) {
             log.warn("Market phase snapshot 재동기화 실패. 다음 주기에 재시도합니다.", e);
+        }
+
+        try {
+            String globalPhaseStr = redisTemplate.opsForValue().get(GLOBAL_SNAPSHOT_KEY);
+            if (globalPhaseStr != null) {
+                globalPhase.set(BffServerMarketPhase.valueOf(globalPhaseStr));
+            }
+        } catch (Exception e) {
+            log.warn("Global market phase snapshot 재동기화 실패.", e);
         }
     }
 
