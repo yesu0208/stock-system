@@ -3,7 +3,9 @@ package arile.toy.stocksystem.stockserver.external.stock.checker;
 import arile.toy.stocksystem.stockserver.external.stock.approvalkey.ApprovalKeyService;
 import arile.toy.stocksystem.stockserver.external.stock.listener.ExternalStockWebSocketClient;
 import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockProperties;
+import arile.toy.stocksystem.stockserver.market.phase.GlobalMarketPhasePublisher;
 import arile.toy.stocksystem.stockserver.market.phase.MarketPhaseService;
+import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -22,6 +24,7 @@ public class ExternalStockWebSocketOrchestrator {
     private final ExternalStockProperties stockProperties;
     private final MarketTimeChecker marketTimeChecker;
     private final MarketPhaseService marketPhaseService;
+    private final GlobalMarketPhasePublisher globalMarketPhasePublisher;
 
     @Order(10)
     @EventListener(ApplicationReadyEvent.class)
@@ -30,9 +33,11 @@ public class ExternalStockWebSocketOrchestrator {
             log.info("Server started during market hours");
             marketPhaseService.setScheduledMarkets();
             connectAndSubscribeIfNeeded();
+            globalMarketPhasePublisher.publish(marketTimeChecker.resolvePhase());
         } else {
             log.info("Market closed at startup. Skip connect.");
             marketPhaseService.closeAllMarkets();
+            globalMarketPhasePublisher.publish(StockServerMarketPhase.CLOSED);
         }
     }
 
@@ -47,21 +52,27 @@ public class ExternalStockWebSocketOrchestrator {
         log.info("Morning call trigger");
         connectAndSubscribeIfNeeded();
         marketPhaseService.openMorningCall();
+        globalMarketPhasePublisher.publish(StockServerMarketPhase.MORNING_CALL);
     }
 
     @Scheduled(cron = "0 0 9 ? * MON-FRI", zone = "Asia/Seoul")
     public void openRegularMarket() {
         marketPhaseService.openRegularMarket();
+        globalMarketPhasePublisher.publish(StockServerMarketPhase.OPEN);
     }
 
     @Scheduled(cron = "0 20 15 ? * MON-FRI", zone = "Asia/Seoul")
     public void openClosingCall() {
         marketPhaseService.openClosingCall();
+        globalMarketPhasePublisher.publish(StockServerMarketPhase.CLOSING_CALL);
     }
 
-    // [수정] 15:30:00 → 15:38:00 — closeMarketAfterClosingCall(tick 기반, 종목별 실제
-    // 종가 확정 시점 감지)이 우선 동작하도록 시간을 벌어주고, 거래가 뜸해서 tick이
-    // 안 들어온 종목만 이 고정 크론이 안전망으로 정리
+
+    @Scheduled(cron = "0 30 15 ? * MON-FRI", zone = "Asia/Seoul")
+    public void publishClosedAtSessionEnd() {
+        globalMarketPhasePublisher.publish(StockServerMarketPhase.CLOSED);
+    }
+
     @Scheduled(cron = "0 38 15 ? * MON-FRI", zone = "Asia/Seoul")
     public void closeRegularMarket() {
         marketPhaseService.closeScheduledOpenMarkets();
@@ -72,6 +83,7 @@ public class ExternalStockWebSocketOrchestrator {
         log.info("After-market trigger");
         connectAndSubscribeIfNeeded();
         marketPhaseService.openAfterMarket();
+        globalMarketPhasePublisher.publish(StockServerMarketPhase.AFTER);
     }
 
     @Scheduled(fixedDelay = 5_000)
@@ -88,6 +100,7 @@ public class ExternalStockWebSocketOrchestrator {
     public void disconnectAtAfterMarketClose() {
         externalStockWebSocketClient.disconnect();
         marketPhaseService.closeAllMarkets();
+        globalMarketPhasePublisher.publish(StockServerMarketPhase.CLOSED);
     }
 
     private synchronized void connectAndSubscribeIfNeeded() {
