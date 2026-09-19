@@ -92,7 +92,7 @@ public class AfterMarketCloseJob {
 
             if (isLast) {
                 accountApiClient.settleAll();
-                marketClosePublisher.publishMarketClose();
+                marketClosePublisher.publishMarketClose("애프터마켓 마감 정리"); // [수정]
                 log.info("[AfterMarketCloseJob] all groups finished cancel. settle-all triggered by this server.");
             } else {
                 log.info("[AfterMarketCloseJob] waiting for other groups to finish cancel before settle.");
