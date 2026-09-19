@@ -60,8 +60,17 @@ public class OtocoCancelService {
             }
 
             case ENTRY_ORDER_PLACED -> {
-                cancelService.forceCancel(entity.getEntryOrderId());
-                publishSuccess(entity);
+                try {
+                    entity.changeStatus(OtocoStatus.CANCELED);
+                    otocoRepository.save(entity);
+
+                    cancelService.forceCancel(entity.getEntryOrderId());
+                    publishSuccess(entity);
+                } catch (Exception e) {
+                    log.error("Otoco cancel(ENTRY_ORDER_PLACED) failed. otocoId={}", entity.getOtocoId(), e);
+                    otocoCancelResponseEventPublisher.publish(
+                            OtocoCancelResponseEvent.of(entity, false, OtocoCancelErrorCode.INTERNAL_ERROR));
+                }
             }
 
             case WAITING_EXIT -> {
@@ -89,7 +98,11 @@ public class OtocoCancelService {
                     cancelWaitingEntry(entity);
                     publishSuccess(entity);
                 }
-                case ENTRY_ORDER_PLACED -> cancelService.forceCancel(entity.getEntryOrderId());
+                case ENTRY_ORDER_PLACED -> {
+                    entity.changeStatus(OtocoStatus.CANCELED);
+                    otocoRepository.save(entity);
+                    cancelService.forceCancel(entity.getEntryOrderId());
+                }
                 case WAITING_EXIT -> {
                     cancelWaitingExit(entity);
                     publishSuccess(entity);
