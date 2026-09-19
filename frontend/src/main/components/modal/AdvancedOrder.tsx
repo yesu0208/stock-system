@@ -249,15 +249,6 @@ function calcPct(value: number): string {
     return `${Math.min(100, Math.max(0, pct)).toFixed(1)}%`;
 }
 
-function formatTimestamp(iso: string): string {
-    const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return (
-        `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}` +
-        `  ${pad(d.getHours())}:${pad(d.getMinutes())}`
-    );
-}
-
 function LeverageBadge({ leverage }: { leverage: number }) {
     const isCash = leverage === 1;
     const levClass =
@@ -2294,28 +2285,27 @@ function OtocoOrderCard({ order, selected, onToggle }: OtocoOrderCardProps) {
                 <div className="ao-pending-card__stock">
                     <span className="ao-pending-card__name">{order.stockName}</span>
                     <span className="ao-pending-card__code">{order.stockCode}</span>
+                    <div className="ao-pending-card__tag-group">
+                        <span className={`ao-pending-badge__leverage ${isAbove ? "buy-side" : "sell-side"}`}>
+                            {isAbove ? "이상" : "이하"}
+                        </span>
+                        <LeverageBadge leverage={order.leverage} />
+                        <span className={`ao-pending-badge__leverage ${order.entryFilled ? "cash" : "buy-side"}`}>
+                            {order.entryFilled ? "진입완료" : "진입예정"}
+                        </span>
+                    </div>
                 </div>
                 <span className="ao-pending-card__time">
-        {formatTimestamp(order.createdAt)}
-    </span>
+                    {formatTimeOnly(order.createdAt)}
+                </span>
             </div>
 
             <div className="ao-pending-card__body">
                 <div className="ao-pending-card__row">
-                    <span className={`ao-pending-badge ${isAbove ? "ao-pending-badge--above" : "ao-pending-badge--below"}`}>
-                        {isAbove ? "이상↑" : "이하↓"}
-                    </span>
-                    <LeverageBadge leverage={order.leverage} />
-                </div>
-
-                <div className="ao-pending-card__row">
                     <div className="ao-pending-card__field">
                         <span className="ao-pending-card__field-label">진입가</span>
                         <span className={`ao-pending-card__field-value ${isAbove ? "ao-pending-card__field-value--trail-buy" : "ao-pending-card__field-value--trail-sell"}`}>
-                            {order.triggerPrice.toLocaleString()}원
-                        </span>
-                        <span className={`ao-pending-card__field-value ${isAbove ? "ao-pending-card__field-value--trail-buy" : "ao-pending-card__field-value--trail-sell"}`}>
-                            {isAbove ? "이상" : "이하"}
+                            {order.triggerPrice.toLocaleString()}원 {isAbove ? "이상" : "이하"}
                         </span>
                     </div>
                     <div className="ao-pending-card__field">
@@ -2324,21 +2314,18 @@ function OtocoOrderCard({ order, selected, onToggle }: OtocoOrderCardProps) {
                             {order.quantity.toLocaleString()}주
                         </span>
                     </div>
-                    <span className={`ao-pending-badge ${order.entryFilled ? "ao-pending-badge--filled" : "ao-pending-badge--waiting"}`}>
-                        {order.entryFilled ? "진입완료" : "진입예정"}
-                    </span>
                 </div>
 
                 <div className="ao-pending-card__divider" />
 
-                <div className="ao-pending-card__row" style={{ alignItems: "flex-start" }}>
-                    <div className="ao-pending-card__exit-field">
+                <div className="ao-pending-card__row">
+                    <div className="ao-pending-card__field">
                         <span className="ao-pending-card__field-label">익절</span>
                         <span className="ao-pending-card__field-value ao-pending-card__field-value--tp">
                             {tpMain}
                         </span>
                     </div>
-                    <div className="ao-pending-card__exit-field">
+                    <div className="ao-pending-card__field">
                         <span className="ao-pending-card__field-label">손절</span>
                         <span className="ao-pending-card__field-value ao-pending-card__field-value--sl">
                             {slMain}
