@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.external.stock.checker;
 
+import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhase;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
@@ -11,18 +12,42 @@ import java.time.ZonedDateTime;
 public class MarketTimeChecker {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final LocalTime OPEN = LocalTime.of(8, 50, 10);
-    private static final LocalTime CLOSE = LocalTime.of(15, 39, 50);
 
-    public boolean isMarketOpenNow() {
-        ZonedDateTime now = ZonedDateTime.now(KST);
+    private static final LocalTime MORNING_CALL_START = LocalTime.of(8, 50, 5);
+    private static final LocalTime OPEN_START          = LocalTime.of(9, 0, 0);
+    private static final LocalTime CLOSING_CALL_START  = LocalTime.of(15, 20, 0);
+    private static final LocalTime CLOSING_CALL_END    = LocalTime.of(15, 30, 0);
+    private static final LocalTime AFTER_START         = LocalTime.of(16, 0, 5);
+    private static final LocalTime AFTER_END           = LocalTime.of(20, 0, 0);
 
+    public StockServerMarketPhase resolvePhase() {
+        return resolvePhase(ZonedDateTime.now(KST));
+    }
+
+    public StockServerMarketPhase resolvePhase(ZonedDateTime now) {
         DayOfWeek day = now.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
-            return false;
+            return StockServerMarketPhase.CLOSED;
         }
 
         LocalTime time = now.toLocalTime();
-        return !time.isBefore(OPEN) && time.isBefore(CLOSE);
+
+        if (!time.isBefore(MORNING_CALL_START) && time.isBefore(OPEN_START)) {
+            return StockServerMarketPhase.MORNING_CALL;
+        }
+        if (!time.isBefore(OPEN_START) && time.isBefore(CLOSING_CALL_START)) {
+            return StockServerMarketPhase.OPEN;
+        }
+        if (!time.isBefore(CLOSING_CALL_START) && time.isBefore(CLOSING_CALL_END)) {
+            return StockServerMarketPhase.CLOSING_CALL;
+        }
+        if (!time.isBefore(AFTER_START) && time.isBefore(AFTER_END)) {
+            return StockServerMarketPhase.AFTER;
+        }
+        return StockServerMarketPhase.CLOSED;
+    }
+
+    public boolean isMarketOpenNow() {
+        return resolvePhase().isOrderable();
     }
 }

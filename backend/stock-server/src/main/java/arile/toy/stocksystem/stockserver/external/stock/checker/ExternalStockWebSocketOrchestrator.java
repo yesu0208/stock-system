@@ -36,11 +36,34 @@ public class ExternalStockWebSocketOrchestrator {
         }
     }
 
-    @Scheduled(cron = "10 50 8 ? * MON-FRI", zone = "Asia/Seoul")
-    public void connectAtMarketOpen() {
-        log.info("Market open trigger");
+    @Scheduled(cron = "5 50 8 ? * MON-FRI", zone = "Asia/Seoul")
+    public void connectAtMorningCall() {
+        log.info("Morning call trigger");
         connectAndSubscribeIfNeeded();
-        marketPhaseService.setScheduledMarkets();
+        marketPhaseService.openMorningCall();
+    }
+
+    @Scheduled(cron = "0 0 9 ? * MON-FRI", zone = "Asia/Seoul")
+    public void openRegularMarket() {
+        marketPhaseService.openRegularMarket();
+    }
+
+    @Scheduled(cron = "0 20 15 ? * MON-FRI", zone = "Asia/Seoul")
+    public void openClosingCall() {
+        marketPhaseService.openClosingCall();
+    }
+
+    // 정규장 종료(CLOSED 전환). 웹소켓 연결은 유지(애프터까지 재사용)
+    @Scheduled(cron = "0 30 15 ? * MON-FRI", zone = "Asia/Seoul")
+    public void closeRegularMarket() {
+        marketPhaseService.closeScheduledOpenMarkets();
+    }
+
+    @Scheduled(cron = "5 0 16 ? * MON-FRI", zone = "Asia/Seoul")
+    public void openAfterMarket() {
+        log.info("After-market trigger");
+        connectAndSubscribeIfNeeded();
+        marketPhaseService.openAfterMarket();
     }
 
     @Scheduled(fixedDelay = 5_000)
@@ -53,8 +76,8 @@ public class ExternalStockWebSocketOrchestrator {
         marketPhaseService.setScheduledMarkets();
     }
 
-    @Scheduled(cron = "50 39 15 ? * MON-FRI", zone = "Asia/Seoul")
-    public void disconnectAtMarketClose() {
+    @Scheduled(cron = "0 0 20 ? * MON-FRI", zone = "Asia/Seoul")
+    public void disconnectAtAfterMarketClose() {
         externalStockWebSocketClient.disconnect();
         marketPhaseService.closeAllMarkets();
     }
