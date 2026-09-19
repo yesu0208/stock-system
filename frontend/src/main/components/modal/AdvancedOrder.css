@@ -1763,7 +1763,7 @@
 }
 
 .ao-pending-card__field-label {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--color-text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
@@ -2280,4 +2280,30 @@
 }
 .adv-order__summary-row--stacked .adv-order__summary-value.adv-order__summary-value--loss {
     color: var(--color-sell);
+}
+
+.ao-pending-card__tag-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.ao-pending-badge__leverage.buy-side {
+    color: var(--color-buy);
+    background: rgba(240, 74, 74, 0.1);
+    border-color: rgba(240, 74, 74, 0.25);
+}
+
+.ao-pending-badge__leverage.sell-side {
+    color: var(--color-sell);
+    background: rgba(77, 142, 245, 0.1);
+    border-color: rgba(77, 142, 245, 0.25);
+}
+
+.ao-pending-card__field-sub-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-left: 3px;
 }

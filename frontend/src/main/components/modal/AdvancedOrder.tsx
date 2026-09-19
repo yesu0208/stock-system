@@ -3057,6 +3057,12 @@ function TrailingStopPendingList() {
     );
 }
 
+function formatTimeOnly(iso: string): string {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 interface TrailingOrderCardProps {
     order: TrailingStopPendingOrder;
     selected: boolean;
@@ -3065,14 +3071,6 @@ interface TrailingOrderCardProps {
 
 function TrailingOrderCard({ order, selected, onToggle }: TrailingOrderCardProps) {
     const isBuy = order.side === "BUY";
-
-    const remaining = order.quantity;
-    const total     = order.quantity;
-    const fillPct   = total > 0
-        ? Math.min(100, Math.max(0, (remaining / total) * 100))
-        : 0;
-    const isPartial = remaining < total;
-    const sideClass = isBuy ? "bar--buy" : "bar--sell";
 
     return (
         <div
@@ -3095,25 +3093,54 @@ function TrailingOrderCard({ order, selected, onToggle }: TrailingOrderCardProps
                 <div className="ao-pending-card__stock">
                     <span className="ao-pending-card__name">{order.stockName}</span>
                     <span className="ao-pending-card__code">{order.stockCode}</span>
+                    <div className="ao-pending-card__tag-group">
+                        <span className={`ao-pending-badge__leverage ${isBuy ? "buy-side" : "sell-side"}`}>
+                            {isBuy ? "매수" : "매도"}
+                        </span>
+                        <LeverageBadge leverage={order.leverage} />
+                        <span className="ao-pending-badge__leverage cash">
+                            추적 중
+                        </span>
+                    </div>
                 </div>
                 <span className="ao-pending-card__time">
-        {formatTimestamp(order.createdAt)}
-    </span>
+                    {formatTimeOnly(order.createdAt)}
+                </span>
             </div>
 
             <div className="ao-pending-card__body">
                 <div className="ao-pending-card__row">
-                    <span className={`ao-pending-badge ${isBuy ? "ao-pending-badge--buy" : "ao-pending-badge--sell"}`}>
-                        {isBuy ? "매수" : "매도"}
-                    </span>
-                    <LeverageBadge leverage={order.leverage} />
+                    <div className="ao-pending-card__field">
+                        <span className="ao-pending-card__field-label">
+                            {isBuy ? "최저가" : "최고가"}
+                            <span className="ao-pending-card__field-sub-label">(추적 중)</span>
+                        </span>
+                        <span className="ao-pending-card__field-value">
+                            {order.basePrice.toLocaleString()}원
+                        </span>
+                    </div>
+                    <div className="ao-pending-card__field">
+                        <span className="ao-pending-card__field-label">수량</span>
+                        <span className="ao-pending-card__field-value">
+                            {order.quantity.toLocaleString()}주
+                        </span>
+                    </div>
                 </div>
 
                 <div className="ao-pending-card__row">
                     <div className="ao-pending-card__field">
-                        <span className="ao-pending-card__field-label">기준가</span>
-                        <span className="ao-pending-card__field-value">
-                            {order.basePrice.toLocaleString()}원
+                        <span className="ao-pending-card__field-label">
+                            예상 {isBuy ? "매수" : "매도"} 체결가
+                            <span className="ao-pending-card__field-sub-label">
+                                ({isBuy ? "최저가" : "최고가"} 기준)
+                            </span>
+                        </span>
+                        <span className={`ao-pending-card__field-value ${
+                            isBuy
+                                ? "ao-pending-card__field-value--trail-buy"
+                                : "ao-pending-card__field-value--trail-sell"
+                        }`}>
+                            {order.triggerPrice.toLocaleString()}원
                         </span>
                     </div>
                     <div className="ao-pending-card__field">
@@ -3128,36 +3155,6 @@ function TrailingOrderCard({ order, selected, onToggle }: TrailingOrderCardProps
                             {order.stopPercent.toFixed(1)}%
                         </span>
                     </div>
-                    <div className="ao-pending-card__field">
-                        <span className="ao-pending-card__field-label">
-                            예상 체결가
-                        </span>
-                        <span className={`ao-pending-card__field-value ${
-                            isBuy
-                                ? "ao-pending-card__field-value--trail-buy"
-                                : "ao-pending-card__field-value--trail-sell"
-                        }`}>
-                            {order.triggerPrice.toLocaleString()}원
-                        </span>
-                    </div>
-                </div>
-
-                <div className="ao-pending-card__qty-row">
-                    <span className="ao-pending-card__remaining">{remaining.toLocaleString()}</span>
-                    <span className="ao-pending-card__unit">주</span>
-                    <span className="ao-pending-card__qty-sep">/</span>
-                    <span className="ao-pending-card__total">{total.toLocaleString()}</span>
-                    <span className="ao-pending-card__unit">주</span>
-                    <span className={`ao-pending-card__fill-badge ${isPartial ? "fill-badge--partial" : "fill-badge--none"}`}>
-                        {isPartial ? "부분체결" : "미체결"}
-                    </span>
-                </div>
-
-                <div className="ao-pending-card__bar-track">
-                    <div
-                        className={`ao-pending-card__bar-fill ${sideClass}`}
-                        style={{ width: `${fillPct}%` }}
-                    />
                 </div>
             </div>
         </div>
