@@ -38,6 +38,7 @@ export interface OtocoPendingOrder {
     credit: boolean;
     leverage: number;
     entryFilled: boolean;
+    entryRemainingQuantity: number | null;
     createdAt: string;
 }
 
@@ -89,6 +90,7 @@ interface RawOtocoMessage {
     slTriggerPrice: number | null;
     otocoStatus: "WAITING_ENTRY" | "ENTRY_ORDER_PLACED" | "WAITING_EXIT" | "COMPLETED" | "CANCELED";
     orderTime: string;
+    entryRemainingQuantity: number | null;
 }
 
 function toTrailingStopPendingOrder(raw: RawTrailingStopMessage): TrailingStopPendingOrder {
@@ -120,6 +122,7 @@ function toOtocoPendingOrder(raw: RawOtocoMessage): OtocoPendingOrder {
         credit: isCreditLeverage(raw.leverageRatio),
         leverage: leverageRatioToNumber(raw.leverageRatio),
         entryFilled: raw.otocoStatus === "WAITING_EXIT" || raw.otocoStatus === "COMPLETED",
+        entryRemainingQuantity: raw.entryRemainingQuantity ?? null,
         createdAt: raw.orderTime,
     };
 }
@@ -158,10 +161,24 @@ export function AdvancedOrderProvider({ children }: { children: ReactNode }) {
             }
         );
 
+        const unsubOtocoUpdate = subscribeDestination(
+            "/user/sub/otoco/update",
+            (data: RawOtocoMessage) => {
+                setOtocoOrders((prev) =>
+                    prev.map((o) =>
+                        o.orderId === String(data.otocoId)
+                            ? toOtocoPendingOrder(data)
+                            : o
+                    )
+                );
+            }
+        );
+
         return () => {
             unsubTrailing();
             unsubTrailingUpdate();
             unsubOtoco();
+            unsubOtocoUpdate();
         };
     }, [subscribeDestination]);
 

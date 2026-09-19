@@ -49,6 +49,7 @@ export interface OtocoResponseMessage {
     slTriggerPrice: number | null
     otocoStatus: OtocoStatus
     orderTime: string
+    entryRemainingQuantity: number | null
 }
 
 export interface OtocoCancelRequest {

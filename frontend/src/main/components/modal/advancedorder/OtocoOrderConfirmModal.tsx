@@ -120,7 +120,7 @@ export default function OtocoOrderConfirmModal({
                         </div>
 
                         <div className="occ__row">
-                            <span className="occ__label">수량</span>
+                            <span className="occ__label">매수 수량</span>
                             <span className="occ__value">
                                 {fmt(data.quantity)}
                                 <span className="occ__unit">주</span>

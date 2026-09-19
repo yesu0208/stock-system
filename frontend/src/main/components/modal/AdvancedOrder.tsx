@@ -1284,7 +1284,7 @@ function OtocoInputPanel() {
                 </div>
 
                 <div className="form-row">
-                    <span className="form-label">수량</span>
+                    <span className="form-label">매수 수량</span>
                     <div className="stepper">
                         <button
                             className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
@@ -2271,6 +2271,38 @@ function OtocoOrderCard({ order, selected, onToggle }: OtocoOrderCardProps) {
         ? `${order.slTriggerPrice.toLocaleString()}원`
         : "—";
 
+    const isPartiallyFilled =
+        !order.entryFilled &&
+        order.entryRemainingQuantity != null &&
+        order.entryRemainingQuantity < order.quantity;
+
+    const statusLabel = order.entryFilled
+        ? "진입완료"
+        : isPartiallyFilled
+            ? "진입중"
+            : "진입예정";
+
+    const statusClass = order.entryFilled
+        ? "status-done"
+        : isPartiallyFilled
+            ? "status-active"
+            : "status-waiting";
+
+    const filledQty = order.entryFilled
+        ? order.quantity
+        : isPartiallyFilled
+            ? order.quantity - (order.entryRemainingQuantity as number)
+            : 0;
+
+    const fillPct = order.quantity > 0
+        ? Math.min(100, Math.max(0, (filledQty / order.quantity) * 100))
+        : 0;
+
+    const isActivated = order.entryFilled || isPartiallyFilled;
+
+    const watchLabel = order.entryFilled ? "감시중" : "감시예정";
+    const watchClass = order.entryFilled ? "status-active" : "status-waiting";
+
     return (
         <div
             className={`ao-pending-card ${selected ? "ao-pending-card--selected" : ""}`}
@@ -2297,8 +2329,8 @@ function OtocoOrderCard({ order, selected, onToggle }: OtocoOrderCardProps) {
                             {isAbove ? "이상" : "이하"}
                         </span>
                         <LeverageBadge leverage={order.leverage} />
-                        <span className={`ao-pending-badge__leverage ${order.entryFilled ? "cash" : "buy-side"}`}>
-                            {order.entryFilled ? "진입완료" : "진입예정"}
+                        <span className={`ao-pending-badge__leverage ${statusClass}`}>
+                            {statusLabel}
                         </span>
                     </div>
                 </div>
@@ -2310,22 +2342,40 @@ function OtocoOrderCard({ order, selected, onToggle }: OtocoOrderCardProps) {
             <div className="ao-pending-card__body">
                 <div className="ao-pending-card__row">
                     <div className="ao-pending-card__field">
-                        <span className="ao-pending-card__field-label">진입가</span>
+                        <span className="ao-pending-card__field-label">진입가 (조건)</span>
                         <span className={`ao-pending-card__field-value ${isAbove ? "ao-pending-card__field-value--trail-buy" : "ao-pending-card__field-value--trail-sell"}`}>
-                            {order.triggerPrice.toLocaleString()}원 {isAbove ? "이상" : "이하"}
+                            {order.triggerPrice.toLocaleString()}원 {isAbove ? "(이상)" : "(이하)"}
                         </span>
                     </div>
                     <div className="ao-pending-card__field">
-                        <span className="ao-pending-card__field-label">수량</span>
+                        <span className="ao-pending-card__field-label">매수 수량</span>
                         <span className="ao-pending-card__field-value">
-                            {order.quantity.toLocaleString()}주
+                            {filledQty.toLocaleString()} / {order.quantity.toLocaleString()}주
                         </span>
                     </div>
                 </div>
 
-                <div className="ao-pending-card__divider" />
+                <div className="ao-pending-card__qty-bar-track">
+                    <div
+                        className={`ao-pending-card__qty-bar-fill ${
+                            isActivated
+                                ? (isAbove ? "ao-pending-card__qty-bar-fill--buy" : "ao-pending-card__qty-bar-fill--sell")
+                                : ""
+                        }`}
+                        style={{ width: `${fillPct}%` }}
+                    />
+                </div>
 
                 <div className="ao-pending-card__row">
+                    <div className="ao-pending-card__field">
+                        <span className={`ao-pending-badge__leverage ${watchClass}`}>
+                            {watchLabel}
+                        </span>
+                        <span className="ao-pending-card__field-label">매도 수량</span>
+                        <span className="ao-pending-card__field-value">
+                            {order.quantity.toLocaleString()}주
+                        </span>
+                    </div>
                     <div className="ao-pending-card__field">
                         <span className="ao-pending-card__field-label">익절</span>
                         <span className="ao-pending-card__field-value ao-pending-card__field-value--tp">
