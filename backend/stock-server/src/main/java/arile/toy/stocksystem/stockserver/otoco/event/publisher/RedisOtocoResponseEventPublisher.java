@@ -49,8 +49,13 @@ public class RedisOtocoResponseEventPublisher implements OtocoResponseEventPubli
         publishFromDto(dto, false, resultCode);
     }
 
+    public void publishEntryCanceled(OtocoDto dto) {
+        publishFromDto(dto, true, OtocoResultCode.ENTRY_CANCELED);
+    }
+
     public void publishExitTriggered(OtocoDto dto, OtocoLeg leg) {
-        publishFromDto(dto, true, leg == OtocoLeg.TAKE_PROFIT ? OtocoResultCode.TP_TRIGGERED : OtocoResultCode.SL_TRIGGERED);
+        publishFromDto(dto, true, leg == OtocoLeg.TAKE_PROFIT ?
+                OtocoResultCode.TP_TRIGGERED : OtocoResultCode.SL_TRIGGERED);
     }
 
     public void publishExitFailed(OtocoDto dto, OtocoResultCode resultCode) {

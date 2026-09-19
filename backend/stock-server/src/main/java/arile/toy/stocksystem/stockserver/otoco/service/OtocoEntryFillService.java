@@ -84,12 +84,11 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
             return;
         }
 
-        // 표준 취소 흐름(CancelService)이 이미 예약 현금을 환불했으므로 여기서는 상태만 정리
         entity.changeStatus(OtocoStatus.CANCELED);
         otocoRepository.save(entity);
 
         stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
 
-        otocoResponseEventPublisher.publishEntryFailed(OtocoDto.fromEntity(entity), OtocoResultCode.ENTRY_CANCELED);
+        otocoResponseEventPublisher.publishEntryCanceled(OtocoDto.fromEntity(entity));
     }
 }
