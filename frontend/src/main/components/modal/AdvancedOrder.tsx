@@ -2432,6 +2432,28 @@ function drawTrailingChart(
         ctx.stroke();
     }
 
+    {
+        {
+            const startFade = Math.min(1, progress / 0.06);
+            if (startFade > 0) {
+                const px0 = xOf(pts[0].t);
+                const py0 = yOf(pts[0].p);
+                const labelOffsetY = scenario === "spike" ? 10 : -3;
+                const labelOffsetX = 6;
+                ctx.globalAlpha = startFade;
+                ctx.beginPath();
+                ctx.arc(px0, py0, 3.5, 0, Math.PI * 2);
+                ctx.fillStyle = COLOR_PRICE;
+                ctx.fill();
+                ctx.fillStyle = COLOR_TEXT;
+                ctx.font = "10px system-ui, sans-serif";
+                ctx.textAlign = px0 < PAD.left + 18 ? "left" : "center";
+                ctx.fillText("진입가", px0 < PAD.left + 18 ? px0 + labelOffsetX : px0, py0 - labelOffsetY);
+                ctx.globalAlpha = 1;
+            }
+        }
+    }
+
     if (type === "sell") {
         let peakIdx = 0;
         for (let i = 1; i < pts.length; i++) {
