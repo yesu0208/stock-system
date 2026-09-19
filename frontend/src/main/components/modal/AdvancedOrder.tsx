@@ -684,7 +684,8 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     function handleRatioClick(ratio: number) {
         if (isBuy) {
             if (currentPrice <= 0) { setQuantity(0); return; }
-            const qty = Math.floor((orderableAmount * ratio) / currentPrice);
+            const budgetAmount = orderableAmount * (isCredit ? leverage : 1);
+            const qty = Math.floor((budgetAmount * ratio) / expectedFillPrice);
             setQuantity(clampQty(qty));
         } else {
             const qty = Math.floor(sellAvailableQty * ratio);
@@ -886,7 +887,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                     </span>
                     <span
                         className={`adv-order__summary-value adv-order__summary-value--fill ${
-                            isBuy ? "adv-order__summary-value--fill-buy" : "adv-order__summary-value--fill-sell"
+                            !isBuy ? "adv-order__summary-value--fill-sell" : ""
                         }`}
                     >
                         {currentPrice > 0 ? `${Math.round(expectedFillPrice).toLocaleString()} 원` : "—"}
@@ -900,7 +901,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                     </span>
                     <span
                         className={`adv-order__summary-value adv-order__summary-value--fill ${
-                            isBuy ? "adv-order__summary-value--fill-buy" : "adv-order__summary-value--fill-sell"
+                            !isBuy ? "adv-order__summary-value--fill-sell" : ""
                         }`}
                     >
                         {showEstimatedBeforeAfter ? (
