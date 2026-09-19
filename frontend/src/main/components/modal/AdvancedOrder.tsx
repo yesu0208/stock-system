@@ -127,6 +127,22 @@ function snapToTick(price: number): number {
     return Math.min(MAX_QTY, Math.max(0, baseline + offset));
 }
 
+function ceilToTick(price: number): number {
+    const clamped = Math.min(MAX_QTY, Math.max(0, price));
+    const tick = getTickSize(clamped);
+    const baseline = getTickBaseline(clamped);
+    const offset = Math.ceil((clamped - baseline) / tick) * tick;
+    return Math.min(MAX_QTY, Math.max(0, baseline + offset));
+}
+
+function floorToTick(price: number): number {
+    const clamped = Math.min(MAX_QTY, Math.max(0, price));
+    const tick = getTickSize(clamped);
+    const baseline = getTickBaseline(clamped);
+    const offset = Math.floor((clamped - baseline) / tick) * tick;
+    return Math.min(MAX_QTY, Math.max(0, baseline + offset));
+}
+
 function stepPrice(current: number, direction: 1 | -1): number {
     const tick = getTickSize(current);
     const next = current + direction * tick;
@@ -656,8 +672,8 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     const currentPrice = priceTick?.curPrice ?? 0;
 
     const expectedFillPrice = isBuy
-        ? currentPrice * (1 + buyStop  / 100)
-        : currentPrice * (1 - sellStop / 100);
+        ? ceilToTick(currentPrice * (1 + buyStop  / 100))
+        : floorToTick(currentPrice * (1 - sellStop / 100));
 
     const expectedAmountRaw   = Math.round(expectedFillPrice * quantity);
     const expectedAmountAfter = (isBuy && isCredit)
@@ -880,10 +896,10 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                     <span className="adv-order__summary-value">{orderableLabel}</span>
                 </div>
 
-                <div className="adv-order__summary-row">
+                <div className="adv-order__summary-row adv-order__summary-row--fill-price">
                     <span className="adv-order__summary-label">
-                        예상 체결가
-                        <span className="adv-order__summary-hint">(현재가 기준)</span>
+                        {isBuy ? "최대 체결가" : "최소 체결가"}
+                                            <span className="adv-order__summary-hint">(진입가 기준)</span>
                     </span>
                     <span
                         className={`adv-order__summary-value adv-order__summary-value--fill ${
@@ -894,9 +910,10 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                     </span>
                 </div>
 
-                <div className="adv-order__summary-row">
+                <div className="adv-order__summary-row adv-order__summary-row--stacked">
                     <span className="adv-order__summary-label">
-                        예상 금액
+                        {isBuy ? "최대 체결금액" : "최소 체결금액"}
+                        <span className="adv-order__summary-hint">(진입가 기준)</span>
                         <LeverageTag leverage={isCredit ? leverage : 1} />
                     </span>
                     <span
@@ -1338,7 +1355,7 @@ function OtocoInputPanel() {
                     </span>
                 </div>
 
-                <div className="adv-order__summary-row">
+                <div className="adv-order__summary-row adv-order__summary-row--stacked">
                     <span className="adv-order__summary-label">
                         진입금액
                         <LeverageTag leverage={isCredit ? leverage : 1} />

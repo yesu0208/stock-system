@@ -718,6 +718,25 @@
     align-items: center;
 }
 
+.adv-order__summary-row--stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+}
+
+.adv-order__summary-row--stacked .adv-order__summary-label {
+    align-self: flex-start;
+}
+
+.adv-order__summary-row--stacked .adv-order__summary-value {
+    align-self: flex-end;
+}
+
+.adv-order__summary-row--stacked .adv-order__summary-value,
+.adv-order__summary-row--stacked .adv-order__summary-value--after {
+    color: var(--color-text-primary);
+}
+
 .adv-order__summary-label {
     font-size: 12px;
     color: var(--color-text-secondary);
@@ -737,12 +756,16 @@
 .adv-order__summary-hint {
     font-size: 10px;
     color: var(--color-text-secondary);
-    margin-left: 4px;
+    margin-left: 0px;
     font-weight: 400;
 }
 
 .adv-order__summary-value--fill-buy  { color: var(--color-trail-buy); }
 .adv-order__summary-value--fill-sell { color: var(--color-trail-sell); }
+
+.adv-order__summary-row--fill-price .adv-order__summary-value {
+    color: var(--color-text-primary);
+}
 
 .adv-order__summary-value--after {
     font-size: 12px;
@@ -754,9 +777,9 @@
 .adv-order__summary-value--before {
     font-size: 10px;
     font-weight: 500;
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
     text-decoration: line-through;
-    text-decoration-color: var(--color-text-muted);
+    text-decoration-color: var(--color-text-secondary);
     white-space: nowrap;
     margin-left: 6px;
     transition: opacity 0.2s ease;
