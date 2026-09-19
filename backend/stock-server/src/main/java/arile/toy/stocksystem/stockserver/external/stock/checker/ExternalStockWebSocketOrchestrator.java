@@ -59,8 +59,10 @@ public class ExternalStockWebSocketOrchestrator {
         marketPhaseService.openClosingCall();
     }
 
-    // 정규장 종료(CLOSED 전환). 웹소켓 연결은 유지(애프터까지 재사용)
-    @Scheduled(cron = "0 30 15 ? * MON-FRI", zone = "Asia/Seoul")
+    // [수정] 15:30:00 → 15:38:00 — closeMarketAfterClosingCall(tick 기반, 종목별 실제
+    // 종가 확정 시점 감지)이 우선 동작하도록 시간을 벌어주고, 거래가 뜸해서 tick이
+    // 안 들어온 종목만 이 고정 크론이 안전망으로 정리
+    @Scheduled(cron = "0 38 15 ? * MON-FRI", zone = "Asia/Seoul")
     public void closeRegularMarket() {
         marketPhaseService.closeScheduledOpenMarkets();
     }
