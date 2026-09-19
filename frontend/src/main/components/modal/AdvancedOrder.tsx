@@ -774,7 +774,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
             </div>
 
             <div className="form-row">
-                <span className="form-label">진입 가격</span>
+                <span className="form-label">진입가</span>
                 <div className="stepper stepper--readonly">
                     <button className="stepper__btn" disabled aria-hidden="true">−</button>
                     <input
@@ -858,7 +858,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
             <div className="adv-order__summary">
                 <div className="adv-order__summary-row">
                     <span className="adv-order__summary-label">
-                        {isBuy ? "주문가능금액" : "주문가능수량"}
+                        {isBuy ? "주문가능" : "주문가능"}
                     </span>
                     <span className="adv-order__summary-value">{orderableLabel}</span>
                 </div>
@@ -1311,7 +1311,7 @@ function OtocoInputPanel() {
 
             <div className="adv-order__summary">
                 <div className="adv-order__summary-row">
-                    <span className="adv-order__summary-label">주문가능금액</span>
+                    <span className="adv-order__summary-label">주문가능</span>
                     <span className="adv-order__summary-value">
                         {orderableAmount.toLocaleString()} 원
                     </span>
@@ -1976,6 +1976,7 @@ function OtocoPendingList() {
     }
 
     const hasSelection = selectedIds.size > 0;
+    const hasOrders = otocoOrders.length > 0;
 
     if (!connected) {
         return (
@@ -1986,27 +1987,20 @@ function OtocoPendingList() {
         );
     }
 
-    if (otocoOrders.length === 0) {
-        return (
-            <div className="ao-pending__empty">
-                <p>내역이 없습니다</p>
-            </div>
-        );
-    }
-
     return (
         <div className="ao-pending">
             <div className="ao-pending__header">
                 <span className="ao-pending__count">미체결 {otocoOrders.length}건</span>
                 <Tooltip
-                    text={selectedIds.size === otocoOrders.length && otocoOrders.length > 0 ? "전체 취소 해제" : "전체 취소"}
+                    text={selectedIds.size === otocoOrders.length && hasOrders ? "전체 취소 해제" : "전체 취소"}
                     placement="top"
                 >
                     <label className="ao-pending__all-check">
                         <input
                             type="checkbox"
-                            checked={selectedIds.size === otocoOrders.length && otocoOrders.length > 0}
+                            checked={selectedIds.size === otocoOrders.length && hasOrders}
                             onChange={toggleAll}
+                            disabled={!hasOrders}
                         />
                         전체선택
                     </label>
@@ -2014,16 +2008,22 @@ function OtocoPendingList() {
             </div>
 
             <div className="ao-pending__list">
-                {[...otocoOrders]
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    .map((order) => (
-                        <OtocoOrderCard
-                            key={order.orderId}
-                            order={order}
-                            selected={selectedIds.has(order.orderId)}
-                            onToggle={() => toggleSelect(order.orderId)}
-                        />
-                    ))}
+                {hasOrders ? (
+                    [...otocoOrders]
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .map((order) => (
+                            <OtocoOrderCard
+                                key={order.orderId}
+                                order={order}
+                                selected={selectedIds.has(order.orderId)}
+                                onToggle={() => toggleSelect(order.orderId)}
+                            />
+                        ))
+                ) : (
+                    <div className="ao-pending__empty">
+                        <p>내역이 없습니다</p>
+                    </div>
+                )}
             </div>
 
             <div className="ao-pending__footer">
@@ -2777,6 +2777,7 @@ function TrailingStopPendingList() {
     }
 
     const hasSelection = selectedIds.size > 0;
+    const hasOrders = trailingOrders.length > 0;
 
     if (!connected) {
         return (
@@ -2787,27 +2788,20 @@ function TrailingStopPendingList() {
         );
     }
 
-    if (trailingOrders.length === 0) {
-        return (
-            <div className="ao-pending__empty">
-                <p>내역이 없습니다</p>
-            </div>
-        );
-    }
-
     return (
         <div className="ao-pending">
             <div className="ao-pending__header">
                 <span className="ao-pending__count">미체결 {trailingOrders.length}건</span>
                 <Tooltip
-                    text={selectedIds.size === trailingOrders.length && trailingOrders.length > 0 ? "전체 취소 해제" : "전체 취소"}
+                    text={selectedIds.size === trailingOrders.length && hasOrders ? "전체 취소 해제" : "전체 취소"}
                     placement="top"
                 >
                     <label className="ao-pending__all-check">
                         <input
                             type="checkbox"
-                            checked={selectedIds.size === trailingOrders.length && trailingOrders.length > 0}
+                            checked={selectedIds.size === trailingOrders.length && hasOrders}
                             onChange={toggleAll}
+                            disabled={!hasOrders}
                         />
                         전체선택
                     </label>
@@ -2815,16 +2809,22 @@ function TrailingStopPendingList() {
             </div>
 
             <div className="ao-pending__list">
-                {[...trailingOrders]
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    .map((order) => (
-                        <TrailingOrderCard
-                            key={order.orderId}
-                            order={order}
-                            selected={selectedIds.has(order.orderId)}
-                            onToggle={() => toggleSelect(order.orderId)}
-                        />
-                    ))}
+                {hasOrders ? (
+                    [...trailingOrders]
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .map((order) => (
+                            <TrailingOrderCard
+                                key={order.orderId}
+                                order={order}
+                                selected={selectedIds.has(order.orderId)}
+                                onToggle={() => toggleSelect(order.orderId)}
+                            />
+                        ))
+                ) : (
+                    <div className="ao-pending__empty">
+                        <p>내역이 없습니다</p>
+                    </div>
+                )}
             </div>
 
             <div className="ao-pending__footer">

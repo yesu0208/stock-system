@@ -78,6 +78,7 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
     margin-bottom: 6px;
+    margin-top: 4px;
 }
 
 .ao-inner-tab {
@@ -2176,8 +2177,4 @@
     cursor: default;
     color: var(--color-text-secondary);
     pointer-events: none;
-}
-
-.ao-pending__empty {
-    min-height: 480px;
 }
