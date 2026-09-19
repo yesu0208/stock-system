@@ -138,6 +138,19 @@ export function AdvancedOrderProvider({ children }: { children: ReactNode }) {
             }
         );
 
+        const unsubTrailingUpdate = subscribeDestination(
+            "/user/sub/trailing-stop/update",
+            (data: RawTrailingStopMessage) => {
+                setTrailingOrders((prev) =>
+                    prev.map((o) =>
+                        o.orderId === String(data.trailingStopId)
+                            ? toTrailingStopPendingOrder(data)
+                            : o
+                    )
+                );
+            }
+        );
+
         const unsubOtoco = subscribeDestination(
             "/user/sub/otoco",
             (data: RawOtocoMessage[]) => {
@@ -147,6 +160,7 @@ export function AdvancedOrderProvider({ children }: { children: ReactNode }) {
 
         return () => {
             unsubTrailing();
+            unsubTrailingUpdate();
             unsubOtoco();
         };
     }, [subscribeDestination]);
