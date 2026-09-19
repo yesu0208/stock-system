@@ -12,6 +12,7 @@ export interface TrailingConfirmData {
     quantity:    number;
     stopPercent: number;
     basePrice:   number;
+    expectedFillPrice: number;
 }
 
 interface TrailingOrderConfirmModalProps {
@@ -52,11 +53,7 @@ export default function TrailingOrderConfirmModal({
     const sideLabel   = isBuy ? "매수" : "매도";
     const creditLabel = data.credit ? "신용" : "현금";
 
-    const expectedFill = isBuy
-        ? Math.round(data.basePrice * (1 + data.stopPercent / 100))
-        : Math.round(data.basePrice * (1 - data.stopPercent / 100));
-
-    const rawAmount   = expectedFill * data.quantity;
+    const rawAmount   = data.expectedFillPrice * data.quantity;
     const afterAmount = (isBuy && data.credit)
         ? Math.floor(rawAmount / data.leverage)
         : rawAmount;
@@ -123,7 +120,7 @@ export default function TrailingOrderConfirmModal({
                             <span className="toc__row-label-hint">(기준가 기준)</span>
                         </span>
                         <span className={`toc__row-value toc__stop--${isBuy ? "buy" : "sell"}`}>
-                            {fmt(expectedFill)} 원
+                            {fmt(data.expectedFillPrice)} 원
                         </span>
                     </div>
 

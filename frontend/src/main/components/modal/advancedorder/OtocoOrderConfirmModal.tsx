@@ -17,6 +17,8 @@ export interface OtocoConfirmData {
     slPct:          number | null;
     credit:         boolean;
     leverage:       number;
+    tpDerivedPrice: number;
+    slDerivedPrice: number;
 }
 
 interface OtocoOrderConfirmModalProps {
@@ -53,17 +55,9 @@ export default function OtocoOrderConfirmModal({
         ? `${fmt(data.tpPrice ?? 0)}원`
         : `+${(data.tpPct ?? 0).toFixed(1)}%`;
 
-    const tpDerived = data.tpMode === "PCT" && data.tpPct !== null && data.triggerPrice > 0
-        ? Math.round(data.triggerPrice * (1 + data.tpPct / 100))
-        : null;
-
     const slMain = data.slMode === "PRICE"
         ? `${fmt(data.slPrice ?? 0)}원`
         : `-${(data.slPct ?? 0).toFixed(1)}%`;
-
-    const slDerived = data.slMode === "PCT" && data.slPct !== null && data.triggerPrice > 0
-        ? Math.round(data.triggerPrice * (1 - data.slPct / 100))
-        : null;
 
     const rawAmount   = data.triggerPrice * data.quantity;
     const afterAmount = data.credit
@@ -158,8 +152,8 @@ export default function OtocoOrderConfirmModal({
                             <span className="occ__label occ__label--tp">익절</span>
                             <div className="occ__exit-value">
                                 <span className="occ__value occ__value--tp">{tpMain}</span>
-                                {tpDerived !== null && (
-                                    <span className="occ__derived occ__derived--tp">≈ {fmt(tpDerived)}원</span>
+                                {data.tpMode === "PCT" && (
+                                    <span className="occ__derived occ__derived--tp">≈ {fmt(data.tpDerivedPrice)}원</span>
                                 )}
                             </div>
                         </div>
@@ -168,8 +162,8 @@ export default function OtocoOrderConfirmModal({
                             <span className="occ__label occ__label--sl">손절</span>
                             <div className="occ__exit-value">
                                 <span className="occ__value occ__value--sl">{slMain}</span>
-                                {slDerived !== null && (
-                                    <span className="occ__derived occ__derived--sl">≈ {fmt(slDerived)}원</span>
+                                {data.slMode === "PCT" && (
+                                    <span className="occ__derived occ__derived--sl">≈ {fmt(data.slDerivedPrice)}원</span>
                                 )}
                             </div>
                         </div>

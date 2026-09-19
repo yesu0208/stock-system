@@ -761,6 +761,7 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
             quantity,
             stopPercent: isBuy ? buyStop : sellStop,
             basePrice:   currentPrice,
+            expectedFillPrice,
         });
         setConfirmOpen(true);
     }
@@ -1200,9 +1201,11 @@ function OtocoInputPanel() {
             tpMode:         tpMode.toUpperCase() as "PRICE" | "PCT",
             tpPrice:        tpMode === "price" ? tpPrice : null,
             tpPct:          tpMode === "pct"   ? tpPct   : null,
+            tpDerivedPrice,
             slMode:         slMode.toUpperCase() as "PRICE" | "PCT",
             slPrice:        slMode === "price" ? slPrice : null,
             slPct:          slMode === "pct"   ? slPct   : null,
+            slDerivedPrice,
             credit:         isCredit,
             leverage:       isCredit ? leverage : 1,
         });
