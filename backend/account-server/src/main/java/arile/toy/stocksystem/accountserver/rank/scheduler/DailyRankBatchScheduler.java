@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.accountserver.rank.scheduler;
 
+import arile.toy.stocksystem.accountserver.rank.publisher.RankUpdatedPublisher;
 import arile.toy.stocksystem.accountserver.rank.service.DailyRankBatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ public class DailyRankBatchScheduler {
 
     private final StringRedisTemplate redisTemplate;
     private final DailyRankBatchService dailyRankBatchService;
+    private final RankUpdatedPublisher rankUpdatedPublisher;
 
     @Scheduled(cron = "0 50 15 * * MON-FRI", zone = "Asia/Seoul")
     public void run() {
@@ -30,6 +32,7 @@ public class DailyRankBatchScheduler {
 
         try {
             dailyRankBatchService.runDailyBatch();
+            rankUpdatedPublisher.publish();
         } finally {
             redisTemplate.delete(LOCK_KEY);
         }

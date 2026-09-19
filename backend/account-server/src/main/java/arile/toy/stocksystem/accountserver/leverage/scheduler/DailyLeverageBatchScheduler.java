@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.accountserver.leverage.scheduler;
 
+import arile.toy.stocksystem.accountserver.leverage.publisher.InterestAppliedPublisher;
 import arile.toy.stocksystem.accountserver.leverage.service.LeverageDailyBatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ public class DailyLeverageBatchScheduler {
 
     private final StringRedisTemplate redisTemplate;
     private final LeverageDailyBatchService leverageDailyBatchService;
+    private final InterestAppliedPublisher interestAppliedPublisher;
 
     /**
      * DailyRankBatchScheduler(15:50)보다 먼저 실행
@@ -38,6 +40,7 @@ public class DailyLeverageBatchScheduler {
 
         try {
             leverageDailyBatchService.runDailyLeverageBatch();
+            interestAppliedPublisher.publish();
         } finally {
             redisTemplate.delete(LOCK_KEY);
         }
