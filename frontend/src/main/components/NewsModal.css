@@ -71,8 +71,9 @@
 }
 
 .nm-status {
-    text-align: center;
-    padding: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: 13px;
     color: #64748b;
 

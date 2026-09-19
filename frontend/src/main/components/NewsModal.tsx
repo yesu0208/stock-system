@@ -3,6 +3,7 @@ import { useStock } from '../context/StockContext';
 import { searchNews } from '../../api/news';
 import type { NaverNewsItem } from '../../types/news';
 import './NewsModal.css';
+import Spinner from "../../components/Spinner";
 
 type TabType = '뉴스' | '공시';
 
@@ -90,7 +91,7 @@ export default function NewsModal() {
 
             {activeTab === '뉴스' && (
                 <div className="nm-news-panel">
-                    {loading && <p className="nm-status">불러오는 중...</p>}
+                    {loading && <div className="nm-status"><Spinner /></div>}
                     {error && <p className="nm-status error">{error}</p>}
                     {!loading && !error && news.length === 0 && (
                         <p className="nm-status">검색 결과가 없습니다.</p>
@@ -122,7 +123,7 @@ export default function NewsModal() {
 
             <div className="nm-dart-panel" style={{ display: activeTab === '공시' ? 'flex' : 'none' }}>
                 <div className={`nm-dart-overlay ${overlayVisible ? '' : 'hidden'}`}>
-                    <span className="nm-dart-loading-text">📄 공시 페이지 로딩 중...</span>
+                    <Spinner />
                 </div>
 
                 <iframe
