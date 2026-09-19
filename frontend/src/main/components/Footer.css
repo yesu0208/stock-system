@@ -223,3 +223,16 @@
 .footer .left-btn:hover {
     color: white;
 }
+
+.footer .market-item__values {
+    display: flex;
+    align-items: baseline;
+}
+
+.footer .market-item__index {
+    margin-right: 8px;
+}
+
+.footer .market-item__arrow {
+    margin-right: 2px;
+}
