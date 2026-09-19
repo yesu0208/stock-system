@@ -84,3 +84,11 @@
     border-top: none;
     border-right: none;
 }
+
+.tt-multiline {
+    white-space: pre-line;
+    width: max-content;
+    max-width: 280px;
+    line-height: 1.5;
+    text-align: left;
+}
