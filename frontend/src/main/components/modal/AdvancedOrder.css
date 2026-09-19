@@ -708,7 +708,7 @@
 }
 
 .adv-order__order-panel:not(.otoco-panel) .adv-order__summary {
-    margin-top: 95px;
+    margin-top: 56px;
 }
 
 .adv-order__summary-row {
@@ -2160,4 +2160,24 @@
     background: rgba(248, 113, 113, 0.12);
     border-color: #f87171;
     color: #f87171;
+}
+
+.adv-order__order-panel .stepper--readonly .stepper__btn:disabled {
+    cursor: default;
+    opacity: 0.35;
+    background: var(--color-surface);
+}
+
+.adv-order__order-panel .stepper--readonly .stepper__btn:disabled:hover {
+    background: var(--color-surface);
+}
+
+.adv-order__order-panel .stepper__input--readonly {
+    cursor: default;
+    color: var(--color-text-secondary);
+    pointer-events: none;
+}
+
+.ao-pending__empty {
+    min-height: 480px;
 }

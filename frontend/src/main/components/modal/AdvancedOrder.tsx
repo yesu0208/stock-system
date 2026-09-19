@@ -772,6 +772,22 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                 </div>
             </div>
 
+            <div className="form-row">
+                <span className="form-label">진입 가격</span>
+                <div className="stepper stepper--readonly">
+                    <button className="stepper__btn" disabled aria-hidden="true">−</button>
+                    <input
+                        className="stepper__input stepper__input--readonly"
+                        type="text"
+                        readOnly
+                        tabIndex={-1}
+                        value={currentPrice > 0 ? formatNumber(currentPrice) : "—"}
+                    />
+                    <button className="stepper__btn" disabled aria-hidden="true">+</button>
+                    <span className="stepper__unit">원</span>
+                </div>
+            </div>
+
             <div className="divider" />
 
             <div className={`adv-order__stop-row ${!isBuy ? "adv-order__stop-row--disabled" : ""}`}>
@@ -1104,32 +1120,6 @@ function OtocoInputPanel() {
                     </button>
                 </div>
 
-                <div className="form-row">
-                    <span className={`form-label otoco-entry-label ${dirClass}`}>감시가</span>
-                    <div className="stepper">
-                        <button
-                            className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
-                            onClick={() => setEntryPrice((p) => stepPrice(p, -1))}
-                        >
-                            −
-                        </button>
-                        <input
-                            className="stepper__input"
-                            type="text"
-                            inputMode="numeric"
-                            value={formatNumber(entryPrice)}
-                            onChange={(e) => setEntryPrice(snapToTick(Math.max(0, parseNumber(e.target.value))))}
-                        />
-                        <button
-                            className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
-                            onClick={() => setEntryPrice((p) => stepPrice(p, 1))}
-                        >
-                            +
-                        </button>
-                        <span className="stepper__unit">원</span>
-                    </div>
-                </div>
-
                 <div className="ratio-group">
                     {RATIO_OPTIONS.map(({ label, ratio }) => (
                         <button
@@ -1167,6 +1157,32 @@ function OtocoInputPanel() {
                         </button>
                         <span className="stepper__unit">주</span>
                     </div>
+                </div>
+            </div>
+
+            <div className="form-row">
+                <span className={`form-label otoco-entry-label ${dirClass}`}>진입가</span>
+                <div className="stepper">
+                    <button
+                        className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
+                        onClick={() => setEntryPrice((p) => stepPrice(p, -1))}
+                    >
+                        −
+                    </button>
+                    <input
+                        className="stepper__input"
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumber(entryPrice)}
+                        onChange={(e) => setEntryPrice(snapToTick(Math.max(0, parseNumber(e.target.value))))}
+                    />
+                    <button
+                        className={`stepper__btn ${entryDirection === "above" ? "accent--above" : "accent--below"}`}
+                        onClick={() => setEntryPrice((p) => stepPrice(p, 1))}
+                    >
+                        +
+                    </button>
+                    <span className="stepper__unit">원</span>
                 </div>
             </div>
 
@@ -1283,7 +1299,7 @@ function OtocoInputPanel() {
 
                 <div className="adv-order__summary-row">
                     <span className="adv-order__summary-label">
-                        예상 진입금액
+                        진입금액
                         <LeverageTag leverage={isCredit ? leverage : 1} />
                     </span>
                     <span className="adv-order__summary-value adv-order__summary-value--fill adv-order__summary-value--fill-buy">
@@ -1953,8 +1969,7 @@ function OtocoPendingList() {
     if (otocoOrders.length === 0) {
         return (
             <div className="ao-pending__empty">
-                <span className="ao-pending__empty-icon">⌛</span>
-                <p>미체결 OTOCO 주문이 없습니다.</p>
+                <p>내역이 없습니다</p>
             </div>
         );
     }
@@ -2733,8 +2748,7 @@ function TrailingStopPendingList() {
     if (trailingOrders.length === 0) {
         return (
             <div className="ao-pending__empty">
-                <span className="ao-pending__empty-icon">⌛</span>
-                <p>미체결 트레일링 스탑 주문이 없습니다.</p>
+                <p>내역이 없습니다</p>
             </div>
         );
     }
