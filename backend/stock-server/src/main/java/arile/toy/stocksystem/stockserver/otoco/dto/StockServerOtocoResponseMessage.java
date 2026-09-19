@@ -16,15 +16,21 @@ public record StockServerOtocoResponseMessage(
         Integer slTriggerPrice,
         OtocoStatus otocoStatus,
         OtocoLeg completedLeg,
-        Instant orderTime
+        Instant orderTime,
+        Integer entryRemainingQuantity
 ) {
     public static StockServerOtocoResponseMessage fromEntity(
             arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity entity) {
+        return fromEntity(entity, null);
+    }
+
+    public static StockServerOtocoResponseMessage fromEntity(
+            arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity entity, Integer entryRemainingQuantity) {
         return new StockServerOtocoResponseMessage(
                 entity.getOtocoId(), entity.getUsername(), entity.getStockCode(), entity.getEntryDirection(),
                 entity.getLeverageRatio(), entity.getOrderQuantity(), entity.getEntryTriggerPrice(),
                 entity.getTpTriggerPrice(), entity.getSlTriggerPrice(), entity.getOtocoStatus(),
-                entity.getCompletedLeg(), entity.getOrderTime()
+                entity.getCompletedLeg(), entity.getOrderTime(), entryRemainingQuantity
         );
     }
 }

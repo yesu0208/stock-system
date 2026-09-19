@@ -65,10 +65,31 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
 
         otocoExitBookRegistry.register(OtocoDto.fromEntity(entity));
 
+        // 완전체결되었으므로 잔량 개념이 사라짐 — 캐시에도 entryRemainingQuantity 없이 저장
         stockServerOtocoResponseRepository.update(entity.getUsername(), entity.getOtocoId(),
                 StockServerOtocoResponseMessage.fromEntity(entity));
 
         otocoResponseEventPublisher.publishEntryFilled(OtocoDto.fromEntity(entity));
+    }
+
+    //  진입 주문이 부분체결될 때마다(완전체결 전) TradeExecutionService로부터 호출됨
+    @Override
+    public void onOrderPartiallyFilled(Long orderId, int remainingQuantity) {
+
+        Optional<OtocoEntity> optionalOtoco = otocoRepository.findByEntryOrderIdForUpdate(orderId);
+        if (optionalOtoco.isEmpty()) {
+            return; // OTOCO와 무관한 일반 주문
+        }
+
+        OtocoEntity entity = optionalOtoco.get();
+        if (entity.getOtocoStatus() != OtocoStatus.ENTRY_ORDER_PLACED) {
+            return; // 이미 취소/완전체결 등으로 상태가 바뀐 경우 — 오작동 방지
+        }
+
+        stockServerOtocoResponseRepository.update(entity.getUsername(), entity.getOtocoId(),
+                StockServerOtocoResponseMessage.fromEntity(entity, remainingQuantity));
+
+        otocoResponseEventPublisher.publishEntryPartiallyFilled(OtocoDto.fromEntity(entity, remainingQuantity));
     }
 
     @Override

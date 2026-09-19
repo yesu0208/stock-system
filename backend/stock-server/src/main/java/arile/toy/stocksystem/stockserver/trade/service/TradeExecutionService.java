@@ -61,6 +61,10 @@ public class TradeExecutionService {
         
         if (orderEntity.getOrderStatus() == OrderStatus.FILLED) {
             otocoOrderLifecycleListener.onOrderFilled(orderEntity.getOrderId());
+        } else {
+            // 완전체결 전 부분체결이 일어날 때마다 OTOCO 쪽에 잔량 갱신을 알림
+            // (OTOCO와 무관한 일반 주문이면 리스너 내부에서 조용히 no-op 처리됨)
+            otocoOrderLifecycleListener.onOrderPartiallyFilled(orderEntity.getOrderId(), remainingQuantity);
         }
 
         tradeOutboxRecorder.record(

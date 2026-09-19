@@ -9,5 +9,6 @@ package arile.toy.stocksystem.stockserver.otoco.service;
  */
 public interface OtocoOrderLifecycleListener {
     void onOrderFilled(Long orderId);
+    void onOrderPartiallyFilled(Long orderId, int remainingQuantity);
     void onOrderCanceled(Long orderId);
 }
