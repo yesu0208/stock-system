@@ -90,7 +90,7 @@ export default function NewsModal() {
             </div>
 
             {activeTab === '뉴스' && (
-                <div className="nm-news-panel">
+                <div className="nm-news-panel fade" key="news">
                     {loading && <div className="nm-status"><Spinner /></div>}
                     {error && <p className="nm-status error">{error}</p>}
                     {!loading && !error && news.length === 0 && (
@@ -121,7 +121,10 @@ export default function NewsModal() {
                 </div>
             )}
 
-            <div className="nm-dart-panel" style={{ display: activeTab === '공시' ? 'flex' : 'none' }}>
+            <div
+                className="nm-dart-panel"
+                style={{ display: activeTab === '공시' ? 'flex' : 'none' }}
+            >
                 <div className={`nm-dart-overlay ${overlayVisible ? '' : 'hidden'}`}>
                     <Spinner />
                 </div>
