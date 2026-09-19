@@ -20,7 +20,7 @@ public class DailyRankBatchScheduler {
     private final StringRedisTemplate redisTemplate;
     private final DailyRankBatchService dailyRankBatchService;
 
-    @Scheduled(cron = "0 0 16 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 50 15 * * MON-FRI", zone = "Asia/Seoul")
     public void run() {
 
         if (!acquireLock()) {

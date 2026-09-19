@@ -21,11 +21,14 @@ public class DailyLeverageBatchScheduler {
     private final LeverageDailyBatchService leverageDailyBatchService;
 
     /**
-     * DailyRankBatchScheduler(16:00)보다 먼저 실행되어야 한다.
+     * DailyRankBatchScheduler(15:50)보다 먼저 실행
      * RP 등급 계산(TotalAssetCalculator)이 레버리지 포지션의 대출금을 기준으로 순자산을 산정하므로,
-     * 이자 누적이 반영된 이후에 등급 배치가 돌아야 정확하다.
+     * 이자 누적이 반영된 이후에 등급 배치가 돌아야 정확
+     *
+     * 15:45 — MarketCloseJob(15:40 주문정리) 직후,
+     * DailyRankBatchScheduler(15:50) 이전에 실행되도록 앞당김.
      */
-    @Scheduled(cron = "0 55 15 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 45 15 * * MON-FRI", zone = "Asia/Seoul")
     public void run() {
 
         if (!acquireLock()) {
