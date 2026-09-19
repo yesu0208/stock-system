@@ -5,6 +5,7 @@ import { useAccount } from "../context/AccountContext";
 import { usePortfolio } from "../context/PortfolioContext";
 import { stockNameMap } from "../../constants/stocks";
 import "./PortfolioModal.css";
+import Spinner from "../../components/Spinner";
 
 const SECTOR_PALETTE = [
     "#6366f1", "#22d3ee", "#f59e0b", "#34d399", "#fb923c",
@@ -258,7 +259,7 @@ export default function PortfolioModal({ open, onClose }: Props) {
         return (
             <ModalV2 open={open} title="포트폴리오" onClose={onClose}>
                 <div className="portfolio__empty">
-                    <span className="portfolio__empty-text">불러오는 중...</span>
+                    <Spinner />
                 </div>
             </ModalV2>
         );
