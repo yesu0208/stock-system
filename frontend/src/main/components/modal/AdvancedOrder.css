@@ -554,11 +554,18 @@
 
 .adv-order__stop-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
     flex-shrink: 0;
     min-width: 0;
     overflow: hidden;
+}
+
+.adv-order__stop-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .adv-order__stop-label {
@@ -1284,7 +1291,7 @@
 }
 
 .adv-order__meta-rate {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 500;
 }
 
@@ -2225,4 +2232,29 @@
     color: #b7a6ff;
     border-color: #7c5cff;
     outline: none;
+}
+
+.adv-order__order-panel .stepper__btn:disabled,
+.adv-order__order-panel .stepper__btn:disabled:hover,
+.adv-order__order-panel .stepper__btn.accent--buy:disabled:hover,
+.adv-order__order-panel .stepper__btn.accent--sell:disabled:hover {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
+    cursor: not-allowed;
+}
+
+.adv-order__slider:disabled,
+.adv-order__stop-row--disabled .adv-order__slider {
+    pointer-events: none;
+}
+
+.adv-order__slider:disabled::-webkit-slider-thumb,
+.adv-order__slider:disabled:hover::-webkit-slider-thumb {
+    transform: none;
+}
+
+.adv-order__slider:disabled::-moz-range-thumb,
+.adv-order__slider:disabled:hover::-moz-range-thumb {
+    transform: none;
 }

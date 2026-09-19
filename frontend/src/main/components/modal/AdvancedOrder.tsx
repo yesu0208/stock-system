@@ -834,19 +834,39 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
             <div className="divider" />
 
             <div className={`adv-order__stop-row ${!isBuy ? "adv-order__stop-row--disabled" : ""}`}>
-                <span className="adv-order__stop-label">매수 스탑</span>
+                <div className="adv-order__stop-head">
+                    <span className="adv-order__stop-label">매수 스탑</span>
+                    <div className="stepper">
+                        <button
+                            type="button"
+                            className="stepper__btn accent--buy"
+                            disabled={!isBuy}
+                            onClick={() => setBuyStop((s) => clampStop(s - STOP_STEP))}
+                        >
+                            −
+                        </button>
+                        <input
+                            className="stepper__input"
+                            type="number"
+                            min={STOP_MIN}
+                            max={STOP_MAX}
+                            step={STOP_STEP}
+                            value={buyStop}
+                            disabled={!isBuy}
+                            onChange={(e) => setBuyStop(clampStop(Number(e.target.value)))}
+                        />
+                        <button
+                            type="button"
+                            className="stepper__btn accent--buy"
+                            disabled={!isBuy}
+                            onClick={() => setBuyStop((s) => clampStop(s + STOP_STEP))}
+                        >
+                            +
+                        </button>
+                        <span className="stepper__unit">%</span>
+                    </div>
+                </div>
                 <div className="adv-order__stop-control">
-                    <input
-                        className="adv-order__stop-input"
-                        type="number"
-                        min={STOP_MIN}
-                        max={STOP_MAX}
-                        step={STOP_STEP}
-                        value={buyStop}
-                        disabled={!isBuy}
-                        onChange={(e) => setBuyStop(clampStop(Number(e.target.value)))}
-                    />
-                    <span className="adv-order__stop-unit">%</span>
                     <input
                         ref={buySliderRef}
                         className="adv-order__slider slider--buy"
@@ -860,25 +880,45 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                         aria-label={`매수 스탑 비율 ${buyStop}%`}
                     />
                     <span className="adv-order__stop-chip chip--buy">
-                        {buyStop.toFixed(1)}%
-                    </span>
+            {buyStop.toFixed(1)}%
+        </span>
                 </div>
             </div>
 
             <div className={`adv-order__stop-row ${isBuy ? "adv-order__stop-row--disabled" : ""}`}>
-                <span className="adv-order__stop-label">매도 스탑</span>
+                <div className="adv-order__stop-head">
+                    <span className="adv-order__stop-label">매도 스탑</span>
+                    <div className="stepper">
+                        <button
+                            type="button"
+                            className="stepper__btn accent--sell"
+                            disabled={isBuy}
+                            onClick={() => setSellStop((s) => clampStop(s - STOP_STEP))}
+                        >
+                            −
+                        </button>
+                        <input
+                            className="stepper__input"
+                            type="number"
+                            min={STOP_MIN}
+                            max={STOP_MAX}
+                            step={STOP_STEP}
+                            value={sellStop}
+                            disabled={isBuy}
+                            onChange={(e) => setSellStop(clampStop(Number(e.target.value)))}
+                        />
+                        <button
+                            type="button"
+                            className="stepper__btn accent--sell"
+                            disabled={isBuy}
+                            onClick={() => setSellStop((s) => clampStop(s + STOP_STEP))}
+                        >
+                            +
+                        </button>
+                        <span className="stepper__unit">%</span>
+                    </div>
+                </div>
                 <div className="adv-order__stop-control">
-                    <input
-                        className="adv-order__stop-input"
-                        type="number"
-                        min={STOP_MIN}
-                        max={STOP_MAX}
-                        step={STOP_STEP}
-                        value={sellStop}
-                        disabled={isBuy}
-                        onChange={(e) => setSellStop(clampStop(Number(e.target.value)))}
-                    />
-                    <span className="adv-order__stop-unit">%</span>
                     <input
                         ref={sellSliderRef}
                         className="adv-order__slider slider--sell"
