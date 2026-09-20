@@ -87,7 +87,7 @@ public class MarketCloseJob {
 
             if (isLast) {
                 accountApiClient.settleAll();
-                marketClosePublisher.publishMarketClose("정규장 마감 정리");
+                marketClosePublisher.publishMarketClose("REGULAR");
                 log.info("[MarketCloseJob] all groups finished cancel. settle-all triggered by this server.");
             } else {
                 log.info("[MarketCloseJob] waiting for other groups to finish cancel before settle.");

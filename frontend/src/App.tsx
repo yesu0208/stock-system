@@ -18,6 +18,8 @@ import { ChartDataProvider } from './main/context/ChartDataContext'
 import {StockRealtimeProvider} from "./main/context/StockRealtimeContext.tsx";
 import {OrderPriceProvider} from "./main/context/OrderPriceContext.tsx";
 import { PendingOrderProvider } from './main/context/PendingOrderContext'
+import { MarketPhaseProvider } from './main/context/MarketPhaseContext'
+import MarketEventsListener from './main/components/MarketEventsListener'
 
 /**
  * RealtimeProvider / MarketDataProvider를 isLoggedIn 분기
@@ -35,40 +37,43 @@ export default function App() {
         <ScaleWrapper>
             <RealtimeProvider>
                 <MarketDataProvider>
-                    {!isLoggedIn ? (
-                        authView === 'login' ? (
-                            <LoginPage
-                                onLoginSuccess={() => setIsLoggedIn(true)}
-                                onNavigateToSignup={() => setAuthView('signup')}
-                            />
+                    <MarketPhaseProvider>
+                        {!isLoggedIn ? (
+                            authView === 'login' ? (
+                                <LoginPage
+                                    onLoginSuccess={() => setIsLoggedIn(true)}
+                                    onNavigateToSignup={() => setAuthView('signup')}
+                                />
+                            ) : (
+                                <SignupPage onNavigateToLogin={() => setAuthView('login')} />
+                            )
                         ) : (
-                            <SignupPage onNavigateToLogin={() => setAuthView('login')} />
-                        )
-                    ) : (
-                        <UserProvider>
-                            <StockProvider>
-                                <StockRealtimeProvider>
-                                    <OrderPriceProvider>
-                                        <AccountProvider>
-                                            <PendingOrderProvider>
-                                                <PortfolioProvider>
-                                                    <ChartDataProvider>
-                                                        <AlertProvider>
-                                                            <WatchListProvider>
-                                                                <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
-                                                                    <TradePage />
-                                                                </MainLayout>
-                                                            </WatchListProvider>
-                                                        </AlertProvider>
-                                                    </ChartDataProvider>
-                                                </PortfolioProvider>
-                                            </PendingOrderProvider>
-                                        </AccountProvider>
-                                    </OrderPriceProvider>
-                                </StockRealtimeProvider>
-                            </StockProvider>
-                        </UserProvider>
-                    )}
+                            <UserProvider>
+                                <MarketEventsListener />
+                                <StockProvider>
+                                    <StockRealtimeProvider>
+                                        <OrderPriceProvider>
+                                            <AccountProvider>
+                                                <PendingOrderProvider>
+                                                    <PortfolioProvider>
+                                                        <ChartDataProvider>
+                                                            <AlertProvider>
+                                                                <WatchListProvider>
+                                                                    <MainLayout onLoggedOut={() => setIsLoggedIn(false)}>
+                                                                        <TradePage />
+                                                                    </MainLayout>
+                                                                </WatchListProvider>
+                                                            </AlertProvider>
+                                                        </ChartDataProvider>
+                                                    </PortfolioProvider>
+                                                </PendingOrderProvider>
+                                            </AccountProvider>
+                                        </OrderPriceProvider>
+                                    </StockRealtimeProvider>
+                                </StockProvider>
+                            </UserProvider>
+                        )}
+                    </MarketPhaseProvider>
                 </MarketDataProvider>
             </RealtimeProvider>
         </ScaleWrapper>

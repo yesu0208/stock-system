@@ -18,8 +18,7 @@ public class RedisRankUpdatedEventSubscriber implements MessageListener {
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {
-            String body = new String(message.getBody(), StandardCharsets.UTF_8);
-            rankUpdatedPushService.push(body);
+            rankUpdatedPushService.push();
         } catch (Exception e) {
             log.warn("RedisRankUpdatedEventSubscriber error", e);
         }

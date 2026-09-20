@@ -18,8 +18,7 @@ public class RedisInterestAppliedEventSubscriber implements MessageListener {
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {
-            String body = new String(message.getBody(), StandardCharsets.UTF_8);
-            interestAppliedPushService.push(body);
+            interestAppliedPushService.push();
         } catch (Exception e) {
             log.warn("RedisInterestAppliedEventSubscriber error", e);
         }
