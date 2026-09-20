@@ -55,6 +55,15 @@ public class LeveragePositionEntity {
     /** 마진콜 발생일 (D일). NORMAL 상태면 null */
     private LocalDate marginCallDate;
 
+    /**
+     * 마지막으로 이자가 청구된 날짜(달력일 기준, 포함).
+     * 이자는 연이율/365로 설계되어 있어 주말·휴장일에도 계속 발생해야 하므로,
+     * 배치 실행 시점에 "오늘 - 이 날짜"만큼의 경과일수를 한 번에 청구한 뒤 오늘로 갱신.
+     * 포지션 최초 생성일에는 아직 하루도 지나지 않았으므로 오늘 날짜로 초기화.
+     */
+    @Column(nullable = false)
+    private LocalDate lastInterestChargedDate;
+
     @Column(nullable = false)
     private Instant createdDateTime;
 
@@ -72,6 +81,7 @@ public class LeveragePositionEntity {
         entity.setPurchaseAmount(purchaseAmount);
         entity.setLoanAmount(leverageRatio.calculateLoanAmount(purchaseAmount));
         entity.setMarginStatus(MarginStatus.NORMAL);
+        entity.setLastInterestChargedDate(LocalDate.now());
         return entity;
     }
 
@@ -100,6 +110,11 @@ public class LeveragePositionEntity {
         this.marginCallDate = marginCallDate;
     }
 
+    /** 이자 청구 배치가 청구 완료 후 기준일을 오늘로 갱신할 때 사용 */
+    public void markInterestChargedThrough(LocalDate date) {
+        this.lastInterestChargedDate = date;
+    }
+
     public boolean isEmpty() {
         return this.quantity == 0;
     }
@@ -108,6 +123,9 @@ public class LeveragePositionEntity {
     private void prePersist() {
         this.createdDateTime = Instant.now();
         this.updatedDateTime = Instant.now();
+        if (this.lastInterestChargedDate == null) {
+            this.lastInterestChargedDate = LocalDate.now();
+        }
     }
 
     @PreUpdate
