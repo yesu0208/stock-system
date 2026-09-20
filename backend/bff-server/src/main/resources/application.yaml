@@ -9,6 +9,9 @@ admin:
   password: ${ADMIN_PASSWORD}
   nickname: ${ADMIN_NICKNAME:관리자}
 
+slack:
+  webhook-url: ${SLACK_WEBHOOK_URL}
+
 stock-api:
   base-url: ${STOCK_API_URL}
 
@@ -157,6 +160,9 @@ admin:
   username: admin
   password: test!admin!password!1
   nickname: 관리자
+
+slack:
+  webhook-url: test-slack-webhook-url
 
 stock-api:
   base-url: http://localhost:8081
