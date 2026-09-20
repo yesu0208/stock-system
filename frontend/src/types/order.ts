@@ -10,19 +10,17 @@ export type OrderOrigin =
     | 'OTOCO_STOP_LOSS'
     | 'TRAILING_STOP'
 
-export interface OrderResponseMessage {
-    orderId: number
+export interface OrderResultResponse {
+    responseType: 'SUCCESS' | 'ERROR'
+    orderId: number | null
     username: string
     stockCode: string
     orderType: OrderType
     leverageRatio: LeverageRatio | null
     orderPrice: number
     orderQuantity: number
-    remainingQuantity: number
-    orderTime: string
-    orderExecutionType: OrderExecutionType
-    origin: OrderOrigin
-    originId: number | null
+    orderTime: string | null
+    errorMessage: string | null
 }
 
 export interface OrderResponseMessage {
@@ -36,6 +34,8 @@ export interface OrderResponseMessage {
     remainingQuantity: number
     orderTime: string
     orderExecutionType: OrderExecutionType
+    origin: OrderOrigin
+    originId: number | null
 }
 
 export interface OrderResponse {
