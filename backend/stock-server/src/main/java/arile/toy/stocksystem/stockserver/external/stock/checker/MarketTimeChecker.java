@@ -1,6 +1,8 @@
 package arile.toy.stocksystem.stockserver.external.stock.checker;
 
+import arile.toy.stocksystem.stockserver.market.holiday.repository.MarketHolidayRepository;
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhase;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
@@ -9,6 +11,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 @Component
+@RequiredArgsConstructor
 public class MarketTimeChecker {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -20,6 +23,8 @@ public class MarketTimeChecker {
     private static final LocalTime AFTER_START         = LocalTime.of(16, 0, 5);
     private static final LocalTime AFTER_END           = LocalTime.of(20, 0, 0);
 
+    private final MarketHolidayRepository marketHolidayRepository;
+
     public StockServerMarketPhase resolvePhase() {
         return resolvePhase(ZonedDateTime.now(KST));
     }
@@ -27,6 +32,10 @@ public class MarketTimeChecker {
     public StockServerMarketPhase resolvePhase(ZonedDateTime now) {
         DayOfWeek day = now.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return StockServerMarketPhase.CLOSED;
+        }
+
+        if (marketHolidayRepository.existsByHolidayDate(now.toLocalDate())) {
             return StockServerMarketPhase.CLOSED;
         }
 
@@ -55,6 +64,10 @@ public class MarketTimeChecker {
         ZonedDateTime now = ZonedDateTime.now(KST);
         DayOfWeek day = now.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return false;
+        }
+
+        if (marketHolidayRepository.existsByHolidayDate(now.toLocalDate())) {
             return false;
         }
 
