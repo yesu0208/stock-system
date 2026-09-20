@@ -21,7 +21,11 @@ public class MarketPhaseService {
 
     public void closeMarketAfterClosingCall(String stockCode, String tradeTime) {
         LocalTime time = LocalTime.parse(tradeTime, DateTimeFormatter.ofPattern("HHmmss"));
-        if (time.isAfter(LocalTime.of(15, 29, 50))) {
+
+        LocalTime windowStart = LocalTime.of(15, 29, 50);
+        LocalTime windowEnd = LocalTime.of(15, 37, 50);
+
+        if (!time.isBefore(windowStart) && time.isBefore(windowEnd)) {
             updateMarketPhase(stockCode, StockServerMarketPhase.CLOSED);
         }
     }
