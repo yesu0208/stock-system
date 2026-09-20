@@ -62,7 +62,9 @@ public class OrderService {
                     request.orderQuantity(),
                     OrderStatus.OPEN,
                     request.orderQuantity(),
-                    request.orderExecutionType()
+                    request.orderExecutionType(),
+                    request.origin(),
+                    request.originId()
             );
             savedOrder = orderRepository.save(orderEntity);
 

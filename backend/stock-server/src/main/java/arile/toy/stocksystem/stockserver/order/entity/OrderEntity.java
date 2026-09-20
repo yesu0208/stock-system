@@ -2,6 +2,7 @@ package arile.toy.stocksystem.stockserver.order.entity;
 
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.order.dto.OrderExecutionType;
+import arile.toy.stocksystem.stockserver.order.dto.OrderOrigin;
 import arile.toy.stocksystem.stockserver.order.dto.OrderStatus;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import jakarta.persistence.*;
@@ -56,10 +57,18 @@ public class OrderEntity {
     @Enumerated(EnumType.STRING)
     private OrderExecutionType orderExecutionType;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OrderOrigin origin;
+
+    // autoOrderId / otocoId / trailingStopId / MANUAL이면 null
+    private Long originId;
+
     public static OrderEntity of(String username, String stockCode, OrderType orderType, LeverageRatio leverageRatio,
                                  Integer orderPrice, Integer orderQuantity,
                                  OrderStatus orderStatus, Integer remainingQuantity,
-                                 OrderExecutionType orderExecutionType) {
+                                 OrderExecutionType orderExecutionType,
+                                 OrderOrigin origin, Long originId) {
         var orderEntity = new OrderEntity();
         orderEntity.setUsername(username);
         orderEntity.setStockCode(stockCode);
@@ -71,6 +80,8 @@ public class OrderEntity {
         orderEntity.setRemainingQuantity(remainingQuantity);
         orderEntity.setOrderTime(Instant.now());
         orderEntity.setOrderExecutionType(orderExecutionType);
+        orderEntity.setOrigin(origin);
+        orderEntity.setOriginId(originId);
         return orderEntity;
     }
 
