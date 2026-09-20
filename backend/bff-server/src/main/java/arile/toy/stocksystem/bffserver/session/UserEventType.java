@@ -91,6 +91,12 @@ public enum UserEventType {
         public String channel(String username) {
             return "user:liquidation." + username + ":event";
         }
+    },
+    QUEUE_POSITION {
+        @Override
+        public String channel(String username) {
+            return "user:order:queue-position." + username + ":event";
+        }
     };
 
     public abstract String channel(String username);

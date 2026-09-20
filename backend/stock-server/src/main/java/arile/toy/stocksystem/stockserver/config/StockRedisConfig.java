@@ -18,6 +18,7 @@ import arile.toy.stocksystem.stockserver.external.stock.message.StockSummaryTick
 import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMessage;
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.event.OrderResponseEvent;
+import arile.toy.stocksystem.stockserver.order.event.QueuePositionEvent;
 import arile.toy.stocksystem.stockserver.otoco.dto.StockServerOtocoResponseMessage;
 import arile.toy.stocksystem.stockserver.otoco.event.OtocoResponseEvent;
 import arile.toy.stocksystem.stockserver.otococancel.event.OtocoCancelResponseEvent;
@@ -327,6 +328,16 @@ public class StockRedisConfig {
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new JacksonJsonRedisSerializer<>(StockServerAlertResponseMessage.class));
         template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, QueuePositionEvent> queuePositionEventRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        var template = new RedisTemplate<String, QueuePositionEvent>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(QueuePositionEvent.class));
         return template;
     }
 }

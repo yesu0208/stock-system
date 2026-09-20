@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.order.dto;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface SingleStockOrderQueue {
@@ -9,4 +10,5 @@ public interface SingleStockOrderQueue {
     OrderDto pollBuy();
     OrderDto pollSell();
     boolean removeByOrderId(Long orderId);
+    List<OrderDto> snapshotRanked(OrderType orderType);
 }

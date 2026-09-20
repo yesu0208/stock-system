@@ -13,6 +13,7 @@ import arile.toy.stocksystem.stockserver.order.dto.UpdateOrderStatusResult;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.order.service.QueuePositionBroadcastService;
 import arile.toy.stocksystem.stockserver.otoco.service.OtocoOrderLifecycleListener;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class CancelService {
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final AccountApiClient accountApiClient;
     private final OtocoOrderLifecycleListener otocoOrderLifecycleListener;
+    private final QueuePositionBroadcastService queuePositionBroadcastService;
 
     @Transactional
     public void registerCancel(CancelRequestEvent request) {
@@ -130,6 +132,8 @@ public class CancelService {
                 orderEntity.getOrderId(),
                 orderEntity.getStockCode()
         );
+
+        queuePositionBroadcastService.broadcast(orderEntity.getStockCode(), orderEntity.getOrderType());
         
         otocoOrderLifecycleListener.onOrderCanceled(orderEntity.getOrderId());
     }

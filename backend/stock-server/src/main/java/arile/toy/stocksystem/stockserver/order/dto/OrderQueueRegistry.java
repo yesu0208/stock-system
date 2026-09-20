@@ -2,6 +2,7 @@ package arile.toy.stocksystem.stockserver.order.dto;
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,7 +22,7 @@ public class OrderQueueRegistry {
     public void orderCancel(Long orderId, String stockCode) {
         book(stockCode).removeByOrderId(orderId);
     }
-    
+
     public Optional<OrderDto> peekBuy(String stockCode) {
         return book(stockCode).peekBuy();
     }
@@ -36,5 +37,9 @@ public class OrderQueueRegistry {
 
     public OrderDto pollSell(String stockCode) {
         return book(stockCode).pollSell();
+    }
+
+    public List<OrderDto> snapshotRanked(String stockCode, OrderType orderType) {
+        return book(stockCode).snapshotRanked(orderType);
     }
 }
