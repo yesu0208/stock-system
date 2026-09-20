@@ -29,7 +29,9 @@ export default function LogoutResultModal({ reason, onConfirm }: Props) {
     return (
         <ModalV2 open={true} title={copy.title} onClose={onConfirm}>
             <div className="lrm">
-                <p className="lrm__message">{copy.message}</p>
+                <div className="lrm__body">
+                    <p className="lrm__message">{copy.message}</p>
+                </div>
 
                 <div className="lrm__footer">
                     <button className="lrm__btn" onClick={onConfirm}>

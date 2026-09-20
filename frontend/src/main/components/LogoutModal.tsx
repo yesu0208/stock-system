@@ -11,7 +11,9 @@ export default function LogoutModal({ open, onClose, onConfirm }: Props) {
     return (
         <ModalV2 open={open} title="로그아웃" onClose={onClose}>
             <div className="lom">
-                <p className="lom__message">로그아웃 하시겠습니까?</p>
+                <div className="lom__body">
+                    <p className="lom__message">로그아웃 하시겠습니까?</p>
+                </div>
 
                 <div className="lom__footer">
                     <button className="lom__btn lom__btn--confirm" onClick={onConfirm}>

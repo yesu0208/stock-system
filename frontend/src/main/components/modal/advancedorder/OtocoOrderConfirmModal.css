@@ -388,3 +388,12 @@
 .occ__btn--cancel:hover {
     border-color: transparent;
 }
+
+.occ__btn {
+    outline: none;
+}
+
+.occ__btn:focus,
+.occ__btn:focus-visible {
+    outline: none;
+}

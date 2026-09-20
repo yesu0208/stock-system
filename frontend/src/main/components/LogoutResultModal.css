@@ -7,8 +7,16 @@
     color: #e8eaed;
 
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex: 1;
+}
+
+.lrm__body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 }
 
 .lrm__message {

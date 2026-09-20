@@ -30,10 +30,10 @@ export function getPhaseColor(phase: MarketPhase | null): 'green' | 'yellow' | '
 }
 
 const PHASE_LABEL: Record<MarketPhase, string> = {
-    MORNING_CALL: '개장 동시호가',
+    MORNING_CALL: '동시호가',
     OPEN: '정규장',
-    CLOSING_CALL: '마감 동시호가',
-    AFTER: '애프터마켓',
+    CLOSING_CALL: '동시호가',
+    AFTER: 'AFTER',
     CLOSED: '장마감',
 }
 
