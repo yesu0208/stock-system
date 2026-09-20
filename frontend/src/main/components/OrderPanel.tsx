@@ -142,6 +142,31 @@ function LeverageBadge({ leverage }: { leverage: number }) {
     );
 }
 
+const ORIGIN_LABEL: Record<string, string> = {
+    OTOCO_ENTRY: "OTOCO 진입",
+    OTOCO_TAKE_PROFIT: "OTOCO 익절",
+    OTOCO_STOP_LOSS: "OTOCO 손절",
+    TRAILING_STOP: "트레일링",
+    AUTO_ORDER: "자동주문",
+};
+
+const ORIGIN_CLASS: Record<string, string> = {
+    OTOCO_ENTRY: "origin-otoco",
+    OTOCO_TAKE_PROFIT: "origin-otoco-tp",
+    OTOCO_STOP_LOSS: "origin-otoco-sl",
+    TRAILING_STOP: "origin-trailing",
+    AUTO_ORDER: "origin-auto",
+};
+
+function OriginBadge({ origin }: { origin?: string }) {
+    if (!origin || origin === "MANUAL") return null;
+    return (
+        <span className={`pending-item__origin-badge ${ORIGIN_CLASS[origin] ?? ""}`}>
+            {ORIGIN_LABEL[origin] ?? origin}
+        </span>
+    );
+}
+
 export default function OrderPanel() {
     const [mainTab, setMainTab] = useState<MainTab>("buy");
     const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -868,6 +893,7 @@ function CancelTab({ orders }: { orders: PendingOrder[] }) {
                                 </div>
 
                                 <div className="pending-item__top">
+                                    <OriginBadge origin={order.origin} />
                                     <span className={`pending-item__badge ${order.side === "BUY" ? "badge--buy" : "badge--sell"}`}>
                                         {order.side === "BUY" ? "매수" : "매도"}
                                     </span>

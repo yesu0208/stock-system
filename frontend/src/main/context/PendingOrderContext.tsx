@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRealtime } from './RealtimeContext'
 import { stockNameMap } from '../../constants/stocks'
-import type { OrderResponseMessage } from '../../types/order'
+import type { OrderResponseMessage, OrderOrigin } from '../../types/order'
 import type { AutoOrderResponseMessage } from '../../types/autoOrder'
 
 export interface PendingOrder {
@@ -19,6 +19,7 @@ export interface PendingOrder {
     remainingQty: number
     leverage: number
     time: string
+    origin?: OrderOrigin
 }
 
 function leverageRatioToNumber(ratio: string | null): number {
@@ -69,6 +70,7 @@ export function PendingOrderProvider({ children }: { children: ReactNode }) {
             remainingQty: o.remainingQuantity,
             leverage: leverageRatioToNumber(o.leverageRatio),
             time: o.orderTime,
+            origin: o.origin,
         }))
 
     const pendingFromAutoOrders: PendingOrder[] = autoOrders
