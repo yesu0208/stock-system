@@ -1,14 +1,18 @@
 package arile.toy.stocksystem.stockserver.external.stock.checker;
 
+import arile.toy.stocksystem.stockserver.market.holiday.repository.MarketHolidayRepository;
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhase;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 @Component
+@RequiredArgsConstructor
 public class MarketTimeChecker {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -20,6 +24,8 @@ public class MarketTimeChecker {
     private static final LocalTime AFTER_START         = LocalTime.of(16, 0, 5);
     private static final LocalTime AFTER_END           = LocalTime.of(20, 0, 0);
 
+    private final MarketHolidayRepository marketHolidayRepository;
+
     public StockServerMarketPhase resolvePhase() {
         return resolvePhase(ZonedDateTime.now(KST));
     }
@@ -27,6 +33,10 @@ public class MarketTimeChecker {
     public StockServerMarketPhase resolvePhase(ZonedDateTime now) {
         DayOfWeek day = now.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return StockServerMarketPhase.CLOSED;
+        }
+
+        if (marketHolidayRepository.existsByHolidayDate(now.toLocalDate())) {
             return StockServerMarketPhase.CLOSED;
         }
 
@@ -58,11 +68,23 @@ public class MarketTimeChecker {
             return false;
         }
 
+        if (marketHolidayRepository.existsByHolidayDate(now.toLocalDate())) {
+            return false;
+        }
+
         if (resolvePhase(now).isOrderable()) {
             return true;
         }
 
         LocalTime time = now.toLocalTime();
         return !time.isBefore(CLOSING_CALL_END) && time.isBefore(AFTER_START);
+    }
+
+    public boolean isHoliday(LocalDate date) {
+        return marketHolidayRepository.existsByHolidayDate(date);
+    }
+
+    public boolean isTodayHoliday() {
+        return isHoliday(LocalDate.now(KST));
     }
 }

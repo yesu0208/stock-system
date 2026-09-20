@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.accountserver.rank.scheduler;
 
+import arile.toy.stocksystem.accountserver.market.holiday.HolidayRegistry;
 import arile.toy.stocksystem.accountserver.rank.publisher.RankUpdatedPublisher;
 import arile.toy.stocksystem.accountserver.rank.service.DailyRankBatchService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.LocalDate;
 
 @Component
 @RequiredArgsConstructor
@@ -21,9 +23,15 @@ public class DailyRankBatchScheduler {
     private final StringRedisTemplate redisTemplate;
     private final DailyRankBatchService dailyRankBatchService;
     private final RankUpdatedPublisher rankUpdatedPublisher;
+    private final HolidayRegistry holidayRegistry;
 
     @Scheduled(cron = "0 50 15 * * MON-FRI", zone = "Asia/Seoul")
     public void run() {
+
+        if (holidayRegistry.isHoliday(LocalDate.now())) {
+            log.info("[DailyRankBatch] Today is a registered holiday. Skip.");
+            return;
+        }
 
         if (!acquireLock()) {
             log.info("[DailyRankBatch] Another instance already running.");

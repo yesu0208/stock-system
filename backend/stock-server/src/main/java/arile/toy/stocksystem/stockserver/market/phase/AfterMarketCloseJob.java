@@ -4,6 +4,7 @@ import arile.toy.stocksystem.stockserver.autocancel.service.AutoCancelService;
 import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
 import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderService;
 import arile.toy.stocksystem.stockserver.cancel.service.CancelService;
+import arile.toy.stocksystem.stockserver.external.stock.checker.MarketTimeChecker;
 import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockProperties;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
@@ -48,9 +49,15 @@ public class AfterMarketCloseJob {
     private final MarketClosePublisher marketClosePublisher;
     private final ExternalStockProperties externalStockProperties;
     private final AfterMarketCloseCoordinator afterMarketCloseCoordinator;
+    private final MarketTimeChecker marketTimeChecker;
 
     @Scheduled(cron = "0 5 20 * * MON-FRI", zone = "Asia/Seoul")
     public void runAfterMarketCloseJob() {
+
+        if (marketTimeChecker.isTodayHoliday()) {
+            log.info("[AfterMarketCloseJob] Today is a registered holiday. Skip.");
+            return;
+        }
 
         if (!afterMarketCloseLock.acquire()) {
             log.info("[AfterMarketCloseJob] Another instance already running after-market close job.");

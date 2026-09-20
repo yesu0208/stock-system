@@ -2,6 +2,7 @@ package arile.toy.stocksystem.accountserver.leverage.scheduler;
 
 import arile.toy.stocksystem.accountserver.leverage.publisher.InterestAppliedPublisher;
 import arile.toy.stocksystem.accountserver.leverage.service.LeverageDailyBatchService;
+import arile.toy.stocksystem.accountserver.market.holiday.HolidayRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.LocalDate;
 
 @Component
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class DailyLeverageBatchScheduler {
     private final StringRedisTemplate redisTemplate;
     private final LeverageDailyBatchService leverageDailyBatchService;
     private final InterestAppliedPublisher interestAppliedPublisher;
+    private final HolidayRegistry holidayRegistry;
 
     /**
      * DailyRankBatchScheduler(15:50)보다 먼저 실행
@@ -32,6 +35,11 @@ public class DailyLeverageBatchScheduler {
      */
     @Scheduled(cron = "0 45 15 * * MON-FRI", zone = "Asia/Seoul")
     public void run() {
+
+        if (holidayRegistry.isHoliday(LocalDate.now())) {
+            log.info("[LeverageDailyBatch] Today is a registered holiday. Skip.");
+            return;
+        }
 
         if (!acquireLock()) {
             log.info("[LeverageDailyBatch] Another instance already running.");
