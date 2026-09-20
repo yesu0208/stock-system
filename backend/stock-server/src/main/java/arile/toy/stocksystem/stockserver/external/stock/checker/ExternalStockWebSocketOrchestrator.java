@@ -43,12 +43,14 @@ public class ExternalStockWebSocketOrchestrator {
 
     @Scheduled(cron = "35 49 8 ? * MON-FRI", zone = "Asia/Seoul")
     public void preConnectBeforeMorningCall() {
+        if (marketTimeChecker.isTodayHoliday()) return;
         log.info("Pre-connect before morning call (30s buffer)");
         connectAndSubscribeIfNeeded();
     }
 
     @Scheduled(cron = "5 50 8 ? * MON-FRI", zone = "Asia/Seoul")
     public void connectAtMorningCall() {
+        if (marketTimeChecker.isTodayHoliday()) return;
         log.info("Morning call trigger");
         connectAndSubscribeIfNeeded();
         marketPhaseService.openMorningCall();
@@ -57,12 +59,14 @@ public class ExternalStockWebSocketOrchestrator {
 
     @Scheduled(cron = "0 0 9 ? * MON-FRI", zone = "Asia/Seoul")
     public void openRegularMarket() {
+        if (marketTimeChecker.isTodayHoliday()) return;
         marketPhaseService.openRegularMarket();
         globalMarketPhasePublisher.publish(StockServerMarketPhase.OPEN);
     }
 
     @Scheduled(cron = "0 20 15 ? * MON-FRI", zone = "Asia/Seoul")
     public void openClosingCall() {
+        if (marketTimeChecker.isTodayHoliday()) return;
         marketPhaseService.openClosingCall();
         globalMarketPhasePublisher.publish(StockServerMarketPhase.CLOSING_CALL);
     }
@@ -70,16 +74,19 @@ public class ExternalStockWebSocketOrchestrator {
 
     @Scheduled(cron = "0 30 15 ? * MON-FRI", zone = "Asia/Seoul")
     public void publishClosedAtSessionEnd() {
+        if (marketTimeChecker.isTodayHoliday()) return;
         globalMarketPhasePublisher.publish(StockServerMarketPhase.CLOSED);
     }
 
     @Scheduled(cron = "0 38 15 ? * MON-FRI", zone = "Asia/Seoul")
     public void closeRegularMarket() {
+        if (marketTimeChecker.isTodayHoliday()) return;
         marketPhaseService.closeScheduledOpenMarkets();
     }
 
     @Scheduled(cron = "5 0 16 ? * MON-FRI", zone = "Asia/Seoul")
     public void openAfterMarket() {
+        if (marketTimeChecker.isTodayHoliday()) return;
         log.info("After-market trigger");
         connectAndSubscribeIfNeeded();
         marketPhaseService.openAfterMarket();
@@ -98,6 +105,7 @@ public class ExternalStockWebSocketOrchestrator {
 
     @Scheduled(cron = "0 0 20 ? * MON-FRI", zone = "Asia/Seoul")
     public void disconnectAtAfterMarketClose() {
+        if (marketTimeChecker.isTodayHoliday()) return;
         externalStockWebSocketClient.disconnect();
         marketPhaseService.closeAllMarkets();
         globalMarketPhasePublisher.publish(StockServerMarketPhase.CLOSED);
