@@ -15,7 +15,9 @@ public record OrderDto(
         Integer remainingQuantity,
         OrderStatus orderStatus,
         Instant orderTime,
-        OrderExecutionType orderExecutionType
+        OrderExecutionType orderExecutionType,
+        OrderOrigin origin,
+        Long originId
 ) {
     public static OrderDto fromEntity(OrderEntity orderEntity) {
         return new OrderDto(orderEntity.getOrderId(),
@@ -28,6 +30,8 @@ public record OrderDto(
                 orderEntity.getRemainingQuantity(),
                 orderEntity.getOrderStatus(),
                 orderEntity.getOrderTime(),
-                orderEntity.getOrderExecutionType());
+                orderEntity.getOrderExecutionType(),
+                orderEntity.getOrigin(),
+                orderEntity.getOriginId());
     }
 }

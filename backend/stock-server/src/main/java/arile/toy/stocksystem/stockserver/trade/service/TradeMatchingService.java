@@ -175,7 +175,9 @@ public class TradeMatchingService {
                             remainingQuantity,
                             OrderStatus.PARTIAL,
                             order.orderTime(),
-                            order.orderExecutionType()
+                            order.orderExecutionType(),
+                            order.origin(),
+                            order.originId()
                     )
             );
         }
@@ -199,7 +201,9 @@ public class TradeMatchingService {
                             order.orderQuantity(),
                             remainingQuantity,
                             order.orderTime(),
-                            order.orderExecutionType()
+                            order.orderExecutionType(),
+                            order.origin(),
+                            order.originId()
                     )
             );
         }
