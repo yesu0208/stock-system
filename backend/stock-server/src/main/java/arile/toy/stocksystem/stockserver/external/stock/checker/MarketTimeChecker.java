@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -77,5 +78,13 @@ public class MarketTimeChecker {
 
         LocalTime time = now.toLocalTime();
         return !time.isBefore(CLOSING_CALL_END) && time.isBefore(AFTER_START);
+    }
+
+    public boolean isHoliday(LocalDate date) {
+        return marketHolidayRepository.existsByHolidayDate(date);
+    }
+
+    public boolean isTodayHoliday() {
+        return isHoliday(LocalDate.now(KST));
     }
 }
