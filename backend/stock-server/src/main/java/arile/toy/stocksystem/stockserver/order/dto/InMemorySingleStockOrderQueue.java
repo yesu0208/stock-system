@@ -2,6 +2,7 @@ package arile.toy.stocksystem.stockserver.order.dto;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -73,5 +74,15 @@ public class InMemorySingleStockOrderQueue implements SingleStockOrderQueue {
         boolean removedBuy = buyQueue.removeIf(o -> o.orderId().equals(orderId));
         boolean removedSell = sellQueue.removeIf(o -> o.orderId().equals(orderId));
         return removedBuy || removedSell;
+    }
+
+    @Override
+    public List<OrderDto> snapshotRanked(OrderType orderType) {
+        PriorityBlockingQueue<OrderDto> queue = orderType == OrderType.BUY ? buyQueue : sellQueue;
+        Comparator<OrderDto> comparator = orderType == OrderType.BUY ? BUY_ORDER : SELL_ORDER;
+
+        OrderDto[] snapshot = queue.toArray(new OrderDto[0]);
+        Arrays.sort(snapshot, comparator);
+        return Arrays.asList(snapshot);
     }
 }
