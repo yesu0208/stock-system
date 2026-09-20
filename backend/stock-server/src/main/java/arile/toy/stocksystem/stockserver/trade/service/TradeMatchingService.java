@@ -7,6 +7,7 @@ import arile.toy.stocksystem.stockserver.order.dto.OrderQueueRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.OrderStatus;
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
+import arile.toy.stocksystem.stockserver.order.service.QueuePositionBroadcastService;
 import arile.toy.stocksystem.stockserver.trade.event.TradeResponseEvent;
 import arile.toy.stocksystem.stockserver.trade.event.publisher.TradeResponseEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class TradeMatchingService {
     private final TradeExecutionService tradeExecutionService;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final TradeResponseEventPublisher tradeResponseEventPublisher;
+    private final QueuePositionBroadcastService queuePositionBroadcastService;
 
     public void getExternalTickMessageAndTrade(TradePriceTickMessage tradePriceTickMessage) {
         ReentrantLock lock = stockLockRegistry.lock(tradePriceTickMessage.stockCode());
@@ -207,5 +209,7 @@ public class TradeMatchingService {
                     )
             );
         }
+
+        queuePositionBroadcastService.broadcast(order.stockCode(), order.orderType());
     }
 }

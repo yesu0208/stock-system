@@ -22,6 +22,7 @@ public class OrderService {
     private final OrderResponseEventPublisher orderResponseEventPublisher;
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final AccountApiClient accountApiClient;
+    private final QueuePositionBroadcastService queuePositionBroadcastService;
 
     public OrderEntity registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
 
@@ -70,6 +71,7 @@ public class OrderService {
 
             var orderDto = OrderDto.fromEntity(savedOrder);
             orderQueueRegistry.orderEnqueue(orderDto);
+            queuePositionBroadcastService.broadcast(orderDto.stockCode(), orderDto.orderType());
 
         } catch (Exception e) {
             if (!fromAutoOrder) {
