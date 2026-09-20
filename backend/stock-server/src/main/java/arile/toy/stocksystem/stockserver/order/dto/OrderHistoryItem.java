@@ -18,7 +18,9 @@ public record OrderHistoryItem(
         Long initialMargin,
         Double maintenanceMarginRate,
         Long liquidationPrice,
-        OrderExecutionType orderExecutionType
+        OrderExecutionType orderExecutionType,
+        OrderOrigin origin,
+        Long originId
 ) {
     private static final double MAINTENANCE_RATIO = 1.4;
 
@@ -46,7 +48,9 @@ public record OrderHistoryItem(
                 entity.getOrderPrice(), entity.getOrderQuantity(), entity.getRemainingQuantity(),
                 entity.getOrderStatus(), entity.getOrderTime(),
                 notionalValue, initialMargin, maintenanceMarginRate, liquidationPrice,
-                entity.getOrderExecutionType()
+                entity.getOrderExecutionType(),
+                entity.getOrigin(),
+                entity.getOriginId()
         );
     }
 }

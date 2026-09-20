@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.stockserver.trade.dto;
 
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.dto.OrderOrigin;
 import arile.toy.stocksystem.stockserver.trade.entity.TradeEntity;
 
 import java.time.Instant;
@@ -17,7 +18,9 @@ public record TradeHistoryItem(
         Long notionalValue,
         Long initialMargin,
         Double maintenanceMarginRate,
-        Long liquidationPrice
+        Long liquidationPrice,
+        OrderOrigin origin,
+        Long originId
 ) {
     private static final double MAINTENANCE_RATIO = 1.4;
 
@@ -43,7 +46,9 @@ public record TradeHistoryItem(
         return new TradeHistoryItem(
                 entity.getTradeId(), entity.getOrderId(), entity.getStockCode(), entity.getTradeType(),
                 entity.getTradePrice(), entity.getTradeQuantity(), entity.getExecutedAt(),
-                leverageRatio, notionalValue, initialMargin, maintenanceMarginRate, liquidationPrice
+                leverageRatio, notionalValue, initialMargin, maintenanceMarginRate, liquidationPrice,
+                entity.getOrigin(),
+                entity.getOriginId()
         );
     }
 }

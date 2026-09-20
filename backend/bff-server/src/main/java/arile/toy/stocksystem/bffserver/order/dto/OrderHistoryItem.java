@@ -18,6 +18,8 @@ public record OrderHistoryItem(
         Long initialMargin,
         Double maintenanceMarginRate,
         Long liquidationPrice,
-        OrderExecutionType orderExecutionType
+        OrderExecutionType orderExecutionType,
+        OrderOrigin origin,
+        Long originId
 ) {
 }

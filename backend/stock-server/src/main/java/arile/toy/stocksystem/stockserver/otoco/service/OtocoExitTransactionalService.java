@@ -36,7 +36,7 @@ public class OtocoExitTransactionalService {
 
         Integer exitPrice = leg == OtocoLeg.TAKE_PROFIT ? entity.getTpTriggerPrice() : entity.getSlTriggerPrice();
 
-        StockServerOrderRequestEvent event = StockServerOrderRequestEvent.fromOtocoExit(dto, exitPrice);
+        StockServerOrderRequestEvent event = StockServerOrderRequestEvent.fromOtocoExit(dto, exitPrice, leg);
 
         try {
             orderService.registerOrder(event, true);

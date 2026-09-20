@@ -62,7 +62,9 @@ public class OrderService {
                     request.orderQuantity(),
                     OrderStatus.OPEN,
                     request.orderQuantity(),
-                    request.orderExecutionType()
+                    request.orderExecutionType(),
+                    request.origin(),
+                    request.originId()
             );
             savedOrder = orderRepository.save(orderEntity);
 
@@ -87,11 +89,12 @@ public class OrderService {
             throw e;
         }
 
-        var orderResponseMessage = new StockServerOrderResponseMessage(savedOrder.getOrderId(),
+        var orderResponseMessage = StockServerOrderResponseMessage.of(savedOrder.getOrderId(),
                 savedOrder.getUsername(), savedOrder.getStockCode(),
                 savedOrder.getOrderType(), savedOrder.getLeverageRatio(), savedOrder.getOrderPrice(),
                 savedOrder.getOrderQuantity(), savedOrder.getRemainingQuantity(),
-                savedOrder.getOrderTime(), savedOrder.getOrderExecutionType());
+                savedOrder.getOrderTime(), savedOrder.getOrderExecutionType(),
+                savedOrder.getOrigin(), savedOrder.getOriginId());
 
         stockServerOrderResponseRepository.save(orderResponseMessage);
         orderResponseEventPublisher.publish(orderResponseMessage);
