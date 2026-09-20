@@ -13,8 +13,16 @@
     font-family: var(--font-base);
     color: var(--color-text-primary);
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex: 1;
+}
+
+.lom__body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 }
 
 .lom__message {

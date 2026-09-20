@@ -128,8 +128,8 @@
 }
 
 .modal-v2-box.logout-modal {
-    width: 240px;
-    height: 140px;
+    width: 260px;
+    height: 160px;
     display: flex;
     flex-direction: column;
 }
