@@ -10,6 +10,7 @@ import arile.toy.stocksystem.bffserver.cancel.event.subscriber.RedisCancelRespon
 import arile.toy.stocksystem.bffserver.leverage.event.subscriber.RedisLiquidationEventSubscriber;
 import arile.toy.stocksystem.bffserver.leverage.event.subscriber.RedisMarginCallEventSubscriber;
 import arile.toy.stocksystem.bffserver.order.event.subscriber.RedisOrderResponseEventSubscriber;
+import arile.toy.stocksystem.bffserver.order.event.subscriber.RedisQueuePositionEventSubscriber;
 import arile.toy.stocksystem.bffserver.otoco.event.subscriber.RedisOtocoResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.otococancel.event.subscriber.RedisOtocoCancelResponseEventSubscriber;
 import arile.toy.stocksystem.bffserver.trade.event.subscriber.RedisTradeResponseEventSubscriber;
@@ -50,6 +51,7 @@ public class UserRedisSubscriptionRegistry {
     private final RedisAlertResponseEventSubscriber alertSubscriber;
     private final RedisAlertCancelResponseEventSubscriber alertCancelSubscriber;
     private final RedisAlertFiredEventSubscriber alertFiredSubscriber;
+    private final RedisQueuePositionEventSubscriber queuePositionSubscriber;
 
     private final ConcurrentHashMap<String, AtomicInteger> userRefCount = new ConcurrentHashMap<>();
 
@@ -231,6 +233,14 @@ public class UserRedisSubscriptionRegistry {
                 new RedisSubscription(
                         new ChannelTopic(UserEventType.ALERT_FIRED.channel(username)),
                         alertFiredSubscriber
+                )
+        );
+
+        map.put(
+                UserEventType.QUEUE_POSITION,
+                new RedisSubscription(
+                        new ChannelTopic(UserEventType.QUEUE_POSITION.channel(username)),
+                        queuePositionSubscriber
                 )
         );
 
