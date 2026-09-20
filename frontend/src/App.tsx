@@ -19,6 +19,7 @@ import {StockRealtimeProvider} from "./main/context/StockRealtimeContext.tsx";
 import {OrderPriceProvider} from "./main/context/OrderPriceContext.tsx";
 import { PendingOrderProvider } from './main/context/PendingOrderContext'
 import { MarketPhaseProvider } from './main/context/MarketPhaseContext'
+import MarketEventsListener from './main/components/MarketEventsListener'
 
 /**
  * RealtimeProvider / MarketDataProvider를 isLoggedIn 분기
@@ -48,6 +49,7 @@ export default function App() {
                             )
                         ) : (
                             <UserProvider>
+                                <MarketEventsListener />
                                 <StockProvider>
                                     <StockRealtimeProvider>
                                         <OrderPriceProvider>
