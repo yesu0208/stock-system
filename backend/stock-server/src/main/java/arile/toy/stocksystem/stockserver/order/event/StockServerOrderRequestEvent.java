@@ -3,8 +3,10 @@ package arile.toy.stocksystem.stockserver.order.event;
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderDto;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.order.dto.OrderExecutionType;
+import arile.toy.stocksystem.stockserver.order.dto.OrderOrigin;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoDto;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoLeg;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.TrailingStopDto;
 
 public record StockServerOrderRequestEvent(
@@ -14,16 +16,17 @@ public record StockServerOrderRequestEvent(
         Integer orderPrice,
         Integer orderQuantity,
         LeverageRatio leverageRatio,
-        OrderExecutionType orderExecutionType
+        OrderExecutionType orderExecutionType,
+        OrderOrigin origin,
+        Long originId // autoOrderId / otocoId / trailingStopId. MANUAL이면 null
 ) {
     public static StockServerOrderRequestEvent of(String username, String stockCode, OrderType orderType,
                                                   Integer orderPrice, Integer orderQuantity, LeverageRatio leverageRatio,
                                                   OrderExecutionType orderExecutionType) {
         return new StockServerOrderRequestEvent(username, stockCode, orderType, orderPrice, orderQuantity,
-                leverageRatio, orderExecutionType);
+                leverageRatio, orderExecutionType, OrderOrigin.MANUAL, null);
     }
 
-    // 자동주문/트레일링스탑/OTOCO는 트리거된 시점의 지정가 체결로 취급 — LIMIT 고정
     public static StockServerOrderRequestEvent fromAutoOrderDto(AutoOrderDto autoOrderDto) {
         return new StockServerOrderRequestEvent(
                 autoOrderDto.username(),
@@ -32,7 +35,9 @@ public record StockServerOrderRequestEvent(
                 autoOrderDto.orderPrice(),
                 autoOrderDto.orderQuantity(),
                 autoOrderDto.leverageRatio(),
-                OrderExecutionType.LIMIT
+                OrderExecutionType.LIMIT,
+                OrderOrigin.AUTO_ORDER,
+                autoOrderDto.autoOrderId()
         );
     }
 
@@ -44,7 +49,9 @@ public record StockServerOrderRequestEvent(
                 trailingStopDto.triggerPrice(),
                 trailingStopDto.orderQuantity(),
                 trailingStopDto.leverageRatio(),
-                OrderExecutionType.LIMIT
+                OrderExecutionType.LIMIT,
+                OrderOrigin.TRAILING_STOP,
+                trailingStopDto.trailingStopId()
         );
     }
 
@@ -56,11 +63,16 @@ public record StockServerOrderRequestEvent(
                 otocoDto.entryTriggerPrice(),
                 otocoDto.orderQuantity(),
                 otocoDto.leverageRatio(),
-                OrderExecutionType.LIMIT
+                OrderExecutionType.LIMIT,
+                OrderOrigin.OTOCO_ENTRY,
+                otocoDto.otocoId()
         );
     }
 
-    public static StockServerOrderRequestEvent fromOtocoExit(OtocoDto otocoDto, Integer exitPrice) {
+    // OtocoLeg를 파라미터로 받아 익절/손절 구분
+    public static StockServerOrderRequestEvent fromOtocoExit(OtocoDto otocoDto, Integer exitPrice, OtocoLeg leg) {
+        OrderOrigin origin = leg == OtocoLeg.TAKE_PROFIT ? OrderOrigin.OTOCO_TAKE_PROFIT : OrderOrigin.OTOCO_STOP_LOSS;
+
         return new StockServerOrderRequestEvent(
                 otocoDto.username(),
                 otocoDto.stockCode(),
@@ -68,7 +80,9 @@ public record StockServerOrderRequestEvent(
                 exitPrice,
                 otocoDto.orderQuantity(),
                 otocoDto.leverageRatio(),
-                OrderExecutionType.LIMIT
+                OrderExecutionType.LIMIT,
+                origin,
+                otocoDto.otocoId()
         );
     }
 }
