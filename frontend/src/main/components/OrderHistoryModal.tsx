@@ -85,6 +85,31 @@ function MarginCell({ notionalValue, initialMargin }: { notionalValue: number | 
     );
 }
 
+const ORIGIN_LABEL: Record<string, string> = {
+    OTOCO_ENTRY: "OTOCO 진입",
+    OTOCO_TAKE_PROFIT: "OTOCO 익절",
+    OTOCO_STOP_LOSS: "OTOCO 손절",
+    TRAILING_STOP: "트레일링",
+    AUTO_ORDER: "자동주문",
+};
+
+const ORIGIN_CLASS: Record<string, string> = {
+    OTOCO_ENTRY: "origin-otoco",
+    OTOCO_TAKE_PROFIT: "origin-otoco-tp",
+    OTOCO_STOP_LOSS: "origin-otoco-sl",
+    TRAILING_STOP: "origin-trailing",
+    AUTO_ORDER: "origin-auto",
+};
+
+function OriginBadge({ origin }: { origin?: string | null }) {
+    if (!origin || origin === "MANUAL") return null;
+    return (
+        <span className={`oh-origin-badge ${ORIGIN_CLASS[origin] ?? ""}`}>
+            {ORIGIN_LABEL[origin] ?? origin}
+        </span>
+    );
+}
+
 interface SearchFilter {
     stockCode: string;
     dateFrom: string;
@@ -499,6 +524,7 @@ export default function OrderHistoryModal() {
                                     const sideClass = side === "BUY" ? "bar--buy" : "bar--sell";
                                     const { time } = formatTimeParts(item.orderTime);
                                     const selected = selectedIds.has(key);
+                                    const origin = !auto ? (item as OrderHistoryItem).origin : null;
 
                                     return (
                                         <li
@@ -523,6 +549,7 @@ export default function OrderHistoryModal() {
                                                 </div>
 
                                                 <div className="oh-pending-item__top">
+                                                    <OriginBadge origin={origin} />
                                                     <span className={`oh-pending-item__badge ${side === "BUY" ? "badge--buy" : "badge--sell"}`}>
                                                         {side === "BUY" ? "매수" : "매도"}
                                                     </span>
@@ -590,6 +617,7 @@ export default function OrderHistoryModal() {
                                                 <span className="oh-col oh-name">
                                                     <span className="oh-stock-name">{stockName}</span>
                                                     <span className="oh-stock-code">{stockCode}</span>
+                                                    <OriginBadge origin={item.origin} />
                                                 </span>
                                                 <span className={`oh-col oh-side ${item.tradeType === "BUY" ? "buy" : "sell"}`}>
                                                     {item.tradeType === "BUY" ? "매수" : "매도"}
@@ -606,6 +634,7 @@ export default function OrderHistoryModal() {
                                     const id = auto ? item.autoOrderId : (item as OrderHistoryItem).orderId;
                                     const side = auto ? item.autoOrderType : (item as OrderHistoryItem).orderType;
                                     const time = item.orderTime;
+                                    const origin = !auto ? (item as OrderHistoryItem).origin : null;
 
                                     return (
                                         <li key={`${auto ? "auto" : "order"}-${id}`} className={`oh-item ${gridClass}`}>
@@ -613,6 +642,7 @@ export default function OrderHistoryModal() {
                                             <span className="oh-col oh-name">
                                                 <span className="oh-stock-name">{stockName}</span>
                                                 <span className="oh-stock-code">{stockCode}</span>
+                                                <OriginBadge origin={origin} />
                                             </span>
                                             <span className={`oh-col oh-side ${side === "BUY" ? "buy" : "sell"}`}>
                                                 {side === "BUY" ? "매수" : "매도"}

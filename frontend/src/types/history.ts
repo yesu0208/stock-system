@@ -8,6 +8,14 @@ export interface HistoryPageResponse<T> {
 
 export type OrderStatus = 'OPEN' | 'PARTIAL' | 'FILLED' | 'CANCELED'
 
+export type OrderOrigin =
+    | 'MANUAL'
+    | 'AUTO_ORDER'
+    | 'OTOCO_ENTRY'
+    | 'OTOCO_TAKE_PROFIT'
+    | 'OTOCO_STOP_LOSS'
+    | 'TRAILING_STOP'
+
 export interface OrderHistoryItem {
     orderId: number
     stockCode: string
@@ -23,6 +31,8 @@ export interface OrderHistoryItem {
     maintenanceMarginRate: number | null
     liquidationPrice: number | null
     orderExecutionType: 'MARKET' | 'LIMIT'
+    origin: OrderOrigin
+    originId: number | null
 }
 
 export interface TradeHistoryItem {
@@ -38,6 +48,8 @@ export interface TradeHistoryItem {
     initialMargin: number | null
     maintenanceMarginRate: number | null
     liquidationPrice: number | null
+    origin: OrderOrigin
+    originId: number | null
 }
 
 export type AutoOrderStatus = 'ACTIVE' | 'TRIGGERED' | 'CANCELED'
