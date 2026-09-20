@@ -287,3 +287,12 @@
     color: var(--toc-text-sub);
     text-decoration-color: var(--toc-text-sub);
 }
+
+.toc__btn {
+    outline: none;
+}
+
+.toc__btn:focus,
+.toc__btn:focus-visible {
+    outline: none;
+}

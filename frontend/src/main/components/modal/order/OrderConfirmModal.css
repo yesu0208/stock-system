@@ -275,3 +275,12 @@
 
 .ocm__row-value--profit { color: var(--color-buy); }
 .ocm__row-value--loss   { color: var(--color-sell); }
+
+.ocm__btn {
+    outline: none;
+}
+
+.ocm__btn:focus,
+.ocm__btn:focus-visible {
+    outline: none;
+}

@@ -2392,3 +2392,39 @@
     background: rgba(34, 192, 122, 0.1);
     border-color: rgba(34, 192, 122, 0.25);
 }
+
+.adv-order__order-panel .ratio-btn,
+.adv-order__order-panel .stepper__btn,
+.adv-order__order-panel .leverage-btn,
+.adv-order__order-panel .order-btn,
+.otoco-direction-btn,
+.otoco-mode-btn,
+.ao-scenario__option,
+.ao-info__mode-tab,
+.ao-pending-card__cancel,
+.ao-pending__cancel-btn {
+    outline: none;
+}
+
+.adv-order__order-panel .ratio-btn:focus,
+.adv-order__order-panel .ratio-btn:focus-visible,
+.adv-order__order-panel .stepper__btn:focus,
+.adv-order__order-panel .stepper__btn:focus-visible,
+.adv-order__order-panel .leverage-btn:focus,
+.adv-order__order-panel .leverage-btn:focus-visible,
+.adv-order__order-panel .order-btn:focus,
+.adv-order__order-panel .order-btn:focus-visible,
+.otoco-direction-btn:focus,
+.otoco-direction-btn:focus-visible,
+.otoco-mode-btn:focus,
+.otoco-mode-btn:focus-visible,
+.ao-scenario__option:focus,
+.ao-scenario__option:focus-visible,
+.ao-info__mode-tab:focus,
+.ao-info__mode-tab:focus-visible,
+.ao-pending-card__cancel:focus,
+.ao-pending-card__cancel:focus-visible,
+.ao-pending__cancel-btn:focus,
+.ao-pending__cancel-btn:focus-visible {
+    outline: none;
+}
