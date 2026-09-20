@@ -4,15 +4,11 @@ import "./Header.css";
 import { FiBell, FiHelpCircle, FiLogOut } from "react-icons/fi";
 import { useToast } from "../context/ToastContext";
 import { useUser } from "../context/UserContext";
+import { useMarketPhase, getPhaseColor } from "../context/MarketPhaseContext";
 import HelpModal from "./HelpModal";
 import LogoutModal from "./LogoutModal";
 import ManagedModal from "./ManagedModal";
 import Tooltip from "../../tooltip/Tooltip";
-
-type MarketStatus = {
-    label: string;
-    color: "green" | "yellow" | "gray";
-};
 
 interface Props {
     onLogout: () => void;
@@ -21,10 +17,12 @@ interface Props {
 export default function Header({ onLogout }: Props) {
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
-    const [market, setMarket] = useState<MarketStatus>({
-        label: "휴장",
-        color: "gray",
-    });
+
+    const { phase, label } = useMarketPhase();
+    const market = {
+        label: label ?? "확인 중",
+        color: getPhaseColor(phase),
+    };
 
     const { isVisible, toggleVisible, toastCount } = useToast();
 
@@ -39,8 +37,7 @@ export default function Header({ onLogout }: Props) {
         const updateTime = () => {
             const now = new Date();
 
-            const day = now.getDay(); // 0=일, 6=토
-            const minutes = now.getHours() * 60 + now.getMinutes();
+            const day = now.getDay();
 
             const dateStr =
                 `${now.getFullYear()}년 ` +
@@ -53,23 +50,8 @@ export default function Header({ onLogout }: Props) {
                 `${String(now.getMinutes()).padStart(2, "0")}:` +
                 `${String(now.getSeconds()).padStart(2, "0")}`;
 
-            let marketStatus: MarketStatus;
-
-            if (day === 0 || day === 6) {
-                marketStatus = { label: "휴장", color: "gray" };
-            } else if (minutes >= 510 && minutes < 540) {
-                marketStatus = { label: "동시호가", color: "yellow" };
-            } else if (minutes >= 540 && minutes < 920) {
-                marketStatus = { label: "개장", color: "green" };
-            } else if (minutes >= 920 && minutes < 930) {
-                marketStatus = { label: "동시호가", color: "yellow" };
-            } else {
-                marketStatus = { label: "휴장", color: "gray" };
-            }
-
             setDate(dateStr);
             setTime(timeStr);
-            setMarket(marketStatus);
         };
 
         updateTime();
