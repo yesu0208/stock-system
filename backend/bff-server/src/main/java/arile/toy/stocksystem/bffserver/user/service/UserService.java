@@ -10,11 +10,13 @@ import arile.toy.stocksystem.bffserver.user.dto.*;
 import arile.toy.stocksystem.bffserver.user.entity.UserEntity;
 import arile.toy.stocksystem.bffserver.user.event.UserCreatedEvent;
 import arile.toy.stocksystem.bffserver.user.event.publisher.UserCreatedEventPublisher;
+import arile.toy.stocksystem.bffserver.user.notifier.SlackNotifier;
 import arile.toy.stocksystem.bffserver.user.repository.UserRepository;
 import arile.toy.stocksystem.bffserver.user.storage.ProfileImageStorage;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,6 +28,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
@@ -34,6 +37,7 @@ public class UserService implements UserDetailsService {
     private final UserCreatedEventPublisher userCreatedEventPublisher;
     private final RefreshTokenRepository refreshTokenRepository;
     private final ProfileImageStorage profileImageStorage;
+    private final SlackNotifier slackNotifier;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UserNotFoundException {
@@ -65,6 +69,12 @@ public class UserService implements UserDetailsService {
         );
 
         userCreatedEventPublisher.publishUserCreatedEvent(UserCreatedEvent.of(userEntity.getUsername()));
+
+        try {
+            slackNotifier.notifySignUp(userEntity.getUsername(), userEntity.getNickname(), userEntity.getCreatedDateTime());
+        } catch (Exception e) {
+            log.warn("회원가입 Slack 알림 전송 실패. username={}", userEntity.getUsername(), e);
+        }
 
         return UserDto.fromEntity(userEntity);
     }
