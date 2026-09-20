@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRealtime } from './RealtimeContext'
+import instance from '../../api/axios'
 
 export type MarketPhase = 'MORNING_CALL' | 'OPEN' | 'CLOSING_CALL' | 'AFTER' | 'CLOSED'
 
@@ -28,12 +29,31 @@ export function getPhaseColor(phase: MarketPhase | null): 'green' | 'yellow' | '
     }
 }
 
+const PHASE_LABEL: Record<MarketPhase, string> = {
+    MORNING_CALL: '개장 동시호가',
+    OPEN: '정규장',
+    CLOSING_CALL: '마감 동시호가',
+    AFTER: '애프터마켓',
+    CLOSED: '장마감',
+}
+
 const MarketPhaseContext = createContext<MarketPhaseContextValue | null>(null)
 
 export function MarketPhaseProvider({ children }: { children: ReactNode }) {
     const [phase, setPhase] = useState<MarketPhase | null>(null)
     const [label, setLabel] = useState<string | null>(null)
     const { subscribeDestination } = useRealtime()
+
+    useEffect(() => {
+        instance
+            .get<{ phase: MarketPhase }>('/market/phase')
+            .then((res) => {
+                const p = res.data.phase
+                setPhase(p)
+                setLabel(PHASE_LABEL[p])
+            })
+            .catch((e) => console.error('초기 장 상태 조회 실패', e))
+    }, [])
 
     useEffect(() => {
         return subscribeDestination('/sub/market/phase', (data: MarketPhaseMessage) => {
