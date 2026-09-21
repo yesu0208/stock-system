@@ -21,6 +21,7 @@ import type { AutoCancelResultResponse } from "../../types/autoCancel";
 import type { TradeResponse } from "../../types/trade";
 import type { TrailingStopResultResponse, TrailingStopCancelResultResponse } from "../../types/trailingStop";
 import type { OtocoResultResponse, OtocoCancelResultResponse } from "../../types/otoco";
+import { calculateFee } from "../../utils/fee";
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -501,8 +502,10 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 setQuantity(0);
                 return;
             }
-            const budgetAmount = (account?.availableCash ?? 0) * (isCredit ? leverage : 1);
-            const affordableQty = Math.floor((budgetAmount * ratio) / effectivePrice);
+
+            const divisor = isCredit ? (1 / leverage + 0.00015) : (1 + 0.00015);
+            const budget = (account?.availableCash ?? 0) * ratio;
+            const affordableQty = Math.floor(budget / (effectivePrice * divisor));
             setQuantity(clampQuantity(affordableQty));
         } else {
             setQuantity(clampQuantity(Math.floor(sellAvailableQty * ratio)));
@@ -704,7 +707,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
                 <div className="summary__row">
                     <span className="summary__label">
-                        예상금액
+                        {isBuy ? "주문금액" : "예상금액"}
                         <LeverageTag leverage={isCredit ? leverage : 1} />
                     </span>
                     <span className="summary__value">
@@ -722,6 +725,29 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                         )}
                     </span>
                 </div>
+
+                {isBuy && (
+                    <div className="summary__row">
+                        <span className="summary__label">
+                            필요금액
+                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                        </span>
+                        <span className="summary__value">
+                            {showEstimatedBeforeAfter ? (
+                                <>
+                                    <span className="summary__value--after">
+                                        {(estimatedAmountAfter + calculateFee(estimatedAmountRaw)).toLocaleString()} 원
+                                    </span>
+                                    <span className="summary__value--before">
+                                        {(estimatedAmountRaw + calculateFee(estimatedAmountRaw)).toLocaleString()} 원
+                                    </span>
+                                </>
+                            ) : (
+                                `${(estimatedAmountAfter + calculateFee(estimatedAmountRaw)).toLocaleString()} 원`
+                            )}
+                        </span>
+                    </div>
+                )}
 
                 {!isBuy && (
                     <div className="summary__row">
