@@ -237,8 +237,12 @@ export default function TopBar() {
                         </button>
                     </Tooltip>
 
-                    <Tooltip text="알림 설정" placement="top">
-                        <button className={`icon ${bellOn ? "on" : ""}`} onClick={handleBellClick}>
+                    <Tooltip text={isRealtime ? "알림 설정" : "알림 미지원 종목"} placement="top">
+                        <button
+                            className={`icon ${bellOn ? "on" : ""}`}
+                            onClick={handleBellClick}
+                            disabled={!isRealtime}
+                        >
                             {bellOn ? <FaBell /> : <FaRegBell />}
                         </button>
                     </Tooltip>
