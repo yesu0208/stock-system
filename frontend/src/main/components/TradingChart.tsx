@@ -36,18 +36,6 @@ const AVG_PRICE_BUTTONS: { key: AvgPriceKey; label: string; color: string }[] = 
     { key: "X2_5", label: "2.5x", color: "#f87171" },
 ];
 
-function getAvgPrice(
-    key: AvgPriceKey,
-    account: { stocks: Record<string, { quantity: number; totalAmount: number }>; leveragePositions?: { stockCode: string; leverageRatio: string; quantity: number; purchaseAmount: number }[] } | null | undefined,
-    stockCode: string
-): number {
-    if (key === "CASH") {
-        const stockInfo = account?.stocks[stockCode];
-        return stockInfo && stockInfo.quantity > 0
-            ? Math.round(stockInfo.totalAmount / stockInfo.quantity)
-            : 0;
-    }
-
     const position = account?.leveragePositions?.find(
         (p) => p.stockCode === stockCode && p.leverageRatio === key
     );
@@ -78,9 +66,38 @@ export default function TradingChart() {
     const ma60Ref = useRef<any>(null);
     const ma120Ref = useRef<any>(null);
 
-    const avgPriceLineRef = useRef<any>(null);
+    const [activeAvgPrices, setActiveAvgPrices] = useState<Set<AvgPriceKey>>(new Set());
 
-    const [showAvgPrice, setShowAvgPrice] = useState(true);
+    const avgPriceLineRefs = useRef<Record<AvgPriceKey, any>>({
+        CASH: null,
+        X1_5: null,
+        X2: null,
+        X2_5: null,
+    });
+
+    function toggleAvgPrice(key: AvgPriceKey) {
+        setActiveAvgPrices((prev) => {
+            const next = new Set(prev);
+            next.has(key) ? next.delete(key) : next.add(key);
+            return next;
+        });
+    }
+
+    function getAvgPrice(key: AvgPriceKey): number {
+        if (key === "CASH") {
+            const stockInfo = account?.stocks[stockCode];
+            return stockInfo && stockInfo.quantity > 0
+                ? Math.round(stockInfo.totalAmount / stockInfo.quantity)
+                : 0;
+        }
+
+        const position = account?.leveragePositions?.find(
+            (p) => p.stockCode === stockCode && p.leverageRatio === key
+        );
+        return position && position.quantity > 0
+            ? Math.round(position.purchaseAmount / position.quantity)
+            : 0;
+    }
 
     const [timeframe, setTimeframe] = useState<"minute" | "day">("minute");
     const timeframeRef = useRef<"minute" | "day">("minute");
