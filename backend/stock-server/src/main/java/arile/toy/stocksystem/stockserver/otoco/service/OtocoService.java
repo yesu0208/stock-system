@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.stockserver.otoco.service;
 
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoDto;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoResultCode;
 import arile.toy.stocksystem.stockserver.otoco.dto.StockServerOtocoResponseMessage;
@@ -26,6 +27,7 @@ public class OtocoService {
     private final OtocoResponseEventPublisher otocoResponseEventPublisher;
     private final StockServerOtocoResponseRepository stockServerOtocoResponseRepository;
     private final AccountApiClient accountApiClient;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     public void registerOtoco(StockServerOtocoRequestEvent request) {
 
@@ -46,7 +48,7 @@ public class OtocoService {
         }
 
         long orderAmount = (long) request.entryTriggerPrice() * request.orderQuantity();
-        long reserveAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+        long reserveAmount = reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
 
         boolean reserved = accountApiClient.reserveCash(request.username(), reserveAmount);
         if (!reserved) {

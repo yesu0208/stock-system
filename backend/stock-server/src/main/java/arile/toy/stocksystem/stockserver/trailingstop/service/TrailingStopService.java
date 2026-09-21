@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.stockserver.trailingstop.service;
 
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.*;
 import arile.toy.stocksystem.stockserver.trailingstop.entity.TrailingStopEntity;
 import arile.toy.stocksystem.stockserver.trailingstop.event.StockServerTrailingStopRequestEvent;
@@ -24,6 +25,7 @@ public class TrailingStopService {
     private final TrailingStopResponseEventPublisher trailingStopResponseEventPublisher;
     private final StockServerTrailingStopResponseRepository stockServerTrailingStopResponseRepository;
     private final AccountApiClient accountApiClient;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     public void registerTrailingStop(StockServerTrailingStopRequestEvent request) {
 
@@ -37,7 +39,7 @@ public class TrailingStopService {
         if (request.trailingStopType() == TrailingStopType.BUY) {
 
             long orderAmount = (long) initialTriggerPrice * request.orderQuantity();
-            reserveAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+            reserveAmount = reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
 
             boolean reserved = accountApiClient.reserveCash(request.username(), reserveAmount);
             if (!reserved) {
