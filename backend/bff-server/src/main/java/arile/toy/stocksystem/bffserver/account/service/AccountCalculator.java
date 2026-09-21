@@ -26,6 +26,9 @@ public class AccountCalculator {
      *  이 값이 바뀌면 account-server 쪽도 함께 변경해야 한다. */
     private static final double MAINTENANCE_RATIO = 1.4; // 140%
 
+    private static final double FEE_RATE = 0.00015;
+    private static final double TAX_RATE = 0.0020;
+
     @Value("${account.initial-balance}")
     private long initialBalance;
 
@@ -35,6 +38,8 @@ public class AccountCalculator {
         long totalCash = snapshot.availableCash() + snapshot.reservedCash();
         long stockValue = 0L;
         long buyValue = 0L;
+        long costValueTotal = 0L;
+        long stockProfitTotal = 0L;
 
         Map<String, Double> profitRates = new HashMap<>();
         Map<String, Long> profitAmounts = new HashMap<>();
@@ -45,6 +50,7 @@ public class AccountCalculator {
             StockInfo stockInfo = entry.getValue();
             int quantity = stockInfo.quantity();
             long totalAmount = stockInfo.totalAmount();
+            long totalCostAmount = stockInfo.totalCostAmount();
 
             BffServerStockSummaryTickMessage summary = stockSummaryRepository.findByStockCode(stockCode);
             if (summary == null) {
@@ -60,18 +66,26 @@ public class AccountCalculator {
 
             buyValue += totalAmount;
 
-            long profitAmount = curStockValue - totalAmount;
-            double profitRate = totalAmount == 0 ? 0 : profitAmount * 100.0 / totalAmount;
+            // 평가손익 = 평가금액 - 매도비용(수수료+거래세) - 매입원금액
+            long sellCost = Math.round(curStockValue * (FEE_RATE + TAX_RATE));
+            long profitAmount = curStockValue - sellCost - totalCostAmount;
+            // 수익률 = 평가손익 / 매입원금액 (현물은 대출금이 없어 매입원금액 = 투입원금액)
+            double profitRate = totalCostAmount == 0 ? 0 : profitAmount * 100.0 / totalCostAmount;
 
             profitAmounts.put(stockCode, profitAmount);
             profitRates.put(stockCode, profitRate);
+
+            costValueTotal += totalCostAmount;
+            stockProfitTotal += profitAmount;
         }
 
         var leverageResult = calculateLeverage(snapshot.leveragePositions(), currentPrices);
 
         long totalValue = totalCash + stockValue + leverageResult.netValue();
-        long totalEquityValue = buyValue + leverageResult.equityTotal();
-        long totalProfit = stockValue - buyValue + leverageResult.profitTotal();
+        // 분모를 buyValue(순수 매입금액)가 아니라 costValueTotal(매입원금액)로 교체 — 개별 수익률 계산 기준과 일치시킴
+        long totalEquityValue = costValueTotal + leverageResult.equityTotal();
+        // stockValue - buyValue(수수료 미반영) 대신, 개별 profitAmount 합계(stockProfitTotal)를 그대로 합산
+        long totalProfit = stockProfitTotal + leverageResult.profitTotal();
         double totalProfitRate = totalEquityValue != 0 ? totalProfit * 100.0 / totalEquityValue : 0;
 
         long accumulatedProfit = totalValue - initialBalance;
