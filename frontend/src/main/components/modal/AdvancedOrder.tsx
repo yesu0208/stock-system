@@ -11,7 +11,7 @@ import MiniLineChart from "./advancedorder/MiniLineChart";
 import { useUser } from "../../context/UserContext";
 import type { RankTier } from "../../../types/rank";
 import { useMsg } from "../../context/MsgContext";
-import { calculateFee } from "../../../utils/fee";
+import { calculateFee, calculateSellCost } from "../../../utils/fee";
 
 import { AdvancedOrderProvider, useAdvancedOrders,
     type TrailingStopPendingOrder, type OtocoPendingOrder }
@@ -691,6 +691,8 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     const requiredAmountAfter = expectedAmountAfter + buyFee;
     const requiredAmountRaw   = expectedAmountRaw + buyFee;
 
+    const sellCost = !isBuy ? calculateSellCost(expectedAmountRaw) : 0;
+
     const holding = account?.stocks[selectedStock.code];
     const orderableAmount = account?.availableCash ?? 0;
     const holdingAvailableQty = holding?.availableQuantity ?? 0;
@@ -698,6 +700,16 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     const leveragePosition = account?.leveragePositions?.find(
         (p) => p.stockCode === selectedStock.code && p.leverageRatio === toLeverageRatio(leverage)
     );
+
+    const loanPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
+        ? leveragePosition.loanAmount / leveragePosition.quantity
+        : 0;
+
+    const sellAmountAfter = !isBuy
+        ? (isCredit
+            ? Math.max(0, Math.round(expectedAmountRaw - loanPerShare * quantity - sellCost))
+            : Math.max(0, Math.round(expectedAmountRaw - sellCost)))
+        : 0;
 
     const sellAvailableQty = isCredit
         ? (leveragePosition?.availableQuantity ?? 0)
@@ -710,16 +722,18 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
 
     const sellAvgBuyPrice = isCredit
         ? (leveragePosition && leveragePosition.quantity > 0
-            ? Math.round(leveragePosition.purchaseAmount / leveragePosition.quantity)
+            ? Math.round(leveragePosition.costAmount / leveragePosition.quantity)
             : 0)
         : (holding && holding.quantity > 0
-            ? Math.round(holding.totalAmount / holding.quantity)
+            ? Math.round(holding.totalCostAmount / holding.quantity)
             : 0);
 
-    const minProfitAmount = !isBuy ? (expectedFillPrice - sellAvgBuyPrice) * quantity : 0;
+    const minProfitAmount = !isBuy
+        ? (expectedFillPrice - sellAvgBuyPrice) * quantity - sellCost
+        : 0;
 
     const marginPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
-        ? leveragePosition.initialMargin / leveragePosition.quantity
+        ? (leveragePosition.costAmount - leveragePosition.loanAmount) / leveragePosition.quantity
         : sellAvgBuyPrice;
 
     const minProfitRate = minProfitAmount === 0
@@ -1006,17 +1020,30 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                             !isBuy ? "adv-order__summary-value--fill-sell" : ""
                         }`}
                     >
-                        {showEstimatedBeforeAfter ? (
+                        {isBuy ? (
+                            showEstimatedBeforeAfter ? (
+                                <>
+                                    <span className="adv-order__summary-value--after">
+                                        {expectedAmountAfter.toLocaleString()} 원
+                                    </span>
+                                    <span className="adv-order__summary-value--before">
+                                        {expectedAmountRaw.toLocaleString()} 원
+                                    </span>
+                                </>
+                            ) : (
+                                `${expectedAmountAfter.toLocaleString()} 원`
+                            )
+                        ) : isCredit ? (
                             <>
                                 <span className="adv-order__summary-value--after">
-                                    {expectedAmountAfter.toLocaleString()} 원
+                                    {sellAmountAfter.toLocaleString()} 원
                                 </span>
                                 <span className="adv-order__summary-value--before">
                                     {expectedAmountRaw.toLocaleString()} 원
                                 </span>
                             </>
                         ) : (
-                            `${expectedAmountAfter.toLocaleString()} 원`
+                            `${sellAmountAfter.toLocaleString()} 원`
                         )}
                     </span>
                 </div>
