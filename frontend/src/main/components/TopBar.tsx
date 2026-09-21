@@ -69,6 +69,8 @@ export default function TopBar() {
         `${s.name} ${s.code}`.toLowerCase().includes(query.toLowerCase())
     );
 
+    const realtimeStocks = STOCKS.filter((s) => s.realtimeSupported);
+
     const handleSelect = (stock: any) => {
         setSelectedStock(stock);
         setQuery("");
@@ -119,21 +121,37 @@ export default function TopBar() {
                             onFocus={() => setOpen(true)}
                         />
 
-                        {open && query && (
+                        {open && (
                             <div className="dropdown">
-                                {filteredStocks.length > 0 ? (
-                                    filteredStocks.map((s) => (
-                                        <div
-                                            key={s.code}
-                                            className={`item${s.realtimeSupported ? " item--tradable" : ""}`}
-                                            onClick={() => handleSelect(s)}
-                                        >
-                                            <span className="name">{s.name}</span>
-                                            <span className="code">{s.code}</span>
-                                        </div>
-                                    ))
+                                {query ? (
+                                    filteredStocks.length > 0 ? (
+                                        filteredStocks.map((s) => (
+                                            <div
+                                                key={s.code}
+                                                className={`item${s.realtimeSupported ? " item--tradable" : ""}`}
+                                                onClick={() => handleSelect(s)}
+                                            >
+                                                <span className="name">{s.name}</span>
+                                                <span className="code">{s.code}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="empty">검색 결과 없음</div>
+                                    )
                                 ) : (
-                                    <div className="empty">검색 결과 없음</div>
+                                    <>
+                                        <div className="dropdown-heading">모의투자 지원 종목</div>
+                                        {realtimeStocks.map((s) => (
+                                            <div
+                                                key={s.code}
+                                                className="item item--tradable"
+                                                onClick={() => handleSelect(s)}
+                                            >
+                                                <span className="name">{s.name}</span>
+                                                <span className="code">{s.code}</span>
+                                            </div>
+                                        ))}
+                                    </>
                                 )}
                             </div>
                         )}
