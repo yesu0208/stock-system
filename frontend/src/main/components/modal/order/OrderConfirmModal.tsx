@@ -167,7 +167,7 @@ export default function OrderConfirmModal({
                 예상 손익
                 <LeverageTag leverage={isCredit ? leverage : 1} />
                 <Tooltip
-                    text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 반영`}
+                    text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
                     placement="top"
                 >
                     <span className="ocm__fee-tag">수수료·세금</span>

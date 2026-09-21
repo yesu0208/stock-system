@@ -996,7 +996,6 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                 <div className="adv-order__summary-row adv-order__summary-row--fill-price">
                     <span className="adv-order__summary-label">
                         {isBuy ? "최대 체결가" : "최소 체결가"}
-                        <span className="adv-order__summary-hint">(진입가 기준)</span>
                         <HelpIcon text={"- 진입가에 스탑%를 반영해 계산한 예상 가격입니다.\n- 매수: 최대 체결가 (이보다 높게 체결되지 않음)\n- 매도: 최소 체결가 (이보다 낮게 체결되지 않음)\n- 호가 단위로 올림/내림됩니다."} />
                     </span>
                     <span
@@ -1011,9 +1010,22 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                 <div className="adv-order__summary-row adv-order__summary-row--stacked">
                     <span className="adv-order__summary-label">
                         {isBuy ? "최대 체결금액" : "최소 체결금액"}
-                        <span className="adv-order__summary-hint">(진입가 기준)</span>
-                        <HelpIcon text={"- 최대(최소) 체결가 × 수량으로, 주문금액과 동일합니다.\n- 매수 시 최대 체결가보다 낮은 가격에 체결되면 차액은 반환됩니다."} />
+                        <HelpIcon
+                            text={
+                                isBuy
+                                    ? "- 최대 체결가 × 수량으로, 주문금액과 동일합니다.\n- 매수 시 최대 체결가보다 낮은 가격에 체결되면 차액은 반환됩니다."
+                                    : "- 최소 체결가 × 수량에서 매도 수수료·세금(신용은 대출금 포함)을 차감한 금액입니다.\n- 취소선 금액은 차감 전 총액입니다."
+                            }
+                        />
                         <LeverageTag leverage={isCredit ? leverage : 1} />
+                        {!isBuy && (
+                            <Tooltip
+                                text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                placement="top"
+                            >
+                                <span className="adv-fee-tag">수수료·세금</span>
+                            </Tooltip>
+                        )}
                     </span>
                     <span
                         className={`adv-order__summary-value adv-order__summary-value--fill ${
@@ -1052,8 +1064,13 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                     <div className="adv-order__summary-row adv-order__summary-row--stacked">
                         <span className="adv-order__summary-label">
                             필요금액
-                            <span className="adv-order__summary-hint">(수수료 포함)</span>
                             <LeverageTag leverage={isCredit ? leverage : 1} />
+                            <Tooltip
+                                text={`매수 수수료(0.015%) ${buyFee.toLocaleString()}원 포함`}
+                                placement="top"
+                            >
+                                <span className="adv-fee-tag">수수료</span>
+                            </Tooltip>
                         </span>
                         <span className="adv-order__summary-value adv-order__summary-value--fill">
                             {showEstimatedBeforeAfter ? (
@@ -1076,8 +1093,13 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                     <div className="adv-order__summary-row adv-order__summary-row--stacked">
                         <span className="adv-order__summary-label">
                             최소 예상손익
-                            <span className="adv-order__summary-hint">(최소 체결가 기준)</span>
                             <LeverageTag leverage={isCredit ? leverage : 1} />
+                            <Tooltip
+                                text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                placement="top"
+                            >
+                                <span className="adv-fee-tag">수수료·세금</span>
+                            </Tooltip>
                         </span>
                         <span className={`adv-order__summary-value ${minProfitColorClass}`}>
                             {minProfitText} ({minRateText})
@@ -1602,8 +1624,13 @@ function OtocoInputPanel() {
                 <div className="adv-order__summary-row adv-order__summary-row--stacked">
                     <span className="adv-order__summary-label">
                         필요금액
-                        <span className="adv-order__summary-hint">(수수료 포함)</span>
                         <LeverageTag leverage={isCredit ? leverage : 1} />
+                        <Tooltip
+                            text={`매수 수수료(0.015%) ${entryFee.toLocaleString()}원 포함`}
+                            placement="top"
+                        >
+                            <span className="adv-fee-tag">수수료</span>
+                        </Tooltip>
                     </span>
                     <span className="adv-order__summary-value adv-order__summary-value--fill adv-order__summary-value--fill-buy">
                         {showEntryBeforeAfter ? (
