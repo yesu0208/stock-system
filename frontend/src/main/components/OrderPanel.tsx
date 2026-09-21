@@ -21,7 +21,7 @@ import type { AutoCancelResultResponse } from "../../types/autoCancel";
 import type { TradeResponse } from "../../types/trade";
 import type { TrailingStopResultResponse, TrailingStopCancelResultResponse } from "../../types/trailingStop";
 import type { OtocoResultResponse, OtocoCancelResultResponse } from "../../types/otoco";
-import { calculateFee } from "../../utils/fee";
+import { calculateFee, calculateSellCost } from "../../utils/fee";
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -411,7 +411,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
     const holding = stockInfo
         ? {
             availableQty: stockInfo.availableQuantity,
-            avgBuyPrice: stockInfo.quantity > 0 ? Math.round(stockInfo.totalAmount / stockInfo.quantity) : 0,
+            avgBuyPrice: stockInfo.quantity > 0 ? Math.round(stockInfo.totalCostAmount / stockInfo.quantity) : 0, // [수정]
         }
         : undefined;
 
@@ -458,14 +458,16 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const sellAvgBuyPrice = isCredit
         ? (leveragePosition && leveragePosition.quantity > 0
-            ? Math.round(leveragePosition.purchaseAmount / leveragePosition.quantity)
+            ? Math.round(leveragePosition.costAmount / leveragePosition.quantity) // [수정] purchaseAmount → costAmount
             : 0)
         : (holding?.avgBuyPrice ?? 0);
 
-    const profitAmount = !isBuy ? (effectivePrice - sellAvgBuyPrice) * quantity : 0;
+    const sellCost = !isBuy ? calculateSellCost(estimatedAmount) : 0;
+
+    const profitAmount = !isBuy ? (effectivePrice - sellAvgBuyPrice) * quantity - sellCost : 0;
 
     const marginPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
-        ? leveragePosition.initialMargin / leveragePosition.quantity
+        ? (leveragePosition.costAmount - leveragePosition.loanAmount) / leveragePosition.quantity // [수정] initialMargin → costAmount-loanAmount(투입원금액)
         : sellAvgBuyPrice;
 
     const profitRate = profitAmount === 0
@@ -550,8 +552,9 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const estimatedAmountAfter =
         isBuy && isCredit ? Math.floor(estimatedAmountRaw / leverage) :
-            !isBuy && isCredit ? Math.max(0, Math.round(estimatedAmountRaw - loanPerShare * quantity)) :
-                estimatedAmountRaw;
+            !isBuy && isCredit ? Math.max(0, Math.round(estimatedAmountRaw - loanPerShare * quantity - sellCost)) :
+                !isBuy ? Math.max(0, Math.round(estimatedAmountRaw - sellCost)) :
+                    estimatedAmountRaw;
 
     const showEstimatedBeforeAfter = isCredit;
 
