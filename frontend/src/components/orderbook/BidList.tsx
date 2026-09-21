@@ -153,7 +153,7 @@ export default function BidList({
                                 <div className={styles.bar} style={{ width: `${widthPercent}%` }} />
                             )}
                             <span className={styles.quantityText}>
-                                {!isEmpty ? b.quantity : ''}
+                                {!isEmpty ? b.quantity.toLocaleString() : ''}
                             </span>
                         </div>
                     </div>

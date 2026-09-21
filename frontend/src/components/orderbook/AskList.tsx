@@ -104,7 +104,7 @@ export default function AskList({
                             {!isEmpty && (
                                 <>
                                     <div className={styles.bar} style={{ width: `${widthPercent}%` }} />
-                                    <span className={styles.quantityText}>{a.quantity}</span>
+                                    <span className={styles.quantityText}>{a.quantity.toLocaleString()}</span>
                                 </>
                             )}
                         </div>
