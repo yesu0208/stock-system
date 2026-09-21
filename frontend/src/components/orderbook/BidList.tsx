@@ -54,11 +54,11 @@ export default function BidList({
         if (latestPrice !== undefined && price === latestPrice)
             return { outline: '1px solid white', outlineOffset: '-1px', zIndex: 10 }
         if (startPrice !== undefined && price === startPrice)
-            return { outline: '1px solid #888888', outlineOffset: '-1px', zIndex: 9 }
+            return { outline: '3px solid #888888', outlineOffset: '-3px', zIndex: 9 }
         if (highPrice !== undefined && price === highPrice)
-            return { outline: '1px solid #FF6347', outlineOffset: '-1px', zIndex: 8 }
+            return { outline: '3px solid #FF6347', outlineOffset: '-3px', zIndex: 8 }
         if (lowPrice !== undefined && price === lowPrice)
-            return { outline: '1px solid #4F9DFF', outlineOffset: '-1px', zIndex: 7 }
+            return { outline: '3px solid #4F9DFF', outlineOffset: '-3px', zIndex: 7 }
 
         return none
     }
