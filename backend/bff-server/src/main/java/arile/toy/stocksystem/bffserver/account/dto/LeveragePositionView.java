@@ -6,6 +6,7 @@ public record LeveragePositionView(
         Integer quantity,
         Integer availableQuantity,
         Long purchaseAmount,
+        Long costAmount,
         Long loanAmount,
         Long evaluationAmount,
         Long netValue,

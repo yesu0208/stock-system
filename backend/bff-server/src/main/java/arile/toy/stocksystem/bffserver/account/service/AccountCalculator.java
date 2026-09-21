@@ -154,7 +154,7 @@ public class AccountCalculator {
                     : 0L;
 
             views.add(new LeveragePositionView(stockCode, leverageRatio, info.quantity(), info.availableQuantity(),
-                    info.purchaseAmount(), info.loanAmount(), evaluationAmount, netValue, profitAmount, profitRate, curPrice,
+                    info.purchaseAmount(), info.costAmount(), info.loanAmount(), evaluationAmount, netValue, profitAmount, profitRate, curPrice,
                     info.marginStatus(), initialMargin, maintenanceMargin, maintenancePrice));
 
             netValueTotal += netValue;
