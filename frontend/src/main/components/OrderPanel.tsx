@@ -708,10 +708,18 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                     </span>
                 </div>
 
-                <div className="summary__row">
+                <div className={`summary__row ${!isBuy ? "summary__row--stacked" : ""}`}>
                     <span className="summary__label">
                         {isBuy ? "주문금액" : "예상금액"}
                         <LeverageTag leverage={isCredit ? leverage : 1} />
+                        {!isBuy && (
+                            <Tooltip
+                                text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                placement="top"
+                            >
+                                <span className="fee-tag">수수료·세금</span>
+                            </Tooltip>
+                        )}
                     </span>
                     <span className="summary__value">
                         {showEstimatedBeforeAfter ? (
@@ -730,10 +738,16 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 </div>
 
                 {isBuy && (
-                    <div className="summary__row">
+                    <div className="summary__row summary__row--stacked">
                         <span className="summary__label">
                             필요금액
                             <LeverageTag leverage={isCredit ? leverage : 1} />
+                            <Tooltip
+                                text={`매수 수수료 0.015% (${calculateFee(estimatedAmountRaw).toLocaleString()}원) 포함`}
+                                placement="top"
+                            >
+                                <span className="fee-tag">수수료</span>
+                            </Tooltip>
                         </span>
                         <span className="summary__value">
                             {showEstimatedBeforeAfter ? (
@@ -757,6 +771,12 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                         <span className="summary__label">
                             예상손익
                             <LeverageTag leverage={isCredit ? leverage : 1} />
+                            <Tooltip
+                                text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                placement="top"
+                            >
+                                <span className="fee-tag">수수료·세금</span>
+                            </Tooltip>
                         </span>
                         <span className={`summary__value ${profitColorClass}`}>
                             {profitText} ({rateText})
