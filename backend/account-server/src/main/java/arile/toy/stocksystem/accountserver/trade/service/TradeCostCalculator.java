@@ -1,10 +1,9 @@
-package arile.toy.stocksystem.stockserver.order.service;
+package arile.toy.stocksystem.accountserver.trade.service;
 
-import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ReserveAmountCalculator {
+public class TradeCostCalculator {
 
     private static final double FEE_RATE = 0.00015;
     private static final double TAX_RATE = 0.0020;
@@ -21,11 +20,5 @@ public class ReserveAmountCalculator {
             return 0L;
         }
         return Math.round(amount * TAX_RATE);
-    }
-
-    public long calculateReserveAmount(LeverageRatio leverageRatio, long orderAmount) {
-        long principal = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
-        long fee = calculateFee(orderAmount);
-        return principal + fee;
     }
 }
