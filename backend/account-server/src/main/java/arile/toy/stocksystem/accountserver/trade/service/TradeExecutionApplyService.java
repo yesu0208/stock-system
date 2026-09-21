@@ -110,7 +110,7 @@ public class TradeExecutionApplyService {
 
         // 해제할 예약금에 feeReserved를 더하고, 환급할 차액에도 feeRefund를 더함
         boolean redisOk = tradeCommand.applyBuyTrade(
-                event.username(), event.stockCode(), totalQuantity, totalAmount,
+                event.username(), event.stockCode(), totalQuantity, totalAmount, userStock.getCostAmount(),
                 orderAmount + feeReserved, differenceAmount + feeRefund
         );
 
@@ -173,7 +173,7 @@ public class TradeExecutionApplyService {
         }
 
         boolean redisOk = tradeCommand.applySellTrade(
-                event.username(), event.stockCode(), totalQuantity, remainingAmount,
+                event.username(), event.stockCode(), totalQuantity, remainingAmount, remainingCostAmount,
                 orderAmount, differenceAmount
         );
 
