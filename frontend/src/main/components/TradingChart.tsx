@@ -746,8 +746,17 @@ export default function TradingChart() {
         const maxX = chart.timeScale().timeToCoordinate(maxCandle.time);
         const minX = chart.timeScale().timeToCoordinate(minCandle.time);
 
-        const maxY = seriesRef.current.priceToCoordinate(maxCandle.high);
-        const minY = seriesRef.current.priceToCoordinate(minCandle.low);
+        const rawMaxY = seriesRef.current.priceToCoordinate(maxCandle.high);
+        const rawMinY = seriesRef.current.priceToCoordinate(minCandle.low);
+
+        const paneHeight = chart.panes()[0]?.getHeight() ?? 270;
+
+        const LABEL_HEIGHT_ESTIMATE = 30;
+        const LABEL_GAP = 6;
+        const LABEL_MARGIN = LABEL_HEIGHT_ESTIMATE + LABEL_GAP;
+
+        const maxY = rawMaxY != null ? Math.max(rawMaxY, LABEL_MARGIN) : null;
+        const minY = rawMinY != null ? Math.min(rawMinY, paneHeight - LABEL_MARGIN) : null;
 
         const lastVisibleCandle = visibleCandles[visibleCandles.length - 1];
 
@@ -890,10 +899,10 @@ export default function TradingChart() {
                             top: extremeMarks.max.y,
                             transform:
                                 extremeMarks.max.align === "left"
-                                    ? "translate(0%, -120%)"
+                                    ? "translate(0%, calc(-100% - 6px))"
                                     : extremeMarks.max.align === "right"
-                                        ? "translate(-100%, -120%)"
-                                        : "translate(-50%, -120%)",
+                                        ? "translate(-100%, calc(-100% - 6px))"
+                                        : "translate(-50%, calc(-100% - 6px))",
                         }}
                     >
                         <div>
@@ -921,10 +930,10 @@ export default function TradingChart() {
                             top: extremeMarks.min.y,
                             transform:
                                 extremeMarks.min.align === "left"
-                                    ? "translate(0%, 20%)"
+                                    ? "translate(0%, 6px)"
                                     : extremeMarks.min.align === "right"
-                                        ? "translate(-100%, 20%)"
-                                        : "translate(-50%, 20%)",
+                                        ? "translate(-100%, 6px)"
+                                        : "translate(-50%, 6px)",
                         }}
                     >
                         <div>
