@@ -312,10 +312,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                     <span className="mam-holding-cell__bottom">{info.availableQuantity}</span>
                                                 </div>
                                                 <div className="mam-holding-cell">
-                                                    <span className={`mam-holding-cell__top ${profitAmount >= 0 ? "positive" : "negative"}`}>
+                                                    <span className={`mam-holding-cell__top ${
+                                                        profitAmount > 0 ? "positive" : profitAmount < 0 ? "negative" : "zero"
+                                                    }`}>
                                                         {fmtSigned(profitAmount)}
                                                     </span>
-                                                    <span className={`mam-holding-cell__bottom ${profitRate >= 0 ? "positive" : "negative"}`}>
+                                                    <span className={`mam-holding-cell__bottom ${
+                                                        profitAmount > 0 ? "positive" : profitAmount < 0 ? "negative" : "zero"
+                                                    }`}>
                                                         {fmtRate(profitRate)}
                                                     </span>
                                                 </div>
@@ -427,10 +431,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                 </div>
 
                                                 <div className="mam-holding-cell">
-                                                    <span className={`mam-holding-cell__top ${pos.profitAmount >= 0 ? "positive" : "negative"}`}>
+                                                    <span className={`mam-holding-cell__top ${
+                                                        pos.profitAmount > 0 ? "positive" : pos.profitAmount < 0 ? "negative" : "zero"
+                                                    }`}>
                                                         {fmtSigned(pos.profitAmount)}
                                                     </span>
-                                                    <span className={`mam-holding-cell__bottom ${pos.profitRate >= 0 ? "positive" : "negative"}`}>
+                                                    <span className={`mam-holding-cell__bottom ${
+                                                        pos.profitAmount > 0 ? "positive" : pos.profitAmount < 0 ? "negative" : "zero"
+                                                    }`}>
                                                         {fmtRate(pos.profitRate)}
                                                     </span>
                                                 </div>
@@ -496,10 +504,18 @@ export default function MyAccountModal({ open, onClose }: Props) {
                     {profitItems.map((p) => (
                         <div key={p.date} className="mam-profit-row">
                             <span>{p.date}</span>
-                            <span className={p.dailyProfitAmount >= 0 ? "positive" : "negative"}>{fmtSigned(p.dailyProfitAmount)}</span>
-                            <span className={p.dailyProfitRate >= 0 ? "positive" : "negative"}>{fmtRate(p.dailyProfitRate)}</span>
-                            <span className={p.cumulativeProfitAmount >= 0 ? "positive" : "negative"}>{fmtSigned(p.cumulativeProfitAmount)}</span>
-                            <span className={p.cumulativeProfitRate >= 0 ? "positive" : "negative"}>{fmtRate(p.cumulativeProfitRate)}</span>
+                            <span className={p.dailyProfitAmount > 0 ? "positive" : p.dailyProfitAmount < 0 ? "negative" : "zero"}>
+                                {fmtSigned(p.dailyProfitAmount)}
+                            </span>
+                            <span className={p.dailyProfitAmount > 0 ? "positive" : p.dailyProfitAmount < 0 ? "negative" : "zero"}>
+                                {fmtRate(p.dailyProfitRate)}
+                            </span>
+                            <span className={p.cumulativeProfitAmount > 0 ? "positive" : p.cumulativeProfitAmount < 0 ? "negative" : "zero"}>
+                                {fmtSigned(p.cumulativeProfitAmount)}
+                            </span>
+                            <span className={p.cumulativeProfitAmount > 0 ? "positive" : p.cumulativeProfitAmount < 0 ? "negative" : "zero"}>
+                                {fmtRate(p.cumulativeProfitRate)}
+                            </span>
                             <span>{fmt(p.dailyTradeAmount)}</span>
                         </div>
                     ))}

@@ -40,6 +40,7 @@
 
 .positive { color: #ff6347; }
 .negative { color: #4f9dff; }
+.zero { color: #ffffff; }
 
 .mam-account {
     display: flex;
