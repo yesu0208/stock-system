@@ -4,6 +4,7 @@ import arile.toy.stocksystem.accountserver.leverage.dto.LeverageRatio;
 import arile.toy.stocksystem.accountserver.leverage.entity.LeveragePositionEntity;
 import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionRepository;
 import arile.toy.stocksystem.accountserver.trade.event.TradeExecutedEvent;
+import arile.toy.stocksystem.accountserver.trade.service.TradeCostCalculator;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
@@ -22,6 +23,7 @@ public class LeveragePositionApplyService {
     private final LeveragePositionRedisSyncer redisSyncer;
     private final AccountMarginStatusSyncer accountMarginStatusSyncer;
     private final AccountBalanceCommand accountBalanceCommand;
+    private final TradeCostCalculator tradeCostCalculator;
 
     /**
      * 레버리지 매수 체결 반영.
@@ -37,16 +39,22 @@ public class LeveragePositionApplyService {
         long tradeMarginAmount = leverageRatio.calculateMarginDeposit(tradeAmount); // 체결가 기준 증거금
         long marginRefund = orderMarginAmount - tradeMarginAmount;      // 지정가보다 유리하게 체결된 경우 환급할 증거금 차액
 
+        // 수수료는 레버리지 배율과 무관하게 항상 "매수금액 전체(orderAmount/tradeAmount)" 기준
+        long orderAmount = (long) event.orderPrice() * executable;
+        long feeReserved = tradeCostCalculator.calculateFee(orderAmount);
+        long feeActual = tradeCostCalculator.calculateFee(tradeAmount);
+        long feeRefund = feeReserved - feeActual;
+
         UserAccountEntity account = userAccountRepository
                 .findByUsernameForUpdate(event.username())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
-        if (account.getBalance() < tradeMarginAmount) {
+        if (account.getBalance() < tradeMarginAmount + feeActual) {
             throw new IllegalStateException(
                     "DB/Redis balance inconsistency detected during leverage trade apply.");
         }
 
-        account.setBalance(account.getBalance() - tradeMarginAmount);
+        account.setBalance(account.getBalance() - tradeMarginAmount - feeActual);
         userAccountRepository.save(account);
 
         LeveragePositionEntity position = leveragePositionRepository
@@ -59,10 +67,9 @@ public class LeveragePositionApplyService {
 
         redisSyncer.sync(position);
 
-        // reservedCash에서 예약분(orderMarginAmount) 전체를 해제하고, 그중 차액(marginRefund)만 availableCash로 반환한다.
-        // marginRefund == 0(지정가 그대로 체결)이어도 반드시 호출해야 한다 — reservedCash에 tradeMarginAmount가
-        // 영구히 남는 것을 막기 위함 (DB balance는 이미 tradeMarginAmount만큼만 차감되었으므로 그만큼은 Redis에서도 소멸해야 함).
-        boolean settled = accountBalanceCommand.settleLeverageBuy(event.username(), orderMarginAmount, marginRefund);
+        // 해제할 예약분에 feeReserved 포함, 환급할 차액에 feeRefund 포함
+        boolean settled = accountBalanceCommand.settleLeverageBuy(
+                event.username(), orderMarginAmount + feeReserved, marginRefund + feeRefund);
         if (!settled) {
             log.error("Redis reservedCash settlement failed for leverage buy. username={}, stockCode={}, orderMarginAmount={}",
                     event.username(), event.stockCode(), orderMarginAmount);
@@ -71,8 +78,8 @@ public class LeveragePositionApplyService {
                             .formatted(event.username(), event.stockCode()));
         }
 
-        log.info("Leverage buy applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, marginCharged={}",
-                event.username(), event.stockCode(), leverageRatio, tradeAmount, tradeMarginAmount);
+        log.info("Leverage buy applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, marginCharged={}, feeCharged={}",
+                event.username(), event.stockCode(), leverageRatio, tradeAmount, tradeMarginAmount, feeActual);
     }
 
     /**

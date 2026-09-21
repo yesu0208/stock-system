@@ -29,6 +29,7 @@ public class TradeExecutionApplyService {
     private final AccountUpdateEventPublisher accountUpdateEventPublisher;
     private final UserRankRepository userRankRepository;
     private final LeveragePositionApplyService leveragePositionApplyService;
+    private final TradeCostCalculator tradeCostCalculator;
 
     @Transactional
     public void apply(TradeExecutedEvent event) {
@@ -59,22 +60,32 @@ public class TradeExecutionApplyService {
         int executable = event.tradeQuantity();
         long tradeAmount = (long) event.tradePrice() * executable;
 
-        // 예약(reserve) 당시 금액 기준. reserveCash 시 orderPrice * orderQuantity로 예약했으므로
+        // 예약(reserve) 당시 금액 기준.
+        // reserveCash 시 orderPrice * orderQuantity + 수수료(주문가 기준)로 예약했으므로
         // 체결 시 실제 정산은 orderAmount(예약금) 기준으로 하고, 체결가와의 차액을 환급
         long orderAmount = (long) event.orderPrice() * executable;
         long differenceAmount = (long) (event.orderPrice() - event.tradePrice()) * executable;
+
+        // 예약 당시 수수료(주문가 기준) vs 실제 수수료(체결가 기준): 매수 지정가는
+        // 체결가가 항상 주문가 이하이므로 feeReserved >= feeActual, 차액은 항상 0 이상(환급)
+        long feeReserved = tradeCostCalculator.calculateFee(orderAmount);
+        long feeActual = tradeCostCalculator.calculateFee(tradeAmount);
+        long feeRefund = feeReserved - feeActual;
 
         UserAccountEntity account = userAccountRepository
                 .findByUsernameForUpdate(event.username())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
-        if (account.getBalance() < tradeAmount) {
+        // balance에서 이미 예약 해제분(tradeAmount + feeActual)만 확정 차감
+        // (feeReserved 전체가 아니라 실제 수수료만 최종 비용으로 남고, 나머지는 환급되므로 DB에는 애초에 반영할 필요 없음 —
+        //  주문 시점엔 DB balance를 안 건드리고 reservedCash(Redis)만 예약했기 때문)
+        if (account.getBalance() < tradeAmount + feeActual) {
             throw new IllegalStateException(
                     "DB/Redis balance inconsistency detected during trade apply."
             );
         }
 
-        account.setBalance(account.getBalance() - tradeAmount);
+        account.setBalance(account.getBalance() - tradeAmount - feeActual); // 실제 수수료만 확정 차감
         userAccountRepository.save(account);
 
         UserStockEntity userStock = userStockRepository
@@ -92,9 +103,10 @@ public class TradeExecutionApplyService {
         long totalAmount = prevAmount + tradeAmount;
         int totalQuantity = prevQuantity + executable;
 
+        // 해제할 예약금에 feeReserved를 더하고, 환급할 차액에도 feeRefund를 더함
         boolean redisOk = tradeCommand.applyBuyTrade(
                 event.username(), event.stockCode(), totalQuantity, totalAmount,
-                orderAmount, differenceAmount
+                orderAmount + feeReserved, differenceAmount + feeRefund
         );
 
         if (!redisOk) {
