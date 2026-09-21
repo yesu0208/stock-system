@@ -92,13 +92,16 @@ public class TradeExecutionApplyService {
 
         UserStockEntity userStock = userStockRepository
                 .findByUsernameAndStockCode(event.username(), event.stockCode())
-                .orElseGet(() -> UserStockEntity.of(event.username(), event.stockCode(), 0L, 0));
+                .orElseGet(() -> UserStockEntity.of(event.username(), event.stockCode(), 0L, 0L, 0));
 
         int prevQuantity = userStock.getQuantity();
         userStock.setQuantity(prevQuantity + executable);
 
         long prevAmount = userStock.getAmount();
         userStock.setAmount(prevAmount + tradeAmount);
+
+        long prevCostAmount = userStock.getCostAmount();
+        userStock.setCostAmount(prevCostAmount + tradeAmount + feeActual);
 
         userStockRepository.save(userStock);
 
@@ -156,11 +159,16 @@ public class TradeExecutionApplyService {
         long soldAmount = prevAmount * executable / prevQuantity;
         long remainingAmount = prevAmount - soldAmount;
 
+        long prevCostAmount = userStock.getCostAmount();
+        long soldCostAmount = prevCostAmount * executable / prevQuantity;
+        long remainingCostAmount = prevCostAmount - soldCostAmount;
+
         userStock.setQuantity(totalQuantity);
         if (totalQuantity == 0) {
             userStockRepository.delete(userStock);
         } else {
             userStock.setAmount(remainingAmount);
+            userStock.setCostAmount(remainingCostAmount);
             userStockRepository.save(userStock);
         }
 
