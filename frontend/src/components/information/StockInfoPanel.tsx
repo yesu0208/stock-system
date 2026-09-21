@@ -14,6 +14,7 @@ import type {
     ForeignInstitutionTrade,
 } from "../../api/stockInfo";
 import type { StockDetailTickMessage } from "../../types/stockDetail";
+import Spinner from "../../components/Spinner";
 
 type TabType = "summary" | "info" | "price" | "broker" | "trend";
 
@@ -121,7 +122,7 @@ export default function StockInfoPanel() {
     if (loading || !info || !detail) {
         return (
             <div className="stock-info-panel stock-info-panel--loading">
-                불러오는 중입니다
+                <Spinner />
             </div>
         );
     }
@@ -522,68 +523,74 @@ export default function StockInfoPanel() {
 
                 {tab === "trend" && (
                     <div>
-                        <div className="trend-sticky-spacer" />
-                        <table className="trend-table">
-                            <colgroup>
-                                <col style={{ width: "12%" }} />
-                                <col style={{ width: "11%" }} />
-                                <col style={{ width: "12%" }} />
-                                <col style={{ width: "11%" }} />
-                                <col style={{ width: "14%" }} />
-                                <col style={{ width: "12%" }} />
-                                <col style={{ width: "12%" }} />
-                                <col style={{ width: "16%" }} />
-                            </colgroup>
-                            <thead>
-                            <tr className="broker-header-row">
-                                <td rowSpan={2}>날짜</td>
-                                <td rowSpan={2}>종가</td>
-                                <td rowSpan={2}>등락</td>
-                                <td rowSpan={2}>등락률</td>
-                                <td rowSpan={2}>거래량</td>
-                                <td>기관</td>
-                                <td colSpan={2}>외국인</td>
-                            </tr>
-                            <tr className="broker-header-row broker-header-row--sub">
-                                <td>순매매</td>
-                                <td>순매매</td>
-                                <td>보유주수(비율)</td>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {trendItems.map((t, i) => {
-                                const rowColor = getRowColorByRate(t.rate);
-                                return (
-                                    <tr key={`${t.date}-${i}`}>
-                                        <td>{t.date}</td>
-                                        <td style={{ color: rowColor }}>{t.closePrice}</td>
-                                        <td style={{ color: rowColor }}>
-                                            {formatDiffWithSign(t.diff, t.rate)}
-                                        </td>
-                                        <td style={{ color: rowColor }}>
-                                            {t.rate}
-                                        </td>
-                                        <td>{t.volume}</td>
-                                        <td style={{ color: getNetBuyColor(t.institutionNetBuy) }}>
-                                            {t.institutionNetBuy}
-                                        </td>
-                                        <td style={{ color: getNetBuyColor(t.foreignNetBuy) }}>
-                                            {t.foreignNetBuy}
-                                        </td>
-                                        <td className="trend-cell-stack">
-                                            <div>{t.foreignHoldings}</div>
-                                            <div className="trend-rate-sub">({t.foreignRate})</div>
-                                        </td>
+                        {trendItems.length === 0 && trendLoading ? (
+                            <Spinner />
+                        ) : (
+                            <>
+                                <div className="trend-sticky-spacer" />
+                                <table className="trend-table">
+                                    <colgroup>
+                                        <col style={{ width: "12%" }} />
+                                        <col style={{ width: "11%" }} />
+                                        <col style={{ width: "12%" }} />
+                                        <col style={{ width: "11%" }} />
+                                        <col style={{ width: "14%" }} />
+                                        <col style={{ width: "12%" }} />
+                                        <col style={{ width: "12%" }} />
+                                        <col style={{ width: "16%" }} />
+                                    </colgroup>
+                                    <thead>
+                                    <tr className="broker-header-row">
+                                        <td rowSpan={2}>날짜</td>
+                                        <td rowSpan={2}>종가</td>
+                                        <td rowSpan={2}>등락</td>
+                                        <td rowSpan={2}>등락률</td>
+                                        <td rowSpan={2}>거래량</td>
+                                        <td>기관</td>
+                                        <td colSpan={2}>외국인</td>
                                     </tr>
-                                );
-                            })}
-                            </tbody>
-                        </table>
+                                    <tr className="broker-header-row broker-header-row--sub">
+                                        <td>순매매</td>
+                                        <td>순매매</td>
+                                        <td>보유주수(비율)</td>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {trendItems.map((t, i) => {
+                                        const rowColor = getRowColorByRate(t.rate);
+                                        return (
+                                            <tr key={`${t.date}-${i}`}>
+                                                <td>{t.date}</td>
+                                                <td style={{ color: rowColor }}>{t.closePrice}</td>
+                                                <td style={{ color: rowColor }}>
+                                                    {formatDiffWithSign(t.diff, t.rate)}
+                                                </td>
+                                                <td style={{ color: rowColor }}>
+                                                    {t.rate}
+                                                </td>
+                                                <td>{t.volume}</td>
+                                                <td style={{ color: getNetBuyColor(t.institutionNetBuy) }}>
+                                                    {t.institutionNetBuy}
+                                                </td>
+                                                <td style={{ color: getNetBuyColor(t.foreignNetBuy) }}>
+                                                    {t.foreignNetBuy}
+                                                </td>
+                                                <td className="trend-cell-stack">
+                                                    <div>{t.foreignHoldings}</div>
+                                                    <div className="trend-rate-sub">({t.foreignRate})</div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    </tbody>
+                                </table>
 
-                        <div ref={observerRef} className="trend-sentinel">
-                            {trendLoading && "불러오는 중..."}
-                            {!trendHasNext && trendItems.length > 0 && "마지막 데이터입니다."}
-                        </div>
+                                <div ref={observerRef} className="trend-sentinel">
+                                    {trendLoading && <Spinner size={16} thickness={2} center={false} />}
+                                    {!trendHasNext && trendItems.length > 0 && "마지막 데이터입니다."}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
