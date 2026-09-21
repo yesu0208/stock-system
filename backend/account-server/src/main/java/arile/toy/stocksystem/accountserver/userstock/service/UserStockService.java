@@ -44,6 +44,7 @@ public class UserStockService {
                 String stockCode = entity.getStockCode();
                 int quantity = entity.getQuantity();
                 long totalAmount = entity.getAmount();
+                long totalCostAmount = entity.getCostAmount();
 
                 StockInfo redisInfo = redisStocks.get(stockCode);
 
@@ -57,7 +58,7 @@ public class UserStockService {
                 }
 
                 stocksMap.put(stockCode,
-                        StockInfo.of(quantity, quantity, totalAmount));
+                        StockInfo.of(quantity, quantity, totalAmount, totalCostAmount));
             }
 
             for (String redisStockCode : redisStocks.keySet()) {

@@ -24,8 +24,13 @@ public class UserStockEntity {
     @Column(nullable = false)
     private String stockCode;
 
+    /** 순수 매입금액 (체결가 × 수량 누적, 수수료 제외) */
     @Column(nullable = false)
     private Long amount;
+
+    /** 매입원금액 — amount + 매수 시 실제 부과된 위탁수수료 누적. 손익분기가/평가손익 계산의 기준. */
+    @Column(nullable = false)
+    private Long costAmount;
 
     @Column(nullable = false)
     private Integer quantity;
@@ -37,11 +42,12 @@ public class UserStockEntity {
     private Instant updatedDateTime;
 
     public static UserStockEntity of(String username, String stockCode,
-                                     Long amount, Integer quantity) {
+                                     Long amount, Long costAmount, Integer quantity) {
         var userStockEntity = new UserStockEntity();
         userStockEntity.setUsername(username);
         userStockEntity.setStockCode(stockCode);
         userStockEntity.setAmount(amount);
+        userStockEntity.setCostAmount(costAmount);
         userStockEntity.setQuantity(quantity);
         return userStockEntity;
     }

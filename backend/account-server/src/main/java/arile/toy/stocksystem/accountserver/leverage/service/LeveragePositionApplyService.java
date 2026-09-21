@@ -59,10 +59,10 @@ public class LeveragePositionApplyService {
 
         LeveragePositionEntity position = leveragePositionRepository
                 .findByUsernameAndStockCodeAndLeverageRatioForUpdate(event.username(), event.stockCode(), leverageRatio)
-                .orElseGet(() -> LeveragePositionEntity.of(event.username(), event.stockCode(), leverageRatio, 0, 0L));
+                .orElseGet(() -> LeveragePositionEntity.of(event.username(), event.stockCode(), leverageRatio, 0, 0L, 0L));
 
         long additionalLoanAmount = leverageRatio.calculateLoanAmount(tradeAmount);
-        position.addPurchase(executable, tradeAmount, additionalLoanAmount);
+        position.addPurchase(executable, tradeAmount, tradeAmount + feeActual, additionalLoanAmount);
         leveragePositionRepository.save(position);
 
         redisSyncer.sync(position);

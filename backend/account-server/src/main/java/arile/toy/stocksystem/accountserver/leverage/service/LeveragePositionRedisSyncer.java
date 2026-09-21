@@ -24,6 +24,7 @@ public class LeveragePositionRedisSyncer {
                         position.getQuantity(),
                         position.getAvailableQuantity(),
                         position.getPurchaseAmount(),
+                        position.getCostAmount(),
                         position.getLoanAmount(),
                         position.getMarginStatus().name()
                 )

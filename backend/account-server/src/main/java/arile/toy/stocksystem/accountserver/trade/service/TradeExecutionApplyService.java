@@ -92,13 +92,16 @@ public class TradeExecutionApplyService {
 
         UserStockEntity userStock = userStockRepository
                 .findByUsernameAndStockCode(event.username(), event.stockCode())
-                .orElseGet(() -> UserStockEntity.of(event.username(), event.stockCode(), 0L, 0));
+                .orElseGet(() -> UserStockEntity.of(event.username(), event.stockCode(), 0L, 0L, 0));
 
         int prevQuantity = userStock.getQuantity();
         userStock.setQuantity(prevQuantity + executable);
 
         long prevAmount = userStock.getAmount();
         userStock.setAmount(prevAmount + tradeAmount);
+
+        long prevCostAmount = userStock.getCostAmount();
+        userStock.setCostAmount(prevCostAmount + tradeAmount + feeActual);
 
         userStockRepository.save(userStock);
 
@@ -107,7 +110,7 @@ public class TradeExecutionApplyService {
 
         // 해제할 예약금에 feeReserved를 더하고, 환급할 차액에도 feeRefund를 더함
         boolean redisOk = tradeCommand.applyBuyTrade(
-                event.username(), event.stockCode(), totalQuantity, totalAmount,
+                event.username(), event.stockCode(), totalQuantity, totalAmount, userStock.getCostAmount(),
                 orderAmount + feeReserved, differenceAmount + feeRefund
         );
 
@@ -156,16 +159,21 @@ public class TradeExecutionApplyService {
         long soldAmount = prevAmount * executable / prevQuantity;
         long remainingAmount = prevAmount - soldAmount;
 
+        long prevCostAmount = userStock.getCostAmount();
+        long soldCostAmount = prevCostAmount * executable / prevQuantity;
+        long remainingCostAmount = prevCostAmount - soldCostAmount;
+
         userStock.setQuantity(totalQuantity);
         if (totalQuantity == 0) {
             userStockRepository.delete(userStock);
         } else {
             userStock.setAmount(remainingAmount);
+            userStock.setCostAmount(remainingCostAmount);
             userStockRepository.save(userStock);
         }
 
         boolean redisOk = tradeCommand.applySellTrade(
-                event.username(), event.stockCode(), totalQuantity, remainingAmount,
+                event.username(), event.stockCode(), totalQuantity, remainingAmount, remainingCostAmount,
                 orderAmount, differenceAmount
         );
 
