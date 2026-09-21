@@ -11,6 +11,7 @@ import MiniLineChart from "./advancedorder/MiniLineChart";
 import { useUser } from "../../context/UserContext";
 import type { RankTier } from "../../../types/rank";
 import { useMsg } from "../../context/MsgContext";
+import { calculateFee, calculateSellCost } from "../../../utils/fee";
 
 import { AdvancedOrderProvider, useAdvancedOrders,
     type TrailingStopPendingOrder, type OtocoPendingOrder }
@@ -686,6 +687,12 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
         : expectedAmountRaw;
     const showEstimatedBeforeAfter = isBuy && isCredit;
 
+    const buyFee = isBuy ? calculateFee(expectedAmountRaw) : 0;
+    const requiredAmountAfter = expectedAmountAfter + buyFee;
+    const requiredAmountRaw   = expectedAmountRaw + buyFee;
+
+    const sellCost = !isBuy ? calculateSellCost(expectedAmountRaw) : 0;
+
     const holding = account?.stocks[selectedStock.code];
     const orderableAmount = account?.availableCash ?? 0;
     const holdingAvailableQty = holding?.availableQuantity ?? 0;
@@ -693,6 +700,16 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
     const leveragePosition = account?.leveragePositions?.find(
         (p) => p.stockCode === selectedStock.code && p.leverageRatio === toLeverageRatio(leverage)
     );
+
+    const loanPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
+        ? leveragePosition.loanAmount / leveragePosition.quantity
+        : 0;
+
+    const sellAmountAfter = !isBuy
+        ? (isCredit
+            ? Math.max(0, Math.round(expectedAmountRaw - loanPerShare * quantity - sellCost))
+            : Math.max(0, Math.round(expectedAmountRaw - sellCost)))
+        : 0;
 
     const sellAvailableQty = isCredit
         ? (leveragePosition?.availableQuantity ?? 0)
@@ -705,16 +722,18 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
 
     const sellAvgBuyPrice = isCredit
         ? (leveragePosition && leveragePosition.quantity > 0
-            ? Math.round(leveragePosition.purchaseAmount / leveragePosition.quantity)
+            ? Math.round(leveragePosition.costAmount / leveragePosition.quantity)
             : 0)
         : (holding && holding.quantity > 0
-            ? Math.round(holding.totalAmount / holding.quantity)
+            ? Math.round(holding.totalCostAmount / holding.quantity)
             : 0);
 
-    const minProfitAmount = !isBuy ? (expectedFillPrice - sellAvgBuyPrice) * quantity : 0;
+    const minProfitAmount = !isBuy
+        ? (expectedFillPrice - sellAvgBuyPrice) * quantity - sellCost
+        : 0;
 
     const marginPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
-        ? leveragePosition.initialMargin / leveragePosition.quantity
+        ? (leveragePosition.costAmount - leveragePosition.loanAmount) / leveragePosition.quantity
         : sellAvgBuyPrice;
 
     const minProfitRate = minProfitAmount === 0
@@ -737,9 +756,10 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
 
     function handleRatioClick(ratio: number) {
         if (isBuy) {
-            if (currentPrice <= 0) { setQuantity(0); return; }
-            const budgetAmount = orderableAmount * (isCredit ? leverage : 1);
-            const qty = Math.floor((budgetAmount * ratio) / expectedFillPrice);
+            if (currentPrice <= 0 || expectedFillPrice <= 0) { setQuantity(0); return; }
+            const divisor = isCredit ? (1 / leverage + 0.00015) : (1 + 0.00015);
+            const budget = orderableAmount * ratio;
+            const qty = Math.floor(budget / (expectedFillPrice * divisor));
             setQuantity(clampQty(qty));
         } else {
             const qty = Math.floor(sellAvailableQty * ratio);
@@ -758,6 +778,9 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
             stopPercent: isBuy ? buyStop : sellStop,
             basePrice:   currentPrice,
             expectedFillPrice,
+            buyFee:          isBuy ? buyFee : undefined,
+            sellCost:        !isBuy ? sellCost : undefined,
+            sellAmountAfter: !isBuy ? sellAmountAfter : undefined,
             minProfitAmount: !isBuy ? minProfitAmount : undefined,
             minProfitRate:   !isBuy ? minProfitRate   : undefined,
         });
@@ -976,7 +999,6 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                 <div className="adv-order__summary-row adv-order__summary-row--fill-price">
                     <span className="adv-order__summary-label">
                         {isBuy ? "최대 체결가" : "최소 체결가"}
-                        <span className="adv-order__summary-hint">(진입가 기준)</span>
                         <HelpIcon text={"- 진입가에 스탑%를 반영해 계산한 예상 가격입니다.\n- 매수: 최대 체결가 (이보다 높게 체결되지 않음)\n- 매도: 최소 체결가 (이보다 낮게 체결되지 않음)\n- 호가 단위로 올림/내림됩니다."} />
                     </span>
                     <span
@@ -991,36 +1013,96 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                 <div className="adv-order__summary-row adv-order__summary-row--stacked">
                     <span className="adv-order__summary-label">
                         {isBuy ? "최대 체결금액" : "최소 체결금액"}
-                        <span className="adv-order__summary-hint">(진입가 기준)</span>
-                        <HelpIcon text={"- 최대(최소) 체결가 × 수량으로, 주문금액과 동일합니다.\n- 매수 시 최대 체결가보다 낮은 가격에 체결되면 차액은 반환됩니다."} />
+                        <HelpIcon
+                            text={
+                                isBuy
+                                    ? "- 최대 체결가 × 수량으로, 주문금액과 동일합니다.\n- 매수 시 최대 체결가보다 낮은 가격에 체결되면 차액은 반환됩니다."
+                                    : "- 최소 체결가 × 수량에서 매도 수수료·세금(신용은 대출금 포함)을 차감한 금액입니다.\n- 취소선 금액은 차감 전 총액입니다."
+                            }
+                        />
                         <LeverageTag leverage={isCredit ? leverage : 1} />
+                        {!isBuy && (
+                            <Tooltip
+                                text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                placement="top"
+                            >
+                                <span className="adv-fee-tag">수수료·세금</span>
+                            </Tooltip>
+                        )}
                     </span>
                     <span
                         className={`adv-order__summary-value adv-order__summary-value--fill ${
                             !isBuy ? "adv-order__summary-value--fill-sell" : ""
                         }`}
                     >
-                        {showEstimatedBeforeAfter ? (
+                        {isBuy ? (
+                            showEstimatedBeforeAfter ? (
+                                <>
+                                    <span className="adv-order__summary-value--after">
+                                        {expectedAmountAfter.toLocaleString()} 원
+                                    </span>
+                                    <span className="adv-order__summary-value--before">
+                                        {expectedAmountRaw.toLocaleString()} 원
+                                    </span>
+                                </>
+                            ) : (
+                                `${expectedAmountAfter.toLocaleString()} 원`
+                            )
+                        ) : isCredit ? (
                             <>
                                 <span className="adv-order__summary-value--after">
-                                    {expectedAmountAfter.toLocaleString()} 원
+                                    {sellAmountAfter.toLocaleString()} 원
                                 </span>
                                 <span className="adv-order__summary-value--before">
                                     {expectedAmountRaw.toLocaleString()} 원
                                 </span>
                             </>
                         ) : (
-                            `${expectedAmountAfter.toLocaleString()} 원`
+                            `${sellAmountAfter.toLocaleString()} 원`
                         )}
                     </span>
                 </div>
+
+                {isBuy && (
+                    <div className="adv-order__summary-row adv-order__summary-row--stacked">
+                        <span className="adv-order__summary-label">
+                            필요금액
+                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                            <Tooltip
+                                text={`매수 수수료(0.015%) ${buyFee.toLocaleString()}원 포함`}
+                                placement="top"
+                            >
+                                <span className="adv-fee-tag">수수료</span>
+                            </Tooltip>
+                        </span>
+                        <span className="adv-order__summary-value adv-order__summary-value--fill">
+                            {showEstimatedBeforeAfter ? (
+                                <>
+                                    <span className="adv-order__summary-value--after">
+                                        {requiredAmountAfter.toLocaleString()} 원
+                                    </span>
+                                    <span className="adv-order__summary-value--before">
+                                        {requiredAmountRaw.toLocaleString()} 원
+                                    </span>
+                                </>
+                            ) : (
+                                `${requiredAmountAfter.toLocaleString()} 원`
+                            )}
+                        </span>
+                    </div>
+                )}
 
                 {!isBuy && (
                     <div className="adv-order__summary-row adv-order__summary-row--stacked">
                         <span className="adv-order__summary-label">
                             최소 예상손익
-                            <span className="adv-order__summary-hint">(최소 체결가 기준)</span>
                             <LeverageTag leverage={isCredit ? leverage : 1} />
+                            <Tooltip
+                                text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                placement="top"
+                            >
+                                <span className="adv-fee-tag">수수료·세금</span>
+                            </Tooltip>
                         </span>
                         <span className={`adv-order__summary-value ${minProfitColorClass}`}>
                             {minProfitText} ({minRateText})
@@ -1171,11 +1253,16 @@ function OtocoInputPanel() {
         : entryAmountRaw;
     const showEntryBeforeAfter = isCredit;
 
+    const entryFee            = calculateFee(entryAmountRaw);
+    const requiredAmountAfter = entryAmountAfter + entryFee;
+    const requiredAmountRaw   = entryAmountRaw + entryFee;
+
     function handleRatioClick(ratio: number) {
         const basePrice = entryPrice > 0 ? entryPrice : currentPrice;
         if (basePrice <= 0) { setEntryQty(0); return; }
-        const budgetAmount = orderableAmount * (isCredit ? leverage : 1);
-        const qty = Math.floor((budgetAmount * ratio) / basePrice);
+        const divisor = isCredit ? (1 / leverage + 0.00015) : (1 + 0.00015);
+        const budget = orderableAmount * ratio;
+        const qty = Math.floor(budget / (basePrice * divisor));
         setEntryQty(clampQty(qty));
     }
 
@@ -1206,6 +1293,7 @@ function OtocoInputPanel() {
             slDerivedPrice,
             credit:         isCredit,
             leverage:       isCredit ? leverage : 1,
+            buyFee:         entryFee,
         });
         setConfirmOpen(true);
     }
@@ -1533,6 +1621,33 @@ function OtocoInputPanel() {
                             </>
                         ) : (
                             `${entryAmountAfter.toLocaleString()} 원`
+                        )}
+                    </span>
+                </div>
+
+                <div className="adv-order__summary-row adv-order__summary-row--stacked">
+                    <span className="adv-order__summary-label">
+                        필요금액
+                        <LeverageTag leverage={isCredit ? leverage : 1} />
+                        <Tooltip
+                            text={`매수 수수료(0.015%) ${entryFee.toLocaleString()}원 포함`}
+                            placement="top"
+                        >
+                            <span className="adv-fee-tag">수수료</span>
+                        </Tooltip>
+                    </span>
+                    <span className="adv-order__summary-value adv-order__summary-value--fill adv-order__summary-value--fill-buy">
+                        {showEntryBeforeAfter ? (
+                            <>
+                                <span className="adv-order__summary-value--after">
+                                    {requiredAmountAfter.toLocaleString()} 원
+                                </span>
+                                <span className="adv-order__summary-value--before">
+                                    {requiredAmountRaw.toLocaleString()} 원
+                                </span>
+                            </>
+                        ) : (
+                            `${requiredAmountAfter.toLocaleString()} 원`
                         )}
                     </span>
                 </div>

@@ -5,6 +5,7 @@ export interface StockInfo {
     quantity: number
     availableQuantity: number
     totalAmount: number
+    totalCostAmount: number
 }
 
 export interface LeveragePositionView {
@@ -13,6 +14,7 @@ export interface LeveragePositionView {
     quantity: number
     availableQuantity: number
     purchaseAmount: number
+    costAmount: number
     loanAmount: number
     evaluationAmount: number
     netValue: number
@@ -43,6 +45,7 @@ export interface AccountResponse {
     currentPrices: Record<string, number>
     leverageNetValue: number | null
     leverageLoanTotal: number | null
+    leveragePurchaseTotal: number | null
     leveragePositions: LeveragePositionView[]
     marginStatus: MarginStatus
     accountStatus: AccountStatus

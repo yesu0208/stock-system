@@ -2,6 +2,7 @@ import { useState } from "react";
 import ModalV2 from "../../../../components/ModalV2";
 import "./TrailingOrderConfirmModal.css";
 import { useMsg } from "../../../context/MsgContext";
+import Tooltip from "../../../../tooltip/Tooltip";
 
 export interface TrailingConfirmData {
     stockName:   string;
@@ -13,6 +14,9 @@ export interface TrailingConfirmData {
     stopPercent: number;
     basePrice:   number;
     expectedFillPrice: number;
+    buyFee?:          number;
+    sellCost?:        number;
+    sellAmountAfter?: number;
     minProfitAmount?: number;
     minProfitRate?:   number;
 }
@@ -28,7 +32,7 @@ function fmt(n: number): string {
     return n.toLocaleString();
 }
 
-function LeverageTag({ leverage }: { leverage: number }) {
+function LeverageTag({ leverage, small = false }: { leverage: number; small?: boolean }) {
     const isCash = leverage === 1;
     const levClass =
         isCash           ? "cash"  :
@@ -37,7 +41,7 @@ function LeverageTag({ leverage }: { leverage: number }) {
                     leverage === 2.5 ? "lev-5" :
                         "lev-other";
     return (
-        <span className={`toc__leverage-tag ${levClass}`}>
+        <span className={`toc__leverage-tag ${levClass}${small ? " toc__leverage-tag--sm" : ""}`}>
             {isCash ? "현금" : `${leverage}x`}
         </span>
     );
@@ -54,13 +58,21 @@ export default function TrailingOrderConfirmModal({
     const isBuy       = data.side === "BUY";
     const sideLabel   = isBuy ? "매수" : "매도";
     const creditLabel = data.credit ? "신용" : "현금";
+    const tagLeverage = data.credit ? data.leverage : 1;
 
-    const rawAmount   = data.expectedFillPrice * data.quantity;
+    const rawAmount   = Math.round(data.expectedFillPrice * data.quantity);
     const afterAmount = (isBuy && data.credit)
         ? Math.floor(rawAmount / data.leverage)
         : rawAmount;
 
     const showBeforeAfter = isBuy && data.credit;
+
+    const buyFee              = data.buyFee ?? 0;
+    const requiredAmountAfter = afterAmount + buyFee;
+    const requiredAmountRaw   = rawAmount + buyFee;
+
+    const sellCost        = data.sellCost ?? 0;
+    const sellAmountAfter = data.sellAmountAfter ?? 0;
 
     const showProfit  = !isBuy && data.minProfitAmount !== undefined;
     const profitAmt   = data.minProfitAmount ?? 0;
@@ -96,7 +108,7 @@ export default function TrailingOrderConfirmModal({
                     </div>
 
                     <div className="toc__tag-row">
-                        <LeverageTag leverage={data.credit ? data.leverage : 1} />
+                        <LeverageTag leverage={tagLeverage} />
                         <span className="toc__tag-sep">/</span>
                         <span className="toc__tag">트레일링 스탑</span>
                     </div>
@@ -133,26 +145,76 @@ export default function TrailingOrderConfirmModal({
                         </span>
                     </div>
 
-                    <div className="toc__row toc__row--fill">
+                    <div className="toc__row toc__row--fill toc__row--stacked">
                         <span className="toc__row-label">
                             {isBuy ? "최대 체결금액" : "최소 체결금액"}
+                            <LeverageTag leverage={tagLeverage} small />
+                            {!isBuy && (
+                                <Tooltip
+                                    text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                    placement="top"
+                                >
+                                    <span className="toc__fee-tag">수수료·세금</span>
+                                </Tooltip>
+                            )}
                         </span>
                         <span className={`toc__row-value toc__row-value--amount ${isBuy ? "buy" : "sell"}`}>
-                            {showBeforeAfter ? (
+                            {isBuy ? (
+                                showBeforeAfter ? (
+                                    <>
+                                        <span className="toc__value--after">{fmt(afterAmount)}원</span>
+                                        <span className="toc__value--before">{fmt(rawAmount)}원</span>
+                                    </>
+                                ) : (
+                                    `${fmt(afterAmount)} 원`
+                                )
+                            ) : data.credit ? (
                                 <>
-                                    <span className="toc__value--after">{fmt(afterAmount)}원</span>
+                                    <span className="toc__value--after">{fmt(sellAmountAfter)}원</span>
                                     <span className="toc__value--before">{fmt(rawAmount)}원</span>
                                 </>
                             ) : (
-                                `${fmt(afterAmount)} 원`
+                                `${fmt(sellAmountAfter)} 원`
                             )}
                         </span>
                     </div>
 
+                    {isBuy && (
+                        <div className="toc__row toc__row--fill toc__row--stacked">
+                            <span className="toc__row-label">
+                                필요금액
+                                <LeverageTag leverage={tagLeverage} small />
+                                <Tooltip
+                                    text={`매수 수수료(0.015%) ${buyFee.toLocaleString()}원 포함`}
+                                    placement="top"
+                                >
+                                    <span className="toc__fee-tag">수수료</span>
+                                </Tooltip>
+                            </span>
+                            <span className="toc__row-value toc__row-value--amount buy">
+                                {showBeforeAfter ? (
+                                    <>
+                                        <span className="toc__value--after">{fmt(requiredAmountAfter)}원</span>
+                                        <span className="toc__value--before">{fmt(requiredAmountRaw)}원</span>
+                                    </>
+                                ) : (
+                                    `${fmt(requiredAmountAfter)} 원`
+                                )}
+                            </span>
+                        </div>
+                    )}
+
                     {showProfit && (
-                        <div className="toc__row">
+                        <div className="toc__row toc__row--stacked">
                             <span className="toc__row-label">
                                 최소 예상손익
+                                <LeverageTag leverage={tagLeverage} small />
+                                <Tooltip
+                                    text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                    placement="top"
+                                >
+                                    <span className="toc__fee-tag">수수료·세금</span>
+                                </Tooltip>
                             </span>
                             <span className={`toc__row-value toc__profit ${profitClass}`}>
                                 {profitSign}{Math.abs(profitAmt).toLocaleString()}원

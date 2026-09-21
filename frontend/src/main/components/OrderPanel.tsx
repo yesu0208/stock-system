@@ -21,6 +21,7 @@ import type { AutoCancelResultResponse } from "../../types/autoCancel";
 import type { TradeResponse } from "../../types/trade";
 import type { TrailingStopResultResponse, TrailingStopCancelResultResponse } from "../../types/trailingStop";
 import type { OtocoResultResponse, OtocoCancelResultResponse } from "../../types/otoco";
+import { calculateFee, calculateSellCost } from "../../utils/fee";
 
 type MainTab = "buy" | "sell" | "cancel";
 type OrderType = "market" | "limit" | "conditional";
@@ -372,6 +373,7 @@ type ConfirmInfo = {
     leverage: number;
     profitAmount?: number;
     profitRate?: number;
+    estimatedAmountRaw: number;
 };
 
 function TradeForm({ mode }: { mode: "buy" | "sell" }) {
@@ -410,7 +412,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
     const holding = stockInfo
         ? {
             availableQty: stockInfo.availableQuantity,
-            avgBuyPrice: stockInfo.quantity > 0 ? Math.round(stockInfo.totalAmount / stockInfo.quantity) : 0,
+            avgBuyPrice: stockInfo.quantity > 0 ? Math.round(stockInfo.totalCostAmount / stockInfo.quantity) : 0, // [수정]
         }
         : undefined;
 
@@ -457,14 +459,16 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const sellAvgBuyPrice = isCredit
         ? (leveragePosition && leveragePosition.quantity > 0
-            ? Math.round(leveragePosition.purchaseAmount / leveragePosition.quantity)
+            ? Math.round(leveragePosition.costAmount / leveragePosition.quantity) // [수정] purchaseAmount → costAmount
             : 0)
         : (holding?.avgBuyPrice ?? 0);
 
-    const profitAmount = !isBuy ? (effectivePrice - sellAvgBuyPrice) * quantity : 0;
+    const sellCost = !isBuy ? calculateSellCost(estimatedAmount) : 0;
+
+    const profitAmount = !isBuy ? (effectivePrice - sellAvgBuyPrice) * quantity - sellCost : 0;
 
     const marginPerShare = isCredit && leveragePosition && leveragePosition.quantity > 0
-        ? leveragePosition.initialMargin / leveragePosition.quantity
+        ? (leveragePosition.costAmount - leveragePosition.loanAmount) / leveragePosition.quantity // [수정] initialMargin → costAmount-loanAmount(투입원금액)
         : sellAvgBuyPrice;
 
     const profitRate = profitAmount === 0
@@ -501,8 +505,10 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 setQuantity(0);
                 return;
             }
-            const budgetAmount = (account?.availableCash ?? 0) * (isCredit ? leverage : 1);
-            const affordableQty = Math.floor((budgetAmount * ratio) / effectivePrice);
+
+            const divisor = isCredit ? (1 / leverage + 0.00015) : (1 + 0.00015);
+            const budget = (account?.availableCash ?? 0) * ratio;
+            const affordableQty = Math.floor(budget / (effectivePrice * divisor));
             setQuantity(clampQuantity(affordableQty));
         } else {
             setQuantity(clampQuantity(Math.floor(sellAvailableQty * ratio)));
@@ -514,7 +520,9 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
         const displayAmount = (isBuy && isCredit)
             ? Math.floor(estimatedAmount / leverage)
-            : estimatedAmount;
+            : !isBuy
+                ? estimatedAmountAfter
+                : estimatedAmount;
 
         setConfirmInfo({
             side:            mode,
@@ -529,6 +537,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
             leverage:        isCredit ? leverage : 1,
             profitAmount: !isBuy ? profitAmount : undefined,
             profitRate:   !isBuy ? profitRate   : undefined,
+            estimatedAmountRaw: estimatedAmount,
         });
         setConfirmOpen(true);
     }
@@ -547,8 +556,9 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
     const estimatedAmountAfter =
         isBuy && isCredit ? Math.floor(estimatedAmountRaw / leverage) :
-            !isBuy && isCredit ? Math.max(0, Math.round(estimatedAmountRaw - loanPerShare * quantity)) :
-                estimatedAmountRaw;
+            !isBuy && isCredit ? Math.max(0, Math.round(estimatedAmountRaw - loanPerShare * quantity - sellCost)) :
+                !isBuy ? Math.max(0, Math.round(estimatedAmountRaw - sellCost)) :
+                    estimatedAmountRaw;
 
     const showEstimatedBeforeAfter = isCredit;
 
@@ -691,7 +701,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 <div className="summary__row">
                     <span className="summary__label">
                         주문가능
-                        <LeverageTag leverage={isCredit ? leverage : 1} />
+                        {!isBuy && <LeverageTag leverage={isCredit ? leverage : 1} />}
                     </span>
                     <span className="summary__value">
                         {isBuy ? (
@@ -702,10 +712,18 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                     </span>
                 </div>
 
-                <div className="summary__row">
+                <div className={`summary__row ${!isBuy ? "summary__row--stacked" : ""}`}>
                     <span className="summary__label">
-                        예상금액
+                        {isBuy ? "주문금액" : "예상금액"}
                         <LeverageTag leverage={isCredit ? leverage : 1} />
+                        {!isBuy && (
+                            <Tooltip
+                                text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                placement="top"
+                            >
+                                <span className="fee-tag">수수료·세금</span>
+                            </Tooltip>
+                        )}
                     </span>
                     <span className="summary__value">
                         {showEstimatedBeforeAfter ? (
@@ -723,11 +741,46 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                     </span>
                 </div>
 
+                {isBuy && (
+                    <div className="summary__row summary__row--stacked">
+                        <span className="summary__label">
+                            필요금액
+                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                            <Tooltip
+                                text={`매수 수수료 0.015% (${calculateFee(estimatedAmountRaw).toLocaleString()}원) 포함`}
+                                placement="top"
+                            >
+                                <span className="fee-tag">수수료</span>
+                            </Tooltip>
+                        </span>
+                        <span className="summary__value">
+                            {showEstimatedBeforeAfter ? (
+                                <>
+                                    <span className="summary__value--after">
+                                        {(estimatedAmountAfter + calculateFee(estimatedAmountRaw)).toLocaleString()} 원
+                                    </span>
+                                    <span className="summary__value--before">
+                                        {(estimatedAmountRaw + calculateFee(estimatedAmountRaw)).toLocaleString()} 원
+                                    </span>
+                                </>
+                            ) : (
+                                `${(estimatedAmountAfter + calculateFee(estimatedAmountRaw)).toLocaleString()} 원`
+                            )}
+                        </span>
+                    </div>
+                )}
+
                 {!isBuy && (
                     <div className="summary__row">
                         <span className="summary__label">
                             예상손익
                             <LeverageTag leverage={isCredit ? leverage : 1} />
+                            <Tooltip
+                                text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                placement="top"
+                            >
+                                <span className="fee-tag">수수료·세금</span>
+                            </Tooltip>
                         </span>
                         <span className={`summary__value ${profitColorClass}`}>
                             {profitText} ({rateText})
@@ -794,6 +847,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                     leverage={confirmInfo.leverage}
                     profitAmount={confirmInfo.profitAmount}
                     profitRate={confirmInfo.profitRate}
+                    estimatedAmountRaw={confirmInfo.estimatedAmountRaw}
                 />
             )}
         </div>

@@ -184,7 +184,7 @@
 }
 
 .modal-v2-box.my-account-modal {
-    width: 900px;
+    width: 1100px;
     height: 437px;
     display: flex;
     flex-direction: column;
@@ -282,7 +282,7 @@
 
 .modal-v2-box.advanced-order-modal {
     width: 550px;
-    height: 665px;
+    height: 715px;
     display: flex;
     flex-direction: column;
 }

@@ -40,6 +40,7 @@
 
 .positive { color: #ff6347; }
 .negative { color: #4f9dff; }
+.zero { color: #ffffff; }
 
 .mam-account {
     display: flex;
@@ -146,11 +147,6 @@
     word-break: break-all;
 }
 
-.mam-cell--pending {
-    border: 1px dashed rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.015);
-}
-
 .mam-margin-panel {
     display: flex;
     flex-direction: column;
@@ -180,7 +176,7 @@
 
 .mam-margin-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(6, 1fr);
     gap: 6px;
 }
 
@@ -248,7 +244,7 @@
 .mam-holding-header,
 .mam-holding-row__main {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr 1fr 1fr;
     gap: 4px;
     font-size: 11px;
     padding: 6px 8px;
@@ -262,7 +258,7 @@
 
 .mam-holding-header--leverage,
 .mam-holding-row__main--leverage {
-    grid-template-columns: 2fr 1.2fr 1.0fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr;
+    grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
 }
 
 .mam-holding-header {

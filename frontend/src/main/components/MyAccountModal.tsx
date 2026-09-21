@@ -7,6 +7,7 @@ import type { MarginStatus, AccountStatus } from "../../types/account";
 import { stockNameMap } from "../../constants/stocks";
 import "./MyAccountModal.css";
 import Spinner from "../../components/Spinner";
+import { calculateBreakevenAmount, calculateSellCost } from "../../utils/fee";
 
 interface Props {
     open: boolean;
@@ -191,22 +192,21 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <span className="mam-cell__label">주문 가능</span>
                                         <span className="mam-cell__value">{fmt(account.availableCash)} 원</span>
                                     </div>
-                                    <div className="mam-cell mam-cell--pending">
+                                    <div className="mam-cell">
                                         <span className="mam-cell__label">예약(미체결)</span>
                                         <span className="mam-cell__value">{fmt(account.reservedCash)} 원</span>
                                     </div>
                                     <div className="mam-cell">
-                                        <span className="mam-cell__label">총 매입</span>
+                                        <span className="mam-cell__label">총 매입(현물)</span>
                                         <span className="mam-cell__value">{fmt(account.buyValue)} 원</span>
                                     </div>
                                     <div className="mam-cell">
-                                        <span className="mam-cell__label">총 평가</span>
+                                        <span className="mam-cell__label">총 평가(현물)</span>
                                         <span className="mam-cell__value">{fmt(account.stockValue)} 원</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* ── 계좌/마진 상태 패널 (실제 존재하는 필드만) ── */}
                             <div className="mam-margin-panel">
                                 <div className="mam-margin-panel__head">
                                     <p className="mam-section-title mam-section-title--inline" style={{ opacity: 0.5, color: "#fff" }}>
@@ -227,12 +227,20 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         </span>
                                     </div>
                                     <div className="mam-cell">
-                                        <span className="mam-cell__label">레버리지 순자산</span>
-                                        <span className="mam-cell__value">{fmt(account.leverageNetValue ?? 0)} 원</span>
+                                        <span className="mam-cell__label">레버리지 매입</span>
+                                        <span className="mam-cell__value">{fmt(account.leveragePurchaseTotal ?? 0)} 원</span>
                                     </div>
                                     <div className="mam-cell">
-                                        <span className="mam-cell__label">레버리지 대출금</span>
+                                        <span className="mam-cell__label">레버리지 평가</span>
+                                        <span className="mam-cell__value">{fmt((account.leverageNetValue ?? 0) + (account.leverageLoanTotal ?? 0))} 원</span>
+                                    </div>
+                                    <div className="mam-cell">
+                                        <span className="mam-cell__label">레버리지 대출</span>
                                         <span className="mam-cell__value">{fmt(account.leverageLoanTotal ?? 0)} 원</span>
+                                    </div>
+                                    <div className="mam-cell">
+                                        <span className="mam-cell__label">레버리지 순자산</span>
+                                        <span className="mam-cell__value">{fmt(account.leverageNetValue ?? 0)} 원</span>
                                     </div>
                                 </div>
                             </div>
@@ -267,6 +275,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <span className="mam-holding-cell__top">매입금액</span>
                                         <span className="mam-holding-cell__bottom">평가금액</span>
                                     </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">매입원금액</span>
+                                        <span className="mam-holding-cell__bottom">손익분기금액</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">손익분기매입가</span>
+                                        <span className="mam-holding-cell__bottom">수수료+세금</span>
+                                    </div>
                                 </div>
 
                                 {holdings.map(([code, info]) => {
@@ -275,6 +291,10 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                     const profitRate = account.profitRates[code] ?? 0;
                                     const avgBuyPrice = info.quantity > 0 ? Math.round(info.totalAmount / info.quantity) : 0;
                                     const evalAmount = curPrice != null ? curPrice * info.quantity : undefined;
+
+                                    const breakevenAmount = calculateBreakevenAmount(info.totalCostAmount);
+                                    const breakevenPrice = info.quantity > 0 ? Math.round(breakevenAmount / info.quantity) : 0;
+                                    const sellCostNow = evalAmount != null ? calculateSellCost(evalAmount) : undefined;
 
                                     return (
                                         <div key={code} className="mam-holding-row">
@@ -299,16 +319,28 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                     <span className="mam-holding-cell__bottom">{info.availableQuantity}</span>
                                                 </div>
                                                 <div className="mam-holding-cell">
-                                                    <span className={`mam-holding-cell__top ${profitAmount >= 0 ? "positive" : "negative"}`}>
+                                                    <span className={`mam-holding-cell__top ${
+                                                        profitAmount > 0 ? "positive" : profitAmount < 0 ? "negative" : "zero"
+                                                    }`}>
                                                         {fmtSigned(profitAmount)}
                                                     </span>
-                                                    <span className={`mam-holding-cell__bottom ${profitRate >= 0 ? "positive" : "negative"}`}>
+                                                    <span className={`mam-holding-cell__bottom ${
+                                                        profitAmount > 0 ? "positive" : profitAmount < 0 ? "negative" : "zero"
+                                                    }`}>
                                                         {fmtRate(profitRate)}
                                                     </span>
                                                 </div>
                                                 <div className="mam-holding-cell">
                                                     <span className="mam-holding-cell__top">{fmt(info.totalAmount)}</span>
                                                     <span className="mam-holding-cell__bottom">{evalAmount != null ? fmt(evalAmount) : "-"}</span>
+                                                </div>
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(info.totalCostAmount)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(breakevenAmount)}</span>
+                                                </div>
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(breakevenPrice)}</span>
+                                                    <span className="mam-holding-cell__bottom">{sellCostNow != null ? fmt(sellCostNow) : "-"}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -349,6 +381,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <span className="mam-holding-cell__bottom">평가금액</span>
                                     </div>
                                     <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">매입원금액</span>
+                                        <span className="mam-holding-cell__bottom">손익분기금액</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">손익분기매입가</span>
+                                        <span className="mam-holding-cell__bottom">수수료+세금</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
                                         <span className="mam-holding-cell__top">순자산</span>
                                         <span className="mam-holding-cell__bottom">대출금</span>
                                     </div>
@@ -365,6 +405,10 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                 {leveragePositions.map((pos) => {
                                     const avgBuyPrice = pos.quantity > 0 ? Math.round(pos.purchaseAmount / pos.quantity) : 0;
 
+                                    const breakevenAmount = calculateBreakevenAmount(pos.costAmount);
+                                    const breakevenPrice = pos.quantity > 0 ? Math.round(breakevenAmount / pos.quantity) : 0;
+                                    const sellCostNow = calculateSellCost(pos.evaluationAmount);
+
                                     return (
                                         <div key={`${pos.stockCode}-${pos.leverageRatio}`} className="mam-holding-row">
                                             <div className="mam-holding-row__main mam-holding-row__main--leverage">
@@ -379,8 +423,8 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                     />
                                                     <span>{stockNameMap[pos.stockCode] ?? pos.stockCode}</span>
                                                     <span className={`mam-leverage-badge ${LEVERAGE_BADGE_CLASS[pos.leverageRatio] ?? "mam-leverage-badge--levother"}`}>
-                                                        {LEVERAGE_LABEL[pos.leverageRatio] ?? pos.leverageRatio}
-                                                    </span>
+                        {LEVERAGE_LABEL[pos.leverageRatio] ?? pos.leverageRatio}
+                    </span>
                                                 </div>
 
                                                 <div className="mam-holding-cell">
@@ -394,10 +438,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                 </div>
 
                                                 <div className="mam-holding-cell">
-                                                    <span className={`mam-holding-cell__top ${pos.profitAmount >= 0 ? "positive" : "negative"}`}>
+                                                    <span className={`mam-holding-cell__top ${
+                                                        pos.profitAmount > 0 ? "positive" : pos.profitAmount < 0 ? "negative" : "zero"
+                                                    }`}>
                                                         {fmtSigned(pos.profitAmount)}
                                                     </span>
-                                                    <span className={`mam-holding-cell__bottom ${pos.profitRate >= 0 ? "positive" : "negative"}`}>
+                                                    <span className={`mam-holding-cell__bottom ${
+                                                        pos.profitAmount > 0 ? "positive" : pos.profitAmount < 0 ? "negative" : "zero"
+                                                    }`}>
                                                         {fmtRate(pos.profitRate)}
                                                     </span>
                                                 </div>
@@ -405,6 +453,16 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                 <div className="mam-holding-cell">
                                                     <span className="mam-holding-cell__top">{fmt(pos.purchaseAmount)}</span>
                                                     <span className="mam-holding-cell__bottom">{fmt(pos.evaluationAmount)}</span>
+                                                </div>
+
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(pos.costAmount)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(breakevenAmount)}</span>
+                                                </div>
+
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(breakevenPrice)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(sellCostNow)}</span>
                                                 </div>
 
                                                 <div className="mam-holding-cell">
@@ -453,10 +511,18 @@ export default function MyAccountModal({ open, onClose }: Props) {
                     {profitItems.map((p) => (
                         <div key={p.date} className="mam-profit-row">
                             <span>{p.date}</span>
-                            <span className={p.dailyProfitAmount >= 0 ? "positive" : "negative"}>{fmtSigned(p.dailyProfitAmount)}</span>
-                            <span className={p.dailyProfitRate >= 0 ? "positive" : "negative"}>{fmtRate(p.dailyProfitRate)}</span>
-                            <span className={p.cumulativeProfitAmount >= 0 ? "positive" : "negative"}>{fmtSigned(p.cumulativeProfitAmount)}</span>
-                            <span className={p.cumulativeProfitRate >= 0 ? "positive" : "negative"}>{fmtRate(p.cumulativeProfitRate)}</span>
+                            <span className={p.dailyProfitAmount > 0 ? "positive" : p.dailyProfitAmount < 0 ? "negative" : "zero"}>
+                                {fmtSigned(p.dailyProfitAmount)}
+                            </span>
+                            <span className={p.dailyProfitAmount > 0 ? "positive" : p.dailyProfitAmount < 0 ? "negative" : "zero"}>
+                                {fmtRate(p.dailyProfitRate)}
+                            </span>
+                            <span className={p.cumulativeProfitAmount > 0 ? "positive" : p.cumulativeProfitAmount < 0 ? "negative" : "zero"}>
+                                {fmtSigned(p.cumulativeProfitAmount)}
+                            </span>
+                            <span className={p.cumulativeProfitAmount > 0 ? "positive" : p.cumulativeProfitAmount < 0 ? "negative" : "zero"}>
+                                {fmtRate(p.cumulativeProfitRate)}
+                            </span>
                             <span>{fmt(p.dailyTradeAmount)}</span>
                         </div>
                     ))}

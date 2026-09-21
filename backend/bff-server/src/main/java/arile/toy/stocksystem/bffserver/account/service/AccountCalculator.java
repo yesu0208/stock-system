@@ -94,8 +94,8 @@ public class AccountCalculator {
         return AccountResponse.of(username, totalValue, totalCash, snapshot.availableCash(),
                 snapshot.reservedCash(), stockValue, buyValue, totalProfit, totalProfitRate, accumulatedProfit,
                 accumulatedProfitRate, snapshot.stocks(), profitRates, profitAmounts, currentPrices,
-                leverageResult.netValue(), leverageResult.loanTotal(), leverageResult.views(),
-                snapshot.marginStatus(), snapshot.accountStatus());
+                leverageResult.netValue(), leverageResult.loanTotal(), leverageResult.purchaseTotal(), // [수정]
+                leverageResult.views(), snapshot.marginStatus(), snapshot.accountStatus());
     }
 
     /**
@@ -108,10 +108,11 @@ public class AccountCalculator {
         long netValueTotal = 0L;
         long equityTotal = 0L;
         long loanTotal = 0L;
+        long purchaseTotal = 0L;
         long profitTotal = 0L;
 
         if (positions == null) {
-            return new LeverageCalcResult(0L, 0L, 0L, 0L, views);
+            return new LeverageCalcResult(0L, 0L, 0L, 0L, 0L, views);
         }
 
         for (var entry : positions.entrySet()) {
@@ -154,15 +155,16 @@ public class AccountCalculator {
                     : 0L;
 
             views.add(new LeveragePositionView(stockCode, leverageRatio, info.quantity(), info.availableQuantity(),
-                    info.purchaseAmount(), info.loanAmount(), evaluationAmount, netValue, profitAmount, profitRate, curPrice,
+                    info.purchaseAmount(), info.costAmount(), info.loanAmount(), evaluationAmount, netValue, profitAmount, profitRate, curPrice,
                     info.marginStatus(), initialMargin, maintenanceMargin, maintenancePrice));
 
             netValueTotal += netValue;
             equityTotal += investedAmount; // equityTotal도 투입원금액 기준으로 통일 (기존엔 purchaseAmount-loanAmount였는데 이제 costAmount-loanAmount)
             loanTotal += info.loanAmount();
+            purchaseTotal += info.purchaseAmount();
             profitTotal += profitAmount;
         }
 
-        return new LeverageCalcResult(netValueTotal, equityTotal, loanTotal, profitTotal, views);
+        return new LeverageCalcResult(netValueTotal, equityTotal, loanTotal, purchaseTotal, profitTotal, views);
     }
 }

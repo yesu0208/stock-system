@@ -91,32 +91,6 @@
     color: var(--occ-text-muted);
 }
 
-.occ__tag--leverage.cash {
-    color: var(--occ-text-muted);
-    background: rgba(141, 146, 155, 0.1);
-    border-color: rgba(141, 146, 155, 0.25);
-}
-.occ__tag--leverage.lev-2 {
-    color: #7dd3fc;
-    background: rgba(125, 211, 252, 0.12);
-    border-color: rgba(125, 211, 252, 0.3);
-}
-.occ__tag--leverage.lev-3 {
-    color: #fbbf24;
-    background: rgba(251, 191, 36, 0.12);
-    border-color: rgba(251, 191, 36, 0.3);
-}
-.occ__tag--leverage.lev-5 {
-    color: #f87171;
-    background: rgba(248, 113, 113, 0.12);
-    border-color: rgba(248, 113, 113, 0.3);
-}
-.occ__tag--leverage.lev-other {
-    color: #f472b6;
-    background: rgba(244, 114, 182, 0.12);
-    border-color: rgba(244, 114, 182, 0.3);
-}
-
 .occ__tag--type {
     color: #b7a6ff;
     background: rgba(183, 166, 255, 0.12);
@@ -144,7 +118,7 @@
 .occ__section-title {
     font-size: 10px;
     font-weight: 700;
-    color: var(--occ-text-muted);
+    color: var(--occ-text-sub);
     letter-spacing: 1px;
     text-transform: uppercase;
     display: flex;
@@ -198,11 +172,13 @@
 }
 
 .occ__leverage-tag {
-    font-size: 9px;
-    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
     padding: 1px 4px;
     border-radius: 4px;
     border: 1px solid transparent;
+    font-size: 12px;
+    font-weight: 700;
     letter-spacing: 0.1px;
     vertical-align: middle;
     margin-left: 4px;
@@ -210,9 +186,9 @@
 }
 
 .occ__leverage-tag.cash {
-    color: var(--occ-text-muted);
-    background: rgba(141, 146, 155, 0.1);
-    border-color: rgba(141, 146, 155, 0.25);
+    color: #b4b9c2;
+    background: rgba(141, 146, 155, 0.14);
+    border-color: rgba(141, 146, 155, 0.35);
 }
 .occ__leverage-tag.lev-2 {
     color: #7dd3fc;
@@ -277,6 +253,21 @@
 .occ__derived--tp { color: rgba(34, 192, 122, 0.7); }
 .occ__derived--sl { color: rgba(240, 74, 74, 0.7); }
 
+/* 주문금액 / 필요금액: 라벨 줄 아래에 값 줄이 오도록 배치 (trailing stop 모달과 동일 방식) */
+.occ__row--stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+}
+
+.occ__row--stacked .occ__label {
+    align-self: flex-start;
+}
+
+.occ__row--stacked .occ__summary-value {
+    align-self: flex-end;
+}
+
 .occ__summary-value {
     font-size: 13px;
     font-weight: 600;
@@ -298,9 +289,9 @@
 .occ__value--before {
     font-size: 10px;
     font-weight: 500;
-    color: var(--occ-text-muted);
+    color: var(--occ-text-sub);
     text-decoration: line-through;
-    text-decoration-color: var(--occ-text-muted);
+    text-decoration-color: var(--occ-text-sub);
     white-space: nowrap;
     margin-left: 5px;
 }
@@ -313,7 +304,7 @@
     border: 1px solid var(--occ-border);
     font-size: 11px;
     line-height: 1.65;
-    color: var(--occ-text-muted);
+    color: var(--occ-text-primary);
     text-align: center;
 }
 
@@ -333,6 +324,7 @@
     transition: filter 0.15s, transform 0.1s;
     font-family: var(--occ-font);
     letter-spacing: -0.2px;
+    outline: none;
 }
 
 .occ__btn:active { transform: scale(0.97); }
@@ -345,6 +337,7 @@
 .occ__btn--cancel:hover {
     background: #2e3138;
     color: var(--occ-text-primary);
+    border-color: transparent;
 }
 
 .occ__btn--confirm {
@@ -353,47 +346,24 @@
 }
 .occ__btn--confirm:hover { filter: brightness(1.1); }
 
-.occ__stock-code {
-    color: var(--occ-text-sub);
-}
-
-.occ__tag--leverage.cash {
-    color: #b4b9c2;
-    background: rgba(141, 146, 155, 0.14);
-    border-color: rgba(141, 146, 155, 0.35);
-}
-
-.occ__section-title {
-    color: var(--occ-text-sub);
-}
-
-.occ__notice {
-    color: var(--occ-text-primary);
-}
-
-.occ__value--above .occ__unit { color: var(--occ-above); }
-.occ__value--below .occ__unit { color: var(--occ-below); }
-
-.occ__value--above .occ__unit,
-.occ__value--below .occ__unit {
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.occ__value--before {
-    color: var(--occ-text-sub);
-    text-decoration-color: var(--occ-text-sub);
-}
-
-.occ__btn--cancel:hover {
-    border-color: transparent;
-}
-
-.occ__btn {
-    outline: none;
-}
-
 .occ__btn:focus,
 .occ__btn:focus-visible {
     outline: none;
+}
+
+.occ__fee-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(183, 166, 255, 0.3);
+    background: rgba(124, 92, 255, 0.1);
+    color: #b7a6ff;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
+    cursor: default;
+    flex-shrink: 0;
+    margin-left: 4px;
 }
