@@ -15,6 +15,8 @@ export interface TrailingConfirmData {
     basePrice:   number;
     expectedFillPrice: number;
     buyFee?:          number;
+    sellCost?:        number;
+    sellAmountAfter?: number;
     minProfitAmount?: number;
     minProfitRate?:   number;
 }
@@ -68,6 +70,9 @@ export default function TrailingOrderConfirmModal({
     const buyFee              = data.buyFee ?? 0;
     const requiredAmountAfter = afterAmount + buyFee;
     const requiredAmountRaw   = rawAmount + buyFee;
+
+    const sellCost        = data.sellCost ?? 0;
+    const sellAmountAfter = data.sellAmountAfter ?? 0;
 
     const showProfit  = !isBuy && data.minProfitAmount !== undefined;
     const profitAmt   = data.minProfitAmount ?? 0;
@@ -144,15 +149,32 @@ export default function TrailingOrderConfirmModal({
                         <span className="toc__row-label">
                             {isBuy ? "최대 체결금액" : "최소 체결금액"}
                             <LeverageTag leverage={tagLeverage} small />
+                            {!isBuy && (
+                                <Tooltip
+                                    text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                    placement="top"
+                                >
+                                    <span className="toc__fee-tag">수수료·세금</span>
+                                </Tooltip>
+                            )}
                         </span>
                         <span className={`toc__row-value toc__row-value--amount ${isBuy ? "buy" : "sell"}`}>
-                            {showBeforeAfter ? (
+                            {isBuy ? (
+                                showBeforeAfter ? (
+                                    <>
+                                        <span className="toc__value--after">{fmt(afterAmount)}원</span>
+                                        <span className="toc__value--before">{fmt(rawAmount)}원</span>
+                                    </>
+                                ) : (
+                                    `${fmt(afterAmount)} 원`
+                                )
+                            ) : data.credit ? (
                                 <>
-                                    <span className="toc__value--after">{fmt(afterAmount)}원</span>
+                                    <span className="toc__value--after">{fmt(sellAmountAfter)}원</span>
                                     <span className="toc__value--before">{fmt(rawAmount)}원</span>
                                 </>
                             ) : (
-                                `${fmt(afterAmount)} 원`
+                                `${fmt(sellAmountAfter)} 원`
                             )}
                         </span>
                     </div>
@@ -183,9 +205,16 @@ export default function TrailingOrderConfirmModal({
                     )}
 
                     {showProfit && (
-                        <div className="toc__row">
+                        <div className="toc__row toc__row--stacked">
                             <span className="toc__row-label">
                                 최소 예상손익
+                                <LeverageTag leverage={tagLeverage} small />
+                                <Tooltip
+                                    text={`매도 수수료·세금(0.015%, 0.2%) ${sellCost.toLocaleString()}원 차감`}
+                                    placement="top"
+                                >
+                                    <span className="toc__fee-tag">수수료·세금</span>
+                                </Tooltip>
                             </span>
                             <span className={`toc__row-value toc__profit ${profitClass}`}>
                                 {profitSign}{Math.abs(profitAmt).toLocaleString()}원

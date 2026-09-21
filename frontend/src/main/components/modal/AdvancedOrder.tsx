@@ -779,6 +779,8 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
             basePrice:   currentPrice,
             expectedFillPrice,
             buyFee:          isBuy ? buyFee : undefined,
+            sellCost:        !isBuy ? sellCost : undefined,
+            sellAmountAfter: !isBuy ? sellAmountAfter : undefined,
             minProfitAmount: !isBuy ? minProfitAmount : undefined,
             minProfitRate:   !isBuy ? minProfitRate   : undefined,
         });
