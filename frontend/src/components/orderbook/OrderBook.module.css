@@ -67,6 +67,31 @@
     font-size: 13px;
 }
 
+.ratioBar {
+    display: flex;
+    width: 100%;
+    height: 7px;
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background-color: #2A2A2A;
+    align-items: flex-start; /* 기준선: 위 */
+}
+
+.ratioBarAsk {
+    height: 100%;
+    background-color: #4F9DFF;
+    transition: width 0.3s ease;
+    transform: translateY(-1px);  /* 파랑을 아래로 */
+}
+
+.ratioBarBid {
+    height: 100%;
+    background-color: #FF6347;
+    transition: width 0.3s ease;
+    transform: translateY(1px); /* 빨강을 위로 */
+}
+
 .loading {
     flex: 1;
     display: flex;

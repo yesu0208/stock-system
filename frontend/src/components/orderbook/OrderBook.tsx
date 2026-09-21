@@ -31,6 +31,10 @@ export default function OrderBook() {
     const totalAsk = asks.reduce((sum, a) => sum + a.quantity, 0)
     const totalBid = bids.reduce((sum, b) => sum + b.quantity, 0)
 
+    const totalVolume = totalAsk + totalBid
+    const askPercent = totalVolume > 0 ? (totalAsk / totalVolume) * 100 : 50
+    const bidPercent = totalVolume > 0 ? (totalBid / totalVolume) * 100 : 50
+
     useEffect(() => {
         setAccTicks([])
         initialScrollDone.current = false
@@ -90,6 +94,17 @@ export default function OrderBook() {
                         <span className={styles.footerAsk}>{totalAsk.toLocaleString()}</span>
                         <span className={styles.footerLabel}>총 잔량</span>
                         <span className={styles.footerBid}>{totalBid.toLocaleString()}</span>
+                    </div>
+
+                    <div className={styles.ratioBar}>
+                        <div
+                            className={styles.ratioBarAsk}
+                            style={{ width: `${askPercent}%` }}
+                        />
+                        <div
+                            className={styles.ratioBarBid}
+                            style={{ width: `${bidPercent}%` }}
+                        />
                     </div>
                 </div>
             )}
