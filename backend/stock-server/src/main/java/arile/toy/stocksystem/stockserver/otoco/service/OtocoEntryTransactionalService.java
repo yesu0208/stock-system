@@ -3,6 +3,7 @@ package arile.toy.stocksystem.stockserver.otoco.service;
 import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.otoco.dto.*;
 import arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity;
 import arile.toy.stocksystem.stockserver.otoco.event.publisher.OtocoResponseEventPublisher;
@@ -24,6 +25,7 @@ public class OtocoEntryTransactionalService {
     private final StockServerOtocoResponseRepository stockServerOtocoResponseRepository;
     private final OtocoResponseEventPublisher otocoResponseEventPublisher;
     private final AccountApiClient accountApiClient;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     @Transactional
     public void triggerEntryAndRegisterOrder(OtocoDto dto) {
@@ -65,9 +67,7 @@ public class OtocoEntryTransactionalService {
     private void compensateFailedEntry(OtocoEntity entity) {
 
         long orderAmount = (long) entity.getEntryTriggerPrice() * entity.getOrderQuantity();
-        long refundAmount = entity.getLeverageRatio().isSpot()
-                ? orderAmount
-                : entity.getLeverageRatio().calculateMarginDeposit(orderAmount);
+        long refundAmount = reserveAmountCalculator.calculateReserveAmount(entity.getLeverageRatio(), orderAmount);
 
         boolean refunded = accountApiClient.refundReservedCash(entity.getUsername(), refundAmount);
 

@@ -14,6 +14,7 @@ import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
 import arile.toy.stocksystem.stockserver.order.service.QueuePositionBroadcastService;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.otoco.service.OtocoOrderLifecycleListener;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class CancelService {
     private final AccountApiClient accountApiClient;
     private final OtocoOrderLifecycleListener otocoOrderLifecycleListener;
     private final QueuePositionBroadcastService queuePositionBroadcastService;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     @Transactional
     public void registerCancel(CancelRequestEvent request) {
@@ -96,7 +98,7 @@ public class CancelService {
         if (orderEntity.getOrderType() == OrderType.BUY) {
 
             long orderAmount = (long) orderEntity.getOrderPrice() * orderEntity.getRemainingQuantity();
-            long refundAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+            long refundAmount = reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
 
             refunded = accountApiClient.refundReservedCash(orderEntity.getUsername(), refundAmount);
 

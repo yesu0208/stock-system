@@ -13,6 +13,7 @@ import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderService;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class AutoCancelService {
     private final AutoCancelResponseEventPublisher autoCancelResponseEventPublisher;
     private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
     private final AccountApiClient accountApiClient;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     @Transactional
     public void registerAutoCancel(AutoCancelRequestEvent request) {
@@ -89,7 +91,7 @@ public class AutoCancelService {
         if (autoOrderEntity.getAutoOrderType() == AutoOrderType.BUY) {
 
             long orderAmount = (long) autoOrderEntity.getOrderPrice() * autoOrderEntity.getOrderQuantity();
-            long refundAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+            long refundAmount = reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
 
             refunded = accountApiClient.refundReservedCash(autoOrderEntity.getUsername(), refundAmount);
 
