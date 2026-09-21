@@ -45,6 +45,7 @@ export interface AccountResponse {
     currentPrices: Record<string, number>
     leverageNetValue: number | null
     leverageLoanTotal: number | null
+    leveragePurchaseTotal: number | null
     leveragePositions: LeveragePositionView[]
     marginStatus: MarginStatus
     accountStatus: AccountStatus

@@ -207,7 +207,6 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                 </div>
                             </div>
 
-                            {/* ── 계좌/마진 상태 패널 (실제 존재하는 필드만) ── */}
                             <div className="mam-margin-panel">
                                 <div className="mam-margin-panel__head">
                                     <p className="mam-section-title mam-section-title--inline" style={{ opacity: 0.5, color: "#fff" }}>
@@ -228,12 +227,20 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         </span>
                                     </div>
                                     <div className="mam-cell">
-                                        <span className="mam-cell__label">레버리지 순자산</span>
-                                        <span className="mam-cell__value">{fmt(account.leverageNetValue ?? 0)} 원</span>
+                                        <span className="mam-cell__label">레버리지 매입</span>
+                                        <span className="mam-cell__value">{fmt(account.leveragePurchaseTotal ?? 0)} 원</span>
                                     </div>
                                     <div className="mam-cell">
-                                        <span className="mam-cell__label">레버리지 대출금</span>
+                                        <span className="mam-cell__label">레버리지 평가</span>
+                                        <span className="mam-cell__value">{fmt((account.leverageNetValue ?? 0) + (account.leverageLoanTotal ?? 0))} 원</span>
+                                    </div>
+                                    <div className="mam-cell">
+                                        <span className="mam-cell__label">레버리지 대출</span>
                                         <span className="mam-cell__value">{fmt(account.leverageLoanTotal ?? 0)} 원</span>
+                                    </div>
+                                    <div className="mam-cell">
+                                        <span className="mam-cell__label">레버리지 순자산</span>
+                                        <span className="mam-cell__value">{fmt(account.leverageNetValue ?? 0)} 원</span>
                                     </div>
                                 </div>
                             </div>
