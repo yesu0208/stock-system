@@ -27,6 +27,15 @@ type CandleWithVolume = CandlestickData & {
     volume?: number;
 };
 
+type AvgPriceKey = "CASH" | "X1_5" | "X2" | "X2_5";
+
+const AVG_PRICE_BUTTONS: { key: AvgPriceKey; label: string; color: string }[] = [
+    { key: "CASH", label: "현금", color: "#94a3b8" },
+    { key: "X1_5", label: "1.5x", color: "#7dd3fc" },
+    { key: "X2",   label: "2x",   color: "#fbbf24" },
+    { key: "X2_5", label: "2.5x", color: "#f87171" },
+];
+
 export default function TradingChart() {
     const { selectedStock } = useStock();
     const stockCode = selectedStock.code;
@@ -49,9 +58,38 @@ export default function TradingChart() {
     const ma60Ref = useRef<any>(null);
     const ma120Ref = useRef<any>(null);
 
-    const avgPriceLineRef = useRef<any>(null);
+    const [activeAvgPrices, setActiveAvgPrices] = useState<Set<AvgPriceKey>>(new Set());
 
-    const [showAvgPrice, setShowAvgPrice] = useState(true);
+    const avgPriceLineRefs = useRef<Record<AvgPriceKey, any>>({
+        CASH: null,
+        X1_5: null,
+        X2: null,
+        X2_5: null,
+    });
+
+    function toggleAvgPrice(key: AvgPriceKey) {
+        setActiveAvgPrices((prev) => {
+            const next = new Set(prev);
+            next.has(key) ? next.delete(key) : next.add(key);
+            return next;
+        });
+    }
+
+    function getAvgPrice(key: AvgPriceKey): number {
+        if (key === "CASH") {
+            const stockInfo = account?.stocks[stockCode];
+            return stockInfo && stockInfo.quantity > 0
+                ? Math.round(stockInfo.totalAmount / stockInfo.quantity)
+                : 0;
+        }
+
+        const position = account?.leveragePositions?.find(
+            (p) => p.stockCode === stockCode && p.leverageRatio === key
+        );
+        return position && position.quantity > 0
+            ? Math.round(position.purchaseAmount / position.quantity)
+            : 0;
+    }
 
     const [timeframe, setTimeframe] = useState<"minute" | "day">("minute");
     const timeframeRef = useRef<"minute" | "day">("minute");
@@ -176,21 +214,36 @@ export default function TradingChart() {
         timeframeRef.current = timeframe;
     }, [timeframe]);
 
-    // AccountContext가 갖고 있는 실제 보유 종목 평균매입가(stocks[code].buyPrice)를 사용
     useEffect(() => {
-        const holding = account?.stocks[stockCode];
-        const avgPrice = holding?.buyPrice ?? 0;
+        if (!seriesRef.current) return;
 
-        if (!showAvgPrice || avgPrice <= 0) {
-            if (avgPriceLineRef.current && seriesRef.current) {
-                seriesRef.current.removePriceLine(avgPriceLineRef.current);
-                avgPriceLineRef.current = null;
+        AVG_PRICE_BUTTONS.forEach(({ key, label, color }) => {
+            const isActive = activeAvgPrices.has(key);
+            const price = getAvgPrice(key);
+            const existingLine = avgPriceLineRefs.current[key];
+
+            if (!isActive || price <= 0) {
+                if (existingLine) {
+                    seriesRef.current!.removePriceLine(existingLine);
+                    avgPriceLineRefs.current[key] = null;
+                }
+                return;
             }
-            return;
-        }
 
-        updateAvgPrice(avgPrice);
-    }, [showAvgPrice, account, stockCode]);
+            if (existingLine) {
+                seriesRef.current!.removePriceLine(existingLine);
+            }
+
+            avgPriceLineRefs.current[key] = seriesRef.current!.createPriceLine({
+                price,
+                color,
+                lineWidth: 1,
+                lineStyle: 2,
+                axisLabelVisible: true,
+                title: label,
+            });
+        });
+    }, [activeAvgPrices, account, stockCode]);
 
     useEffect(() => {
         if (!chartContainerRef.current) return;
@@ -649,31 +702,6 @@ export default function TradingChart() {
         }
     }, [rawDailyCandles, selectedStock?.realtimeSupported, stockCode]);
 
-    const updateAvgPrice = (price: number) => {
-        if (!seriesRef.current) return;
-
-        if (!showAvgPrice) {
-            if (avgPriceLineRef.current) {
-                seriesRef.current.removePriceLine(avgPriceLineRef.current);
-                avgPriceLineRef.current = null;
-            }
-            return;
-        }
-
-        if (avgPriceLineRef.current) {
-            seriesRef.current.removePriceLine(avgPriceLineRef.current);
-        }
-
-        avgPriceLineRef.current = seriesRef.current.createPriceLine({
-            price,
-            color: "#ffffff",
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: "AVG",
-        });
-    };
-
     const calculateMA = (
         data: CandleWithVolume[],
         period: number
@@ -746,8 +774,17 @@ export default function TradingChart() {
         const maxX = chart.timeScale().timeToCoordinate(maxCandle.time);
         const minX = chart.timeScale().timeToCoordinate(minCandle.time);
 
-        const maxY = seriesRef.current.priceToCoordinate(maxCandle.high);
-        const minY = seriesRef.current.priceToCoordinate(minCandle.low);
+        const rawMaxY = seriesRef.current.priceToCoordinate(maxCandle.high);
+        const rawMinY = seriesRef.current.priceToCoordinate(minCandle.low);
+
+        const paneHeight = chart.panes()[0]?.getHeight() ?? 270;
+
+        const LABEL_HEIGHT_ESTIMATE = 30;
+        const LABEL_GAP = 6;
+        const LABEL_MARGIN = LABEL_HEIGHT_ESTIMATE + LABEL_GAP;
+
+        const maxY = rawMaxY != null ? Math.max(rawMaxY, LABEL_MARGIN) : null;
+        const minY = rawMinY != null ? Math.min(rawMinY, paneHeight - LABEL_MARGIN) : null;
 
         const lastVisibleCandle = visibleCandles[visibleCandles.length - 1];
 
@@ -836,42 +873,45 @@ export default function TradingChart() {
             <div className={styles.header}
                  style={{visibility: !selectedStock?.realtimeSupported ? 'hidden' : 'visible'}}>
                 <span className={styles.headerTitle}>
-                차트
-            </span>
-
-                <div className={styles.maLegend}>
-                <span className={styles.maLegendLabel}>
-                    이동평균
+                    차트
                 </span>
 
-                    <span style={{color: "#facc15"}}>5</span>
-                    <span style={{color: "#22c55e"}}>10</span>
-                    <span style={{color: "#38bdf8"}}>20</span>
-                    <span style={{color: "#a78bfa"}}>60</span>
-                    <span style={{color: "#f472b6"}}>120</span>
-                </div>
-
                 <div className={styles.headerButtons}>
-                    <button
-                        onClick={() => setTimeframe("minute")}
-                        className={`${styles.btnBase} ${timeframe === "minute" ? styles.btnActive : styles.btnInactive}`}
-                    >
-                        분봉
-                    </button>
+                    <span className={styles.avgPriceLabel}>기간</span>
+                    <div className={styles.btnGroup}>
+                        <button
+                            onClick={() => setTimeframe("minute")}
+                            className={`${styles.btnBase} ${timeframe === "minute" ? styles.btnActive : styles.btnInactive}`}
+                        >
+                            분봉
+                        </button>
 
-                    <button
-                        onClick={() => setTimeframe("day")}
-                        className={`${styles.btnBase} ${timeframe === "day" ? styles.btnActive : styles.btnInactive}`}
-                    >
-                        일봉
-                    </button>
+                        <button
+                            onClick={() => setTimeframe("day")}
+                            className={`${styles.btnBase} ${timeframe === "day" ? styles.btnActive : styles.btnInactive}`}
+                        >
+                            일봉
+                        </button>
+                    </div>
 
-                    <button
-                        onClick={() => setShowAvgPrice(prev => !prev)}
-                        className={`${styles.btnBase} ${showAvgPrice ? styles.btnAvgActive : styles.btnInactive}`}
-                    >
-                        평균단가
-                    </button>
+                    <div className={styles.btnGroupDivider} />
+
+                    <span className={styles.avgPriceLabel}>매입가</span>
+                    <div className={styles.btnGroup}>
+                        {AVG_PRICE_BUTTONS.map(({ key, label, color }) => {
+                            const isActive = activeAvgPrices.has(key);
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => toggleAvgPrice(key)}
+                                    className={`${styles.btnBase} ${styles.btnInactive}`}
+                                    style={isActive ? { background: color, color: "#0f172a" } : undefined}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
@@ -890,10 +930,10 @@ export default function TradingChart() {
                             top: extremeMarks.max.y,
                             transform:
                                 extremeMarks.max.align === "left"
-                                    ? "translate(0%, -120%)"
+                                    ? "translate(0%, calc(-100% - 6px))"
                                     : extremeMarks.max.align === "right"
-                                        ? "translate(-100%, -120%)"
-                                        : "translate(-50%, -120%)",
+                                        ? "translate(-100%, calc(-100% - 6px))"
+                                        : "translate(-50%, calc(-100% - 6px))",
                         }}
                     >
                         <div>
@@ -921,10 +961,10 @@ export default function TradingChart() {
                             top: extremeMarks.min.y,
                             transform:
                                 extremeMarks.min.align === "left"
-                                    ? "translate(0%, 20%)"
+                                    ? "translate(0%, 6px)"
                                     : extremeMarks.min.align === "right"
-                                        ? "translate(-100%, 20%)"
-                                        : "translate(-50%, 20%)",
+                                        ? "translate(-100%, 6px)"
+                                        : "translate(-50%, 6px)",
                         }}
                     >
                         <div>
