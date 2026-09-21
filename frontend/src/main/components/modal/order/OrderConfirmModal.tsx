@@ -6,6 +6,8 @@ import { tokenStorage } from '../../../../utils/token'
 import './OrderConfirmModal.css'
 import { useMsg } from "../../../context/MsgContext";
 import type { LeverageRatio, OrderType as ApiOrderType } from '../../../../types/order'
+import Tooltip from '../../../../tooltip/Tooltip'
+import { calculateFee } from '../../../../utils/fee'
 
 type OrderType = 'market' | 'limit' | 'conditional'
 type Side = 'buy' | 'sell'
@@ -22,6 +24,7 @@ interface Props {
     price: number
     watchPrice?: number
     estimatedAmount: number
+    estimatedAmountRaw: number
     isCredit: boolean
     leverage: number
     profitAmount?: number
@@ -63,7 +66,7 @@ function LeverageTag({ leverage }: { leverage: number }) {
 export default function OrderConfirmModal({
                                               open, onClose, onConfirm,
                                               side, orderType, stockName, stockCode,
-                                              quantity, price, watchPrice, estimatedAmount, isCredit, leverage,
+                                              quantity, price, watchPrice, estimatedAmount, estimatedAmountRaw, isCredit, leverage,
                                               profitAmount, profitRate,
                                           }: Props) {
     const [loading, setLoading] = useState(false)
@@ -73,7 +76,10 @@ export default function OrderConfirmModal({
     const isBuy = side === 'buy'
     const sideLabel = isBuy ? '매수' : '매도'
     const creditLabel = isCredit ? '신용' : '현금'
-    const amountPrefix = orderType === 'market' ? '약 ' : ''
+
+    const buyFee = isBuy ? calculateFee(estimatedAmountRaw) : 0
+    const requiredAfter = estimatedAmount + buyFee
+    const requiredRaw = estimatedAmountRaw + buyFee
 
     async function handleConfirmClick() {
         setLoading(true)
@@ -170,12 +176,60 @@ export default function OrderConfirmModal({
 
                             <div className="ocm__divider" />
 
-                            <div className="ocm__row">
-                                <span className="ocm__row-label">예상 금액</span>
-                                <span className={`ocm__row-value ocm__row-value--amount ${side}`}>
-                                    {estimatedAmount.toLocaleString()} 원
-                                </span>
-                            </div>
+                            {isBuy ? (
+                                <>
+                                    <div className="ocm__row ocm__row--stacked">
+                                        <span className="ocm__row-label">
+                                            주문금액
+                                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                                        </span>
+                                        <span className="ocm__row-value ocm__row-value--amount buy">
+                                            {isCredit ? (
+                                                <>
+                                                    <span>{estimatedAmount.toLocaleString()} 원</span>
+                                                    <span className="ocm__row-value--before">
+                                                        {estimatedAmountRaw.toLocaleString()} 원
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                `${estimatedAmount.toLocaleString()} 원`
+                                            )}
+                                        </span>
+                                    </div>
+
+                                    <div className="ocm__row ocm__row--stacked">
+                                        <span className="ocm__row-label">
+                                            필요금액
+                                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                                            <Tooltip
+                                                text={`매수 수수료(0.015%) ${buyFee.toLocaleString()}원 포함`}
+                                                placement="top"
+                                            >
+                                                <span className="ocm__fee-tag">수수료</span>
+                                            </Tooltip>
+                                        </span>
+                                        <span className="ocm__row-value ocm__row-value--amount buy">
+                                            {isCredit ? (
+                                                <>
+                                                    <span>{requiredAfter.toLocaleString()} 원</span>
+                                                    <span className="ocm__row-value--before">
+                                                        {requiredRaw.toLocaleString()} 원
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                `${requiredAfter.toLocaleString()} 원`
+                                            )}
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="ocm__row">
+                                    <span className="ocm__row-label">예상 금액</span>
+                                    <span className={`ocm__row-value ocm__row-value--amount ${side}`}>
+                                        {estimatedAmount.toLocaleString()} 원
+                                    </span>
+                                </div>
+                            )}
 
                             {side === 'sell' && profitAmount !== undefined && profitRate !== undefined && (
                                 <div className="ocm__row">
@@ -215,12 +269,60 @@ export default function OrderConfirmModal({
 
                             <div className="ocm__divider" />
 
-                            <div className="ocm__row">
-                                <span className="ocm__row-label">예상 금액</span>
-                                <span className={`ocm__row-value ocm__row-value--amount ${side}`}>
-                                    {amountPrefix}{estimatedAmount.toLocaleString()} 원
-                                </span>
-                            </div>
+                            {isBuy ? (
+                                <>
+                                    <div className="ocm__row ocm__row--stacked">
+                                        <span className="ocm__row-label">
+                                            주문금액
+                                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                                        </span>
+                                        <span className="ocm__row-value ocm__row-value--amount buy">
+                                            {isCredit ? (
+                                                <>
+                                                    <span>{estimatedAmount.toLocaleString()} 원</span>
+                                                    <span className="ocm__row-value--before">
+                                                        {estimatedAmountRaw.toLocaleString()} 원
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                `${estimatedAmount.toLocaleString()} 원`
+                                            )}
+                                        </span>
+                                    </div>
+
+                                    <div className="ocm__row ocm__row--stacked">
+                                        <span className="ocm__row-label">
+                                            필요금액
+                                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                                            <Tooltip
+                                                text={`매수 수수료(0.015%) ${buyFee.toLocaleString()}원 포함`}
+                                                placement="top"
+                                            >
+                                                <span className="ocm__fee-tag">수수료</span>
+                                            </Tooltip>
+                                        </span>
+                                        <span className="ocm__row-value ocm__row-value--amount buy">
+                                            {isCredit ? (
+                                                <>
+                                                    <span>{requiredAfter.toLocaleString()} 원</span>
+                                                    <span className="ocm__row-value--before">
+                                                        {requiredRaw.toLocaleString()} 원
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                `${requiredAfter.toLocaleString()} 원`
+                                            )}
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="ocm__row">
+                                    <span className="ocm__row-label">예상 금액</span>
+                                    <span className={`ocm__row-value ocm__row-value--amount ${side}`}>
+                                        {estimatedAmount.toLocaleString()} 원
+                                    </span>
+                                </div>
+                            )}
 
                             {side === 'sell' && profitAmount !== undefined && profitRate !== undefined && (
                                 <div className="ocm__row">

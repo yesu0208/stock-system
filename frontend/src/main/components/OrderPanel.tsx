@@ -373,6 +373,7 @@ type ConfirmInfo = {
     leverage: number;
     profitAmount?: number;
     profitRate?: number;
+    estimatedAmountRaw: number;
 };
 
 function TradeForm({ mode }: { mode: "buy" | "sell" }) {
@@ -534,6 +535,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
             leverage:        isCredit ? leverage : 1,
             profitAmount: !isBuy ? profitAmount : undefined,
             profitRate:   !isBuy ? profitRate   : undefined,
+            estimatedAmountRaw: estimatedAmount,
         });
         setConfirmOpen(true);
     }
@@ -843,6 +845,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                     leverage={confirmInfo.leverage}
                     profitAmount={confirmInfo.profitAmount}
                     profitRate={confirmInfo.profitRate}
+                    estimatedAmountRaw={confirmInfo.estimatedAmountRaw}
                 />
             )}
         </div>
