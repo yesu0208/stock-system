@@ -209,3 +209,18 @@
     border: 1px solid #2e3138;
     border-radius: 10px;
 }
+
+.btnBase {
+    padding: 4px 8px;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    outline: none;
+}
+
+.btnBase:focus,
+.btnBase:focus-visible {
+    outline: none;
+}
