@@ -197,11 +197,11 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <span className="mam-cell__value">{fmt(account.reservedCash)} 원</span>
                                     </div>
                                     <div className="mam-cell">
-                                        <span className="mam-cell__label">총 매입</span>
+                                        <span className="mam-cell__label">총 매입(현물)</span>
                                         <span className="mam-cell__value">{fmt(account.buyValue)} 원</span>
                                     </div>
                                     <div className="mam-cell">
-                                        <span className="mam-cell__label">총 평가</span>
+                                        <span className="mam-cell__label">총 평가(현물)</span>
                                         <span className="mam-cell__value">{fmt(account.stockValue)} 원</span>
                                     </div>
                                 </div>
