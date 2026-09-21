@@ -147,11 +147,6 @@
     word-break: break-all;
 }
 
-.mam-cell--pending {
-    border: 1px dashed rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.015);
-}
-
 .mam-margin-panel {
     display: flex;
     flex-direction: column;

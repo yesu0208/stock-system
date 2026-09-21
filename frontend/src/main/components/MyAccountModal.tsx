@@ -192,7 +192,7 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <span className="mam-cell__label">주문 가능</span>
                                         <span className="mam-cell__value">{fmt(account.availableCash)} 원</span>
                                     </div>
-                                    <div className="mam-cell mam-cell--pending">
+                                    <div className="mam-cell">
                                         <span className="mam-cell__label">예약(미체결)</span>
                                         <span className="mam-cell__value">{fmt(account.reservedCash)} 원</span>
                                     </div>
