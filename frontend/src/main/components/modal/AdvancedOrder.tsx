@@ -1293,6 +1293,7 @@ function OtocoInputPanel() {
             slDerivedPrice,
             credit:         isCredit,
             leverage:       isCredit ? leverage : 1,
+            buyFee:         entryFee,
         });
         setConfirmOpen(true);
     }

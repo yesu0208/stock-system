@@ -2,6 +2,7 @@ import { useState } from "react";
 import ModalV2 from "../../../../components/ModalV2";
 import "./OtocoOrderConfirmModal.css";
 import { useMsg } from "../../../context/MsgContext";
+import Tooltip from "../../../../tooltip/Tooltip";
 
 export interface OtocoConfirmData {
     stockName:      string;
@@ -19,6 +20,7 @@ export interface OtocoConfirmData {
     leverage:       number;
     tpDerivedPrice: number;
     slDerivedPrice: number;
+    buyFee:         number;
 }
 
 interface OtocoOrderConfirmModalProps {
@@ -32,6 +34,21 @@ function fmt(n: number): string {
     return n.toLocaleString();
 }
 
+function LeverageTag({ leverage }: { leverage: number }) {
+    const isCash = leverage === 1;
+    const levClass =
+        isCash           ? "cash"  :
+            leverage === 1.5 ? "lev-2" :
+                leverage === 2   ? "lev-3" :
+                    leverage === 2.5 ? "lev-5" :
+                        "lev-other";
+    return (
+        <span className={`occ__leverage-tag ${levClass}`}>
+            {isCash ? "현금" : `${leverage}x`}
+        </span>
+    );
+}
+
 export default function OtocoOrderConfirmModal({
                                                    open, data, onClose, onConfirm,
                                                }: OtocoOrderConfirmModalProps) {
@@ -41,15 +58,7 @@ export default function OtocoOrderConfirmModal({
     if (!data) return null;
 
     const isAbove = data.entryDirection === "ABOVE";
-
-    const leverageLabel =
-        !data.credit || data.leverage === 1 ? "현금" : `${data.leverage}x`;
-    const leverageClass =
-        !data.credit || data.leverage === 1 ? "cash"  :
-            data.leverage === 1.5 ? "lev-2" :
-                data.leverage === 2   ? "lev-3" :
-                    data.leverage === 2.5 ? "lev-5" :
-                        "lev-other";
+    const tagLeverage = data.credit ? data.leverage : 1;
 
     const tpMain = data.tpMode === "PRICE"
         ? `${fmt(data.tpPrice ?? 0)}원`
@@ -64,6 +73,9 @@ export default function OtocoOrderConfirmModal({
         ? Math.floor(rawAmount / data.leverage)
         : rawAmount;
     const showBeforeAfter = data.credit;
+
+    const requiredAmountRaw   = rawAmount + data.buyFee;
+    const requiredAmountAfter = afterAmount + data.buyFee;
 
     async function handleConfirm() {
         setLoading(true);
@@ -90,9 +102,7 @@ export default function OtocoOrderConfirmModal({
                         <span className="occ__stock-code">{data.stockCode}</span>
                     </div>
                     <div className="occ__tag-row">
-                        <span className={`occ__tag occ__tag--leverage ${leverageClass}`}>
-                            {leverageLabel}
-                        </span>
+                        <LeverageTag leverage={tagLeverage} />
                         <span className="occ__tag-sep">/</span>
                         <span className="occ__tag occ__tag--type">OTOCO</span>
                         <span className="occ__tag-sep">/</span>
@@ -127,9 +137,10 @@ export default function OtocoOrderConfirmModal({
                             </span>
                         </div>
 
-                        <div className="occ__row">
+                        <div className="occ__row occ__row--stacked">
                             <span className="occ__label">
-                                진입 금액
+                                주문금액
+                                <LeverageTag leverage={tagLeverage} />
                             </span>
                             <span className="occ__summary-value">
                                 {showBeforeAfter ? (
@@ -139,6 +150,29 @@ export default function OtocoOrderConfirmModal({
                                     </>
                                 ) : (
                                     <span className="occ__value">{fmt(afterAmount)}<span className="occ__unit">원</span></span>
+                                )}
+                            </span>
+                        </div>
+
+                        <div className="occ__row occ__row--stacked">
+                            <span className="occ__label">
+                                필요금액
+                                <LeverageTag leverage={tagLeverage} />
+                                <Tooltip
+                                    text={`매수 수수료(0.015%) ${fmt(data.buyFee)}원 포함`}
+                                    placement="top"
+                                >
+                                    <span className="occ__fee-tag">수수료</span>
+                                </Tooltip>
+                            </span>
+                            <span className="occ__summary-value">
+                                {showBeforeAfter ? (
+                                    <>
+                                        <span className="occ__value--after">{fmt(requiredAmountAfter)}원</span>
+                                        <span className="occ__value--before">{fmt(requiredAmountRaw)}원</span>
+                                    </>
+                                ) : (
+                                    <span className="occ__value">{fmt(requiredAmountAfter)}<span className="occ__unit">원</span></span>
                                 )}
                             </span>
                         </div>
