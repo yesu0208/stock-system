@@ -873,49 +873,45 @@ export default function TradingChart() {
             <div className={styles.header}
                  style={{visibility: !selectedStock?.realtimeSupported ? 'hidden' : 'visible'}}>
                 <span className={styles.headerTitle}>
-                차트
-            </span>
-
-                <div className={styles.maLegend}>
-                <span className={styles.maLegendLabel}>
-                    이동평균
+                    차트
                 </span>
 
-                    <span style={{color: "#facc15"}}>5</span>
-                    <span style={{color: "#22c55e"}}>10</span>
-                    <span style={{color: "#38bdf8"}}>20</span>
-                    <span style={{color: "#a78bfa"}}>60</span>
-                    <span style={{color: "#f472b6"}}>120</span>
-                </div>
-
                 <div className={styles.headerButtons}>
-                    <button
-                        onClick={() => setTimeframe("minute")}
-                        className={`${styles.btnBase} ${timeframe === "minute" ? styles.btnActive : styles.btnInactive}`}
-                    >
-                        분봉
-                    </button>
+                    <span className={styles.avgPriceLabel}>기간</span>
+                    <div className={styles.btnGroup}>
+                        <button
+                            onClick={() => setTimeframe("minute")}
+                            className={`${styles.btnBase} ${timeframe === "minute" ? styles.btnActive : styles.btnInactive}`}
+                        >
+                            분봉
+                        </button>
 
-                    <button
-                        onClick={() => setTimeframe("day")}
-                        className={`${styles.btnBase} ${timeframe === "day" ? styles.btnActive : styles.btnInactive}`}
-                    >
-                        일봉
-                    </button>
+                        <button
+                            onClick={() => setTimeframe("day")}
+                            className={`${styles.btnBase} ${timeframe === "day" ? styles.btnActive : styles.btnInactive}`}
+                        >
+                            일봉
+                        </button>
+                    </div>
 
-                    {AVG_PRICE_BUTTONS.map(({ key, label, color }) => {
-                        const isActive = activeAvgPrices.has(key);
-                        return (
-                            <button
-                                key={key}
-                                onClick={() => toggleAvgPrice(key)}
-                                className={`${styles.btnBase} ${styles.btnInactive}`}
-                                style={isActive ? { background: color, color: "#0f172a" } : undefined}
-                            >
-                                {label}
-                            </button>
-                        );
-                    })}
+                    <div className={styles.btnGroupDivider} />
+
+                    <span className={styles.avgPriceLabel}>매입가</span>
+                    <div className={styles.btnGroup}>
+                        {AVG_PRICE_BUTTONS.map(({ key, label, color }) => {
+                            const isActive = activeAvgPrices.has(key);
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => toggleAvgPrice(key)}
+                                    className={`${styles.btnBase} ${styles.btnInactive}`}
+                                    style={isActive ? { background: color, color: "#0f172a" } : undefined}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 

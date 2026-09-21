@@ -41,6 +41,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-left: auto;
 }
 
 .btnBase {
@@ -132,7 +133,7 @@
 }
 
 .tooltipDivider {
-    border-top: 1px solid #374151;
+    border-top: 1px solid #4b5563;
     margin-bottom: 6px;
 }
 
@@ -223,4 +224,45 @@
 .btnBase:focus,
 .btnBase:focus-visible {
     outline: none;
+}
+
+.btnGroup {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #374151;
+    border-radius: 6px;
+}
+
+.btnGroupDivider {
+    width: 1px;
+    height: 18px;
+    background: #374151;
+    margin: 0 2px;
+}
+
+.btnGroup {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #374151;
+    border-radius: 6px;
+}
+
+.btnGroupDivider {
+    width: 1px;
+    height: 18px;
+    background: #374151;
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+.avgPriceLabel {
+    font-size: 12px;
+    color: #d1d5db;
+    white-space: nowrap;
 }
