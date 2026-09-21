@@ -27,6 +27,35 @@ type CandleWithVolume = CandlestickData & {
     volume?: number;
 };
 
+type AvgPriceKey = "CASH" | "X1_5" | "X2" | "X2_5";
+
+const AVG_PRICE_BUTTONS: { key: AvgPriceKey; label: string; color: string }[] = [
+    { key: "CASH", label: "현금", color: "#94a3b8" },
+    { key: "X1_5", label: "1.5x", color: "#7dd3fc" },
+    { key: "X2",   label: "2x",   color: "#fbbf24" },
+    { key: "X2_5", label: "2.5x", color: "#f87171" },
+];
+
+function getAvgPrice(
+    key: AvgPriceKey,
+    account: { stocks: Record<string, { quantity: number; totalAmount: number }>; leveragePositions?: { stockCode: string; leverageRatio: string; quantity: number; purchaseAmount: number }[] } | null | undefined,
+    stockCode: string
+): number {
+    if (key === "CASH") {
+        const stockInfo = account?.stocks[stockCode];
+        return stockInfo && stockInfo.quantity > 0
+            ? Math.round(stockInfo.totalAmount / stockInfo.quantity)
+            : 0;
+    }
+
+    const position = account?.leveragePositions?.find(
+        (p) => p.stockCode === stockCode && p.leverageRatio === key
+    );
+    return position && position.quantity > 0
+        ? Math.round(position.purchaseAmount / position.quantity)
+        : 0;
+}
+
 export default function TradingChart() {
     const { selectedStock } = useStock();
     const stockCode = selectedStock.code;
