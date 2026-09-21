@@ -6,6 +6,7 @@ public record LeverageCalcResult(
         Long netValue,
         Long equityTotal,
         Long loanTotal,
+        Long purchaseTotal,
         Long profitTotal,
         List<LeveragePositionView> views
 ) {
