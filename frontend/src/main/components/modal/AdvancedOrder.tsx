@@ -11,6 +11,7 @@ import MiniLineChart from "./advancedorder/MiniLineChart";
 import { useUser } from "../../context/UserContext";
 import type { RankTier } from "../../../types/rank";
 import { useMsg } from "../../context/MsgContext";
+import { calculateFee } from "../../../utils/fee";
 
 import { AdvancedOrderProvider, useAdvancedOrders,
     type TrailingStopPendingOrder, type OtocoPendingOrder }
@@ -686,6 +687,10 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
         : expectedAmountRaw;
     const showEstimatedBeforeAfter = isBuy && isCredit;
 
+    const buyFee = isBuy ? calculateFee(expectedAmountRaw) : 0;
+    const requiredAmountAfter = expectedAmountAfter + buyFee;
+    const requiredAmountRaw   = expectedAmountRaw + buyFee;
+
     const holding = account?.stocks[selectedStock.code];
     const orderableAmount = account?.availableCash ?? 0;
     const holdingAvailableQty = holding?.availableQuantity ?? 0;
@@ -737,9 +742,10 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
 
     function handleRatioClick(ratio: number) {
         if (isBuy) {
-            if (currentPrice <= 0) { setQuantity(0); return; }
-            const budgetAmount = orderableAmount * (isCredit ? leverage : 1);
-            const qty = Math.floor((budgetAmount * ratio) / expectedFillPrice);
+            if (currentPrice <= 0 || expectedFillPrice <= 0) { setQuantity(0); return; }
+            const divisor = isCredit ? (1 / leverage + 0.00015) : (1 + 0.00015);
+            const budget = orderableAmount * ratio;
+            const qty = Math.floor(budget / (expectedFillPrice * divisor));
             setQuantity(clampQty(qty));
         } else {
             const qty = Math.floor(sellAvailableQty * ratio);
@@ -1014,6 +1020,30 @@ function OrderInputPanel({ mode }: { mode: TradeTab }) {
                         )}
                     </span>
                 </div>
+
+                {isBuy && (
+                    <div className="adv-order__summary-row adv-order__summary-row--stacked">
+                        <span className="adv-order__summary-label">
+                            필요금액
+                            <span className="adv-order__summary-hint">(수수료 포함)</span>
+                            <LeverageTag leverage={isCredit ? leverage : 1} />
+                        </span>
+                        <span className="adv-order__summary-value adv-order__summary-value--fill">
+                            {showEstimatedBeforeAfter ? (
+                                <>
+                                    <span className="adv-order__summary-value--after">
+                                        {requiredAmountAfter.toLocaleString()} 원
+                                    </span>
+                                    <span className="adv-order__summary-value--before">
+                                        {requiredAmountRaw.toLocaleString()} 원
+                                    </span>
+                                </>
+                            ) : (
+                                `${requiredAmountAfter.toLocaleString()} 원`
+                            )}
+                        </span>
+                    </div>
+                )}
 
                 {!isBuy && (
                     <div className="adv-order__summary-row adv-order__summary-row--stacked">
