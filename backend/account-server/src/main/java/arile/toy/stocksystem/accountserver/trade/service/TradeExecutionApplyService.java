@@ -10,6 +10,7 @@ import arile.toy.stocksystem.accountserver.trade.dto.TradeType;
 import arile.toy.stocksystem.accountserver.trade.event.TradeExecutedEvent;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
+import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
 import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import arile.toy.stocksystem.accountserver.userstock.entity.UserStockEntity;
 import arile.toy.stocksystem.accountserver.userstock.repository.UserStockRepository;
@@ -30,6 +31,7 @@ public class TradeExecutionApplyService {
     private final UserRankRepository userRankRepository;
     private final LeveragePositionApplyService leveragePositionApplyService;
     private final TradeCostCalculator tradeCostCalculator;
+    private final AccountBalanceCommand accountBalanceCommand;
 
     @Transactional
     public void apply(TradeExecutedEvent event) {
@@ -125,11 +127,16 @@ public class TradeExecutionApplyService {
         long orderAmount = (long) event.orderPrice() * executable;
         long differenceAmount = (long) (event.tradePrice() - event.orderPrice()) * executable;
 
+        // 매도는 현금 예약이 없으므로 체결 대금에서 바로 차감
+        long fee = tradeCostCalculator.calculateFee(tradeAmount);
+        long tax = tradeCostCalculator.calculateTax(tradeAmount);
+        long totalCost = fee + tax;
+
         UserAccountEntity account = userAccountRepository
                 .findByUsernameForUpdate(event.username())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
-        account.setBalance(account.getBalance() + tradeAmount);
+        account.setBalance(account.getBalance() + tradeAmount - totalCost);
         userAccountRepository.save(account);
 
         UserStockEntity userStock = userStockRepository
@@ -168,6 +175,18 @@ public class TradeExecutionApplyService {
             throw new IllegalStateException(
                     "Redis buy trade apply failed. username=%s, stockCode=%s"
                             .formatted(event.username(), event.stockCode()));
+        }
+
+        // 기존 정산과는 별개로, 수수료+세금만큼 availableCash를 추가 차감
+        if (totalCost > 0) {
+            boolean costDebited = accountBalanceCommand.debitAvailableCash(event.username(), totalCost);
+            if (!costDebited) {
+                log.error("Redis availableCash debit failed for trade fee/tax. username={}, stockCode={}, totalCost={}",
+                        event.username(), event.stockCode(), totalCost);
+                throw new IllegalStateException(
+                        "Redis trade fee/tax debit failed. username=%s, stockCode=%s"
+                                .formatted(event.username(), event.stockCode()));
+            }
         }
     }
 

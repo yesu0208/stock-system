@@ -92,6 +92,11 @@ public class LeveragePositionApplyService {
         int executable = event.tradeQuantity();
         long tradeAmount = (long) event.tradePrice() * executable; // 매도 대금
 
+        // 수수료+거래세, 레버리지도 매도금액 전체(포지션 전체 크기) 기준으로 동일 적용
+        long fee = tradeCostCalculator.calculateFee(tradeAmount);
+        long tax = tradeCostCalculator.calculateTax(tradeAmount);
+        long totalCost = fee + tax;
+
         UserAccountEntity account = userAccountRepository
                 .findByUsernameForUpdate(event.username())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
@@ -109,13 +114,12 @@ public class LeveragePositionApplyService {
 
         long repaidLoanAmount = position.reduceBySell(executable);
         if (isFullLiquidation) {
-            // 정수 나눗셈 오차로 loanAmount가 완전히 0이 안 될 수 있으므로 전량매도 시 명시적으로 0 처리
             repaidLoanAmount += position.getLoanAmount();
             position.setLoanAmount(0L);
         }
 
         // 매도 대금 중 대출 상환분을 제외한 나머지가 유저에게 귀속되는 순수익
-        long netProceeds = tradeAmount - repaidLoanAmount;
+        long netProceeds = tradeAmount - repaidLoanAmount - totalCost; // 수수료+세금도 차감
 
         account.setBalance(account.getBalance() + netProceeds);
         userAccountRepository.save(account);
@@ -129,8 +133,6 @@ public class LeveragePositionApplyService {
             redisSyncer.sync(position);
         }
 
-        // 매도는 사전에 현금을 예약하지 않으므로(수량만 reserveLeverageStock으로 예약) reservedCash는 건드릴 필요 없이
-        // DB balance 증가분(netProceeds)을 availableCash에 그대로 반영하면 된다.
         boolean credited = accountBalanceCommand.creditAvailableCash(event.username(), netProceeds);
         if (!credited) {
             log.error("Redis availableCash credit failed for leverage sell. username={}, stockCode={}, netProceeds={}",
@@ -141,8 +143,8 @@ public class LeveragePositionApplyService {
         }
 
         log.info("Leverage sell applied. username={}, stockCode={}, leverageRatio={}, tradeAmount={}, " +
-                        "repaidLoan={}, netProceeds={}, positionRemaining={}",
-                event.username(), event.stockCode(), leverageRatio, tradeAmount, repaidLoanAmount, netProceeds,
+                        "repaidLoan={}, feeAndTax={}, netProceeds={}, positionRemaining={}",
+                event.username(), event.stockCode(), leverageRatio, tradeAmount, repaidLoanAmount, totalCost, netProceeds,
                 position.getQuantity());
     }
 
