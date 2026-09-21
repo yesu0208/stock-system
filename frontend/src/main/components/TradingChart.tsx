@@ -36,14 +36,6 @@ const AVG_PRICE_BUTTONS: { key: AvgPriceKey; label: string; color: string }[] = 
     { key: "X2_5", label: "2.5x", color: "#f87171" },
 ];
 
-    const position = account?.leveragePositions?.find(
-        (p) => p.stockCode === stockCode && p.leverageRatio === key
-    );
-    return position && position.quantity > 0
-        ? Math.round(position.purchaseAmount / position.quantity)
-        : 0;
-}
-
 export default function TradingChart() {
     const { selectedStock } = useStock();
     const stockCode = selectedStock.code;
@@ -222,21 +214,36 @@ export default function TradingChart() {
         timeframeRef.current = timeframe;
     }, [timeframe]);
 
-    // AccountContext가 갖고 있는 실제 보유 종목 평균매입가(stocks[code].buyPrice)를 사용
     useEffect(() => {
-        const holding = account?.stocks[stockCode];
-        const avgPrice = holding?.buyPrice ?? 0;
+        if (!seriesRef.current) return;
 
-        if (!showAvgPrice || avgPrice <= 0) {
-            if (avgPriceLineRef.current && seriesRef.current) {
-                seriesRef.current.removePriceLine(avgPriceLineRef.current);
-                avgPriceLineRef.current = null;
+        AVG_PRICE_BUTTONS.forEach(({ key, label, color }) => {
+            const isActive = activeAvgPrices.has(key);
+            const price = getAvgPrice(key);
+            const existingLine = avgPriceLineRefs.current[key];
+
+            if (!isActive || price <= 0) {
+                if (existingLine) {
+                    seriesRef.current!.removePriceLine(existingLine);
+                    avgPriceLineRefs.current[key] = null;
+                }
+                return;
             }
-            return;
-        }
 
-        updateAvgPrice(avgPrice);
-    }, [showAvgPrice, account, stockCode]);
+            if (existingLine) {
+                seriesRef.current!.removePriceLine(existingLine);
+            }
+
+            avgPriceLineRefs.current[key] = seriesRef.current!.createPriceLine({
+                price,
+                color,
+                lineWidth: 1,
+                lineStyle: 2,
+                axisLabelVisible: true,
+                title: label,
+            });
+        });
+    }, [activeAvgPrices, account, stockCode]);
 
     useEffect(() => {
         if (!chartContainerRef.current) return;
@@ -694,31 +701,6 @@ export default function TradingChart() {
             if (chartRef.current) updateVisibleHighLow(chartRef.current);
         }
     }, [rawDailyCandles, selectedStock?.realtimeSupported, stockCode]);
-
-    const updateAvgPrice = (price: number) => {
-        if (!seriesRef.current) return;
-
-        if (!showAvgPrice) {
-            if (avgPriceLineRef.current) {
-                seriesRef.current.removePriceLine(avgPriceLineRef.current);
-                avgPriceLineRef.current = null;
-            }
-            return;
-        }
-
-        if (avgPriceLineRef.current) {
-            seriesRef.current.removePriceLine(avgPriceLineRef.current);
-        }
-
-        avgPriceLineRef.current = seriesRef.current.createPriceLine({
-            price,
-            color: "#ffffff",
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: "AVG",
-        });
-    };
 
     const calculateMA = (
         data: CandleWithVolume[],
