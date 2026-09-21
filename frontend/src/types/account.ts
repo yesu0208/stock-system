@@ -5,6 +5,7 @@ export interface StockInfo {
     quantity: number
     availableQuantity: number
     totalAmount: number
+    totalCostAmount: number
 }
 
 export interface LeveragePositionView {

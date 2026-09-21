@@ -7,6 +7,7 @@ import type { MarginStatus, AccountStatus } from "../../types/account";
 import { stockNameMap } from "../../constants/stocks";
 import "./MyAccountModal.css";
 import Spinner from "../../components/Spinner";
+import { calculateBreakevenAmount, calculateSellCost } from "../../utils/fee";
 
 interface Props {
     open: boolean;
@@ -267,6 +268,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <span className="mam-holding-cell__top">매입금액</span>
                                         <span className="mam-holding-cell__bottom">평가금액</span>
                                     </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">매입원금액</span>
+                                        <span className="mam-holding-cell__bottom">손익분기금액</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">손익분기매입가</span>
+                                        <span className="mam-holding-cell__bottom">수수료+세금</span>
+                                    </div>
                                 </div>
 
                                 {holdings.map(([code, info]) => {
@@ -275,6 +284,10 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                     const profitRate = account.profitRates[code] ?? 0;
                                     const avgBuyPrice = info.quantity > 0 ? Math.round(info.totalAmount / info.quantity) : 0;
                                     const evalAmount = curPrice != null ? curPrice * info.quantity : undefined;
+
+                                    const breakevenAmount = calculateBreakevenAmount(info.totalCostAmount);
+                                    const breakevenPrice = info.quantity > 0 ? Math.round(breakevenAmount / info.quantity) : 0;
+                                    const sellCostNow = evalAmount != null ? calculateSellCost(evalAmount) : undefined;
 
                                     return (
                                         <div key={code} className="mam-holding-row">
@@ -309,6 +322,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                 <div className="mam-holding-cell">
                                                     <span className="mam-holding-cell__top">{fmt(info.totalAmount)}</span>
                                                     <span className="mam-holding-cell__bottom">{evalAmount != null ? fmt(evalAmount) : "-"}</span>
+                                                </div>
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(info.totalCostAmount)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(breakevenAmount)}</span>
+                                                </div>
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(breakevenPrice)}</span>
+                                                    <span className="mam-holding-cell__bottom">{sellCostNow != null ? fmt(sellCostNow) : "-"}</span>
                                                 </div>
                                             </div>
                                         </div>

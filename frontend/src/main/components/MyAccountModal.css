@@ -248,7 +248,7 @@
 .mam-holding-header,
 .mam-holding-row__main {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr 1fr 1fr;
     gap: 4px;
     font-size: 11px;
     padding: 6px 8px;
