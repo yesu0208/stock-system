@@ -37,6 +37,10 @@ export default function StockInfoPanel() {
         : null;
 
     useEffect(() => {
+        setTab("summary");
+    }, [code]);
+
+    useEffect(() => {
         setLoading(true);
         setInfo(null);
         setDetailExtra(null);
@@ -522,9 +526,11 @@ export default function StockInfoPanel() {
                 )}
 
                 {tab === "trend" && (
-                    <div>
+                    <div style={trendItems.length === 0 && trendLoading ? { height: "100%" } : undefined}>
                         {trendItems.length === 0 && trendLoading ? (
-                            <Spinner />
+                            <div style={{ height: "100%" }}>
+                                <Spinner />
+                            </div>
                         ) : (
                             <>
                                 <div className="trend-sticky-spacer" />
