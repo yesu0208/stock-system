@@ -2,6 +2,7 @@ package arile.toy.stocksystem.stockserver.otococancel.service;
 
 import arile.toy.stocksystem.stockserver.cancel.service.CancelService;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoStatus;
 import arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity;
 import arile.toy.stocksystem.stockserver.otoco.registry.OtocoEntryBookRegistry;
@@ -33,6 +34,7 @@ public class OtocoCancelService {
     private final StockServerOtocoResponseRepository stockServerOtocoResponseRepository;
     private final AccountApiClient accountApiClient;
     private final CancelService cancelService;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     @Transactional
     public void registerCancel(OtocoCancelRequestEvent request) {
@@ -118,7 +120,7 @@ public class OtocoCancelService {
 
         LeverageRatio leverageRatio = entity.getLeverageRatio();
         long orderAmount = (long) entity.getEntryTriggerPrice() * entity.getOrderQuantity();
-        long refundAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+        long refundAmount = reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
 
         boolean refunded = accountApiClient.refundReservedCash(entity.getUsername(), refundAmount);
         if (!refunded) {

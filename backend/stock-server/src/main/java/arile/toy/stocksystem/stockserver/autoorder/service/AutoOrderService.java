@@ -7,6 +7,7 @@ import arile.toy.stocksystem.stockserver.autoorder.event.publisher.AutoOrderResp
 import arile.toy.stocksystem.stockserver.autoorder.repository.AutoOrderRepository;
 import arile.toy.stocksystem.stockserver.autoorder.repository.StockServerAutoOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,12 +24,13 @@ public class AutoOrderService {
     private final AutoOrderResponseEventPublisher autoOrderResponseEventPublisher;
     private final StockServerAutoOrderResponseRepository stockServerAutoOrderResponseRepository;
     private final AccountApiClient accountApiClient;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     public void registerAutoOrder(StockServerAutoOrderRequestEvent request) {
 
         long orderAmount = (long) request.orderPrice() * request.orderQuantity();
         LeverageRatio leverageRatio = request.leverageRatio() == null ? LeverageRatio.SPOT : request.leverageRatio();
-        long reserveAmount = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+        long reserveAmount = reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
 
         if (request.autoOrderType() == AutoOrderType.BUY) {
             boolean reserved = accountApiClient

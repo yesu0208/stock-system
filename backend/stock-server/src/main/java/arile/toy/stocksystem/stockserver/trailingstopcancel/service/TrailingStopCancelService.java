@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.stockserver.trailingstopcancel.service;
 
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.TrailingStopType;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.UpdateTrailingStopStatusResult;
 import arile.toy.stocksystem.stockserver.trailingstop.entity.TrailingStopEntity;
@@ -30,6 +31,7 @@ public class TrailingStopCancelService {
     private final TrailingStopCancelResponseEventPublisher trailingStopCancelResponseEventPublisher;
     private final StockServerTrailingStopResponseRepository stockServerTrailingStopResponseRepository;
     private final AccountApiClient accountApiClient;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     @Transactional
     public void registerCancel(TrailingStopCancelRequestEvent request) {
@@ -86,7 +88,7 @@ public class TrailingStopCancelService {
 
             // 등록 시 예약한 금액과 정확히 일치시켜야 하므로 최초 발동가(triggerPrice, 등록 이후 불변)를 사용함.
             long reservedAmount = (long) entity.getTriggerPrice() * entity.getOrderQuantity();
-            long refundAmount = leverageRatio.isSpot() ? reservedAmount : leverageRatio.calculateMarginDeposit(reservedAmount);
+            long refundAmount = reserveAmountCalculator.calculateReserveAmount(leverageRatio, reservedAmount);
 
             refunded = accountApiClient.refundReservedCash(entity.getUsername(), refundAmount);
 

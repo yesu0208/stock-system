@@ -23,6 +23,7 @@ public class OrderService {
     private final StockServerOrderResponseRepository stockServerOrderResponseRepository;
     private final AccountApiClient accountApiClient;
     private final QueuePositionBroadcastService queuePositionBroadcastService;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     public OrderEntity registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
 
@@ -104,12 +105,11 @@ public class OrderService {
         return savedOrder;
     }
 
-    /** 레버리지 매수 시 예약해야 할 실제 현금(개시증거금)을 계산 */
     private long resolveReserveAmount(OrderType orderType, LeverageRatio leverageRatio, long orderAmount) {
-        if (orderType != OrderType.BUY || leverageRatio.isSpot()) {
+        if (orderType != OrderType.BUY) {
             return orderAmount;
         }
-        return leverageRatio.calculateMarginDeposit(orderAmount);
+        return reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
     }
 
     @Transactional
