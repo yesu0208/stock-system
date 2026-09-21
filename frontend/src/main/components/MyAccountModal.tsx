@@ -370,6 +370,14 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                         <span className="mam-holding-cell__bottom">평가금액</span>
                                     </div>
                                     <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">매입원금액</span>
+                                        <span className="mam-holding-cell__bottom">손익분기금액</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
+                                        <span className="mam-holding-cell__top">손익분기매입가</span>
+                                        <span className="mam-holding-cell__bottom">수수료+세금</span>
+                                    </div>
+                                    <div className="mam-holding-cell">
                                         <span className="mam-holding-cell__top">순자산</span>
                                         <span className="mam-holding-cell__bottom">대출금</span>
                                     </div>
@@ -386,6 +394,10 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                 {leveragePositions.map((pos) => {
                                     const avgBuyPrice = pos.quantity > 0 ? Math.round(pos.purchaseAmount / pos.quantity) : 0;
 
+                                    const breakevenAmount = calculateBreakevenAmount(pos.costAmount);
+                                    const breakevenPrice = pos.quantity > 0 ? Math.round(breakevenAmount / pos.quantity) : 0;
+                                    const sellCostNow = calculateSellCost(pos.evaluationAmount);
+
                                     return (
                                         <div key={`${pos.stockCode}-${pos.leverageRatio}`} className="mam-holding-row">
                                             <div className="mam-holding-row__main mam-holding-row__main--leverage">
@@ -400,8 +412,8 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                     />
                                                     <span>{stockNameMap[pos.stockCode] ?? pos.stockCode}</span>
                                                     <span className={`mam-leverage-badge ${LEVERAGE_BADGE_CLASS[pos.leverageRatio] ?? "mam-leverage-badge--levother"}`}>
-                                                        {LEVERAGE_LABEL[pos.leverageRatio] ?? pos.leverageRatio}
-                                                    </span>
+                        {LEVERAGE_LABEL[pos.leverageRatio] ?? pos.leverageRatio}
+                    </span>
                                                 </div>
 
                                                 <div className="mam-holding-cell">
@@ -426,6 +438,16 @@ export default function MyAccountModal({ open, onClose }: Props) {
                                                 <div className="mam-holding-cell">
                                                     <span className="mam-holding-cell__top">{fmt(pos.purchaseAmount)}</span>
                                                     <span className="mam-holding-cell__bottom">{fmt(pos.evaluationAmount)}</span>
+                                                </div>
+
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(pos.costAmount)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(breakevenAmount)}</span>
+                                                </div>
+
+                                                <div className="mam-holding-cell">
+                                                    <span className="mam-holding-cell__top">{fmt(breakevenPrice)}</span>
+                                                    <span className="mam-holding-cell__bottom">{fmt(sellCostNow)}</span>
                                                 </div>
 
                                                 <div className="mam-holding-cell">

@@ -14,6 +14,7 @@ export interface LeveragePositionView {
     quantity: number
     availableQuantity: number
     purchaseAmount: number
+    costAmount: number
     loanAmount: number
     evaluationAmount: number
     netValue: number

@@ -262,7 +262,7 @@
 
 .mam-holding-header--leverage,
 .mam-holding-row__main--leverage {
-    grid-template-columns: 2fr 1.2fr 1.0fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr;
+    grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
 }
 
 .mam-holding-header {
