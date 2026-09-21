@@ -520,7 +520,9 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
 
         const displayAmount = (isBuy && isCredit)
             ? Math.floor(estimatedAmount / leverage)
-            : estimatedAmount;
+            : !isBuy
+                ? estimatedAmountAfter
+                : estimatedAmount;
 
         setConfirmInfo({
             side:            mode,
@@ -699,7 +701,7 @@ function TradeForm({ mode }: { mode: "buy" | "sell" }) {
                 <div className="summary__row">
                     <span className="summary__label">
                         주문가능
-                        <LeverageTag leverage={isCredit ? leverage : 1} />
+                        {!isBuy && <LeverageTag leverage={isCredit ? leverage : 1} />}
                     </span>
                     <span className="summary__value">
                         {isBuy ? (
