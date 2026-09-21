@@ -903,12 +903,19 @@ export default function TradingChart() {
                         일봉
                     </button>
 
-                    <button
-                        onClick={() => setShowAvgPrice(prev => !prev)}
-                        className={`${styles.btnBase} ${showAvgPrice ? styles.btnAvgActive : styles.btnInactive}`}
-                    >
-                        평균단가
-                    </button>
+                    {AVG_PRICE_BUTTONS.map(({ key, label, color }) => {
+                        const isActive = activeAvgPrices.has(key);
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => toggleAvgPrice(key)}
+                                className={`${styles.btnBase} ${styles.btnInactive}`}
+                                style={isActive ? { background: color, color: "#0f172a" } : undefined}
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
