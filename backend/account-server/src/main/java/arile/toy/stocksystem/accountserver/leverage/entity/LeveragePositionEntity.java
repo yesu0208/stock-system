@@ -40,11 +40,15 @@ public class LeveragePositionEntity {
     @Column(nullable = false)
     private Integer availableQuantity;
 
-    /** 매수금액 (레버리지 적용된 전체 포지션 크기, 현물의 amount와 동일 개념) */
+    /** 순수 매수금액 (레버리지 적용된 전체 포지션 크기, 현물의 amount와 동일 개념) */
     @Column(nullable = false)
     private Long purchaseAmount;
 
-    /** 대출금(신용융자금) : 매일 이자만큼 증가, 부분매도 시 비례 상환 */
+    /** 매입원금액 — purchaseAmount + 매수 시 실제 부과된 위탁수수료 누적. (증거금이 아니라 포지션 전체 크기 기준) */
+    @Column(nullable = false)
+    private Long costAmount;
+
+    /** 대출금(신용융자금) */
     @Column(nullable = false)
     private Long loanAmount;
 
@@ -71,7 +75,7 @@ public class LeveragePositionEntity {
     private Instant updatedDateTime;
 
     public static LeveragePositionEntity of(String username, String stockCode, LeverageRatio leverageRatio,
-                                            int quantity, long purchaseAmount) {
+                                            int quantity, long purchaseAmount, long costAmount) {
         var entity = new LeveragePositionEntity();
         entity.setUsername(username);
         entity.setStockCode(stockCode);
@@ -79,27 +83,31 @@ public class LeveragePositionEntity {
         entity.setQuantity(quantity);
         entity.setAvailableQuantity(quantity);
         entity.setPurchaseAmount(purchaseAmount);
+        entity.setCostAmount(costAmount);
         entity.setLoanAmount(leverageRatio.calculateLoanAmount(purchaseAmount));
         entity.setMarginStatus(MarginStatus.NORMAL);
         entity.setLastInterestChargedDate(LocalDate.now());
         return entity;
     }
 
-    /** 매수 체결 시 기존 포지션에 추가 매수분 합산 (현물 UserStockEntity의 buy 패턴과 동일) */
-    public void addPurchase(int additionalQuantity, long additionalPurchaseAmount, long additionalLoanAmount) {
+    /** 매수 체결 시 기존 포지션에 추가 매수분 합산 */
+    public void addPurchase(int additionalQuantity, long additionalPurchaseAmount, long additionalCostAmount, long additionalLoanAmount) {
         this.quantity += additionalQuantity;
         this.availableQuantity += additionalQuantity;
         this.purchaseAmount += additionalPurchaseAmount;
+        this.costAmount += additionalCostAmount;
         this.loanAmount += additionalLoanAmount;
     }
 
-    /** 매도 체결 시 비례 상환 (현물의 soldAmount = prevAmount * executable / prevQuantity 패턴과 동일하게 대출금도 비례 차감) */
+    /** 매도 체결 시 비례 상환 — costAmount도 동일 비율로 안분 차감 */
     public long reduceBySell(int soldQuantity) {
         long soldPurchaseAmount = this.purchaseAmount * soldQuantity / this.quantity;
+        long soldCostAmount = this.costAmount * soldQuantity / this.quantity;
         long repaidLoanAmount = this.loanAmount * soldQuantity / this.quantity;
 
         this.quantity -= soldQuantity;
         this.purchaseAmount -= soldPurchaseAmount;
+        this.costAmount -= soldCostAmount;
         this.loanAmount -= repaidLoanAmount;
 
         return repaidLoanAmount;
