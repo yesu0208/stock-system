@@ -136,14 +136,18 @@ public class AccountCalculator {
 
             long evaluationAmount = (long) info.quantity() * curPrice;
             long netValue = evaluationAmount - info.loanAmount();
-            long profitAmount = evaluationAmount - info.purchaseAmount();
 
-            long equityAmount = info.purchaseAmount() - info.loanAmount();
-            double profitRate = equityAmount == 0
+            // 평가손익 = 평가금액 - 매도비용(수수료+거래세) - 매입원금액(costAmount) — 현물과 동일 공식, 대출금은 상쇄되어 등장하지 않음
+            long sellCost = Math.round(evaluationAmount * (FEE_RATE + TAX_RATE));
+            long profitAmount = evaluationAmount - sellCost - info.costAmount();
+
+            // 투입원금액 = 매입원금액 - 대출금 (실제 내가 낸 증거금+수수료)
+            long investedAmount = info.costAmount() - info.loanAmount();
+            double profitRate = investedAmount == 0
                     ? 0
-                    : profitAmount * 100.0 / equityAmount;
+                    : profitAmount * 100.0 / investedAmount;
 
-            long initialMargin = equityAmount;
+            long initialMargin = info.purchaseAmount() - info.loanAmount(); // 순수 개시증거금(수수료 미포함) — 화면 표기용은 기존 그대로 유지
             long maintenanceMargin = Math.round(info.loanAmount() * MAINTENANCE_RATIO);
             long maintenancePrice  = info.quantity() > 0
                     ? Math.round((MAINTENANCE_RATIO * info.loanAmount()) / info.quantity())
@@ -154,7 +158,7 @@ public class AccountCalculator {
                     info.marginStatus(), initialMargin, maintenanceMargin, maintenancePrice));
 
             netValueTotal += netValue;
-            equityTotal += equityAmount;
+            equityTotal += investedAmount; // equityTotal도 투입원금액 기준으로 통일 (기존엔 purchaseAmount-loanAmount였는데 이제 costAmount-loanAmount)
             loanTotal += info.loanAmount();
             profitTotal += profitAmount;
         }
