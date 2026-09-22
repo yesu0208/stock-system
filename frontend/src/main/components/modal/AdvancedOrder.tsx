@@ -1229,6 +1229,11 @@ function OtocoInputPanel() {
     const slInvalid = slDerivedPrice >= entryPrice;
 
     const initializedRef = useRef(false);
+
+    useEffect(() => {
+        initializedRef.current = false;
+    }, [selectedStock.code]);
+
     useEffect(() => {
         if (initializedRef.current) return;
         if (currentPrice <= 0) return;
