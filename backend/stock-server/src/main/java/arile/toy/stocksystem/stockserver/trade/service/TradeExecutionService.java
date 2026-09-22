@@ -48,6 +48,12 @@ public class TradeExecutionService {
             return null;
         }
 
+        // 매수 주문일 때만 의미 있음: 이번 체결분에 정확히 배분될 예약 수수료를
+        // OrderEntity에 저장된 remainingReservedFee에서 소진(재계산 없이)
+        Long reservedFeeConsumed = tradeType == TradeType.BUY
+                ? orderEntity.consumeReservedFee(executable)
+                : null;
+
         TradeEntity tradeEntity = tradeRepository.save(
                 TradeEntity.of(orderDto.orderId(), orderDto.username(),
                         orderDto.stockCode(), tradeType, tradePrice, executable,
@@ -58,7 +64,7 @@ public class TradeExecutionService {
         orderEntity.setOrderStatus(remainingQuantity > 0 ? OrderStatus.PARTIAL : OrderStatus.FILLED);
         orderEntity.setRemainingQuantity(remainingQuantity);
         orderRepository.save(orderEntity);
-        
+
         if (orderEntity.getOrderStatus() == OrderStatus.FILLED) {
             otocoOrderLifecycleListener.onOrderFilled(orderEntity.getOrderId());
         } else {
@@ -71,7 +77,8 @@ public class TradeExecutionService {
                 TradeExecutedEvent.of(
                         tradeEntity.getTradeId(), orderDto.orderId(), orderDto.username(),
                         orderDto.stockCode(), tradeType, orderDto.leverageRatio(),
-                        orderDto.orderPrice(), tradePrice, executable
+                        orderDto.orderPrice(), tradePrice, executable,
+                        reservedFeeConsumed
                 )
         );
 
