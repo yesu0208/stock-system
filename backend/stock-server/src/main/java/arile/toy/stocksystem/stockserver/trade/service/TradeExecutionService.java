@@ -54,6 +54,12 @@ public class TradeExecutionService {
                 ? orderEntity.consumeReservedFee(executable)
                 : null;
 
+        // 레버리지 매수 주문일 때만 의미 있음: 이번 체결분에 정확히 배분될
+        // 개시증거금을 remainingReservedMargin에서 소진(재계산 없이)
+        Long reservedMarginConsumed = tradeType == TradeType.BUY && !orderEntity.getLeverageRatio().isSpot()
+                ? orderEntity.consumeReservedMargin(executable)
+                : null;
+
         TradeEntity tradeEntity = tradeRepository.save(
                 TradeEntity.of(orderDto.orderId(), orderDto.username(),
                         orderDto.stockCode(), tradeType, tradePrice, executable,
@@ -78,7 +84,8 @@ public class TradeExecutionService {
                         tradeEntity.getTradeId(), orderDto.orderId(), orderDto.username(),
                         orderDto.stockCode(), tradeType, orderDto.leverageRatio(),
                         orderDto.orderPrice(), tradePrice, executable,
-                        reservedFeeConsumed
+                        reservedFeeConsumed,
+                        reservedMarginConsumed
                 )
         );
 

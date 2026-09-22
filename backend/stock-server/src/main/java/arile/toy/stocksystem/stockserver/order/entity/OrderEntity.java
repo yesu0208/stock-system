@@ -63,15 +63,18 @@ public class OrderEntity {
 
     // autoOrderId / otocoId / trailingStopId / MANUAL이면 null
     private Long originId;
-    
+
     private Long remainingReservedFee;
+
+    private Long remainingReservedMargin;
 
     public static OrderEntity of(String username, String stockCode, OrderType orderType, LeverageRatio leverageRatio,
                                  Integer orderPrice, Integer orderQuantity,
                                  OrderStatus orderStatus, Integer remainingQuantity,
                                  OrderExecutionType orderExecutionType,
                                  OrderOrigin origin, Long originId,
-                                 Long remainingReservedFee) {
+                                 Long remainingReservedFee,
+                                 Long remainingReservedMargin) {
         var orderEntity = new OrderEntity();
         orderEntity.setUsername(username);
         orderEntity.setStockCode(stockCode);
@@ -85,7 +88,8 @@ public class OrderEntity {
         orderEntity.setOrderExecutionType(orderExecutionType);
         orderEntity.setOrigin(origin);
         orderEntity.setOriginId(originId);
-        orderEntity.setRemainingReservedFee(remainingReservedFee); // [신규]
+        orderEntity.setRemainingReservedFee(remainingReservedFee);
+        orderEntity.setRemainingReservedMargin(remainingReservedMargin);
         return orderEntity;
     }
 
@@ -103,5 +107,17 @@ public class OrderEntity {
 
         remainingReservedFee -= feeForThisFill;
         return feeForThisFill;
+    }
+
+    public long consumeReservedMargin(int executedQuantity) {
+        if (remainingQuantity == null || remainingQuantity <= 0 || remainingReservedMargin == null) {
+            return 0L;
+        }
+        long marginForThisFill = remainingQuantity.equals(executedQuantity)
+                ? remainingReservedMargin
+                : Math.round((double) remainingReservedMargin * executedQuantity / remainingQuantity);
+
+        remainingReservedMargin -= marginForThisFill;
+        return marginForThisFill;
     }
 }

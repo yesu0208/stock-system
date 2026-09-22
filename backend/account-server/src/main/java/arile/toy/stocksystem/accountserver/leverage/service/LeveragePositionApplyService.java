@@ -34,14 +34,18 @@ public class LeveragePositionApplyService {
     public void applyLeverageBuy(TradeExecutedEvent event, LeverageRatio leverageRatio) {
 
         int executable = event.tradeQuantity();
-        long tradeAmount = (long) event.tradePrice() * executable;          // 실제 체결된 매수금액(포지션 전체 크기)
-        long orderMarginAmount = leverageRatio.calculateMarginDeposit((long) event.orderPrice() * executable); // 예약 당시 증거금
-        long tradeMarginAmount = leverageRatio.calculateMarginDeposit(tradeAmount); // 체결가 기준 증거금
-        long marginRefund = orderMarginAmount - tradeMarginAmount;      // 지정가보다 유리하게 체결된 경우 환급할 증거금 차액
+        long tradeAmount = (long) event.tradePrice() * executable;
 
-        // 수수료는 레버리지 배율과 무관하게 항상 "매수금액 전체(orderAmount/tradeAmount)" 기준
+        // 재계산(calculateMarginDeposit) 대신, stock-server가 OrderEntity의
+        // remainingReservedMargin에서 정확히 비례 배분해 보낸 값을 그대로 사용
+        long orderMarginAmount = event.reservedMarginConsumed() != null ? event.reservedMarginConsumed() : 0L;
+        long tradeMarginAmount = leverageRatio.calculateMarginDeposit(tradeAmount);
+        long marginRefund = orderMarginAmount - tradeMarginAmount;
+
+        // 재계산(tradeCostCalculator.calculateFee) 대신, stock-server가 OrderEntity의
+        // remainingReservedFee에서 정확히 비례 배분해 보낸 값을 그대로 사용
         long orderAmount = (long) event.orderPrice() * executable;
-        long feeReserved = tradeCostCalculator.calculateFee(orderAmount);
+        long feeReserved = event.reservedFeeConsumed() != null ? event.reservedFeeConsumed() : 0L;
         long feeActual = tradeCostCalculator.calculateFee(tradeAmount);
         long feeRefund = feeReserved - feeActual;
 
