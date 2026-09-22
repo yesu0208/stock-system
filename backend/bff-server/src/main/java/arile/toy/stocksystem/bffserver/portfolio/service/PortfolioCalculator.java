@@ -21,6 +21,9 @@ import java.util.*;
 @Slf4j
 public class PortfolioCalculator {
 
+    private static final double FEE_RATE = 0.00015;
+    private static final double TAX_RATE = 0.0020;
+
     private final AccountPullService accountPullService;
     private final BffServerStockSummaryRepository stockSummaryRepository;
     private final SectorRegistry sectorRegistry;
@@ -72,10 +75,12 @@ public class PortfolioCalculator {
             }
 
             long evaluationAmount = (long) stockInfo.quantity() * curPrice;
-            long profit = evaluationAmount - stockInfo.totalAmount();
+
+            long sellCost = Math.round(evaluationAmount * (FEE_RATE + TAX_RATE));
+            long profit = evaluationAmount - sellCost - stockInfo.totalCostAmount();
 
             mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
-                    .addSpot(evaluationAmount, stockInfo.totalAmount(), profit);
+                    .addSpot(evaluationAmount, stockInfo.totalAmount(), stockInfo.totalCostAmount(), profit);
         }
     }
 
@@ -186,16 +191,18 @@ public class PortfolioCalculator {
 
         // 현물 세부
         private long spotBuyAmount = 0L;
+        private long spotCostAmount = 0L;
         private long spotProfitAmount = 0L;
 
         // 레버리지 세부
-        private long leverageBuyAmount = 0L; // purchaseAmount 누적
-        private long leverageEquityAmount = 0L; // equityAmount 누적
+        private long leverageBuyAmount = 0L;
+        private long leverageEquityAmount = 0L;
         private long leverageProfitAmount = 0L;
 
-        void addSpot(long amount, long buyAmount, long profit) {
+        void addSpot(long amount, long buyAmount, long costAmount, long profit) {
             this.spot += amount;
             this.spotBuyAmount += buyAmount;
+            this.spotCostAmount += costAmount;
             this.spotProfitAmount += profit;
         }
 
@@ -213,7 +220,7 @@ public class PortfolioCalculator {
         long spotBuyAmount() { return spotBuyAmount; }
         long spotProfitAmount() { return spotProfitAmount; }
         double spotProfitRate() {
-            return spotBuyAmount == 0 ? 0 : spotProfitAmount * 100.0 / spotBuyAmount;
+            return spotCostAmount == 0 ? 0 : spotProfitAmount * 100.0 / spotCostAmount;
         }
 
         long leverageBuyAmount() { return leverageBuyAmount; }
@@ -224,7 +231,7 @@ public class PortfolioCalculator {
         }
 
         long profitAmount() { return spotProfitAmount + leverageProfitAmount; }
-        long totalCost() { return spotBuyAmount + leverageEquityAmount; } // 합산 수익률의 분모는 (현물 매입금액 + 레버리지 개시증거금)
+        long totalCost() { return spotCostAmount + leverageEquityAmount; }
         double profitRate() {
             return totalCost() == 0 ? 0 : profitAmount() * 100.0 / totalCost();
         }
