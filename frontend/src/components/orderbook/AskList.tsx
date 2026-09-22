@@ -1,5 +1,7 @@
 import { useStockRealtime } from '../../main/context/StockRealtimeContext'
 import { useOrderPrice } from '../../main/context/OrderPriceContext'
+import { useStock } from '../../main/context/StockContext'
+import { usePendingOrders } from '../../main/context/PendingOrderContext'
 
 import styles from './AskList.module.css'
 
@@ -22,6 +24,8 @@ export default function AskList({
 
     const { priceTick: latestTick } = useStockRealtime()
     const { setSelectedPrice } = useOrderPrice()
+    const { selectedStock } = useStock()
+    const { pendingOrders } = usePendingOrders()
 
     const getPriceColor = (price: number) => {
         if (price > prevClosePrice) return '#FF6347'
@@ -89,6 +93,11 @@ export default function AskList({
         return null
     }
 
+    const getMyOrdersAtPrice = (price: number) =>
+        pendingOrders.filter(
+            (o) => !o.isAuto && o.stockCode === selectedStock.code && o.price === price
+        )
+
     return (
         <div className={styles.container}>
             {asks.slice().reverse().map((a, idx, arr) => {
@@ -105,6 +114,7 @@ export default function AskList({
 
                 const borderStyle = getPriceBorder(a.price, isEmpty)
                 const priceTag = getPriceTag(a.price, isEmpty)
+                const myOrders = !isEmpty ? getMyOrdersAtPrice(a.price) : []
 
                 return (
                     <div key={idx} className={styles.row}>
@@ -113,6 +123,35 @@ export default function AskList({
                                 <>
                                     <div className={styles.bar} style={{ width: `${widthPercent}%` }} />
                                     <span className={styles.quantityText}>{a.quantity.toLocaleString()}</span>
+
+                                    {myOrders.length > 0 && (
+                                        <div className={styles.myOrderBadgeWrap}>
+                                            {myOrders.some((o) => o.side === 'BUY') && (
+                                                <span className={styles.myOrderTagBuy}>매</span>
+                                            )}
+                                            {myOrders.some((o) => o.side === 'SELL') && (
+                                                <span className={styles.myOrderTagSell}>매</span>
+                                            )}
+
+                                            <div className={styles.myOrderTooltip}>
+                                                {myOrders.map((o) => (
+                                                    <div key={o.orderId} className={styles.tooltipRow}>
+                                                        <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
+                                                            {o.side === 'BUY' ? '매수' : '매도'}
+                                                        </span>
+                                                        <span className={styles.tooltipQty}>
+                                                            {o.remainingQty.toLocaleString()}주
+                                                        </span>
+                                                        <span className={styles.tooltipInfo}>
+                                                            {o.quantityAhead != null
+                                                                ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
+                                                                : '-'}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>

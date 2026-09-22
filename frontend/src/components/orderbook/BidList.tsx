@@ -1,5 +1,7 @@
 import { useStockRealtime } from '../../main/context/StockRealtimeContext'
 import { useOrderPrice } from '../../main/context/OrderPriceContext'
+import { useStock } from '../../main/context/StockContext'
+import { usePendingOrders } from '../../main/context/PendingOrderContext'
 import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
 
 import styles from './BidList.module.css'
@@ -25,6 +27,8 @@ export default function BidList({
 
     const { priceTick } = useStockRealtime()
     const { setSelectedPrice } = useOrderPrice()
+    const { selectedStock } = useStock()
+    const { pendingOrders } = usePendingOrders()
 
     const getPriceColor = (price: number) => {
         if (price > prevClosePrice) return '#FF6347'
@@ -70,6 +74,11 @@ export default function BidList({
         return null
     }
 
+    const getMyOrdersAtPrice = (price: number) =>
+        pendingOrders.filter(
+            (o) => !o.isAuto && o.stockCode === selectedStock.code && o.price === price
+        )
+
     const ticksToShow = accTicks.slice(0, bids.length * 2)
 
     const tickChunks: TradePriceTickMessage[][] = []
@@ -107,6 +116,7 @@ export default function BidList({
 
                 const borderStyle = getPriceBorder(b.price, isEmpty)
                 const priceTag = getPriceTag(b.price, isEmpty)
+                const myOrders = !isEmpty ? getMyOrdersAtPrice(b.price) : []
 
                 return (
                     <div key={idx} className={styles.row}>
@@ -169,6 +179,35 @@ export default function BidList({
                             <span className={styles.quantityText}>
                                 {!isEmpty ? b.quantity.toLocaleString() : ''}
                             </span>
+
+                            {myOrders.length > 0 && (
+                                <div className={styles.myOrderBadgeWrap}>
+                                    {myOrders.some((o) => o.side === 'BUY') && (
+                                        <span className={styles.myOrderTagBuy}>매</span>
+                                    )}
+                                    {myOrders.some((o) => o.side === 'SELL') && (
+                                        <span className={styles.myOrderTagSell}>매</span>
+                                    )}
+
+                                    <div className={styles.myOrderTooltip}>
+                                        {myOrders.map((o) => (
+                                            <div key={o.orderId} className={styles.tooltipRow}>
+                                                <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
+                                                    {o.side === 'BUY' ? '매수' : '매도'}
+                                                </span>
+                                                <span className={styles.tooltipQty}>
+                                                    {o.remainingQty.toLocaleString()}주
+                                                </span>
+                                                <span className={styles.tooltipInfo}>
+                                                    {o.quantityAhead != null
+                                                        ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
+                                                        : '-'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )
