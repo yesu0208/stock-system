@@ -175,6 +175,11 @@ export default function UserPanel() {
                         </div>
 
                         <div className="row">
+                            <span>레버리지 순자산</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.leverageNetValue ?? 0)} 원`}</span>
+                        </div>
+
+                        <div className="row">
                             <span>매수 가능금액</span>
                             <span>{hideBalance ? "******** 원" : `${fmt(account.availableCash)} 원`}</span>
                         </div>
