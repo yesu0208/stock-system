@@ -39,6 +39,13 @@ public class OrderService {
                 ? reserveAmountCalculator.calculateFee(orderAmount)
                 : null;
 
+        // 레버리지 매수 주문에 한해, 예약 시점에 개시증거금(margin)을 한 번만 계산해 저장
+        // fee와 동일한 이유(calculateMarginDeposit의 반올림)로 재계산 대신 소진 방식을 쓰기 위함.
+        // 현금(SPOT) 주문은 증거금 개념이 없어 null 유지.
+        Long initialReservedMargin = request.orderType() == OrderType.BUY && !leverageRatio.isSpot()
+                ? leverageRatio.calculateMarginDeposit(orderAmount)
+                : null;
+
         if (!fromAutoOrder && request.orderType() == OrderType.BUY) {
             boolean reserved = accountApiClient
                     .reserveCash(request.username(), reserveAmount);
@@ -73,7 +80,8 @@ public class OrderService {
                     request.orderExecutionType(),
                     request.origin(),
                     request.originId(),
-                    initialReservedFee
+                    initialReservedFee,
+                    initialReservedMargin
             );
             savedOrder = orderRepository.save(orderEntity);
 
