@@ -252,7 +252,7 @@ export default function StockTalkModal({ open }: Props) {
 
     const handleSend = useCallback(() => {
         if (!activeTicker) return;
-        const text = inputText.trim();
+        const text = inputText.trim().slice(0, 300);
         if (!text || !rooms[activeTicker]?.joined) return;
         publish(`/app/stock-talk/${activeTicker}/send`, { content: text });
         setInputText("");
@@ -649,15 +649,22 @@ export default function StockTalkModal({ open }: Props) {
                                     )}
                                 </div>
 
-                                <textarea
-                                    ref={textareaRef}
-                                    className="stk__input"
-                                    placeholder="메시지를 입력하세요 (Enter 전송)"
-                                    value={inputText}
-                                    onChange={(e) => setInputText(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    rows={1}
-                                />
+                                <div className="stk__input-wrap">
+                                    <textarea
+                                        ref={textareaRef}
+                                        className="stk__input"
+                                        placeholder="메시지를 입력하세요 (Enter 전송)"
+                                        value={inputText}
+                                        onChange={(e) => setInputText(e.target.value.slice(0, 300))}
+                                        onKeyDown={handleKeyDown}
+                                        rows={1}
+                                        maxLength={300}
+                                    />
+                                    <span className={`stk__input-count${inputText.length >= 300 ? " stk__input-count--max" : ""}`}>
+                                        {inputText.length}/300
+                                    </span>
+                                </div>
+
                                 <button
                                     className="stk__send-btn"
                                     onClick={handleSend}

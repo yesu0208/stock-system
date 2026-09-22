@@ -574,13 +574,13 @@
 }
 
 .stk__input {
-    flex: 1;
+    width: 100%;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     color: #e2e8f0;
     font-size: 13px;
-    padding: 8px 12px;
+    padding: 8px 44px 8px 12px;
     outline: none;
     transition: border-color 0.15s;
     resize: none;
@@ -917,4 +917,25 @@
 
 .stk__card--stock {
     min-width: 165px;
+}
+
+.stk__input-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+}
+
+.stk__input-count {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #64748b;
+    pointer-events: none;
+}
+
+.stk__input-count--max {
+    color: #f87171;
+    font-weight: 600;
 }
