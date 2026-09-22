@@ -51,7 +51,7 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
         setPriceError(null);
         setLoading(true);
 
-        const result = await registerAlert(selectedStock.code, priceNum, direction);
+        const result = await registerAlert(selectedStock.code, selectedStock.name, priceNum, direction); // [수정]
 
         if (result.success) {
             setPrice("");
@@ -60,8 +60,8 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
         setLoading(false);
     };
 
-    const handleCancel = async (alertId: number, stockCode: string) => {
-        await cancelAlert(alertId, stockCode);
+    const handleCancel = async (alertId: number, stockCode: string, stockName: string) => { // [수정]
+        await cancelAlert(alertId, stockCode, stockName); // [수정]
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -173,7 +173,7 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
 
                                             <button
                                                 className="alert-cancel-btn"
-                                                onClick={() => handleCancel(item.alertId, item.stockCode)}
+                                                onClick={() => handleCancel(item.alertId, item.stockCode, selectedStock.name)}
                                             >
                                                 해제
                                             </button>
@@ -209,7 +209,7 @@ export default function AlertModal({ open, onClose }: AlertModalProps) {
 
                                         <button
                                             className="alert-cancel-btn"
-                                            onClick={() => handleCancel(item.alertId, item.stockCode)}
+                                            onClick={() => handleCancel(item.alertId, item.stockCode, getStockName(item.stockCode))}
                                         >
                                             해제
                                         </button>

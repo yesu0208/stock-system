@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRealtime } from './RealtimeContext'
+import { stockNameMap } from '../../constants/stocks'
 import { useMsg } from './MsgContext'
 import { createAlert, cancelAlert as cancelAlertApi } from '../../api/alert'
 import type { AlertResponseMessage, AlertFiredResponse, AlertDirection } from '../../types/alert'
@@ -13,8 +14,8 @@ interface ActionResult {
 interface AlertContextValue {
     alerts: AlertResponseMessage[]
     lastFired: AlertFiredResponse | null
-    registerAlert: (stockCode: string, triggerPrice: number, direction: AlertDirection) => Promise<ActionResult>
-    cancelAlert: (alertId: number, stockCode: string) => Promise<ActionResult>
+    registerAlert: (stockCode: string, stockName: string, triggerPrice: number, direction: AlertDirection) => Promise<ActionResult> // [수정]
+    cancelAlert: (alertId: number, stockCode: string, stockName: string) => Promise<ActionResult> // [수정]
     getAlertsBySymbol: (stockCode: string) => AlertResponseMessage[]
 }
 
@@ -34,9 +35,10 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         const unsubFired = subscribeDestination('/user/sub/alert/fired', (data: AlertFiredResponse) => {
             setLastFired(data)
             const directionText = data.direction === 'ABOVE' ? '이상' : '이하'
+            const stockName = stockNameMap[data.stockCode] ?? data.stockCode
             info(
-                `${data.stockCode} 목표가(${data.triggerPrice.toLocaleString()}원 ${directionText}) 도달! ` +
-                `현재가 ${data.currentPrice.toLocaleString()}원`
+                `[${stockName}] 현재 ` +
+                `${data.triggerPrice.toLocaleString()}원 ${directionText}입니다.`
             )
         })
 
@@ -47,10 +49,10 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     }, [subscribeDestination, info])
 
     const registerAlert = useCallback(
-        async (stockCode: string, triggerPrice: number, direction: AlertDirection): Promise<ActionResult> => {
+        async (stockCode: string, stockName: string, triggerPrice: number, direction: AlertDirection): Promise<ActionResult> => {
             try {
                 await createAlert({ stockCode, direction, triggerPrice })
-                success('알림이 등록되었습니다.')
+                success(`[${stockName}] 알림이 등록되었습니다.`)
                 return { success: true, message: '알림이 등록되었습니다.' }
             } catch (e: any) {
                 const msg = e.response?.data?.message ?? '알림 등록에 실패했습니다.'
@@ -62,10 +64,10 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     )
 
     const cancelAlert = useCallback(
-        async (alertId: number, stockCode: string): Promise<ActionResult> => {
+        async (alertId: number, stockCode: string, stockName: string): Promise<ActionResult> => {
             try {
                 await cancelAlertApi(alertId, stockCode)
-                success('알림이 해지되었습니다.')
+                success(`[${stockName}] 알림이 해지되었습니다.`)
                 return { success: true, message: '알림이 해지되었습니다.' }
             } catch (e: any) {
                 const msg = e.response?.data?.message ?? '알림 해지에 실패했습니다.'

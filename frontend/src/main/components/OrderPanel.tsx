@@ -7,7 +7,9 @@ import { useStockRealtime } from "../context/StockRealtimeContext";
 import { useAccount } from "../context/AccountContext";
 import { useRealtime } from "../context/RealtimeContext";
 import { useMsg } from "../context/MsgContext";
+import { useToast } from "../context/ToastContext";
 import { useUser } from "../context/UserContext";
+import { stockNameMap } from "../../constants/stocks";
 import { FaSlidersH } from "react-icons/fa";
 import AdvancedOrder from "./modal/AdvancedOrder";
 import OrderConfirmModal from "./modal/order/OrderConfirmModal";
@@ -179,15 +181,17 @@ export default function OrderPanel() {
 
     const { subscribeDestination } = useRealtime();
     const { success, error } = useMsg();
+    const { showToast } = useToast();
 
     useEffect(() => {
         const unsubOrder = subscribeDestination(
             "/user/sub/order/result",
             (data: OrderResultResponse) => {
                 const sideLabel = data.orderType === "BUY" ? "매수" : "매도";
+                const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
 
                 if (data.responseType === "SUCCESS") {
-                    success(`${data.stockCode} ${sideLabel} 주문이 접수되었습니다.`);
+                    success(`[${stockName}] ${sideLabel} 주문이 접수되었습니다.`);
                 } else {
                     error(`${sideLabel} 주문 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 }
@@ -198,7 +202,8 @@ export default function OrderPanel() {
             "/user/sub/cancel",
             (data: CancelResultResponse) => {
                 if (data.responseType === "SUCCESS") {
-                    success(`${data.stockCode} 주문이 취소되었습니다.`);
+                    const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+                    success(`[${stockName}] 주문이 취소되었습니다.`);
                 } else {
                     error(`주문 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 }
@@ -211,7 +216,8 @@ export default function OrderPanel() {
                 const sideLabel = data.autoOrderType === "BUY" ? "자동 매수" : "자동 매도";
 
                 if (data.responseType === "SUCCESS") {
-                    success(`${data.stockCode} ${sideLabel} 주문이 등록되었습니다.`);
+                    const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+                    success(`[${stockName}] ${sideLabel} 주문이 등록되었습니다.`);
                 } else {
                     error(`${sideLabel} 등록 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 }
@@ -222,7 +228,8 @@ export default function OrderPanel() {
             "/user/sub/auto/cancel",
             (data: AutoCancelResultResponse) => {
                 if (data.responseType === "SUCCESS") {
-                    success(`${data.stockCode} 자동주문이 취소되었습니다.`);
+                    const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+                    success(`[${stockName}] 자동주문이 취소되었습니다.`);
                 } else {
                     error(`자동주문 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 }
@@ -233,7 +240,12 @@ export default function OrderPanel() {
             "/user/sub/trade",
             (data: TradeResponse) => {
                 const sideLabel = data.tradeType === "BUY" ? "매수" : "매도";
-                success(`${data.stockCode} ${data.tradePrice.toLocaleString()}원 ${data.tradeQuantity}주 ${sideLabel} 체결`);
+                const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+
+                showToast(
+                    `[${sideLabel}] ${stockName} ${data.tradePrice.toLocaleString()}원 ${data.tradeQuantity}주`,
+                    data.tradeType === "BUY" ? "buy" : "sell"
+                );
             }
         );
 
@@ -243,7 +255,8 @@ export default function OrderPanel() {
                 const sideLabel = data.trailingStopType === "BUY" ? "매수" : "매도";
 
                 if (data.responseType === "SUCCESS") {
-                    success(`${data.stockCode} 트레일링 ${sideLabel} 주문이 등록되었습니다.`);
+                    const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+                    success(`[${stockName}] 트레일링 ${sideLabel} 주문이 등록되었습니다.`);
                 } else {
                     error(`트레일링 ${sideLabel} 등록 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 }
@@ -254,7 +267,8 @@ export default function OrderPanel() {
             "/user/sub/trailing-stop/cancel",
             (data: TrailingStopCancelResultResponse) => {
                 if (data.responseType === "SUCCESS") {
-                    success(`${data.stockCode} 트레일링 주문이 취소되었습니다.`);
+                    const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+                    success(`[${stockName}] 트레일링 주문이 취소되었습니다.`);
                 } else {
                     error(`트레일링 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 }
@@ -269,21 +283,23 @@ export default function OrderPanel() {
                     return;
                 }
 
+                const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+
                 switch (data.otocoStatus) {
                     case "WAITING_ENTRY":
-                        success(`${data.stockCode} OTOCO 주문이 등록되었습니다.`);
+                        success(`[${stockName}] OTOCO 주문이 등록되었습니다.`);
                         break;
                     case "ENTRY_ORDER_PLACED":
-                        success(`${data.stockCode} 진입 조건이 충족되어 주문이 접수되었습니다.`);
+                        success(`[${stockName}] 진입 조건이 충족되어 주문이 접수되었습니다.`);
                         break;
                     case "WAITING_EXIT":
-                        success(`${data.stockCode} 진입 주문이 체결되어 익절·손절 감시를 시작합니다.`);
+                        success(`[${stockName}] 진입 주문이 체결되어 익절·손절 감시를 시작합니다.`);
                         break;
                     case "COMPLETED":
-                        success(`${data.stockCode} 익절 또는 손절 조건이 충족되어 청산되었습니다.`);
+                        success(`[${stockName}] 익절 또는 손절 조건이 충족되어 청산되었습니다.`);
                         break;
                     default:
-                        success(`${data.stockCode} OTOCO 주문 상태가 갱신되었습니다.`);
+                        success(`[${stockName}] OTOCO 주문 상태가 갱신되었습니다.`);
                 }
             }
         );
@@ -292,7 +308,8 @@ export default function OrderPanel() {
             "/user/sub/otoco/cancel",
             (data: OtocoCancelResultResponse) => {
                 if (data.responseType === "SUCCESS") {
-                    success(`${data.stockCode} OTOCO 주문이 취소되었습니다.`);
+                    const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+                    success(`[${stockName}] OTOCO 주문이 취소되었습니다.`);
                 } else {
                     error(`OTOCO 취소 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 }
@@ -310,7 +327,7 @@ export default function OrderPanel() {
             unsubOtocoResult();
             unsubOtocoCancel();
         };
-    }, [subscribeDestination, success, error]);
+    }, [subscribeDestination, success, error, showToast]);
 
     return (
         <div className="order-panel">
