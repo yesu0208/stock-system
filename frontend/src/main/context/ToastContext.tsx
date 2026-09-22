@@ -41,7 +41,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
         window.setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id))
-        }, 3000)
+        }, 5000)
     }, [])
 
     const toggleVisible = useCallback(() => {
