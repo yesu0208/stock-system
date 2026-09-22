@@ -1,6 +1,6 @@
 import "./TopBar.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaStar, FaRegStar, FaBell, FaRegBell, FaSearch } from "react-icons/fa";
 
 import { STOCKS } from "../data/stocks";
@@ -38,6 +38,8 @@ export default function TopBar() {
     const [query, setQuery] = useState("");
     const [open, setOpen] = useState(false);
 
+    const searchCellRef = useRef<HTMLDivElement | null>(null);
+
     const isRealtime = isRealtimeStock(selectedStock.code);
 
     const [priceTick, setPriceTick] = useState<TradePriceTickMessage | null>(null);
@@ -65,9 +67,22 @@ export default function TopBar() {
         });
     }, [selectedStock.code, subscribeStock]);
 
+    useEffect(() => {
+        if (!open) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (searchCellRef.current && !searchCellRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [open]);
+
     const filteredStocks = STOCKS.filter((s) =>
         `${s.name} ${s.code}`.toLowerCase().includes(query.toLowerCase())
-    );
+    ).sort((a, b) => Number(b.realtimeSupported) - Number(a.realtimeSupported));
 
     const realtimeStocks = STOCKS.filter((s) => s.realtimeSupported);
 
@@ -106,7 +121,7 @@ export default function TopBar() {
     return (
         <>
             <div className="top-bar">
-                <div className="cell search-cell">
+                <div className="cell search-cell" ref={searchCellRef}>
                     <div className="search-box">
                         <div className="search-icon">
                             <FaSearch />
