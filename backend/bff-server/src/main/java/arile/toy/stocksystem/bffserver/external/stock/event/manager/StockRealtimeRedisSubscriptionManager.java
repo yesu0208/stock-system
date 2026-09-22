@@ -39,8 +39,11 @@ public class StockRealtimeRedisSubscriptionManager {
 
     private final ConcurrentHashMap<String, AtomicInteger> stockRefCount = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Set<String>> sessionSubscriptions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> subscriptionKeyToStockCode = new ConcurrentHashMap<>();
 
-    public void subscribe(String sessionId, String stockCode) {
+    public void subscribe(String sessionId, String subscriptionId, String stockCode) {
+
+        subscriptionKeyToStockCode.put(subscriptionKey(sessionId, subscriptionId), stockCode);
 
         sessionSubscriptions
                 .computeIfAbsent(sessionId, k -> ConcurrentHashMap.newKeySet())
@@ -71,6 +74,13 @@ public class StockRealtimeRedisSubscriptionManager {
         }
     }
 
+    public void unsubscribeBySubscriptionId(String sessionId, String subscriptionId) {
+        String stockCode = subscriptionKeyToStockCode.remove(subscriptionKey(sessionId, subscriptionId));
+        if (stockCode == null) return;
+
+        unsubscribe(sessionId, stockCode);
+    }
+
     public void unsubscribe(String sessionId, String stockCode) {
         Set<String> stocks = sessionSubscriptions.get(sessionId);
         if (stocks != null && stocks.remove(stockCode)) {
@@ -82,12 +92,12 @@ public class StockRealtimeRedisSubscriptionManager {
         Set<String> stocks = sessionSubscriptions.remove(sessionId);
         if (stocks == null) return;
         for (String stockCode : stocks) decreaseRefCount(stockCode);
+
+        subscriptionKeyToStockCode.keySet().removeIf(key -> key.startsWith(sessionId + ":"));
     }
 
     public void disconnect(String sessionId) {
-        Set<String> stocks = sessionSubscriptions.remove(sessionId);
-        if (stocks == null) return;
-        for (String stockCode : stocks) decreaseRefCount(stockCode);
+        unsubscribeAll(sessionId);
     }
 
     @Scheduled(fixedRate = 10_000)
@@ -111,6 +121,10 @@ public class StockRealtimeRedisSubscriptionManager {
             }
             return count;
         });
+    }
+
+    private String subscriptionKey(String sessionId, String subscriptionId) {
+        return sessionId + ":" + subscriptionId;
     }
 
     private ChannelTopic bidAskTopic(String stockCode) {
