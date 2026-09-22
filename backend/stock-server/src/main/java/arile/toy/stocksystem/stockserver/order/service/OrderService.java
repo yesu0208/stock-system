@@ -33,6 +33,12 @@ public class OrderService {
         // 레버리지 매수 시 실제 예약해야 할 현금은 "매수금액 전체"가 아니라 "개시증거금"만큼
         long reserveAmount = resolveReserveAmount(request.orderType(), leverageRatio, orderAmount);
 
+        // 매수 주문에 한해, 예약 시점에 수수료를 한 번만 계산해 저장
+        // 부분체결/취소마다 이 값을 재계산 없이 정확히 소진(consumeReservedFee)하기 위함
+        Long initialReservedFee = request.orderType() == OrderType.BUY
+                ? reserveAmountCalculator.calculateFee(orderAmount)
+                : null;
+
         if (!fromAutoOrder && request.orderType() == OrderType.BUY) {
             boolean reserved = accountApiClient
                     .reserveCash(request.username(), reserveAmount);
@@ -66,7 +72,8 @@ public class OrderService {
                     request.orderQuantity(),
                     request.orderExecutionType(),
                     request.origin(),
-                    request.originId()
+                    request.originId(),
+                    initialReservedFee
             );
             savedOrder = orderRepository.save(orderEntity);
 
