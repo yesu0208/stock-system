@@ -1,7 +1,9 @@
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useStockRealtime } from '../../main/context/StockRealtimeContext'
 import { useOrderPrice } from '../../main/context/OrderPriceContext'
 import { useStock } from '../../main/context/StockContext'
-import { usePendingOrders } from '../../main/context/PendingOrderContext'
+import { usePendingOrders, type PendingOrder } from '../../main/context/PendingOrderContext'
 
 import styles from './AskList.module.css'
 
@@ -26,6 +28,12 @@ export default function AskList({
     const { setSelectedPrice } = useOrderPrice()
     const { selectedStock } = useStock()
     const { pendingOrders } = usePendingOrders()
+
+    const [hoveredBadge, setHoveredBadge] = useState<{
+        x: number
+        y: number
+        orders: PendingOrder[]
+    } | null>(null)
 
     const getPriceColor = (price: number) => {
         if (price > prevClosePrice) return '#FF6347'
@@ -125,31 +133,24 @@ export default function AskList({
                                     <span className={styles.quantityText}>{a.quantity.toLocaleString()}</span>
 
                                     {myOrders.length > 0 && (
-                                        <div className={styles.myOrderBadgeWrap}>
+                                        <div
+                                            className={styles.myOrderBadgeWrap}
+                                            onMouseEnter={(e) => {
+                                                const rect = e.currentTarget.getBoundingClientRect()
+                                                setHoveredBadge({
+                                                    x: rect.left + rect.width / 2,
+                                                    y: rect.top,
+                                                    orders: myOrders,
+                                                })
+                                            }}
+                                            onMouseLeave={() => setHoveredBadge(null)}
+                                        >
                                             {myOrders.some((o) => o.side === 'BUY') && (
                                                 <span className={styles.myOrderTagBuy}>매</span>
                                             )}
                                             {myOrders.some((o) => o.side === 'SELL') && (
                                                 <span className={styles.myOrderTagSell}>매</span>
                                             )}
-
-                                            <div className={styles.myOrderTooltip}>
-                                                {myOrders.map((o) => (
-                                                    <div key={o.orderId} className={styles.tooltipRow}>
-                                                        <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
-                                                            {o.side === 'BUY' ? '매수' : '매도'}
-                                                        </span>
-                                                        <span className={styles.tooltipQty}>
-                                                            {o.remainingQty.toLocaleString()}주
-                                                        </span>
-                                                        <span className={styles.tooltipInfo}>
-                                                            {o.quantityAhead != null
-                                                                ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
-                                                                : '-'}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
                                         </div>
                                     )}
                                 </>
@@ -286,6 +287,30 @@ export default function AskList({
                     </div>
                 )
             })}
+
+            {hoveredBadge && createPortal(
+                <div
+                    className={styles.myOrderTooltipPortal}
+                    style={{ left: hoveredBadge.x, top: hoveredBadge.y }}
+                >
+                    {hoveredBadge.orders.map((o) => (
+                        <div key={o.orderId} className={styles.tooltipRow}>
+                            <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
+                                {o.side === 'BUY' ? '매수' : '매도'}
+                            </span>
+                            <span className={styles.tooltipQty}>
+                                {o.remainingQty.toLocaleString()}주
+                            </span>
+                            <span className={styles.tooltipInfo}>
+                                {o.quantityAhead != null
+                                    ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
+                                    : '-'}
+                            </span>
+                        </div>
+                    ))}
+                </div>,
+                document.body
+            )}
         </div>
     )
 }
