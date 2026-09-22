@@ -28,8 +28,11 @@ import java.util.List;
  * publishMarketClose)를 사용한다. "MARKET_CLOSED" 메시지는 실제로는
  * "정규장 마감 시각(15:30)"이 아니라 "미체결 정리 작업이 모든 그룹에서
  * 끝났다"는 완료 신호이므로, 애프터 정리 완료 시에도 동일하게 재사용.
- * (수익률·등급 배치(DailyRankBatchScheduler 등)는 정규장 마감 기준으로만
- * 하루 한 번 실행되며, 이 잡과는 무관하다.)
+ *
+ * 하루 정산 순서: 이 잡(20:05, 미체결 정리) → DailyLeverageBatchScheduler
+ * (20:10, 이자 청구) → DailyRankBatchScheduler(20:15, 수익률·등급 배치).
+ * 애프터마켓까지 반영된 최종 상태를 기준으로 이자·수익률·등급을 계산하기 위해
+ * 정규장 마감 기준에서 애프터마켓 마감 기준으로 변경.
  */
 @Component
 @RequiredArgsConstructor
