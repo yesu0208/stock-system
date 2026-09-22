@@ -127,7 +127,8 @@ public class TrailingStopTriggerService {
         boolean refunded;
 
         if (dto.trailingStopType() == TrailingStopType.BUY) {
-            long orderAmount = resolveOrderAmount(dto, dto.triggerPrice());
+            long orderAmount = reserveAmountCalculator.calculateReserveAmount(
+                    dto.leverageRatio(), (long) dto.triggerPrice() * dto.orderQuantity());
             refunded = accountApiClient.refundReservedCash(dto.username(), orderAmount);
         } else {
             refunded = dto.leverageRatio().isSpot()
@@ -145,10 +146,5 @@ public class TrailingStopTriggerService {
         stockServerTrailingStopResponseRepository.delete(dto.username(), dto.trailingStopId());
 
         trailingStopResponseEventPublisher.publishTriggerFailure(dto, TrailingStopResultCode.INTERNAL_ERROR);
-    }
-
-    private long resolveOrderAmount(TrailingStopDto dto, Integer price) {
-        long rawAmount = (long) price * dto.orderQuantity();
-        return dto.leverageRatio().isSpot() ? rawAmount : dto.leverageRatio().calculateMarginDeposit(rawAmount);
     }
 }
