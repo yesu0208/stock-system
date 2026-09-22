@@ -4,6 +4,7 @@ import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMe
 import arile.toy.stocksystem.stockserver.lock.TrailingStopLockRegistry;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.*;
 import arile.toy.stocksystem.stockserver.trailingstop.event.publisher.TrailingStopResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.trailingstop.registry.TrailingStopBookRegistry;
@@ -29,6 +30,7 @@ public class TrailingStopTriggerService {
     private final OrderService orderService;
     private final TrailingStopResponseEventPublisher trailingStopResponseEventPublisher;
     private final AccountApiClient accountApiClient;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     public void getExternalTickMessageAndTrail(TradePriceTickMessage tick) {
         ReentrantLock lock = trailingStopLockRegistry.lock(tick.stockCode());
@@ -92,8 +94,10 @@ public class TrailingStopTriggerService {
         // 주문 금액의 차액을 먼저 환불해 reservedCash를 "이번에 생성할 주문의 정확한 예약액"으로 맞춤.
         // (트레일링 특성상 발동 시점의 triggerPrice는 initialTriggerPrice보다 항상 작거나 같음.)
         if (dto.trailingStopType() == TrailingStopType.BUY) {
-            long reservedAmount = resolveOrderAmount(dto, dto.initialTriggerPrice());
-            long orderAmount = resolveOrderAmount(dto, dto.triggerPrice());
+            long reservedAmount = reserveAmountCalculator.calculateReserveAmount(
+                    dto.leverageRatio(), (long) dto.initialTriggerPrice() * dto.orderQuantity());
+            long orderAmount = reserveAmountCalculator.calculateReserveAmount(
+                    dto.leverageRatio(), (long) dto.triggerPrice() * dto.orderQuantity());
             long refund = reservedAmount - orderAmount;
 
             if (refund > 0) {
@@ -123,7 +127,8 @@ public class TrailingStopTriggerService {
         boolean refunded;
 
         if (dto.trailingStopType() == TrailingStopType.BUY) {
-            long orderAmount = resolveOrderAmount(dto, dto.triggerPrice());
+            long orderAmount = reserveAmountCalculator.calculateReserveAmount(
+                    dto.leverageRatio(), (long) dto.triggerPrice() * dto.orderQuantity());
             refunded = accountApiClient.refundReservedCash(dto.username(), orderAmount);
         } else {
             refunded = dto.leverageRatio().isSpot()
@@ -141,10 +146,5 @@ public class TrailingStopTriggerService {
         stockServerTrailingStopResponseRepository.delete(dto.username(), dto.trailingStopId());
 
         trailingStopResponseEventPublisher.publishTriggerFailure(dto, TrailingStopResultCode.INTERNAL_ERROR);
-    }
-
-    private long resolveOrderAmount(TrailingStopDto dto, Integer price) {
-        long rawAmount = (long) price * dto.orderQuantity();
-        return dto.leverageRatio().isSpot() ? rawAmount : dto.leverageRatio().calculateMarginDeposit(rawAmount);
     }
 }
