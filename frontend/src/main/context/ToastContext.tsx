@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { FiX } from 'react-icons/fi'
 import './Toast.css'
 
-export type ToastVariant = 'success' | 'error' | 'info'
+export type ToastVariant = 'success' | 'error' | 'info' | 'buy' | 'sell'
 
 interface ToastItem {
     id: number

@@ -7,7 +7,9 @@ import { useStockRealtime } from "../context/StockRealtimeContext";
 import { useAccount } from "../context/AccountContext";
 import { useRealtime } from "../context/RealtimeContext";
 import { useMsg } from "../context/MsgContext";
+import { useToast } from "../context/ToastContext";
 import { useUser } from "../context/UserContext";
+import { stockNameMap } from "../../constants/stocks";
 import { FaSlidersH } from "react-icons/fa";
 import AdvancedOrder from "./modal/AdvancedOrder";
 import OrderConfirmModal from "./modal/order/OrderConfirmModal";
@@ -179,6 +181,7 @@ export default function OrderPanel() {
 
     const { subscribeDestination } = useRealtime();
     const { success, error } = useMsg();
+    const { showToast } = useToast();
 
     useEffect(() => {
         const unsubOrder = subscribeDestination(
@@ -233,7 +236,12 @@ export default function OrderPanel() {
             "/user/sub/trade",
             (data: TradeResponse) => {
                 const sideLabel = data.tradeType === "BUY" ? "매수" : "매도";
-                success(`${data.stockCode} ${data.tradePrice.toLocaleString()}원 ${data.tradeQuantity}주 ${sideLabel} 체결`);
+                const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+
+                showToast(
+                    `[${sideLabel}] ${stockName} ${data.tradePrice.toLocaleString()}원 ${data.tradeQuantity}주`,
+                    data.tradeType === "BUY" ? "buy" : "sell"
+                );
             }
         );
 
@@ -310,7 +318,7 @@ export default function OrderPanel() {
             unsubOtocoResult();
             unsubOtocoCancel();
         };
-    }, [subscribeDestination, success, error]);
+    }, [subscribeDestination, success, error, showToast]);
 
     return (
         <div className="order-panel">
