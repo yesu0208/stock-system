@@ -98,7 +98,15 @@ public class CancelService {
         if (orderEntity.getOrderType() == OrderType.BUY) {
 
             long orderAmount = (long) orderEntity.getOrderPrice() * orderEntity.getRemainingQuantity();
-            long refundAmount = reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
+
+            // 원금(증거금)은 남은 수량 기준으로 그대로 재계산: 반올림 대상이 아니라 안전.
+            // 수수료만 재계산(reserveAmountCalculator.calculateFee) 대신 OrderEntity에 정확히
+            // 남아있는 remainingReservedFee를 그대로 환불: 반올림 오차 원천 차단
+            long principal = leverageRatio.isSpot() ? orderAmount : leverageRatio.calculateMarginDeposit(orderAmount);
+            long remainingFee = orderEntity.getRemainingReservedFee() != null
+                    ? orderEntity.getRemainingReservedFee()
+                    : 0L;
+            long refundAmount = principal + remainingFee;
 
             refunded = accountApiClient.refundReservedCash(orderEntity.getUsername(), refundAmount);
 
