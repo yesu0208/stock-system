@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRealtime } from './RealtimeContext'
 import { stockNameMap } from '../../constants/stocks'
-import type { OrderResponseMessage, OrderOrigin } from '../../types/order'
+import type { OrderResponseMessage, OrderOrigin, QueuePositionEvent } from '../../types/order'
 import type { AutoOrderResponseMessage } from '../../types/autoOrder'
 
 export interface PendingOrder {
@@ -20,6 +20,7 @@ export interface PendingOrder {
     leverage: number
     time: string
     origin?: OrderOrigin
+    quantityAhead?: number
 }
 
 function leverageRatioToNumber(ratio: string | null): number {
@@ -42,16 +43,36 @@ export function PendingOrderProvider({ children }: { children: ReactNode }) {
 
     const [orders, setOrders] = useState<OrderResponseMessage[]>([])
     const [autoOrders, setAutoOrders] = useState<AutoOrderResponseMessage[]>([])
+    const [queuePositions, setQueuePositions] = useState<Map<number, number>>(new Map()) // [신규]
 
     useEffect(() => {
         return subscribeDestination('/user/sub/order', (data: OrderResponseMessage[]) => {
             setOrders(data)
+
+            setQueuePositions((prev) => {
+                const liveIds = new Set(data.filter((o) => o.remainingQuantity > 0).map((o) => o.orderId))
+                const next = new Map<number, number>()
+                prev.forEach((qty, orderId) => {
+                    if (liveIds.has(orderId)) next.set(orderId, qty)
+                })
+                return next
+            })
         })
     }, [subscribeDestination])
 
     useEffect(() => {
         return subscribeDestination('/user/sub/auto/order', (data: AutoOrderResponseMessage[]) => {
             setAutoOrders(data)
+        })
+    }, [subscribeDestination])
+
+    useEffect(() => {
+        return subscribeDestination('/user/sub/order/queue-position', (data: QueuePositionEvent) => {
+            setQueuePositions((prev) => {
+                const next = new Map(prev)
+                next.set(data.orderId, data.quantityAhead)
+                return next
+            })
         })
     }, [subscribeDestination])
 
@@ -71,6 +92,7 @@ export function PendingOrderProvider({ children }: { children: ReactNode }) {
             leverage: leverageRatioToNumber(o.leverageRatio),
             time: o.orderTime,
             origin: o.origin,
+            quantityAhead: queuePositions.get(o.orderId),
         }))
 
     const pendingFromAutoOrders: PendingOrder[] = autoOrders

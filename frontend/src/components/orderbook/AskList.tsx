@@ -1,7 +1,24 @@
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useStockRealtime } from '../../main/context/StockRealtimeContext'
 import { useOrderPrice } from '../../main/context/OrderPriceContext'
+import { useStock } from '../../main/context/StockContext'
+import { usePendingOrders } from '../../main/context/PendingOrderContext'
 
 import styles from './AskList.module.css'
+
+const ORIGIN_LABEL: Record<string, string> = {
+    OTOCO_ENTRY: 'OTOCO 진입',
+    OTOCO_TAKE_PROFIT: 'OTOCO 익절',
+    OTOCO_STOP_LOSS: 'OTOCO 손절',
+    TRAILING_STOP: '트레일링',
+    AUTO_ORDER: '자동주문',
+}
+
+function formatTimeOnly(isoString: string): string {
+    const d = new Date(isoString)
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+}
 
 interface PriceLevel {
     price: number
@@ -22,6 +39,31 @@ export default function AskList({
 
     const { priceTick: latestTick } = useStockRealtime()
     const { setSelectedPrice } = useOrderPrice()
+    const { selectedStock } = useStock()
+    const { pendingOrders } = usePendingOrders()
+
+    const [hoveredBadge, setHoveredBadge] = useState<{
+        x: number
+        y: number
+        price: number
+    } | null>(null)
+
+    useEffect(() => {
+        if (!hoveredBadge) return
+
+        const BUFFER = 40
+
+        function handleMove(e: MouseEvent) {
+            const withinX = Math.abs(e.clientX - hoveredBadge!.x) <= BUFFER
+            const withinY = Math.abs(e.clientY - hoveredBadge!.y) <= BUFFER
+            if (!withinX || !withinY) {
+                setHoveredBadge(null)
+            }
+        }
+
+        document.addEventListener('mousemove', handleMove)
+        return () => document.removeEventListener('mousemove', handleMove)
+    }, [hoveredBadge])
 
     const getPriceColor = (price: number) => {
         if (price > prevClosePrice) return '#FF6347'
@@ -89,6 +131,11 @@ export default function AskList({
         return null
     }
 
+    const getMyOrdersAtPrice = (price: number) =>
+        pendingOrders.filter(
+            (o) => !o.isAuto && o.stockCode === selectedStock.code && o.price === price
+        )
+
     return (
         <div className={styles.container}>
             {asks.slice().reverse().map((a, idx, arr) => {
@@ -105,6 +152,7 @@ export default function AskList({
 
                 const borderStyle = getPriceBorder(a.price, isEmpty)
                 const priceTag = getPriceTag(a.price, isEmpty)
+                const myOrders = !isEmpty ? getMyOrdersAtPrice(a.price) : []
 
                 return (
                     <div key={idx} className={styles.row}>
@@ -113,6 +161,28 @@ export default function AskList({
                                 <>
                                     <div className={styles.bar} style={{ width: `${widthPercent}%` }} />
                                     <span className={styles.quantityText}>{a.quantity.toLocaleString()}</span>
+
+                                    {myOrders.length > 0 && (
+                                        <div
+                                            className={styles.myOrderBadgeWrap}
+                                            onMouseEnter={(e) => {
+                                                const rect = e.currentTarget.getBoundingClientRect()
+                                                setHoveredBadge({
+                                                    x: rect.left + rect.width / 2,
+                                                    y: rect.top,
+                                                    price: a.price,
+                                                })
+                                            }}
+                                            onMouseLeave={() => setHoveredBadge(null)}
+                                        >
+                                            {myOrders.some((o) => o.side === 'BUY') && (
+                                                <span className={styles.myOrderTagBuy}>매</span>
+                                            )}
+                                            {myOrders.some((o) => o.side === 'SELL') && (
+                                                <span className={styles.myOrderTagSell}>매</span>
+                                            )}
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -247,6 +317,59 @@ export default function AskList({
                     </div>
                 )
             })}
+
+            {hoveredBadge && (() => {
+                const liveOrders = getMyOrdersAtPrice(hoveredBadge.price)
+                if (liveOrders.length === 0) return null
+
+                return createPortal(
+                    <div
+                        className={styles.myOrderTooltipPortal}
+                        style={{ left: hoveredBadge.x, top: hoveredBadge.y }}
+                    >
+                        <div className={styles.tooltipHeader}>
+                            <span className={styles.tooltipHeaderLabel}>미체결 주문 현황</span>
+                            <span className={styles.tooltipHeaderPrice}>
+                                {hoveredBadge.price.toLocaleString()}원
+                            </span>
+                        </div>
+
+                        {liveOrders.map((o) => (
+                            <div key={o.orderId} className={styles.tooltipRow}>
+                                <div className={styles.tooltipRowTop}>
+                                    <span className={styles.tooltipTimeText}>{formatTimeOnly(o.time)}</span>
+                                    <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
+                                        {o.side === 'BUY' ? '매수' : '매도'}
+                                    </span>
+                                    <span className={`${styles.tooltipLeverage} ${o.leverage === 1 ? styles.cash : styles.lev}`}>
+                                        {o.leverage === 1 ? '현금' : `${o.leverage}x`}
+                                    </span>
+                                    {o.origin && o.origin !== 'MANUAL' && (
+                                        <span className={styles.tooltipOrigin}>
+                                            {ORIGIN_LABEL[o.origin] ?? o.origin}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className={styles.tooltipRowTop}>
+                                    <span className={styles.tooltipQty}>
+                                        {o.remainingQty.toLocaleString()}주
+                                    </span>
+                                    {o.quantityAhead != null && o.quantityAhead === 0 ? (
+                                        <span className={styles.tooltipInfoTurn}>최우선 대기중</span>
+                                    ) : (
+                                        <span className={styles.tooltipInfo}>
+                                            {o.quantityAhead != null
+                                                ? `앞순위 ${o.quantityAhead.toLocaleString()}주 대기중`
+                                                : '-'}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>,
+                    document.body
+                )
+            })()}
         </div>
     )
 }
