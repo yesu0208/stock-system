@@ -22,11 +22,12 @@ public class StockWebSocketSubscriptionEventListener {
         StompHeaderAccessor acc = StompHeaderAccessor.wrap(event.getMessage());
 
         String sessionId = acc.getSessionId();
+        String subscriptionId = acc.getSubscriptionId();
         String destination = acc.getDestination();
         String stockCode = extractStockCode(destination);
 
         if (stockCode != null) {
-            subscriptionManager.subscribe(sessionId, stockCode);
+            subscriptionManager.subscribe(sessionId, subscriptionId, stockCode);
         }
     }
 
@@ -34,8 +35,9 @@ public class StockWebSocketSubscriptionEventListener {
     public void handleUnsubscribe(SessionUnsubscribeEvent event) {
         StompHeaderAccessor acc = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = acc.getSessionId();
+        String subscriptionId = acc.getSubscriptionId();
 
-        subscriptionManager.unsubscribeAll(sessionId);
+        subscriptionManager.unsubscribeBySubscriptionId(sessionId, subscriptionId);
     }
 
     @EventListener
