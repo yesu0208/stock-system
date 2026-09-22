@@ -187,9 +187,9 @@ export default function HotStocksModal({ show, onClose, onSelectStock }: Props) 
                                             <div className="list-header">
                                                 <span className="col-rank"></span>
                                                 <span className="col-name"></span>
-                                                <span className="col-num">수량(주)</span>
-                                                <span className="col-num-wide">거래대금(백만)</span>
-                                                <span className="col-num">거래량(주)</span>
+                                                <span className="col-num">수량 (주)</span>
+                                                <span className="col-num-wide">거래대금 (백만)</span>
+                                                <span className="col-num">거래량 (주)</span>
                                             </div>
                                         </div>
 
