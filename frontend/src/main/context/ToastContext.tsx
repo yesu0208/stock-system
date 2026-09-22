@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { FiX } from 'react-icons/fi'
 import './Toast.css'
 
 export type ToastVariant = 'success' | 'error' | 'info'
@@ -15,7 +16,7 @@ interface ToastContextValue {
     showToast: (message: string, variant?: ToastVariant) => void
     isVisible: boolean
     toggleVisible: () => void
-    toastCount: number // 알림 창이 꺼져 있는 동안 쌓인 "안 읽은" 누적 개수
+    toastCount: number
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -61,6 +62,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
             {isVisible && (
                 <div className="toast-stack">
+                    {toasts.length > 0 && (
+                        <button
+                            className="toast-stack__close-btn"
+                            onClick={toggleVisible}
+                            aria-label="메시지 창 숨기기"
+                        >
+                            <FiX />
+                        </button>
+                    )}
+
                     <AnimatePresence>
                         {toasts.map(t => (
                             <motion.div
