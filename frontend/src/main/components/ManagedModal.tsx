@@ -6,7 +6,7 @@ import {
     getUserTrailingStopsAdmin, getUserAlertsAdmin,
 } from '../../api/admin'
 import RankBadge from './RankBadge'
-import { stockNameMap } from '../../constants/stocks'
+import { stockNameMap } from '../data/stocks'
 import type { UserDto } from '../../types/user'
 import type { AccountResponse } from '../../types/account'
 import type { PortfolioResponse } from '../../types/portfolio'

@@ -4,7 +4,7 @@ import { useAccount } from "../context/AccountContext";
 import { getDailyReturnHistory } from "../../api/dailyReturn";
 import type { DailyReturnHistoryItem } from "../../types/dailyReturn";
 import type { MarginStatus, AccountStatus } from "../../types/account";
-import { stockNameMap } from "../../constants/stocks";
+import { stockNameMap } from "../data/stocks";
 import "./MyAccountModal.css";
 import Spinner from "../../components/Spinner";
 import { calculateBreakevenAmount, calculateSellCost } from "../../utils/fee";

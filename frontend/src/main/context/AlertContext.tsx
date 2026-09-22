@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRealtime } from './RealtimeContext'
-import { stockNameMap } from '../../constants/stocks'
+import { stockNameMap } from '../data/stocks'
 import { useMsg } from './MsgContext'
 import { createAlert, cancelAlert as cancelAlertApi } from '../../api/alert'
 import type { AlertResponseMessage, AlertFiredResponse, AlertDirection } from '../../types/alert'

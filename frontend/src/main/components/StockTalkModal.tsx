@@ -3,8 +3,7 @@ import { FiSearch, FiMessageSquare, FiShare2, FiAward, FiTrendingUp } from "reac
 import { useRealtime } from "../context/RealtimeContext";
 import { useUser } from "../context/UserContext";
 import { useAccount } from "../context/AccountContext";
-import { STOCKS } from "../data/stocks";
-import { stockNameMap } from "../../constants/stocks";
+import { STOCKS, stockNameMap } from "../data/stocks";
 import { calcStockStats, DIRECTION_CLASS } from "../../utils/stockUtils";
 import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import type { StockTalkMessage, StockTalkJoinResponse } from "../../types/stockTalk";

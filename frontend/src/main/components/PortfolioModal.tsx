@@ -3,7 +3,7 @@ import ModalV2 from "../../components/ModalV2";
 import { FiPieChart, FiBarChart2, FiActivity } from "react-icons/fi";
 import { useAccount } from "../context/AccountContext";
 import { usePortfolio } from "../context/PortfolioContext";
-import { stockNameMap } from "../../constants/stocks";
+import { stockNameMap } from "../data/stocks";
 import "./PortfolioModal.css";
 import Spinner from "../../components/Spinner";
 
