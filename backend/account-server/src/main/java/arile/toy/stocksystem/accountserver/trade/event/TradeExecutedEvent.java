@@ -12,6 +12,7 @@ public record TradeExecutedEvent(
         LeverageRatio leverageRatio,
         Integer orderPrice,
         Integer tradePrice,
-        Integer tradeQuantity
+        Integer tradeQuantity,
+        Long reservedFeeConsumed
 ) {
 }
