@@ -201,3 +201,10 @@
     font-size: 14px;
     opacity: 0.8;
 }
+
+.account-panel__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px; /* [조정 필요] account 있을 때 .row들의 총 높이와 맞춰야 함 */
+}

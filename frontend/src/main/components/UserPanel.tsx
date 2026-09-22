@@ -10,6 +10,7 @@ import Tooltip from "../../tooltip/Tooltip";
 import MyInfoModal from "./MyInfoModal";
 import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import PortfolioModal from "./PortfolioModal";
+import Spinner from "../../components/Spinner.tsx";
 
 function formatJoinDate(iso: string): string {
     try {
@@ -185,8 +186,8 @@ export default function UserPanel() {
                         </div>
                     </>
                 ) : (
-                    <div className="row" style={{ justifyContent: "center", opacity: 0.4 }}>
-                        불러오는 중...
+                    <div className="account-panel__loading">
+                        <Spinner />
                     </div>
                 )}
             </div>
