@@ -7,6 +7,19 @@ import { usePendingOrders, type PendingOrder } from '../../main/context/PendingO
 
 import styles from './AskList.module.css'
 
+const ORIGIN_LABEL: Record<string, string> = {
+    OTOCO_ENTRY: 'OTOCO 진입',
+    OTOCO_TAKE_PROFIT: 'OTOCO 익절',
+    OTOCO_STOP_LOSS: 'OTOCO 손절',
+    TRAILING_STOP: '트레일링',
+    AUTO_ORDER: '자동주문',
+}
+
+function formatTimeOnly(isoString: string): string {
+    const d = new Date(isoString)
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+}
+
 interface PriceLevel {
     price: number
     quantity: number
@@ -293,19 +306,39 @@ export default function AskList({
                     className={styles.myOrderTooltipPortal}
                     style={{ left: hoveredBadge.x, top: hoveredBadge.y }}
                 >
+                    <div className={styles.tooltipHeader}>
+                        <span className={styles.tooltipHeaderPrice}>
+                            {hoveredBadge.orders[0].price.toLocaleString()}원
+                        </span>
+                        <span className={styles.tooltipHeaderLabel}>미체결 주문 현황</span>
+                    </div>
+
                     {hoveredBadge.orders.map((o) => (
                         <div key={o.orderId} className={styles.tooltipRow}>
-                            <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
-                                {o.side === 'BUY' ? '매수' : '매도'}
-                            </span>
-                            <span className={styles.tooltipQty}>
-                                {o.remainingQty.toLocaleString()}주
-                            </span>
-                            <span className={styles.tooltipInfo}>
-                                {o.quantityAhead != null
-                                    ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
-                                    : '-'}
-                            </span>
+                            <div className={styles.tooltipRowTop}>
+                                <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
+                                    {o.side === 'BUY' ? '매수' : '매도'}
+                                </span>
+                                <span className={`${styles.tooltipLeverage} ${o.leverage === 1 ? styles.cash : styles.lev}`}>
+                                    {o.leverage === 1 ? '현금' : `${o.leverage}x`}
+                                </span>
+                                {o.origin && o.origin !== 'MANUAL' && (
+                                    <span className={styles.tooltipOrigin}>
+                                        {ORIGIN_LABEL[o.origin] ?? o.origin}
+                                    </span>
+                                )}
+                                <span className={styles.tooltipTimeText}>{formatTimeOnly(o.time)}</span>
+                            </div>
+                            <div className={styles.tooltipRowTop}>
+                                <span className={styles.tooltipQty}>
+                                    {o.remainingQty.toLocaleString()}주
+                                </span>
+                                <span className={styles.tooltipInfo}>
+                                    {o.quantityAhead != null
+                                        ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
+                                        : '-'}
+                                </span>
+                            </div>
                         </div>
                     ))}
                 </div>,

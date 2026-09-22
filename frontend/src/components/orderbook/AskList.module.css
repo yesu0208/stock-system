@@ -167,6 +167,7 @@
 .tooltipRow {
     display: flex;
     align-items: center;
+    flex-direction: column;
     gap: 8px;
     font-size: 10px;
     line-height: 1.6;
@@ -336,4 +337,66 @@
 
 .price:hover .priceTagTooltip {
     display: block;
+}
+
+.tooltipHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    white-space: nowrap;
+}
+
+.tooltipHeaderPrice {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.tooltipHeaderLabel {
+    font-size: 9px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.tooltipRowTop {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tooltipOrigin {
+    font-size: 9px;
+    color: #b7a6ff;
+    background: rgba(124, 92, 255, 0.15);
+    padding: 1px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.tooltipLeverage {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.tooltipLeverage.cash {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.15);
+}
+
+.tooltipLeverage.lev {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.15);
+}
+
+.tooltipTimeText {
+    font-size: 9px;
+    color: #64748b;
+    flex-shrink: 0;
 }
