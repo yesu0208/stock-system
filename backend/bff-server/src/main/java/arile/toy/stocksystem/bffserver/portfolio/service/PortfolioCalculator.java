@@ -112,13 +112,16 @@ public class PortfolioCalculator {
             }
 
             long evaluationAmount = (long) info.quantity() * curPrice;
-            // 개시증거금(투입원금) = 매입금액 - 대출금 (AccountCalculator의 equityAmount와 동일한 공식)
-            long equityAmount = info.purchaseAmount() - info.loanAmount();
-            // 레버리지 손익 = 평가금액 - 매입금액(포지션 전체 크기)
-            long profit = evaluationAmount - info.purchaseAmount();
+
+            long marginAmount = info.purchaseAmount() - info.loanAmount();
+
+            long investedAmount = info.costAmount() - info.loanAmount();
+
+            long sellCost = Math.round(evaluationAmount * (FEE_RATE + TAX_RATE));
+            long profit = evaluationAmount - sellCost - info.costAmount();
 
             mergedByStock.computeIfAbsent(stockCode, k -> new StockAmount())
-                    .addLeverage(evaluationAmount, info.purchaseAmount(), equityAmount, profit);
+                    .addLeverage(evaluationAmount, info.purchaseAmount(), marginAmount, investedAmount, profit);
         }
     }
 
@@ -189,14 +192,13 @@ public class PortfolioCalculator {
         private long spot = 0L;
         private long leverage = 0L;
 
-        // 현물 세부
         private long spotBuyAmount = 0L;
         private long spotCostAmount = 0L;
         private long spotProfitAmount = 0L;
 
-        // 레버리지 세부
         private long leverageBuyAmount = 0L;
         private long leverageEquityAmount = 0L;
+        private long leverageInvestedAmount = 0L;
         private long leverageProfitAmount = 0L;
 
         void addSpot(long amount, long buyAmount, long costAmount, long profit) {
@@ -206,10 +208,11 @@ public class PortfolioCalculator {
             this.spotProfitAmount += profit;
         }
 
-        void addLeverage(long amount, long buyAmount, long equityAmount, long profit) {
+        void addLeverage(long amount, long buyAmount, long marginAmount, long investedAmount, long profit) {
             this.leverage += amount;
             this.leverageBuyAmount += buyAmount;
-            this.leverageEquityAmount += equityAmount;
+            this.leverageEquityAmount += marginAmount;
+            this.leverageInvestedAmount += investedAmount;
             this.leverageProfitAmount += profit;
         }
 
@@ -227,11 +230,11 @@ public class PortfolioCalculator {
         long leverageEquityAmount() { return leverageEquityAmount; }
         long leverageProfitAmount() { return leverageProfitAmount; }
         double leverageProfitRate() {
-            return leverageEquityAmount == 0 ? 0 : leverageProfitAmount * 100.0 / leverageEquityAmount;
+            return leverageInvestedAmount == 0 ? 0 : leverageProfitAmount * 100.0 / leverageInvestedAmount;
         }
 
         long profitAmount() { return spotProfitAmount + leverageProfitAmount; }
-        long totalCost() { return spotCostAmount + leverageEquityAmount; }
+        long totalCost() { return spotCostAmount + leverageInvestedAmount; }
         double profitRate() {
             return totalCost() == 0 ? 0 : profitAmount() * 100.0 / totalCost();
         }
