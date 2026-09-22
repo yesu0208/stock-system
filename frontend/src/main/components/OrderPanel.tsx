@@ -31,6 +31,7 @@ type OrderType = "market" | "limit" | "conditional";
 const MAX_VALUE = 99_999_999;
 
 const RATIO_OPTIONS: { label: string; ratio: number }[] = [
+    { label: "5%", ratio: 0.05 },
     { label: "10%", ratio: 0.1 },
     { label: "25%", ratio: 0.25 },
     { label: "50%", ratio: 0.5 },
