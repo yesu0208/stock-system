@@ -8,6 +8,7 @@ import { calcStockStats, DIRECTION_CLASS } from "../../utils/stockUtils";
 import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import type { StockTalkMessage, StockTalkJoinResponse } from "../../types/stockTalk";
 import "./StockTalkModal.css";
+import Tooltip from "../../tooltip/Tooltip";
 
 const CHAT_STOCKS = STOCKS.filter((s) => s.realtimeSupported);
 
@@ -563,13 +564,14 @@ export default function StockTalkModal({ open }: Props) {
 
                             <div className="stk__input-area">
                                 <div className="stk__share-wrap" ref={shareRef}>
-                                    <button
-                                        className="stk__share-btn"
-                                        onClick={() => { setShareOpen(v => !v); setStockPickOpen(false); }}
-                                        title="자랑하기"
-                                    >
-                                        <FiShare2 />
-                                    </button>
+                                    <Tooltip text="자랑하기" placement="top">
+                                        <button
+                                            className="stk__share-btn"
+                                            onClick={() => { setShareOpen(v => !v); setStockPickOpen(false); }}
+                                        >
+                                            <FiShare2 className="stk__share-btn-icon" />
+                                        </button>
+                                    </Tooltip>
 
                                     {shareOpen && (
                                         <div className="stk__share-menu">
