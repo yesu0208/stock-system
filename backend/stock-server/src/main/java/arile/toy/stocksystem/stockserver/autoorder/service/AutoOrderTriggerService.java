@@ -7,6 +7,7 @@ import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMe
 import arile.toy.stocksystem.stockserver.lock.AutoStockLockRegistry;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
+import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class AutoOrderTriggerService {
     private final OrderService orderService;
     private final AutoOrderResponseEventPublisher autoOrderResponseEventPublisher;
     private final AccountApiClient accountApiClient;
+    private final ReserveAmountCalculator reserveAmountCalculator;
 
     public void getExternalTickMessageAndTrigger(TradePriceTickMessage tradePriceTickMessage) {
         ReentrantLock lock = autoStockLockRegistry.lock(tradePriceTickMessage.stockCode());
@@ -108,9 +110,7 @@ public class AutoOrderTriggerService {
 
         if (autoOrderDto.autoOrderType() == AutoOrderType.BUY) {
             long orderAmount = (long) autoOrderDto.orderPrice() * autoOrderDto.orderQuantity();
-            long refundAmount = autoOrderDto.leverageRatio().isSpot()
-                    ? orderAmount
-                    : autoOrderDto.leverageRatio().calculateMarginDeposit(orderAmount);
+            long refundAmount = reserveAmountCalculator.calculateReserveAmount(autoOrderDto.leverageRatio(), orderAmount);
             refunded = accountApiClient.refundReservedCash(autoOrderDto.username(), refundAmount);
         } else {
             refunded = autoOrderDto.leverageRatio().isSpot()
