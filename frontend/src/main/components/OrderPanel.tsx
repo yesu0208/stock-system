@@ -9,7 +9,7 @@ import { useRealtime } from "../context/RealtimeContext";
 import { useMsg } from "../context/MsgContext";
 import { useToast } from "../context/ToastContext";
 import { useUser } from "../context/UserContext";
-import { stockNameMap } from "../../constants/stocks";
+import { stockNameMap } from "../data/stocks";
 import { FaSlidersH } from "react-icons/fa";
 import AdvancedOrder from "./modal/AdvancedOrder";
 import OrderConfirmModal from "./modal/order/OrderConfirmModal";

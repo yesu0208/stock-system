@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRealtime } from './RealtimeContext'
-import { stockNameMap } from '../../constants/stocks'
+import { stockNameMap } from '../data/stocks'
 import type { OrderResponseMessage, OrderOrigin, QueuePositionEvent } from '../../types/order'
 import type { AutoOrderResponseMessage } from '../../types/autoOrder'
 

@@ -2682,3 +2682,11 @@ export const STOCKS: StockInfo[] = [
     { code: "950220", name: "네오이뮨텍", realtimeSupported: false },
     { code: "950250", name: "테라뷰", realtimeSupported: false },
 ];
+
+export const stockNameMap = STOCKS.reduce<Record<string, string>>(
+    (acc, s) => {
+        acc[s.code] = s.name
+        return acc
+    },
+    {}
+)

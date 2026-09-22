@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Modal from '../../components/Modal'
 import { placeOtocoOrder, cancelOtocoOrder } from '../../api/otoco'
-import { stockNameMap } from '../../constants/stocks'
+import { stockNameMap } from '../data/stocks'
 import type {
     OtocoEntryDirection,
     OtocoExitMode,
