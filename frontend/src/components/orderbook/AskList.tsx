@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useStockRealtime } from '../../main/context/StockRealtimeContext'
 import { useOrderPrice } from '../../main/context/OrderPriceContext'
 import { useStock } from '../../main/context/StockContext'
-import { usePendingOrders, type PendingOrder } from '../../main/context/PendingOrderContext'
+import { usePendingOrders } from '../../main/context/PendingOrderContext'
 
 import styles from './AskList.module.css'
 
@@ -45,7 +45,7 @@ export default function AskList({
     const [hoveredBadge, setHoveredBadge] = useState<{
         x: number
         y: number
-        orders: PendingOrder[]
+        price: number
     } | null>(null)
 
     const getPriceColor = (price: number) => {
@@ -153,7 +153,7 @@ export default function AskList({
                                                 setHoveredBadge({
                                                     x: rect.left + rect.width / 2,
                                                     y: rect.top,
-                                                    orders: myOrders,
+                                                    price: a.price,
                                                 })
                                             }}
                                             onMouseLeave={() => setHoveredBadge(null)}
@@ -301,49 +301,54 @@ export default function AskList({
                 )
             })}
 
-            {hoveredBadge && createPortal(
-                <div
-                    className={styles.myOrderTooltipPortal}
-                    style={{ left: hoveredBadge.x, top: hoveredBadge.y }}
-                >
-                    <div className={styles.tooltipHeader}>
-                        <span className={styles.tooltipHeaderPrice}>
-                            {hoveredBadge.orders[0].price.toLocaleString()}원
-                        </span>
-                        <span className={styles.tooltipHeaderLabel}>미체결 주문 현황</span>
-                    </div>
+            {hoveredBadge && (() => {
+                const liveOrders = getMyOrdersAtPrice(hoveredBadge.price)
+                if (liveOrders.length === 0) return null
 
-                    {hoveredBadge.orders.map((o) => (
-                        <div key={o.orderId} className={styles.tooltipRow}>
-                            <div className={styles.tooltipRowTop}>
-                                <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
-                                    {o.side === 'BUY' ? '매수' : '매도'}
-                                </span>
-                                <span className={`${styles.tooltipLeverage} ${o.leverage === 1 ? styles.cash : styles.lev}`}>
-                                    {o.leverage === 1 ? '현금' : `${o.leverage}x`}
-                                </span>
-                                {o.origin && o.origin !== 'MANUAL' && (
-                                    <span className={styles.tooltipOrigin}>
-                                        {ORIGIN_LABEL[o.origin] ?? o.origin}
-                                    </span>
-                                )}
-                                <span className={styles.tooltipTimeText}>{formatTimeOnly(o.time)}</span>
-                            </div>
-                            <div className={styles.tooltipRowTop}>
-                                <span className={styles.tooltipQty}>
-                                    {o.remainingQty.toLocaleString()}주
-                                </span>
-                                <span className={styles.tooltipInfo}>
-                                    {o.quantityAhead != null
-                                        ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
-                                        : '-'}
-                                </span>
-                            </div>
+                return createPortal(
+                    <div
+                        className={styles.myOrderTooltipPortal}
+                        style={{ left: hoveredBadge.x, top: hoveredBadge.y }}
+                    >
+                        <div className={styles.tooltipHeader}>
+                            <span className={styles.tooltipHeaderPrice}>
+                                {hoveredBadge.price.toLocaleString()}원
+                            </span>
+                            <span className={styles.tooltipHeaderLabel}>미체결 주문 현황</span>
                         </div>
-                    ))}
-                </div>,
-                document.body
-            )}
+
+                        {liveOrders.map((o) => (
+                            <div key={o.orderId} className={styles.tooltipRow}>
+                                <div className={styles.tooltipRowTop}>
+                                    <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
+                                        {o.side === 'BUY' ? '매수' : '매도'}
+                                    </span>
+                                    <span className={`${styles.tooltipLeverage} ${o.leverage === 1 ? styles.cash : styles.lev}`}>
+                                        {o.leverage === 1 ? '현금' : `${o.leverage}x`}
+                                    </span>
+                                    {o.origin && o.origin !== 'MANUAL' && (
+                                        <span className={styles.tooltipOrigin}>
+                                            {ORIGIN_LABEL[o.origin] ?? o.origin}
+                                        </span>
+                                    )}
+                                    <span className={styles.tooltipTimeText}>{formatTimeOnly(o.time)}</span>
+                                </div>
+                                <div className={styles.tooltipRowTop}>
+                                    <span className={styles.tooltipQty}>
+                                        {o.remainingQty.toLocaleString()}주
+                                    </span>
+                                    <span className={styles.tooltipInfo}>
+                                        {o.quantityAhead != null
+                                            ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
+                                            : '-'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>,
+                    document.body
+                )
+            })()}
         </div>
     )
 }
