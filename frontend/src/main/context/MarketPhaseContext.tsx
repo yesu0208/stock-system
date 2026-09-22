@@ -31,10 +31,10 @@ export function getPhaseColor(phase: MarketPhase | null): 'green' | 'yellow' | '
 
 const PHASE_LABEL: Record<MarketPhase, string> = {
     MORNING_CALL: '동시호가',
-    OPEN: '정규장',
+    OPEN: 'OPEN',
     CLOSING_CALL: '동시호가',
     AFTER: 'AFTER',
-    CLOSED: '장마감',
+    CLOSED: 'CLOSED',
 }
 
 const MarketPhaseContext = createContext<MarketPhaseContextValue | null>(null)
