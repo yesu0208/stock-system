@@ -12,6 +12,7 @@ import { useUser } from "../../context/UserContext";
 import type { RankTier } from "../../../types/rank";
 import { useMsg } from "../../context/MsgContext";
 import { calculateFee, calculateSellCost } from "../../../utils/fee";
+import './cancel/CancelConfirmModal.css';
 
 import { AdvancedOrderProvider, useAdvancedOrders,
     type TrailingStopPendingOrder, type OtocoPendingOrder }
@@ -310,33 +311,23 @@ function SimpleCancelConfirmModal({
 
     return (
         <ModalV2 open={open} title="주문 취소" onClose={onClose}>
-            <div style={{ padding: 20 }}>
-                <p style={{ fontSize: 13, color: "var(--color-text-secondary, #8d929b)", margin: "0 0 16px" }}>
-                    선택하신 {count}건의 주문을 취소하시겠습니까?
+            <div className="ccm">
+                <p className="ccm__message">
+                    <span className="ccm__count">{count}건</span>의 주문을 취소하시겠습니까?
                 </p>
-                <div style={{ display: "flex", gap: 8 }}>
+
+                <div className="ccm__footer">
                     <button
-                        type="button"
+                        className="ccm__btn ccm__btn--confirm"
                         onClick={handleConfirm}
                         disabled={loading}
-                        style={{
-                            flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
-                            background: "#22c07a", color: "#fff", fontWeight: 700,
-                            fontSize: 13, cursor: loading ? "not-allowed" : "pointer",
-                        }}
                     >
-                        {loading ? "취소 처리 중…" : "취소 확정"}
+                        {loading ? '처리 중...' : '취소 확정'}
                     </button>
                     <button
-                        type="button"
+                        className="ccm__btn ccm__btn--close"
                         onClick={onClose}
                         disabled={loading}
-                        style={{
-                            flex: 1, padding: "10px 0", borderRadius: 8,
-                            border: "1px solid var(--color-border, #2e3138)", background: "transparent",
-                            color: "var(--color-text-secondary, #8d929b)", fontWeight: 600,
-                            fontSize: 13, cursor: loading ? "not-allowed" : "pointer",
-                        }}
                     >
                         닫기
                     </button>
