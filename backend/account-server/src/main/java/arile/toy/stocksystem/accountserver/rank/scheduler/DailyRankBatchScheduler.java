@@ -25,7 +25,12 @@ public class DailyRankBatchScheduler {
     private final RankUpdatedPublisher rankUpdatedPublisher;
     private final HolidayRegistry holidayRegistry;
 
-    @Scheduled(cron = "0 50 15 * * MON-FRI", zone = "Asia/Seoul")
+    /**
+     * 20:15 — DailyLeverageBatchScheduler(20:10 이자 청구) 직후 실행.
+     * 애프터마켓까지 반영된 최종 상태를 기준으로 수익률·랭크를 계산하기 위해
+     * 정규장 마감(15:50) → 애프터마켓 마감(20:15)으로 이동.
+     */
+    @Scheduled(cron = "0 15 20 * * MON-FRI", zone = "Asia/Seoul")
     public void run() {
 
         if (holidayRegistry.isHoliday(LocalDate.now())) {

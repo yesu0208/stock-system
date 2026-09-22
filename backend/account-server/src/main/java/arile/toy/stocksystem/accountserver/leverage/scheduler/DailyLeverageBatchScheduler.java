@@ -26,14 +26,16 @@ public class DailyLeverageBatchScheduler {
     private final HolidayRegistry holidayRegistry;
 
     /**
-     * DailyRankBatchScheduler(15:50)보다 먼저 실행
+     * DailyRankBatchScheduler(20:15)보다 먼저 실행
      * RP 등급 계산(TotalAssetCalculator)이 레버리지 포지션의 대출금을 기준으로 순자산을 산정하므로,
      * 이자 누적이 반영된 이후에 등급 배치가 돌아야 정확
      *
-     * 15:45 — MarketCloseJob(15:40 주문정리) 직후,
-     * DailyRankBatchScheduler(15:50) 이전에 실행되도록 앞당김.
+     * 20:10 — AfterMarketCloseJob(20:05 미체결 정리) 직후,
+     * DailyRankBatchScheduler(20:15) 이전에 실행되도록 배치.
+     * 애프터마켓까지 반영된 최종 상태를 기준으로 이자·수익률·등급을 계산하기 위해
+     * 정규장 마감(15:45) → 애프터마켓 마감(20:10)으로 이동.
      */
-    @Scheduled(cron = "0 45 15 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 10 20 * * MON-FRI", zone = "Asia/Seoul")
     public void run() {
 
         if (holidayRegistry.isHoliday(LocalDate.now())) {
