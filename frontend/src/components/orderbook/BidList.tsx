@@ -53,14 +53,21 @@ export default function BidList({
 
         if (latestPrice !== undefined && price === latestPrice)
             return { outline: '1px solid white', outlineOffset: '-1px', zIndex: 10 }
-        if (startPrice !== undefined && price === startPrice)
-            return { outline: '1px solid #888888', outlineOffset: '-1px', zIndex: 9 }
-        if (highPrice !== undefined && price === highPrice)
-            return { outline: '1px solid #FF6347', outlineOffset: '-1px', zIndex: 8 }
-        if (lowPrice !== undefined && price === lowPrice)
-            return { outline: '1px solid #4F9DFF', outlineOffset: '-1px', zIndex: 7 }
 
         return none
+    }
+
+    const getPriceTag = (price: number, isEmpty: boolean): { label: string; color: string } | null => {
+        if (isEmpty) return null
+
+        if (startPrice !== undefined && price === startPrice)
+            return { label: '시가', color: '#888888' }
+        if (highPrice !== undefined && price === highPrice)
+            return { label: '고가', color: '#FF6347' }
+        if (lowPrice !== undefined && price === lowPrice)
+            return { label: '저가', color: '#4F9DFF' }
+
+        return null
     }
 
     const ticksToShow = accTicks.slice(0, bids.length * 2)
@@ -99,6 +106,7 @@ export default function BidList({
                 const rowTicks = idx === 0 ? [] : tickChunks[idx - 1] || []
 
                 const borderStyle = getPriceBorder(b.price, isEmpty)
+                const priceTag = getPriceTag(b.price, isEmpty)
 
                 return (
                     <div key={idx} className={styles.row}>
@@ -145,6 +153,12 @@ export default function BidList({
                                 cursor: !isEmpty ? 'pointer' : 'default',
                             }}
                         >
+                            {priceTag && (
+                                <>
+                                    <span className={styles.priceTag} style={{ backgroundColor: priceTag.color }} />
+                                    <span className={styles.priceTagTooltip}>{priceTag.label}</span>
+                                </>
+                            )}
                             {!isEmpty ? b.price.toLocaleString() : ''}
                         </div>
 
@@ -153,7 +167,7 @@ export default function BidList({
                                 <div className={styles.bar} style={{ width: `${widthPercent}%` }} />
                             )}
                             <span className={styles.quantityText}>
-                                {!isEmpty ? b.quantity : ''}
+                                {!isEmpty ? b.quantity.toLocaleString() : ''}
                             </span>
                         </div>
                     </div>

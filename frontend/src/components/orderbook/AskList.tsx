@@ -72,14 +72,21 @@ export default function AskList({
 
         if (latestPrice !== undefined && price === latestPrice)
             return { outline: '1px solid white', outlineOffset: '-1px', zIndex: 10 }
-        if (startPrice !== undefined && price === startPrice)
-            return { outline: '1px solid #888888', outlineOffset: '-1px', zIndex: 9 }
-        if (highPrice !== undefined && price === highPrice)
-            return { outline: '1px solid #FF6347', outlineOffset: '-1px', zIndex: 8 }
-        if (lowPrice !== undefined && price === lowPrice)
-            return { outline: '1px solid #4F9DFF', outlineOffset: '-1px', zIndex: 7 }
 
         return none
+    }
+
+    const getPriceTag = (price: number, isEmpty: boolean): { label: string; color: string } | null => {
+        if (isEmpty) return null
+
+        if (startPrice !== undefined && price === startPrice)
+            return { label: '시가', color: '#888888' }
+        if (highPrice !== undefined && price === highPrice)
+            return { label: '고가', color: '#FF6347' }
+        if (lowPrice !== undefined && price === lowPrice)
+            return { label: '저가', color: '#4F9DFF' }
+
+        return null
     }
 
     return (
@@ -97,6 +104,7 @@ export default function AskList({
                 const isFiveAboveBottom = idx === arr.length - 6
 
                 const borderStyle = getPriceBorder(a.price, isEmpty)
+                const priceTag = getPriceTag(a.price, isEmpty)
 
                 return (
                     <div key={idx} className={styles.row}>
@@ -104,7 +112,7 @@ export default function AskList({
                             {!isEmpty && (
                                 <>
                                     <div className={styles.bar} style={{ width: `${widthPercent}%` }} />
-                                    <span className={styles.quantityText}>{a.quantity}</span>
+                                    <span className={styles.quantityText}>{a.quantity.toLocaleString()}</span>
                                 </>
                             )}
                         </div>
@@ -122,6 +130,12 @@ export default function AskList({
                                 cursor: !isEmpty ? 'pointer' : 'default',
                             }}
                         >
+                            {priceTag && (
+                                <>
+                                    <span className={styles.priceTag} style={{ backgroundColor: priceTag.color }} />
+                                    <span className={styles.priceTagTooltip}>{priceTag.label}</span>
+                                </>
+                            )}
                             {!isEmpty ? a.price.toLocaleString() : ''}
                         </div>
 

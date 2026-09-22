@@ -284,6 +284,13 @@
     font-size: 12px;
 }
 
+.top-bar .dropdown-heading {
+    padding: 8px 10px 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
 .top-bar .item--tradable {
     border-left: 2px solid #6366f1;
     padding-left: 8px;
@@ -390,4 +397,13 @@
 .top-bar .item:focus,
 .top-bar .item:focus-visible {
     outline: none;
+}
+
+.top-bar .icon:disabled {
+    color: #475569;
+    cursor: not-allowed;
+}
+
+.top-bar .icon:disabled:hover {
+    color: #475569;
 }

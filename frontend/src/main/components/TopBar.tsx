@@ -1,6 +1,6 @@
 import "./TopBar.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaStar, FaRegStar, FaBell, FaRegBell, FaSearch } from "react-icons/fa";
 
 import { STOCKS } from "../data/stocks";
@@ -38,6 +38,8 @@ export default function TopBar() {
     const [query, setQuery] = useState("");
     const [open, setOpen] = useState(false);
 
+    const searchCellRef = useRef<HTMLDivElement | null>(null);
+
     const isRealtime = isRealtimeStock(selectedStock.code);
 
     const [priceTick, setPriceTick] = useState<TradePriceTickMessage | null>(null);
@@ -65,9 +67,24 @@ export default function TopBar() {
         });
     }, [selectedStock.code, subscribeStock]);
 
+    useEffect(() => {
+        if (!open) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (searchCellRef.current && !searchCellRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [open]);
+
     const filteredStocks = STOCKS.filter((s) =>
         `${s.name} ${s.code}`.toLowerCase().includes(query.toLowerCase())
-    );
+    ).sort((a, b) => Number(b.realtimeSupported) - Number(a.realtimeSupported));
+
+    const realtimeStocks = STOCKS.filter((s) => s.realtimeSupported);
 
     const handleSelect = (stock: any) => {
         setSelectedStock(stock);
@@ -104,7 +121,7 @@ export default function TopBar() {
     return (
         <>
             <div className="top-bar">
-                <div className="cell search-cell">
+                <div className="cell search-cell" ref={searchCellRef}>
                     <div className="search-box">
                         <div className="search-icon">
                             <FaSearch />
@@ -119,21 +136,37 @@ export default function TopBar() {
                             onFocus={() => setOpen(true)}
                         />
 
-                        {open && query && (
+                        {open && (
                             <div className="dropdown">
-                                {filteredStocks.length > 0 ? (
-                                    filteredStocks.map((s) => (
-                                        <div
-                                            key={s.code}
-                                            className={`item${s.realtimeSupported ? " item--tradable" : ""}`}
-                                            onClick={() => handleSelect(s)}
-                                        >
-                                            <span className="name">{s.name}</span>
-                                            <span className="code">{s.code}</span>
-                                        </div>
-                                    ))
+                                {query ? (
+                                    filteredStocks.length > 0 ? (
+                                        filteredStocks.map((s) => (
+                                            <div
+                                                key={s.code}
+                                                className={`item${s.realtimeSupported ? " item--tradable" : ""}`}
+                                                onClick={() => handleSelect(s)}
+                                            >
+                                                <span className="name">{s.name}</span>
+                                                <span className="code">{s.code}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="empty">검색 결과 없음</div>
+                                    )
                                 ) : (
-                                    <div className="empty">검색 결과 없음</div>
+                                    <>
+                                        <div className="dropdown-heading">모의투자 지원 종목</div>
+                                        {realtimeStocks.map((s) => (
+                                            <div
+                                                key={s.code}
+                                                className="item item--tradable"
+                                                onClick={() => handleSelect(s)}
+                                            >
+                                                <span className="name">{s.name}</span>
+                                                <span className="code">{s.code}</span>
+                                            </div>
+                                        ))}
+                                    </>
                                 )}
                             </div>
                         )}
@@ -237,8 +270,12 @@ export default function TopBar() {
                         </button>
                     </Tooltip>
 
-                    <Tooltip text="알림 설정" placement="top">
-                        <button className={`icon ${bellOn ? "on" : ""}`} onClick={handleBellClick}>
+                    <Tooltip text={isRealtime ? "알림 설정" : "알림 미지원 종목"} placement="top">
+                        <button
+                            className={`icon ${bellOn ? "on" : ""}`}
+                            onClick={handleBellClick}
+                            disabled={!isRealtime}
+                        >
                             {bellOn ? <FaBell /> : <FaRegBell />}
                         </button>
                     </Tooltip>
