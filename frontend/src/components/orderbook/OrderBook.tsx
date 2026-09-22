@@ -4,6 +4,7 @@ import BidList from './BidList'
 import { useStockRealtime } from '../../main/context/StockRealtimeContext'
 import { useStock } from '../../main/context/StockContext'
 import type { TradePriceTickMessage } from '../../types/tradePriceTickMessage'
+import Spinner from '../../components/Spinner'
 
 import styles from './OrderBook.module.css'
 
@@ -65,7 +66,7 @@ export default function OrderBook() {
                 </div>
             ) : !connected || (asks.length === 0 && bids.length === 0) ? (
                 <div className={styles.loading}>
-                    불러오는 중입니다
+                    <Spinner />
                 </div>
             ) : (
                 <div
