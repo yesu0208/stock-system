@@ -205,3 +205,17 @@ tbody tr:hover {
     font-size: 12px;
     letter-spacing: 0.05em;
 }
+
+.unit-sub {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    color: #94a3b8;
+    margin-top: 1px;
+}
+
+.unit-inline {
+    font-size: 10px;
+    font-weight: 400;
+    color: #94a3b8;
+}

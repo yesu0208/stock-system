@@ -223,6 +223,9 @@
 .order-panel .stepper__btn {
     width: 30px;
     height: 30px;
+    padding: 0;
+    box-sizing: border-box;
+    flex-shrink: 0;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-surface);
@@ -300,7 +303,9 @@
 }
 
 .order-panel .ratio-btn {
-    flex: 1;
+    flex: 0 1 auto; /* [수정] flex: 1 → 컨텐츠 크기만큼만 차지, 남는 공간 억지로 안 늘어남 */
+    min-width: 36px; /* [신규] 최소 너비 보장 */
+    padding: 0 11px; /* [신규] 좌우 여백만 살짝 */
     height: 24px;
     display: flex;
     align-items: center;

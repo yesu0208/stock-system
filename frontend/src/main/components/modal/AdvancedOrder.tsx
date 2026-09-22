@@ -12,6 +12,7 @@ import { useUser } from "../../context/UserContext";
 import type { RankTier } from "../../../types/rank";
 import { useMsg } from "../../context/MsgContext";
 import { calculateFee, calculateSellCost } from "../../../utils/fee";
+import './cancel/CancelConfirmModal.css';
 
 import { AdvancedOrderProvider, useAdvancedOrders,
     type TrailingStopPendingOrder, type OtocoPendingOrder }
@@ -310,33 +311,23 @@ function SimpleCancelConfirmModal({
 
     return (
         <ModalV2 open={open} title="주문 취소" onClose={onClose}>
-            <div style={{ padding: 20 }}>
-                <p style={{ fontSize: 13, color: "var(--color-text-secondary, #8d929b)", margin: "0 0 16px" }}>
-                    선택하신 {count}건의 주문을 취소하시겠습니까?
+            <div className="ccm">
+                <p className="ccm__message">
+                    <span className="ccm__count">{count}건</span>의 주문을 취소하시겠습니까?
                 </p>
-                <div style={{ display: "flex", gap: 8 }}>
+
+                <div className="ccm__footer">
                     <button
-                        type="button"
+                        className="ccm__btn ccm__btn--confirm"
                         onClick={handleConfirm}
                         disabled={loading}
-                        style={{
-                            flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
-                            background: "#22c07a", color: "#fff", fontWeight: 700,
-                            fontSize: 13, cursor: loading ? "not-allowed" : "pointer",
-                        }}
                     >
-                        {loading ? "취소 처리 중…" : "취소 확정"}
+                        {loading ? '처리 중...' : '취소 확정'}
                     </button>
                     <button
-                        type="button"
+                        className="ccm__btn ccm__btn--close"
                         onClick={onClose}
                         disabled={loading}
-                        style={{
-                            flex: 1, padding: "10px 0", borderRadius: 8,
-                            border: "1px solid var(--color-border, #2e3138)", background: "transparent",
-                            color: "var(--color-text-secondary, #8d929b)", fontWeight: 600,
-                            fontSize: 13, cursor: loading ? "not-allowed" : "pointer",
-                        }}
                     >
                         닫기
                     </button>
@@ -477,10 +468,26 @@ function StockInfoPanel() {
 
     const [query, setQuery] = useState("");
     const [searchOpen, setSearchOpen] = useState(false);
+    const searchBoxRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!searchOpen) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+                setSearchOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [searchOpen]);
 
     const filteredStocks = STOCKS.filter((s) =>
         `${s.name} ${s.code}`.toLowerCase().includes(query.toLowerCase())
-    );
+    ).sort((a, b) => Number(b.realtimeSupported) - Number(a.realtimeSupported));
+
+    const realtimeStocks = STOCKS.filter((s) => s.realtimeSupported);
 
     const handleSelect = (stock: StockInfo) => {
         setSelectedStock(stock);
@@ -494,7 +501,7 @@ function StockInfoPanel() {
     return (
         <div className="adv-order__stock-panel">
 
-            <div className="adv-order__search-box">
+            <div className="adv-order__search-box" ref={searchBoxRef}>
                 <span className="adv-order__search-icon">
                     <FaSearch />
                 </span>
@@ -508,29 +515,50 @@ function StockInfoPanel() {
                     }}
                     onFocus={() => setSearchOpen(true)}
                 />
-                {searchOpen && query && (
+                {searchOpen && (
                     <div className="adv-order__search-dropdown">
-                        {filteredStocks.length > 0 ? (
-                            filteredStocks.map((s) => {
-                                const tradable = s.realtimeSupported;
-                                return (
+                        {query ? (
+                            filteredStocks.length > 0 ? (
+                                filteredStocks.map((s) => {
+                                    const tradable = s.realtimeSupported;
+                                    return (
+                                        <div
+                                            key={s.code}
+                                            className={`adv-order__search-item${tradable ? " adv-order__search-item--tradable" : " adv-order__search-item--disabled"}`}
+                                            onClick={() => tradable && handleSelect(s)}
+                                        >
+                                            <div className="adv-order__search-item-left">
+                                                <span className="adv-order__search-item-name">{s.name}</span>
+                                                <span className="adv-order__search-item-code">{s.code}</span>
+                                            </div>
+                                            <span className={`adv-order__search-item-tag ${tradable ? "adv-order__search-item-tag--tradable" : "adv-order__search-item-tag--disabled"}`}>
+                                                {tradable ? "주문 가능" : "주문 불가"}
+                                            </span>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="adv-order__search-empty">검색 결과 없음</div>
+                            )
+                        ) : (
+                            <>
+                                <div className="adv-order__search-heading">모의투자 지원 종목</div>
+                                {realtimeStocks.map((s) => (
                                     <div
                                         key={s.code}
-                                        className={`adv-order__search-item${tradable ? " adv-order__search-item--tradable" : " adv-order__search-item--disabled"}`}
-                                        onClick={() => tradable && handleSelect(s)}
+                                        className="adv-order__search-item adv-order__search-item--tradable"
+                                        onClick={() => handleSelect(s)}
                                     >
                                         <div className="adv-order__search-item-left">
                                             <span className="adv-order__search-item-name">{s.name}</span>
                                             <span className="adv-order__search-item-code">{s.code}</span>
                                         </div>
-                                        <span className={`adv-order__search-item-tag ${tradable ? "adv-order__search-item-tag--tradable" : "adv-order__search-item-tag--disabled"}`}>
-                                            {tradable ? "주문 가능" : "주문 불가"}
+                                        <span className="adv-order__search-item-tag adv-order__search-item-tag--tradable">
+                                            주문 가능
                                         </span>
                                     </div>
-                                );
-                            })
-                        ) : (
-                            <div className="adv-order__search-empty">검색 결과 없음</div>
+                                ))}
+                            </>
                         )}
                     </div>
                 )}
@@ -1238,6 +1266,11 @@ function OtocoInputPanel() {
     const slInvalid = slDerivedPrice >= entryPrice;
 
     const initializedRef = useRef(false);
+
+    useEffect(() => {
+        initializedRef.current = false;
+    }, [selectedStock.code]);
+
     useEffect(() => {
         if (initializedRef.current) return;
         if (currentPrice <= 0) return;

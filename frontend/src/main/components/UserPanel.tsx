@@ -10,6 +10,7 @@ import Tooltip from "../../tooltip/Tooltip";
 import MyInfoModal from "./MyInfoModal";
 import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import PortfolioModal from "./PortfolioModal";
+import Spinner from "../../components/Spinner.tsx";
 
 function formatJoinDate(iso: string): string {
     try {
@@ -80,7 +81,7 @@ export default function UserPanel() {
                         <span>
                             {user?.nickname ? (
                                 <>
-                                    <strong className="profile-nickname">{user.nickname}</strong>님
+                                    <strong className="profile-nickname">{user.nickname}</strong> 님
                                 </>
                             ) : (
                                 "..."
@@ -175,13 +176,18 @@ export default function UserPanel() {
                         </div>
 
                         <div className="row">
+                            <span>레버리지 순자산</span>
+                            <span>{hideBalance ? "******** 원" : `${fmt(account.leverageNetValue ?? 0)} 원`}</span>
+                        </div>
+
+                        <div className="row">
                             <span>매수 가능금액</span>
                             <span>{hideBalance ? "******** 원" : `${fmt(account.availableCash)} 원`}</span>
                         </div>
                     </>
                 ) : (
-                    <div className="row" style={{ justifyContent: "center", opacity: 0.4 }}>
-                        불러오는 중...
+                    <div className="account-panel__loading">
+                        <Spinner />
                     </div>
                 )}
             </div>

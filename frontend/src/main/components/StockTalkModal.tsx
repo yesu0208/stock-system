@@ -8,6 +8,7 @@ import { calcStockStats, DIRECTION_CLASS } from "../../utils/stockUtils";
 import { resolveProfileImageUrl, DEFAULT_AVATAR } from "../../utils/image";
 import type { StockTalkMessage, StockTalkJoinResponse } from "../../types/stockTalk";
 import "./StockTalkModal.css";
+import Tooltip from "../../tooltip/Tooltip";
 
 const CHAT_STOCKS = STOCKS.filter((s) => s.realtimeSupported);
 
@@ -19,10 +20,19 @@ interface RoomState {
 
 const EMPTY_ROOM: RoomState = { joined: false, messages: [], participantCount: 0 };
 const makeEmptyRooms = (): Record<string, RoomState> =>
-    Object.fromEntries(CHAT_STOCKS.map((s) => [s.code, { ...EMPTY_ROOM, messages: [] }])); // [수정]
+    Object.fromEntries(CHAT_STOCKS.map((s) => [s.code, { ...EMPTY_ROOM, messages: [] }]));
 
 interface Props {
     open: boolean;
+}
+
+function leverageRatioToNumber(ratio: string): number {
+    switch (ratio) {
+        case 'X1_5': return 1.5
+        case 'X2':   return 2
+        case 'X2_5': return 2.5
+        default:     return 1
+    }
 }
 
 function formatTime(isoStr: string): string {
@@ -242,7 +252,7 @@ export default function StockTalkModal({ open }: Props) {
 
     const handleSend = useCallback(() => {
         if (!activeTicker) return;
-        const text = inputText.trim();
+        const text = inputText.trim().slice(0, 300);
         if (!text || !rooms[activeTicker]?.joined) return;
         publish(`/app/stock-talk/${activeTicker}/send`, { content: text });
         setInputText("");
@@ -271,15 +281,28 @@ export default function StockTalkModal({ open }: Props) {
     }, [activeTicker, user, publish]);
 
     const holdingEntries = account
-        ? Object.entries(account.stocks).map(([code, info]) => ({
-            stockCode: code,
-            stockName: stockNameMap[code] ?? code,
-            quantity: info.quantity,
-            avgBuyPrice: info.quantity > 0 ? Math.round(info.totalAmount / info.quantity) : 0,
-            currentPrice: account.currentPrices[code] ?? 0,
-            profitAmount: account.profitAmounts[code] ?? 0,
-            profitRate: account.profitRates[code] ?? 0,
-        }))
+        ? [
+            ...Object.entries(account.stocks).map(([code, info]) => ({
+                stockCode: code,
+                stockName: stockNameMap[code] ?? code,
+                quantity: info.quantity,
+                avgBuyPrice: info.quantity > 0 ? Math.round(info.totalAmount / info.quantity) : 0,
+                currentPrice: account.currentPrices[code] ?? 0,
+                profitAmount: account.profitAmounts[code] ?? 0,
+                profitRate: account.profitRates[code] ?? 0,
+                leverage: null as number | null,
+            })),
+            ...account.leveragePositions.map((p) => ({
+                stockCode: p.stockCode,
+                stockName: stockNameMap[p.stockCode] ?? p.stockCode,
+                quantity: p.quantity,
+                avgBuyPrice: p.quantity > 0 ? Math.round(p.costAmount / p.quantity) : 0,
+                currentPrice: p.currentPrice,
+                profitAmount: p.profitAmount,
+                profitRate: p.profitRate,
+                leverage: leverageRatioToNumber(p.leverageRatio),
+            })),
+        ]
         : [];
 
     const handleShareStock = useCallback((h: typeof holdingEntries[number]) => {
@@ -292,6 +315,7 @@ export default function StockTalkModal({ open }: Props) {
             evalPnl: h.profitAmount,
             avgBuyPrice: h.avgBuyPrice,
             currentPrice: h.currentPrice,
+            leverage: h.leverage,
         });
         publish(`/app/stock-talk/${activeTicker}/send`, { content: STOCK_PREFIX + payload });
         setShareOpen(false);
@@ -523,8 +547,10 @@ export default function StockTalkModal({ open }: Props) {
                                                             </span>
                                                             <div className="stk__card-stock-name">
                                                                 {card.data.name}
-                                                                <span className="stk__card-stock-code">{card.data.code}</span>
                                                             </div>
+                                                            {card.data.leverage && card.data.leverage !== 1 && (
+                                                                <span className="stk__card-leverage-badge">{card.data.leverage}x</span>
+                                                            )}
                                                             <div className="stk__card-stock-row">
                                                                 <span className="stk__card-stock-key">현재가</span>
                                                                 <span className="stk__card-stock-val">{card.data.currentPrice.toLocaleString()}원</span>
@@ -540,7 +566,7 @@ export default function StockTalkModal({ open }: Props) {
                                                             <div className="stk__card-stock-row">
                                                                 <span className="stk__card-stock-key">평가손익</span>
                                                                 <span
-                                                                    className="stk__card-stock-val"
+                                                                    className="stk__card-stock-val stk__card-stock-val--pnl"
                                                                     style={{ color: card.data.pnlRate >= 0 ? "#f87171" : "#60a5fa" }}
                                                                 >
                                                                     {card.data.evalPnl >= 0 ? "+" : ""}{card.data.evalPnl.toLocaleString()}원
@@ -563,13 +589,14 @@ export default function StockTalkModal({ open }: Props) {
 
                             <div className="stk__input-area">
                                 <div className="stk__share-wrap" ref={shareRef}>
-                                    <button
-                                        className="stk__share-btn"
-                                        onClick={() => { setShareOpen(v => !v); setStockPickOpen(false); }}
-                                        title="자랑하기"
-                                    >
-                                        <FiShare2 />
-                                    </button>
+                                    <Tooltip text="자랑하기" placement="top">
+                                        <button
+                                            className="stk__share-btn"
+                                            onClick={() => { setShareOpen(v => !v); setStockPickOpen(false); }}
+                                        >
+                                            <FiShare2 className="stk__share-btn-icon" />
+                                        </button>
+                                    </Tooltip>
 
                                     {shareOpen && (
                                         <div className="stk__share-menu">
@@ -597,13 +624,18 @@ export default function StockTalkModal({ open }: Props) {
                                                         {holdingEntries.length === 0 ? (
                                                             <div className="stk__share-empty">보유 종목 없음</div>
                                                         ) : (
-                                                            holdingEntries.map(h => (
+                                                            holdingEntries.map((h, idx) => (
                                                                 <button
-                                                                    key={h.stockCode}
+                                                                    key={`${h.stockCode}-${h.leverage ?? "cash"}-${idx}`}
                                                                     className="stk__share-item"
                                                                     onClick={() => handleShareStock(h)}
                                                                 >
-                                                                    <span>{h.stockName}</span>
+                                                                    <span>
+                                                                        {h.stockName}
+                                                                        {h.leverage && h.leverage !== 1 && (
+                                                                            <span className="stk__share-item-leverage">{h.leverage}x</span>
+                                                                        )}
+                                                                    </span>
                                                                     <span style={{ color: h.profitRate >= 0 ? "#f87171" : "#60a5fa", fontSize: 10 }}>
                                                                         {h.profitRate >= 0 ? "+" : ""}{h.profitRate.toFixed(2)}%
                                                                     </span>
@@ -617,15 +649,22 @@ export default function StockTalkModal({ open }: Props) {
                                     )}
                                 </div>
 
-                                <textarea
-                                    ref={textareaRef}
-                                    className="stk__input"
-                                    placeholder="메시지를 입력하세요 (Enter 전송)"
-                                    value={inputText}
-                                    onChange={(e) => setInputText(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    rows={1}
-                                />
+                                <div className="stk__input-wrap">
+                                    <textarea
+                                        ref={textareaRef}
+                                        className="stk__input"
+                                        placeholder="메시지를 입력하세요 (Enter 전송)"
+                                        value={inputText}
+                                        onChange={(e) => setInputText(e.target.value.slice(0, 300))}
+                                        onKeyDown={handleKeyDown}
+                                        rows={1}
+                                        maxLength={300}
+                                    />
+                                    <span className={`stk__input-count${inputText.length >= 300 ? " stk__input-count--max" : ""}`}>
+                                        {inputText.length}/300
+                                    </span>
+                                </div>
+
                                 <button
                                     className="stk__send-btn"
                                     onClick={handleSend}

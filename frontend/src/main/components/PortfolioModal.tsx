@@ -430,7 +430,7 @@ export default function PortfolioModal({ open, onClose }: Props) {
                                             <span className="portfolio__stock-legend-name">종목명</span>
                                             <span className="portfolio__stock-legend-pct">비중</span>
                                             <span className="portfolio__stock-legend-type">구분</span>
-                                            <span className="portfolio__stock-legend-buy">매수금액(유지증거금)</span>
+                                            <span className="portfolio__stock-legend-buy">매수금액 (개시증거금)</span>
                                             <span className="portfolio__stock-legend-eval">평가금액</span>
                                             <span className="portfolio__stock-legend-pnl">평가손익</span>
                                             <span className="portfolio__stock-legend-rate">수익률</span>

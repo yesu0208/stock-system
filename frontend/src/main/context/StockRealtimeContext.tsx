@@ -25,10 +25,14 @@ export function StockRealtimeProvider({ children }: { children: ReactNode }) {
     const [priceTick, setPriceTick] = useState<TradePriceTickMessage | null>(null)
     const [orderbook, setOrderbook] = useState<OrderBookData | null>(null)
 
-    useEffect(() => {
+    const [appliedCode, setAppliedCode] = useState(selectedStock.code)
+    if (appliedCode !== selectedStock.code) {
+        setAppliedCode(selectedStock.code)
         setPriceTick(null)
         setOrderbook(null)
+    }
 
+    useEffect(() => {
         return subscribeStock(selectedStock.code, (tick: any) => {
             if (tick.tickMessageType === 'TRADEPRICE') {
                 setPriceTick(tick as TradePriceTickMessage)
