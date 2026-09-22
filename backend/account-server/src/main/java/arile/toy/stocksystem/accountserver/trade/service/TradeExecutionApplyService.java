@@ -4,6 +4,7 @@ import arile.toy.stocksystem.accountserver.leverage.dto.LeverageRatio;
 import arile.toy.stocksystem.accountserver.leverage.service.LeveragePositionApplyService;
 import arile.toy.stocksystem.accountserver.rank.dto.RankLevel;
 import arile.toy.stocksystem.accountserver.rank.entity.UserRankEntity;
+import arile.toy.stocksystem.accountserver.rank.publisher.RankUpdatedPublisher;
 import arile.toy.stocksystem.accountserver.rank.repository.UserRankRepository;
 import arile.toy.stocksystem.accountserver.trade.TradeCommand;
 import arile.toy.stocksystem.accountserver.trade.dto.TradeType;
@@ -32,6 +33,7 @@ public class TradeExecutionApplyService {
     private final LeveragePositionApplyService leveragePositionApplyService;
     private final TradeCostCalculator tradeCostCalculator;
     private final AccountBalanceCommand accountBalanceCommand;
+    private final RankUpdatedPublisher rankUpdatedPublisher;
 
     @Transactional
     public void apply(TradeExecutedEvent event) {
@@ -202,7 +204,9 @@ public class TradeExecutionApplyService {
         UserRankEntity rank = userRankRepository.findByUsernameForUpdate(username)
                 .orElseThrow(() -> new IllegalStateException("UserRank not found: " + username));
 
-        if (!rank.getEntered()) {
+        boolean justEntered = !rank.getEntered();
+
+        if (justEntered) {
             rank.setEntered(true);
             rank.setCurrentLevel(RankLevel.BRONZE_5);
             rank.setHighestTierReached(RankLevel.BRONZE_5);
@@ -210,5 +214,9 @@ public class TradeExecutionApplyService {
 
         rank.addDailyTradeAmount(tradeAmount);
         userRankRepository.save(rank);
+
+        if (justEntered) {
+            rankUpdatedPublisher.publish();
+        }
     }
 }
