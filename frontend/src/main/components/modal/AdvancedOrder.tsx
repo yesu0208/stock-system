@@ -468,10 +468,26 @@ function StockInfoPanel() {
 
     const [query, setQuery] = useState("");
     const [searchOpen, setSearchOpen] = useState(false);
+    const searchBoxRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!searchOpen) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+                setSearchOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [searchOpen]);
 
     const filteredStocks = STOCKS.filter((s) =>
         `${s.name} ${s.code}`.toLowerCase().includes(query.toLowerCase())
-    );
+    ).sort((a, b) => Number(b.realtimeSupported) - Number(a.realtimeSupported));
+
+    const realtimeStocks = STOCKS.filter((s) => s.realtimeSupported);
 
     const handleSelect = (stock: StockInfo) => {
         setSelectedStock(stock);
@@ -485,7 +501,7 @@ function StockInfoPanel() {
     return (
         <div className="adv-order__stock-panel">
 
-            <div className="adv-order__search-box">
+            <div className="adv-order__search-box" ref={searchBoxRef}>
                 <span className="adv-order__search-icon">
                     <FaSearch />
                 </span>
@@ -499,29 +515,50 @@ function StockInfoPanel() {
                     }}
                     onFocus={() => setSearchOpen(true)}
                 />
-                {searchOpen && query && (
+                {searchOpen && (
                     <div className="adv-order__search-dropdown">
-                        {filteredStocks.length > 0 ? (
-                            filteredStocks.map((s) => {
-                                const tradable = s.realtimeSupported;
-                                return (
+                        {query ? (
+                            filteredStocks.length > 0 ? (
+                                filteredStocks.map((s) => {
+                                    const tradable = s.realtimeSupported;
+                                    return (
+                                        <div
+                                            key={s.code}
+                                            className={`adv-order__search-item${tradable ? " adv-order__search-item--tradable" : " adv-order__search-item--disabled"}`}
+                                            onClick={() => tradable && handleSelect(s)}
+                                        >
+                                            <div className="adv-order__search-item-left">
+                                                <span className="adv-order__search-item-name">{s.name}</span>
+                                                <span className="adv-order__search-item-code">{s.code}</span>
+                                            </div>
+                                            <span className={`adv-order__search-item-tag ${tradable ? "adv-order__search-item-tag--tradable" : "adv-order__search-item-tag--disabled"}`}>
+                                                {tradable ? "주문 가능" : "주문 불가"}
+                                            </span>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="adv-order__search-empty">검색 결과 없음</div>
+                            )
+                        ) : (
+                            <>
+                                <div className="adv-order__search-heading">모의투자 지원 종목</div>
+                                {realtimeStocks.map((s) => (
                                     <div
                                         key={s.code}
-                                        className={`adv-order__search-item${tradable ? " adv-order__search-item--tradable" : " adv-order__search-item--disabled"}`}
-                                        onClick={() => tradable && handleSelect(s)}
+                                        className="adv-order__search-item adv-order__search-item--tradable"
+                                        onClick={() => handleSelect(s)}
                                     >
                                         <div className="adv-order__search-item-left">
                                             <span className="adv-order__search-item-name">{s.name}</span>
                                             <span className="adv-order__search-item-code">{s.code}</span>
                                         </div>
-                                        <span className={`adv-order__search-item-tag ${tradable ? "adv-order__search-item-tag--tradable" : "adv-order__search-item-tag--disabled"}`}>
-                                            {tradable ? "주문 가능" : "주문 불가"}
+                                        <span className="adv-order__search-item-tag adv-order__search-item-tag--tradable">
+                                            주문 가능
                                         </span>
                                     </div>
-                                );
-                            })
-                        ) : (
-                            <div className="adv-order__search-empty">검색 결과 없음</div>
+                                ))}
+                            </>
                         )}
                     </div>
                 )}

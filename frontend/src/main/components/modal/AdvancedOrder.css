@@ -2445,3 +2445,10 @@
     cursor: default;
     flex-shrink: 0;
 }
+
+.adv-order__search-heading {
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
