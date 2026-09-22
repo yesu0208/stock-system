@@ -39,7 +39,7 @@ export function WatchListProvider({ children }: { children: ReactNode }) {
         try {
             const saved = await addWatchList({ stockCode, stockName })
             setWatchList(prev => [...prev, saved])
-            success(`${stockName} 관심종목에 추가했습니다.`)
+            success(`[${stockName}] 관심종목에 추가했습니다.`)
         } catch (e) {
             error('관심종목 추가에 실패했습니다.')
             throw e
@@ -51,7 +51,7 @@ export function WatchListProvider({ children }: { children: ReactNode }) {
         try {
             await removeWatchList(stockCode)
             setWatchList(prev => prev.filter(w => w.stockCode !== stockCode))
-            if (target) success(`${target.stockName} 관심종목에서 제거했습니다.`)
+            if (target) success(`[${target.stockName}] 관심종목에서 제거했습니다.`)
         } catch (e) {
             error('관심종목 삭제에 실패했습니다.')
             throw e
