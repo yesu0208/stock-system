@@ -80,7 +80,7 @@ export default function UserPanel() {
                         <span>
                             {user?.nickname ? (
                                 <>
-                                    <strong className="profile-nickname">{user.nickname}</strong>님
+                                    <strong className="profile-nickname">{user.nickname}</strong> 님
                                 </>
                             ) : (
                                 "..."

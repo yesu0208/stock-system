@@ -353,7 +353,7 @@ export default function MyInfoModal({ open, onClose }: Props) {
                                 ) : (
                                     <>
                                         <span className="profile-text">
-                                            <strong className="profile-nickname">{user.nickname}</strong>님
+                                            <strong className="profile-nickname">{user.nickname}</strong> 님
                                         </span>
                                         <Tooltip text="닉네임 변경" placement="top">
                                             <button
