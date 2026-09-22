@@ -63,12 +63,15 @@ public class OrderEntity {
 
     // autoOrderId / otocoId / trailingStopId / MANUAL이면 null
     private Long originId;
+    
+    private Long remainingReservedFee;
 
     public static OrderEntity of(String username, String stockCode, OrderType orderType, LeverageRatio leverageRatio,
                                  Integer orderPrice, Integer orderQuantity,
                                  OrderStatus orderStatus, Integer remainingQuantity,
                                  OrderExecutionType orderExecutionType,
-                                 OrderOrigin origin, Long originId) {
+                                 OrderOrigin origin, Long originId,
+                                 Long remainingReservedFee) {
         var orderEntity = new OrderEntity();
         orderEntity.setUsername(username);
         orderEntity.setStockCode(stockCode);
@@ -82,10 +85,23 @@ public class OrderEntity {
         orderEntity.setOrderExecutionType(orderExecutionType);
         orderEntity.setOrigin(origin);
         orderEntity.setOriginId(originId);
+        orderEntity.setRemainingReservedFee(remainingReservedFee); // [신규]
         return orderEntity;
     }
 
     public void changeOrderStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
+    }
+
+    public long consumeReservedFee(int executedQuantity) {
+        if (remainingQuantity == null || remainingQuantity <= 0 || remainingReservedFee == null) {
+            return 0L;
+        }
+        long feeForThisFill = remainingQuantity.equals(executedQuantity)
+                ? remainingReservedFee
+                : Math.round((double) remainingReservedFee * executedQuantity / remainingQuantity);
+
+        remainingReservedFee -= feeForThisFill;
+        return feeForThisFill;
     }
 }

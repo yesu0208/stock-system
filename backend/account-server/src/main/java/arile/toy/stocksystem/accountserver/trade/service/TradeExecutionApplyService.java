@@ -70,9 +70,9 @@ public class TradeExecutionApplyService {
         long orderAmount = (long) event.orderPrice() * executable;
         long differenceAmount = (long) (event.orderPrice() - event.tradePrice()) * executable;
 
-        // 예약 당시 수수료(주문가 기준) vs 실제 수수료(체결가 기준): 매수 지정가는
-        // 체결가가 항상 주문가 이하이므로 feeReserved >= feeActual, 차액은 항상 0 이상(환급)
-        long feeReserved = tradeCostCalculator.calculateFee(orderAmount);
+        // 재계산(tradeCostCalculator.calculateFee) 대신, stock-server가 OrderEntity의
+        // remainingReservedFee에서 정확히 비례 배분해 보낸 값을 그대로 사용
+        long feeReserved = event.reservedFeeConsumed() != null ? event.reservedFeeConsumed() : 0L;
         long feeActual = tradeCostCalculator.calculateFee(tradeAmount);
         long feeRefund = feeReserved - feeActual;
 
