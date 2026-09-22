@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useStockRealtime } from '../../main/context/StockRealtimeContext'
 import { useOrderPrice } from '../../main/context/OrderPriceContext'
@@ -47,6 +47,23 @@ export default function AskList({
         y: number
         price: number
     } | null>(null)
+
+    useEffect(() => {
+        if (!hoveredBadge) return
+
+        const BUFFER = 40
+
+        function handleMove(e: MouseEvent) {
+            const withinX = Math.abs(e.clientX - hoveredBadge!.x) <= BUFFER
+            const withinY = Math.abs(e.clientY - hoveredBadge!.y) <= BUFFER
+            if (!withinX || !withinY) {
+                setHoveredBadge(null)
+            }
+        }
+
+        document.addEventListener('mousemove', handleMove)
+        return () => document.removeEventListener('mousemove', handleMove)
+    }, [hoveredBadge])
 
     const getPriceColor = (price: number) => {
         if (price > prevClosePrice) return '#FF6347'
@@ -311,15 +328,16 @@ export default function AskList({
                         style={{ left: hoveredBadge.x, top: hoveredBadge.y }}
                     >
                         <div className={styles.tooltipHeader}>
+                            <span className={styles.tooltipHeaderLabel}>미체결 주문 현황</span>
                             <span className={styles.tooltipHeaderPrice}>
                                 {hoveredBadge.price.toLocaleString()}원
                             </span>
-                            <span className={styles.tooltipHeaderLabel}>미체결 주문 현황</span>
                         </div>
 
                         {liveOrders.map((o) => (
                             <div key={o.orderId} className={styles.tooltipRow}>
                                 <div className={styles.tooltipRowTop}>
+                                    <span className={styles.tooltipTimeText}>{formatTimeOnly(o.time)}</span>
                                     <span className={o.side === 'BUY' ? styles.tooltipSideBuy : styles.tooltipSideSell}>
                                         {o.side === 'BUY' ? '매수' : '매도'}
                                     </span>
@@ -331,17 +349,20 @@ export default function AskList({
                                             {ORIGIN_LABEL[o.origin] ?? o.origin}
                                         </span>
                                     )}
-                                    <span className={styles.tooltipTimeText}>{formatTimeOnly(o.time)}</span>
                                 </div>
                                 <div className={styles.tooltipRowTop}>
                                     <span className={styles.tooltipQty}>
                                         {o.remainingQty.toLocaleString()}주
                                     </span>
-                                    <span className={styles.tooltipInfo}>
-                                        {o.quantityAhead != null
-                                            ? `내 앞 ${o.quantityAhead.toLocaleString()}주`
-                                            : '-'}
-                                    </span>
+                                    {o.quantityAhead != null && o.quantityAhead === 0 ? (
+                                        <span className={styles.tooltipInfoTurn}>최우선 대기중</span>
+                                    ) : (
+                                        <span className={styles.tooltipInfo}>
+                                            {o.quantityAhead != null
+                                                ? `앞순위 ${o.quantityAhead.toLocaleString()}주 대기중`
+                                                : '-'}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         ))}
