@@ -764,7 +764,7 @@
     min-width: 75px;
     text-align: center;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
-    align-self: flex-start;
+    align-self: center;
 }
 
 .stk__card-rp-bar-wrap {
@@ -879,4 +879,8 @@
 .stk__send-btn:focus,
 .stk__send-btn:focus-visible {
     outline: none;
+}
+
+.stk__card--rank {
+    min-width: 130px;
 }
