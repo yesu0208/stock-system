@@ -46,3 +46,9 @@ export interface OrderResponse {
     orderQuantity: number;
     leverageRatio: LeverageRatio | null;
 }
+
+export interface QueuePositionEvent {
+    orderId: number
+    stockCode: string
+    quantityAhead: number
+}
