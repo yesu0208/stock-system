@@ -198,10 +198,21 @@ export default function InvestorModal({ open, onClose }: Props) {
                                     <thead>
                                     <tr>
                                         <th rowSpan={2}>시간</th>
-                                        <th rowSpan={2}>개인</th>
-                                        <th rowSpan={2}>외국인</th>
-                                        <th colSpan={7}>기관계</th>
-                                        <th rowSpan={2}>기타법인</th>
+                                        <th rowSpan={2}>
+                                            개인
+                                            <span className="unit-sub">({market === "FUTURES" ? "계약" : "억"})</span>
+                                        </th>
+                                        <th rowSpan={2}>
+                                            외국인
+                                            <span className="unit-sub">({market === "FUTURES" ? "계약" : "억"})</span>
+                                        </th>
+                                        <th colSpan={7}>
+                                            기관계 <span className="unit-inline">({market === "FUTURES" ? "계약" : "억"})</span>
+                                        </th>
+                                        <th rowSpan={2}>
+                                            기타법인
+                                            <span className="unit-sub">({market === "FUTURES" ? "계약" : "억"})</span>
+                                        </th>
                                     </tr>
                                     <tr>
                                         <th>기관</th>
