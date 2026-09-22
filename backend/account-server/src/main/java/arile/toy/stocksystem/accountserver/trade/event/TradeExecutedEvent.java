@@ -13,6 +13,7 @@ public record TradeExecutedEvent(
         Integer orderPrice,
         Integer tradePrice,
         Integer tradeQuantity,
-        Long reservedFeeConsumed
+        Long reservedFeeConsumed,
+        Long reservedMarginConsumed
 ) {
 }

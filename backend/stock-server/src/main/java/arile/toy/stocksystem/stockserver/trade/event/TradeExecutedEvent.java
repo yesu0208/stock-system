@@ -13,13 +13,14 @@ public record TradeExecutedEvent(
         Integer orderPrice,
         Integer tradePrice,
         Integer tradeQuantity,
-        Long reservedFeeConsumed
+        Long reservedFeeConsumed,
+        Long reservedMarginConsumed
 ) {
     public static TradeExecutedEvent of(Long tradeId, Long orderId, String username, String stockCode,
                                         TradeType tradeType, LeverageRatio leverageRatio,
                                         Integer orderPrice, Integer tradePrice, Integer tradeQuantity,
-                                        Long reservedFeeConsumed) {
+                                        Long reservedFeeConsumed, Long reservedMarginConsumed) {
         return new TradeExecutedEvent(tradeId, orderId, username, stockCode, tradeType, leverageRatio,
-                orderPrice, tradePrice, tradeQuantity, reservedFeeConsumed);
+                orderPrice, tradePrice, tradeQuantity, reservedFeeConsumed, reservedMarginConsumed);
     }
 }
