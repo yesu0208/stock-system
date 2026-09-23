@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -95,11 +96,38 @@ public class AutoOrderService {
         autoOrderResponseEventPublisher.publish(autoOrderResponseMessage);
     }
 
+    /** 시스템 강제 취소(장 마감 정리 등)용. 소유자 검증 없이 취소 상태로 변경한다. */
     @Transactional
     public UpdateAutoOrderStatusResult updateAutoOrderStatusByCancel(Long autoOrderId) {
 
         AutoOrderEntity autoOrderEntity = autoOrderRepository.findByIdForUpdate(autoOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("auto order not found"));
+
+        return markCanceled(autoOrderEntity);
+    }
+
+    /**
+     * 사용자 취소 요청용.
+     * 요청자가 자동 주문 소유자이고 요청 종목코드가 자동 주문 종목코드와 같을 때만 취소 상태로 변경.
+     * 불일치 시 상태를 변경하지 않고 empty를 반환. (타인 자동 주문 취소, 다른 샤드로의 취소 라우팅 방지)
+     */
+    @Transactional
+    public Optional<UpdateAutoOrderStatusResult> updateAutoOrderStatusByUserCancel(
+            Long autoOrderId, String username, String stockCode) {
+
+        AutoOrderEntity autoOrderEntity = autoOrderRepository.findByIdForUpdate(autoOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("auto order not found"));
+
+        if (username == null
+                || !username.equals(autoOrderEntity.getUsername())
+                || !autoOrderEntity.getStockCode().equals(stockCode)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(markCanceled(autoOrderEntity));
+    }
+
+    private UpdateAutoOrderStatusResult markCanceled(AutoOrderEntity autoOrderEntity) {
 
         AutoOrderStatus prevStatus = autoOrderEntity.getAutoOrderStatus();
 

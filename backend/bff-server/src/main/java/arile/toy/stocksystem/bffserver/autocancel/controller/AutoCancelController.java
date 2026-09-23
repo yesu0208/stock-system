@@ -5,6 +5,7 @@ import arile.toy.stocksystem.bffserver.autocancel.dto.AutoCancelResponse;
 import arile.toy.stocksystem.bffserver.autocancel.service.AutoCancelIngressService;
 import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class AutoCancelController {
 
     @PostMapping
     public ResponseEntity<AutoCancelResponse> autoCancel(
-            @RequestBody AutoCancelRequest autoCancelRequest,
+            @Valid @RequestBody AutoCancelRequest autoCancelRequest,
             @AuthenticationPrincipal UserDetails user
     ) {
         if (user == null) {
@@ -38,8 +39,9 @@ public class AutoCancelController {
             throw new MarketClosedException();
         }
 
+        // 요청자를 함께 전달해 stock-server에서 자동 주문 소유자 확인 (타인 자동 주문 취소 방지)
         AutoCancelResponse autoCancelResponse =
-                autoCancelIngressService.receive(autoCancelRequest);
+                autoCancelIngressService.receive(user.getUsername(), autoCancelRequest);
 
         return ResponseEntity.ok(autoCancelResponse);
     }

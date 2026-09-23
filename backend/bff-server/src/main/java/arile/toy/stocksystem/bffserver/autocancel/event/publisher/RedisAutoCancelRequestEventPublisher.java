@@ -22,10 +22,12 @@ public class RedisAutoCancelRequestEventPublisher implements AutoCancelRequestEv
     public void publishAutoCancel(AutoCancelRequestEvent event) {
         String streamKey = shardResolver.resolveStreamKey(event.stockCode());
 
+        // username: stock-server에서 자동 주문 소유자 검증에 사용
         Map<String, Object> payload = Map.of(
                 "type", "AUTO_CANCEL_CREATED",
                 "autoOrderId", String.valueOf(event.autoOrderId()),
-                "stockCode", event.stockCode()
+                "stockCode", event.stockCode(),
+                "username", event.username()
         );
 
         RecordId recordId = streamRedisTemplate.opsForStream().add(

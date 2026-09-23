@@ -206,6 +206,8 @@ public class RedisAutoCancelRequestEventConsumer {
         }
 
         String stockCode = (String) value.get("stockCode");
+        // 요청자: 자동 주문 소유자 검증에 사용 (bff가 JWT에서 추출해 전달)
+        String username = (String) value.get("username");
 
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip auto cancel for stockCode {}", stockCode);
@@ -214,7 +216,7 @@ public class RedisAutoCancelRequestEventConsumer {
 
         log.info("Processing cancel autoOrderId: {} for stockCode {}", autoOrderId, stockCode);
 
-        autoCancelService.registerAutoCancel(AutoCancelRequestEvent.of(autoOrderId, stockCode));
+        autoCancelService.registerAutoCancel(AutoCancelRequestEvent.of(autoOrderId, stockCode, username));
     }
 
     private String retryKey(RecordId id) {

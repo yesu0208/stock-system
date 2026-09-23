@@ -36,7 +36,18 @@ public class AutoCancelService {
     @Transactional
     public void registerAutoCancel(AutoCancelRequestEvent request) {
 
-        UpdateAutoOrderStatusResult result = autoOrderService.updateAutoOrderStatusByCancel(request.autoOrderId());
+        // 요청자가 자동 주문 소유자가 아니거나 종목코드가 다르면 취소하지 않음 (타인 자동 주문 취소 방지)
+        // 취소 응답은 자동 주문 소유자 채널로 발행되므로, 거부 시에는 응답을 보내지 않고 로그만 남김
+        var ownedResult = autoOrderService.updateAutoOrderStatusByUserCancel(
+                request.autoOrderId(), request.username(), request.stockCode());
+
+        if (ownedResult.isEmpty()) {
+            log.warn("Auto cancel rejected: not the auto order owner or stock code mismatch. autoOrderId={}, requester={}, stockCode={}",
+                    request.autoOrderId(), request.username(), request.stockCode());
+            return;
+        }
+
+        UpdateAutoOrderStatusResult result = ownedResult.get();
         var autoOrderEntity = result.autoOrderEntity();
 
         switch (result.previousStatus()) {

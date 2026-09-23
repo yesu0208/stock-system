@@ -4,9 +4,10 @@ import arile.toy.stocksystem.bffserver.autocancel.dto.AutoCancelRequest;
 
 public record AutoCancelRequestEvent(
         Long autoOrderId,
-        String stockCode
+        String stockCode,
+        String username
 ) {
-    public static AutoCancelRequestEvent fromRequest(AutoCancelRequest autoCancelRequest) {
-        return new AutoCancelRequestEvent(autoCancelRequest.autoOrderId(), autoCancelRequest.stockCode());
+    public static AutoCancelRequestEvent fromRequest(String username, AutoCancelRequest autoCancelRequest) {
+        return new AutoCancelRequestEvent(autoCancelRequest.autoOrderId(), autoCancelRequest.stockCode(), username);
     }
 }
