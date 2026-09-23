@@ -36,7 +36,18 @@ public class TrailingStopCancelService {
     @Transactional
     public void registerCancel(TrailingStopCancelRequestEvent request) {
 
-        UpdateTrailingStopStatusResult result = trailingStopService.updateTrailingStopStatusByCancel(request.trailingStopId());
+        // 요청자가 트레일링 스탑 소유자가 아니거나 종목코드가 다르면 취소하지 않음 (타인 트레일링 스탑 취소 방지)
+        // 취소 응답은 소유자 채널로 발행되므로, 거부 시에는 응답을 보내지 않고 로그만 남김.
+        var ownedResult = trailingStopService.updateTrailingStopStatusByUserCancel(
+                request.trailingStopId(), request.username(), request.stockCode());
+
+        if (ownedResult.isEmpty()) {
+            log.warn("Trailing stop cancel rejected: not the owner or stock code mismatch. trailingStopId={}, requester={}, stockCode={}",
+                    request.trailingStopId(), request.username(), request.stockCode());
+            return;
+        }
+
+        UpdateTrailingStopStatusResult result = ownedResult.get();
         var entity = result.trailingStopEntity();
 
         switch (result.previousStatus()) {

@@ -203,6 +203,8 @@ public class RedisTrailingStopCancelRequestEventConsumer {
         }
 
         String stockCode = (String) value.get("stockCode");
+        // 요청자: 트레일링 스탑 소유자 검증에 사용 (bff가 JWT에서 추출해 전달)
+        String username = (String) value.get("username");
 
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip trailing stop cancel for stockCode {}", stockCode);
@@ -211,7 +213,7 @@ public class RedisTrailingStopCancelRequestEventConsumer {
 
         log.info("Processing trailing stop cancel trailingStopId: {} for stockCode {}", trailingStopId, stockCode);
 
-        trailingStopCancelService.registerCancel(TrailingStopCancelRequestEvent.of(trailingStopId, stockCode));
+        trailingStopCancelService.registerCancel(TrailingStopCancelRequestEvent.of(trailingStopId, stockCode, username));
     }
 
     private String retryKey(RecordId id) {

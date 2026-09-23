@@ -5,6 +5,7 @@ import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry
 import arile.toy.stocksystem.bffserver.trailingstopcancel.dto.TrailingStopCancelRequest;
 import arile.toy.stocksystem.bffserver.trailingstopcancel.dto.TrailingStopCancelResponse;
 import arile.toy.stocksystem.bffserver.trailingstopcancel.service.TrailingStopCancelIngressService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class TrailingStopCancelController {
 
     @PostMapping
     public ResponseEntity<TrailingStopCancelResponse> cancel(
-            @RequestBody TrailingStopCancelRequest request,
+            @Valid @RequestBody TrailingStopCancelRequest request,
             @AuthenticationPrincipal UserDetails user
     ) {
         if (user == null) {
@@ -38,8 +39,9 @@ public class TrailingStopCancelController {
             throw new MarketClosedException();
         }
 
+        // 요청자를 함께 전달해 stock-server에서 트레일링 스탑 소유자 확인 (타인 트레일링 스탑 취소 방지)
         TrailingStopCancelResponse response =
-                trailingStopCancelIngressService.receive(request);
+                trailingStopCancelIngressService.receive(user.getUsername(), request);
 
         return ResponseEntity.ok(response);
     }

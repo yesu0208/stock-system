@@ -22,10 +22,12 @@ public class RedisTrailingStopCancelRequestEventPublisher implements TrailingSto
     public void publishTrailingStopCancel(TrailingStopCancelRequestEvent event) {
         String streamKey = shardResolver.resolveStreamKey(event.stockCode());
 
+        // username: stock-server에서 트레일링 스탑 소유자 검증에 사용
         Map<String, Object> payload = Map.of(
                 "type", "TRAILING_STOP_CANCEL_CREATED",
                 "trailingStopId", String.valueOf(event.trailingStopId()),
-                "stockCode", event.stockCode()
+                "stockCode", event.stockCode(),
+                "username", event.username()
         );
 
         RecordId recordId = streamRedisTemplate.opsForStream().add(
