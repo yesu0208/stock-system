@@ -42,6 +42,16 @@ public class OtocoCancelService {
         OtocoEntity entity = otocoRepository.findByIdForUpdate(request.otocoId())
                 .orElseThrow(() -> new IllegalArgumentException("otoco not found"));
 
+        // 요청자가 OTOCO 소유자가 아니거나 종목코드가 다르면 취소하지 않음 (타인 OTOCO 취소 방지)
+        // 취소 응답은 소유자 채널로 발행되므로, 거부 시에는 응답을 보내지 않고 로그만 남긴다
+        if (request.username() == null
+                || !request.username().equals(entity.getUsername())
+                || !entity.getStockCode().equals(request.stockCode())) {
+            log.warn("Otoco cancel rejected: not the owner or stock code mismatch. otocoId={}, requester={}, stockCode={}",
+                    request.otocoId(), request.username(), request.stockCode());
+            return;
+        }
+
         switch (entity.getOtocoStatus()) {
 
             case CANCELED -> otocoCancelResponseEventPublisher.publish(

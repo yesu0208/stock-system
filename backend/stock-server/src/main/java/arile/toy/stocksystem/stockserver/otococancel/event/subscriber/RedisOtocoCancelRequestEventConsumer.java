@@ -203,6 +203,8 @@ public class RedisOtocoCancelRequestEventConsumer {
         }
 
         String stockCode = (String) value.get("stockCode");
+        // 요청자: OTOCO 소유자 검증에 사용 (bff가 JWT에서 추출해 전달)
+        String username = (String) value.get("username");
 
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip otoco cancel for stockCode {}", stockCode);
@@ -211,7 +213,7 @@ public class RedisOtocoCancelRequestEventConsumer {
 
         log.info("Processing otoco cancel otocoId: {} for stockCode {}", otocoId, stockCode);
 
-        otocoCancelService.registerCancel(OtocoCancelRequestEvent.of(otocoId, stockCode));
+        otocoCancelService.registerCancel(OtocoCancelRequestEvent.of(otocoId, stockCode, username));
     }
 
     private String retryKey(RecordId id) {

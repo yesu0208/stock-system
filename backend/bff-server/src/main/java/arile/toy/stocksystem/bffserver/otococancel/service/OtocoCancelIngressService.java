@@ -13,9 +13,9 @@ public class OtocoCancelIngressService {
 
     private final OtocoCancelRequestEventPublisher publisher;
 
-    public OtocoCancelResponse receive(OtocoCancelRequest otocoCancelRequest) {
+    public OtocoCancelResponse receive(String username, OtocoCancelRequest otocoCancelRequest) {
 
-        publisher.publishOtocoCancel(OtocoCancelRequestEvent.fromRequest(otocoCancelRequest));
+        publisher.publishOtocoCancel(OtocoCancelRequestEvent.fromRequest(username, otocoCancelRequest));
 
         return new OtocoCancelResponse(otocoCancelRequest.otocoId(), otocoCancelRequest.stockCode());
     }
