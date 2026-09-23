@@ -48,9 +48,14 @@ public enum RankLevel {
 
     /** RP 값으로 브론즈5~마스터 범위 내 이론상 등급을 계산한다. UNRANKED는 별도 상태이므로 제외. */
     public static RankLevel fromRp(long rp) {
+        // 브론즈5 하한 미만은 최하위 등급으로 간주 (기존에는 어느 구간에도 속하지 않아 MASTER가 반환되었음)
+        if (rp < BRONZE_5.rpLower) {
+            return BRONZE_5;
+        }
+        // 구간이 오름차순으로 빈틈없이 이어지므로, 상한이 rp 이상인 첫 등급이 해당 등급
         return Arrays.stream(values())
                 .filter(level -> level != UNRANKED)
-                .filter(level -> rp >= level.rpLower && rp <= level.rpUpper)
+                .filter(level -> rp <= level.rpUpper)
                 .findFirst()
                 .orElse(MASTER);
     }
