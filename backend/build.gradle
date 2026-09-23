@@ -43,5 +43,16 @@ subprojects {
             html.required = true
             xml.required = true
         }
+
+        // 테스트 대상이 아닌 코드는 커버리지 집계에서 제외
+        // (Lombok 생성 메서드는 lombok.config의 @Generated 설정으로 자동 제외)
+        afterEvaluate {
+            classDirectories.setFrom(files(classDirectories.files.collect {
+                fileTree(dir: it, exclude: [
+                        '**/*Application.class',
+                        '**/*Application$*.class'
+                ])
+            }))
+        }
     }
 }
