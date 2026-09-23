@@ -1,7 +1,6 @@
 package arile.toy.stocksystem.accountserver.leverage.service;
 
 import arile.toy.stocksystem.accountserver.leverage.entity.LeveragePositionEntity;
-import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,6 @@ import java.util.List;
 @Slf4j
 public class LeverageInterestService {
 
-    private final LeveragePositionRepository leveragePositionRepository;
     private final LeverageInterestCalculator interestCalculator;
     private final LeverageInterestChargeExecutor leverageInterestChargeExecutor;
 
@@ -53,10 +51,7 @@ public class LeverageInterestService {
                 }
 
                 leverageInterestChargeExecutor.chargeInterestForOnePosition(position.getUsername(), position.getStockCode(),
-                        position.getLeveragePositionId(), interest);
-
-                position.markInterestChargedThrough(today);
-                leveragePositionRepository.save(position);
+                        position.getLeveragePositionId(), interest, today);
 
                 charged++;
 

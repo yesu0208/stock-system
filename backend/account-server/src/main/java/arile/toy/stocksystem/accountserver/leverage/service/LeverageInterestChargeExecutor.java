@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.accountserver.leverage.service;
 
+import arile.toy.stocksystem.accountserver.leverage.entity.LeveragePositionEntity;
+import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionRepository;
 import arile.toy.stocksystem.accountserver.useraccount.dto.AccountStatus;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
@@ -22,12 +24,17 @@ import java.time.LocalDate;
 @Slf4j
 public class LeverageInterestChargeExecutor {
 
+    private final LeveragePositionRepository leveragePositionRepository;
     private final UserAccountRepository userAccountRepository;
     private final UserAccountRedisRepository userAccountRedisRepository;
     private final AccountBalanceCommand accountBalanceCommand;
 
     @Transactional
-    public void chargeInterestForOnePosition(String username, String stockCode, Long positionId, long interestAmount) {
+    public void chargeInterestForOnePosition(String username, String stockCode, Long positionId,
+                                             long interestAmount, LocalDate chargedThrough) {
+
+        LeveragePositionEntity position = leveragePositionRepository.findByIdForUpdate(positionId)
+                .orElseThrow(() -> new IllegalStateException("Leverage position not found. id=" + positionId));
 
         UserAccountEntity account = userAccountRepository.findByUsernameForUpdate(username)
                 .orElseThrow(() -> new IllegalStateException("Account not found. username=" + username));
@@ -51,6 +58,9 @@ public class LeverageInterestChargeExecutor {
             throw new IllegalStateException(
                     "Redis leverage interest debit failed. username=%s, stockCode=%s".formatted(username, stockCode));
         }
+
+        position.markInterestChargedThrough(chargedThrough);
+        leveragePositionRepository.save(position);
 
         log.info("[LeverageInterest] charged. username={}, stockCode={}, positionId={}, interestAmount={}, balanceAfter={}",
                 username, stockCode, positionId, interestAmount, account.getBalance());
