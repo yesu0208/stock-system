@@ -1,6 +1,7 @@
 package arile.toy.stocksystem.accountserver.leverage.service;
 
 import arile.toy.stocksystem.accountserver.leverage.dto.LeverageRatio;
+import arile.toy.stocksystem.accountserver.leverage.dto.MarginStatus;
 import arile.toy.stocksystem.accountserver.leverage.entity.LeveragePositionEntity;
 import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionRepository;
 import arile.toy.stocksystem.accountserver.trade.event.TradeExecutedEvent;
@@ -165,7 +166,7 @@ public class LeveragePositionApplyService {
         }
 
         // 청산 확정 포지션은 유저 매도 불가
-        if (position.getMarginStatus() == arile.toy.stocksystem.accountserver.leverage.dto.MarginStatus.LIQUIDATION_PENDING) {
+        if (position.getMarginStatus() == MarginStatus.LIQUIDATION_PENDING) {
             return false;
         }
 
