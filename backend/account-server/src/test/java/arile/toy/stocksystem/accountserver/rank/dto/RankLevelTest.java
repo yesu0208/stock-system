@@ -12,6 +12,8 @@ class RankLevelTest {
 
     @ParameterizedTest(name = "RP {0} → {1}")
     @CsvSource({
+            "-9223372036854775808, BRONZE_5",
+            "999, BRONZE_5",
             "1000, BRONZE_5",
             "1149, BRONZE_5",
             "1150, BRONZE_4",
