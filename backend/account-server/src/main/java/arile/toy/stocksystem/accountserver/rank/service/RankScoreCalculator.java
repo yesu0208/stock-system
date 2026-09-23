@@ -38,17 +38,17 @@ public class RankScoreCalculator {
     private long calculatePositiveScore(double rate) {
         double score = 0;
 
-        double smallBand = Math.min(rate, 2.0);
-        score += smallBand * 6.0;
+        // 0~10% 구간: 0.01%당 1점 (1%당 100점)
+        score += Math.min(rate, 10.0) * 100.0;
 
+        // 10~20% 구간: 10% 초과분에 대해 0.01%당 0.7점 (1%당 70점)
         if (rate > 10.0) {
-            double midBand = Math.min(rate, 5.0) - 2.0;
-            score += midBand * 4.0;
+            score += (Math.min(rate, 20.0) - 10.0) * 70.0;
         }
 
+        // 20% 초과 구간: 20% 초과분에 대해 0.01%당 0.5점 (1%당 50점)
         if (rate > 20.0) {
-            double largeBand = rate - 5.0;
-            score += largeBand * 2.0;
+            score += (rate - 20.0) * 50.0;
         }
 
         return Math.round(score);
@@ -57,17 +57,17 @@ public class RankScoreCalculator {
     private long calculateNegativeScore(double absRate) {
         double score = 0;
 
-        double smallBand = Math.min(absRate, 2.0);
-        score += smallBand * 4.0;
+        // 0~10% 손실 구간: 0.01%당 0.9점 차감 (1%당 90점)
+        score += Math.min(absRate, 10.0) * 90.0;
 
+        // 10~20% 손실 구간: 10% 초과분에 대해 0.01%당 0.7점 차감 (1%당 70점)
         if (absRate > 10.0) {
-            double midBand = Math.min(absRate, 5.0) - 2.0;
-            score += midBand * 2.5;
+            score += (Math.min(absRate, 20.0) - 10.0) * 70.0;
         }
 
+        // 20% 초과 손실 구간: 20% 초과분에 대해 0.01%당 0.5점 차감 (1%당 50점)
         if (absRate > 20.0) {
-            double largeBand = absRate - 5.0;
-            score += largeBand * 1.2;
+            score += (absRate - 20.0) * 50.0;
         }
 
         return -(long) Math.round(score);
