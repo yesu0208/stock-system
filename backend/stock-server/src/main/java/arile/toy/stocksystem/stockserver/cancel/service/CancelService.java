@@ -40,7 +40,18 @@ public class CancelService {
     @Transactional
     public void registerCancel(CancelRequestEvent request) {
 
-        UpdateOrderStatusResult result = orderService.updateOrderStatusByCancelEvent(request.orderId());
+        // 요청자가 주문 소유자가 아니거나 종목코드가 다르면 취소하지 않음 (타인 주문 취소 방지)
+        // 취소 응답은 주문 소유자 채널로 발행되므로, 거부 시에는 응답을 보내지 않고 로그만 남김
+        var ownedResult = orderService.updateOrderStatusByUserCancel(
+                request.orderId(), request.username(), request.stockCode());
+
+        if (ownedResult.isEmpty()) {
+            log.warn("Cancel rejected: not the order owner or stock code mismatch. orderId={}, requester={}, stockCode={}",
+                    request.orderId(), request.username(), request.stockCode());
+            return;
+        }
+
+        UpdateOrderStatusResult result = ownedResult.get();
 
         var orderEntity = result.orderEntity();
 

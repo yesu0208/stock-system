@@ -205,6 +205,8 @@ public class RedisCancelRequestEventConsumer {
         }
 
         String stockCode = (String) value.get("stockCode");
+        // 요청자: 주문 소유자 검증에 사용 (bff가 JWT에서 추출해 전달)
+        String username = (String) value.get("username");
 
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip cancel for stockCode {}", stockCode);
@@ -213,7 +215,7 @@ public class RedisCancelRequestEventConsumer {
 
         log.info("Processing cancel orderId: {} for stockCode {}", orderId, stockCode);
 
-        cancelService.registerCancel(CancelRequestEvent.of(orderId, stockCode));
+        cancelService.registerCancel(CancelRequestEvent.of(orderId, stockCode, username));
     }
 
     private String retryKey(RecordId id) {

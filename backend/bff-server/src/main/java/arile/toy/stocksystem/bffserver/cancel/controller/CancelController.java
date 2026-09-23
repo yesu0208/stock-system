@@ -5,6 +5,7 @@ import arile.toy.stocksystem.bffserver.cancel.dto.CancelResponse;
 import arile.toy.stocksystem.bffserver.cancel.service.CancelIngressService;
 import arile.toy.stocksystem.bffserver.exception.close.MarketClosedException;
 import arile.toy.stocksystem.bffserver.market.phase.BffServerMarketPhaseRegistry;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class CancelController {
 
     @PostMapping
     public ResponseEntity<CancelResponse> cancel(
-            @RequestBody CancelRequest cancelRequest,
+            @Valid @RequestBody CancelRequest cancelRequest,
             @AuthenticationPrincipal UserDetails user
     ) {
         if (user == null) {
@@ -39,7 +40,7 @@ public class CancelController {
         }
 
         CancelResponse cancelResponse =
-                cancelIngressService.receive(cancelRequest);
+                cancelIngressService.receive(user.getUsername(), cancelRequest);
 
         return ResponseEntity.ok(cancelResponse);
     }
