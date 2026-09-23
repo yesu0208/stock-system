@@ -183,7 +183,7 @@ public class TradeExecutionApplyService {
             log.error("Redis sell trade apply failed. username={}, stockCode={}",
                     event.username(), event.stockCode());
             throw new IllegalStateException(
-                    "Redis buy trade apply failed. username=%s, stockCode=%s"
+                    "Redis sell trade apply failed. username=%s, stockCode=%s"
                             .formatted(event.username(), event.stockCode()));
         }
 
