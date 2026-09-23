@@ -46,6 +46,8 @@ class BusinessDayCalculatorTest {
     @DisplayName("businessDaysElapsed: 관리자가 등록한 평일 휴장일도 제외한다")
     void businessDaysElapsed_excludesHoliday() {
         given(holidayRegistry.isHoliday(TUE)).willReturn(true);
+        given(holidayRegistry.isHoliday(TUE.plusDays(1))).willReturn(false); // 수
+        given(holidayRegistry.isHoliday(THU)).willReturn(false);
 
         assertThat(calculator.businessDaysElapsed(MON, THU)).isEqualTo(2);
     }
@@ -62,6 +64,7 @@ class BusinessDayCalculatorTest {
     @Test
     @DisplayName("isBusinessDay: 평일은 휴장일 여부에 따라 판정한다")
     void isBusinessDay_weekday() {
+        given(holidayRegistry.isHoliday(MON)).willReturn(false);
         given(holidayRegistry.isHoliday(TUE)).willReturn(true);
 
         assertThat(calculator.isBusinessDay(MON)).isTrue();
