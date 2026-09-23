@@ -1,16 +1,11 @@
 package arile.toy.stocksystem.accountserver.leverage.service;
 
 import arile.toy.stocksystem.accountserver.leverage.dto.MarginCallBatchResult;
-import arile.toy.stocksystem.accountserver.leverage.dto.MarginStatus;
 import arile.toy.stocksystem.accountserver.leverage.entity.LeveragePositionEntity;
-import arile.toy.stocksystem.accountserver.leverage.event.MarginCallEvent;
-import arile.toy.stocksystem.accountserver.leverage.event.publisher.MarginCallEventPublisher;
-import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionRepository;
-import arile.toy.stocksystem.accountserver.stockprice.repository.StockSummaryRedisRepository;
+import arile.toy.stocksystem.accountserver.leverage.service.LeverageMarginCallExecutor.MarginCallOutcome;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,19 +15,16 @@ import java.util.List;
 @Slf4j
 public class LeverageMarginCallService {
 
-    private final LeveragePositionRepository leveragePositionRepository;
-    private final StockSummaryRedisRepository stockSummaryRedisRepository;
-    private final MarginRatioCalculator marginRatioCalculator;
-    private final LeveragePositionRedisSyncer redisSyncer;
-    private final AccountMarginStatusSyncer accountMarginStatusSyncer;
-    private final MarginCallEventPublisher marginCallEventPublisher;
+    private final LeverageMarginCallExecutor leverageMarginCallExecutor;
 
     /**
      * 담보비율 재계산 + 마진콜 판정/재평가 단계.
      * 각 포지션은 이 메서드 1회 호출(=1 트레이딩데이)당 정확히 한 번만 평가된다.
      * NORMAL -> MARGIN_CALL -> (재평가) -> NORMAL 복귀 또는 LIQUIDATION_PENDING 전환.
+     *
+     * 트랜잭션은 포지션 단위로 LeverageMarginCallExecutor에서 개별 적용
+     * (이 메서드에 @Transactional을 두면 실행기 트랜잭션이 합류해 포지션 단위 분리가 무의미해짐)
      */
-    @Transactional
     public MarginCallBatchResult evaluatePositions(List<LeveragePositionEntity> positions) {
 
         int newMarginCalls = 0;
@@ -43,43 +35,14 @@ public class LeverageMarginCallService {
         for (LeveragePositionEntity position : positions) {
 
             try {
-                if (position.getMarginStatus() == MarginStatus.LIQUIDATION_PENDING) {
-                    continue; // 이미 청산 대기 중
-                }
+                MarginCallOutcome outcome =
+                        leverageMarginCallExecutor.evaluateOnePosition(position.getLeveragePositionId(), today);
 
-                if (position.getLoanAmount() <= 0) {
-                    if (position.getMarginStatus() != MarginStatus.NORMAL) {
-                        transitionToNormal(position);
-                        recovered++;
-                    }
-                    continue;
-                }
-
-                Long curPrice = resolveCurrentPrice(position.getStockCode());
-                if (curPrice == null) {
-                    log.warn("[MarginCall] No price found. skip evaluation. username={}, stockCode={}, leverageRatio={}",
-                            position.getUsername(), position.getStockCode(), position.getLeverageRatio());
-                    continue;
-                }
-
-                long evaluationAmount = (long) position.getQuantity() * curPrice;
-                double ratio = marginRatioCalculator.calculateRatio(evaluationAmount, position.getLoanAmount());
-                boolean below = marginRatioCalculator.isBelowMaintenance(ratio);
-
-                if (position.getMarginStatus() == MarginStatus.NORMAL) {
-                    if (below) {
-                        transitionToMarginCall(position, today, ratio);
-                        newMarginCalls++;
-                    }
-                } else { // MARGIN_CALL 상태 — 재평가 시점 (D+1 종가 기준)
-                    if (!below) {
-                        transitionToNormal(position);
-                        publishRecoveredEvent(position, ratio);
-                        recovered++;
-                    } else {
-                        transitionToLiquidationPending(position, ratio);
-                        queuedForLiquidation++;
-                    }
+                switch (outcome) {
+                    case NEW_MARGIN_CALL -> newMarginCalls++;
+                    case RECOVERED -> recovered++;
+                    case QUEUED_FOR_LIQUIDATION -> queuedForLiquidation++;
+                    case UNCHANGED -> { }
                 }
 
             } catch (Exception e) {
@@ -92,52 +55,5 @@ public class LeverageMarginCallService {
                 positions.size(), newMarginCalls, recovered, queuedForLiquidation);
 
         return new MarginCallBatchResult(newMarginCalls, recovered, queuedForLiquidation);
-    }
-
-    private void transitionToMarginCall(LeveragePositionEntity position, LocalDate today, double ratio) {
-        position.changeMarginStatus(MarginStatus.MARGIN_CALL, today);
-        leveragePositionRepository.save(position);
-        redisSyncer.sync(position);
-        accountMarginStatusSyncer.resync(position.getUsername());
-
-        marginCallEventPublisher.publish(
-                MarginCallEvent.of(position.getUsername(), position.getStockCode(),
-                        position.getLeverageRatio(), MarginStatus.MARGIN_CALL, ratio));
-
-        log.warn("[MarginCall] triggered. ...");
-    }
-
-    private void transitionToNormal(LeveragePositionEntity position) {
-        position.changeMarginStatus(MarginStatus.NORMAL, null);
-        leveragePositionRepository.save(position);
-        redisSyncer.sync(position);
-        accountMarginStatusSyncer.resync(position.getUsername());
-    }
-
-    private void transitionToLiquidationPending(LeveragePositionEntity position, double ratio) {
-        position.changeMarginStatus(MarginStatus.LIQUIDATION_PENDING, position.getMarginCallDate());
-        leveragePositionRepository.save(position);
-        redisSyncer.sync(position);
-        accountMarginStatusSyncer.resync(position.getUsername());
-
-        marginCallEventPublisher.publish(
-                MarginCallEvent.of(position.getUsername(), position.getStockCode(),
-                        position.getLeverageRatio(), MarginStatus.LIQUIDATION_PENDING, ratio));
-
-        log.warn("[MarginCall] grace expired, queued for liquidation. ...");
-    }
-
-    private void publishRecoveredEvent(LeveragePositionEntity position, double ratio) {
-        marginCallEventPublisher.publish(
-                MarginCallEvent.of(position.getUsername(), position.getStockCode(),
-                        position.getLeverageRatio(), MarginStatus.NORMAL, ratio));
-    }
-
-    private Long resolveCurrentPrice(String stockCode) {
-        var summary = stockSummaryRedisRepository.findByStockCode(stockCode);
-        if (summary == null || summary.curPrice() == null) {
-            return null;
-        }
-        return summary.curPrice().longValue();
     }
 }

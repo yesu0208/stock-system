@@ -7,32 +7,32 @@ import java.util.Arrays;
 @Getter
 public enum RankLevel {
     UNRANKED(Tier.UNRANKED, null, Long.MIN_VALUE, 999),
-    BRONZE_5(Tier.BRONZE, 5, 1000, 1019),
-    BRONZE_4(Tier.BRONZE, 4, 1020, 1044),
-    BRONZE_3(Tier.BRONZE, 3, 1045, 1074),
-    BRONZE_2(Tier.BRONZE, 2, 1075, 1109),
-    BRONZE_1(Tier.BRONZE, 1, 1110, 1149),
-    SILVER_5(Tier.SILVER, 5, 1150, 1199),
-    SILVER_4(Tier.SILVER, 4, 1200, 1259),
-    SILVER_3(Tier.SILVER, 3, 1260, 1329),
-    SILVER_2(Tier.SILVER, 2, 1330, 1409),
-    SILVER_1(Tier.SILVER, 1, 1410, 1499),
-    GOLD_5(Tier.GOLD, 5, 1500, 1819),
-    GOLD_4(Tier.GOLD, 4, 1820, 2199),
-    GOLD_3(Tier.GOLD, 3, 2200, 2649),
-    GOLD_2(Tier.GOLD, 2, 2650, 3179),
-    GOLD_1(Tier.GOLD, 1, 3180, 3799),
-    PLATINUM_5(Tier.PLATINUM, 5, 3800, 4519),
-    PLATINUM_4(Tier.PLATINUM, 4, 4520, 5359),
-    PLATINUM_3(Tier.PLATINUM, 3, 5360, 6329),
-    PLATINUM_2(Tier.PLATINUM, 2, 6330, 7449),
-    PLATINUM_1(Tier.PLATINUM, 1, 7450, 8739),
-    DIAMOND_5(Tier.DIAMOND, 5, 8740, 10229),
-    DIAMOND_4(Tier.DIAMOND, 4, 10230, 11949),
-    DIAMOND_3(Tier.DIAMOND, 3, 11950, 13929),
-    DIAMOND_2(Tier.DIAMOND, 2, 13930, 16209),
-    DIAMOND_1(Tier.DIAMOND, 1, 16210, 18829),
-    MASTER(Tier.MASTER, null, 18830, Long.MAX_VALUE);
+    BRONZE_5(Tier.BRONZE, 5, 1000, 1149),
+    BRONZE_4(Tier.BRONZE, 4, 1150, 1299),
+    BRONZE_3(Tier.BRONZE, 3, 1300, 1449),
+    BRONZE_2(Tier.BRONZE, 2, 1450, 1599),
+    BRONZE_1(Tier.BRONZE, 1, 1600, 1749),
+    SILVER_5(Tier.SILVER, 5, 1750, 2049),
+    SILVER_4(Tier.SILVER, 4, 2050, 2349),
+    SILVER_3(Tier.SILVER, 3, 2350, 2649),
+    SILVER_2(Tier.SILVER, 2, 2650, 2949),
+    SILVER_1(Tier.SILVER, 1, 2950, 3249),
+    GOLD_5(Tier.GOLD, 5, 3250, 3749),
+    GOLD_4(Tier.GOLD, 4, 3750, 4249),
+    GOLD_3(Tier.GOLD, 3, 4250, 4749),
+    GOLD_2(Tier.GOLD, 2, 4750, 5249),
+    GOLD_1(Tier.GOLD, 1, 5250, 5749),
+    PLATINUM_5(Tier.PLATINUM, 5, 5750, 6749),
+    PLATINUM_4(Tier.PLATINUM, 4, 6750, 7749),
+    PLATINUM_3(Tier.PLATINUM, 3, 7750, 8749),
+    PLATINUM_2(Tier.PLATINUM, 2, 8750, 9749),
+    PLATINUM_1(Tier.PLATINUM, 1, 9750, 10749),
+    DIAMOND_5(Tier.DIAMOND, 5, 10750, 12249),
+    DIAMOND_4(Tier.DIAMOND, 4, 12250, 13749),
+    DIAMOND_3(Tier.DIAMOND, 3, 13750, 15249),
+    DIAMOND_2(Tier.DIAMOND, 2, 15250, 16749),
+    DIAMOND_1(Tier.DIAMOND, 1, 16750, 18249),
+    MASTER(Tier.MASTER, null, 18250, Long.MAX_VALUE);
 
     private final Tier tier;
     private final Integer subTier;
@@ -48,9 +48,14 @@ public enum RankLevel {
 
     /** RP 값으로 브론즈5~마스터 범위 내 이론상 등급을 계산한다. UNRANKED는 별도 상태이므로 제외. */
     public static RankLevel fromRp(long rp) {
+        // 브론즈5 하한 미만은 최하위 등급으로 간주 (기존에는 어느 구간에도 속하지 않아 MASTER가 반환되었음)
+        if (rp < BRONZE_5.rpLower) {
+            return BRONZE_5;
+        }
+        // 구간이 오름차순으로 빈틈없이 이어지므로, 상한이 rp 이상인 첫 등급이 해당 등급
         return Arrays.stream(values())
                 .filter(level -> level != UNRANKED)
-                .filter(level -> rp >= level.rpLower && rp <= level.rpUpper)
+                .filter(level -> rp <= level.rpUpper)
                 .findFirst()
                 .orElse(MASTER);
     }

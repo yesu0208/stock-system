@@ -8,8 +8,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * stock-server가 원본으로 관리하는 휴장일(Redis Set "market:holidays")을
@@ -25,7 +25,7 @@ public class HolidayRegistry {
 
     private final StringRedisTemplate redisTemplate;
 
-    private final Set<LocalDate> holidays = ConcurrentHashMap.newKeySet();
+    private volatile Set<LocalDate> holidays = Set.of();
 
     @PostConstruct
     public void init() {
@@ -38,7 +38,7 @@ public class HolidayRegistry {
             Set<String> raw = redisTemplate.opsForSet().members(KEY);
             if (raw == null) return;
 
-            Set<LocalDate> parsed = ConcurrentHashMap.newKeySet();
+            Set<LocalDate> parsed = new HashSet<>();
             for (String s : raw) {
                 try {
                     parsed.add(LocalDate.parse(s));
@@ -47,8 +47,7 @@ public class HolidayRegistry {
                 }
             }
 
-            holidays.clear();
-            holidays.addAll(parsed);
+            holidays = Set.copyOf(parsed);
         } catch (Exception e) {
             log.warn("휴장일 목록 재동기화 실패. 다음 주기에 재시도합니다.", e);
         }

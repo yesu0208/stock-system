@@ -1,16 +1,9 @@
 package arile.toy.stocksystem.accountserver.leverage.service;
 
 import arile.toy.stocksystem.accountserver.leverage.entity.LeveragePositionEntity;
-import arile.toy.stocksystem.accountserver.leverage.repository.LeveragePositionRepository;
-import arile.toy.stocksystem.accountserver.useraccount.dto.AccountStatus;
-import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
-import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
-import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRedisRepository;
-import arile.toy.stocksystem.accountserver.useraccount.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -21,11 +14,8 @@ import java.util.List;
 @Slf4j
 public class LeverageInterestService {
 
-    private final LeveragePositionRepository leveragePositionRepository;
-    private final UserAccountRepository userAccountRepository;
-    private final UserAccountRedisRepository userAccountRedisRepository;
     private final LeverageInterestCalculator interestCalculator;
-    private final AccountBalanceCommand accountBalanceCommand;
+    private final LeverageInterestChargeExecutor leverageInterestChargeExecutor;
 
     /**
      * 이자 청구 단계.
@@ -60,11 +50,8 @@ public class LeverageInterestService {
                     continue;
                 }
 
-                chargeInterestForOnePosition(position.getUsername(), position.getStockCode(),
-                        position.getLeveragePositionId(), interest);
-
-                position.markInterestChargedThrough(today);
-                leveragePositionRepository.save(position);
+                leverageInterestChargeExecutor.chargeInterestForOnePosition(position.getUsername(), position.getStockCode(),
+                        position.getLeveragePositionId(), interest, today);
 
                 charged++;
 
@@ -75,35 +62,5 @@ public class LeverageInterestService {
         }
 
         return charged;
-    }
-
-    @Transactional
-    public void chargeInterestForOnePosition(String username, String stockCode, Long positionId, long interestAmount) {
-
-        UserAccountEntity account = userAccountRepository.findByUsernameForUpdate(username)
-                .orElseThrow(() -> new IllegalStateException("Account not found. username=" + username));
-
-        account.setBalance(account.getBalance() - interestAmount);
-
-        boolean wasNormal = account.getAccountStatus() == AccountStatus.NORMAL;
-        if (account.getBalance() < 0 && wasNormal) {
-            account.changeAccountStatus(AccountStatus.NEGATIVE, LocalDate.now());
-            userAccountRedisRepository.saveAccountStatus(username, AccountStatus.NEGATIVE.name());
-            log.warn("[LeverageInterest] Account converted to NEGATIVE by interest charge. username={}, balance={}",
-                    username, account.getBalance());
-        }
-
-        userAccountRepository.save(account);
-
-        boolean debited = accountBalanceCommand.debitAvailableCash(username, interestAmount);
-        if (!debited) {
-            log.error("Redis availableCash debit failed for leverage interest. username={}, stockCode={}, interest={}",
-                    username, stockCode, interestAmount);
-            throw new IllegalStateException(
-                    "Redis leverage interest debit failed. username=%s, stockCode=%s".formatted(username, stockCode));
-        }
-
-        log.info("[LeverageInterest] charged. username={}, stockCode={}, positionId={}, interestAmount={}, balanceAfter={}",
-                username, stockCode, positionId, interestAmount, account.getBalance());
     }
 }

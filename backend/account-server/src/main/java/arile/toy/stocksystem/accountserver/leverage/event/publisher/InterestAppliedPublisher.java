@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.accountserver.leverage.publisher;
+package arile.toy.stocksystem.accountserver.leverage.event.publisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
