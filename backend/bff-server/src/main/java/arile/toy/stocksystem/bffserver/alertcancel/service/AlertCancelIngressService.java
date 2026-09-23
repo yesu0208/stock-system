@@ -13,9 +13,9 @@ public class AlertCancelIngressService {
 
     private final AlertCancelRequestEventPublisher publisher;
 
-    public AlertCancelResponse receive(AlertCancelRequest alertCancelRequest) {
+    public AlertCancelResponse receive(String username, AlertCancelRequest alertCancelRequest) {
 
-        publisher.publishAlertCancel(AlertCancelRequestEvent.fromRequest(alertCancelRequest));
+        publisher.publishAlertCancel(AlertCancelRequestEvent.fromRequest(username, alertCancelRequest));
 
         return new AlertCancelResponse(alertCancelRequest.alertId(), alertCancelRequest.stockCode());
     }

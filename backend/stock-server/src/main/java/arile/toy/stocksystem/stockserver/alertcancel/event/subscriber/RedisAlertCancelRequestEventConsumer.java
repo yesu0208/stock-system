@@ -203,10 +203,12 @@ public class RedisAlertCancelRequestEventConsumer {
         }
 
         String stockCode = (String) value.get("stockCode");
+        // 요청자: 알림 소유자 검증에 사용 (bff가 JWT에서 추출해 전달)
+        String username = (String) value.get("username");
 
         log.info("Processing alert cancel alertId: {} for stockCode {}", alertId, stockCode);
 
-        alertCancelService.registerAlertCancel(AlertCancelRequestEvent.of(alertId, stockCode));
+        alertCancelService.registerAlertCancel(AlertCancelRequestEvent.of(alertId, stockCode, username));
     }
 
     private String retryKey(RecordId id) {
