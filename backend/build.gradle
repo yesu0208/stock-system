@@ -17,6 +17,7 @@ allprojects {
 subprojects {
     apply plugin: 'java'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'jacoco'
 
     java {
         toolchain {
@@ -33,5 +34,14 @@ subprojects {
     tasks.named('test') {
         useJUnitPlatform()
         jvmArgs('-Xshare:off', '-XX:+EnableDynamicAgentLoading')
+        finalizedBy 'jacocoTestReport'
+    }
+
+    jacocoTestReport {
+        dependsOn test
+        reports {
+            html.required = true
+            xml.required = true
+        }
     }
 }
