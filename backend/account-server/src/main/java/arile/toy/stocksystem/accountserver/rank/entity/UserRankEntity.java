@@ -54,7 +54,7 @@ public class UserRankEntity {
     public static UserRankEntity of(String username, long initialAsset) {
         var entity = new UserRankEntity();
         entity.setUsername(username);
-        entity.setRp(1000L);
+        entity.setRp(RankLevel.BRONZE_5.getRpLower());
         entity.setEntered(false);
         entity.setCurrentLevel(RankLevel.UNRANKED);
         entity.setHighestTierReached(RankLevel.UNRANKED);
