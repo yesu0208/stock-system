@@ -21,8 +21,8 @@ public class LeverageDailyBatchService {
     private final NegativeBalanceResolutionService negativeBalanceResolutionService;
 
     /**
-     * 매일 15:55 실행되는 레버리지 배치의 전체 파이프라인
-     * 이자누적 -> 담보비율재계산/마진콜판정 -> 반대매매(청산) -> ④마이너스계좌 유예판정/영구정지
+     * 매일 20:10 실행되는 레버리지 배치의 전체 파이프라인
+     * 이자누적 -> 담보비율재계산/마진콜판정 -> 반대매매(청산) -> 마이너스계좌 유예판정/영구정지
      */
     public void runDailyLeverageBatch() {
 

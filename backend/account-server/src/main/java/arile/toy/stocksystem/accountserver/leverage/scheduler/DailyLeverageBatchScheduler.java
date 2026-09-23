@@ -1,6 +1,6 @@
 package arile.toy.stocksystem.accountserver.leverage.scheduler;
 
-import arile.toy.stocksystem.accountserver.leverage.publisher.InterestAppliedPublisher;
+import arile.toy.stocksystem.accountserver.leverage.event.publisher.InterestAppliedPublisher;
 import arile.toy.stocksystem.accountserver.leverage.service.LeverageDailyBatchService;
 import arile.toy.stocksystem.accountserver.market.holiday.HolidayRegistry;
 import lombok.RequiredArgsConstructor;
