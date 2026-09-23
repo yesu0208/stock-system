@@ -1,12 +1,15 @@
 package arile.toy.stocksystem.bffserver.security.config;
 
+import arile.toy.stocksystem.bffserver.exception.user.UserNotFoundException;
 import arile.toy.stocksystem.bffserver.security.service.JwtService;
 import arile.toy.stocksystem.bffserver.user.service.UserService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +21,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -58,22 +62,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String accessToken = authorization.substring(BEARER_PREFIX.length());
 
-        String username = jwtService.getUsernameFromAccessToken(accessToken);
+        try {
+            String username = jwtService.getUsernameFromAccessToken(accessToken);
 
-        if (username != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (username != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            var userDetails = userService.loadUserByUsername(username);
-            var authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities());
+                var userDetails = userService.loadUserByUsername(username);
+                var authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities());
 
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request));
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (JwtException | IllegalArgumentException | UserNotFoundException e) {
+            // 위조·손상된 토큰, 빈 토큰, 탈퇴한 사용자의 토큰은 인증 없이 넘김
+            // 보호된 API는 이후 JwtAuthenticationEntryPoint가 401을 반환하여 프론트의 재발급·로그아웃 흐름이 동작하고,
+            // 공개 API는 익명 요청으로 정상 처리됨.(필터 예외는 GlobalExceptionHandler를 거치지 않아 500이 됨)
+            log.debug("JWT authentication skipped. path={}, reason={}", request.getRequestURI(), e.getMessage());
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
