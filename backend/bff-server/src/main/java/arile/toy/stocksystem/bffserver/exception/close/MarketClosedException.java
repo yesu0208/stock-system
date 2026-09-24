@@ -9,7 +9,4 @@ public class MarketClosedException extends ClientErrorException {
         super(HttpStatus.BAD_REQUEST, "장 종료된 종목입니다.");
     }
 
-    public MarketClosedException(String message) {
-        super(HttpStatus.BAD_REQUEST, message);
-    }
 }
