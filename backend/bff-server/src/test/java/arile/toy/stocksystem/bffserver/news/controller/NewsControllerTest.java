@@ -73,4 +73,13 @@ class NewsControllerTest {
 
         verifyNoInteractions(slackNotifier);
     }
+
+    @Test
+    @DisplayName("검색어 파라미터가 없으면 400이고 Slack 알림을 보내지 않는다")
+    void missingKeyword_400() throws Exception {
+        mockMvc.perform(get("/api/v1/news").with(user("user1")))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService, slackNotifier);
+    }
 }
