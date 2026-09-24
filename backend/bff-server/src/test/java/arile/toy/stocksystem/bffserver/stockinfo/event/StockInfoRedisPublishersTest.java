@@ -76,4 +76,18 @@ class StockInfoRedisPublishersTest {
 
         verify(redisTemplate, never()).convertAndSend(anyString(), anyString());
     }
+
+    @Test
+    @DisplayName("종목 상세: JSON 변환에 실패해도 예외를 던지지 않고 발행하지 않는다")
+    void stockDetail_serializationFails() throws Exception {
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        StockDetailTickMessage message = mock(StockDetailTickMessage.class);
+        given(message.stockCode()).willReturn("005930");
+        given(objectMapper.writeValueAsString(message)).willThrow(new JsonProcessingException("boom") {});
+
+        assertThatCode(() -> new StockDetailRedisPublisher(redisTemplate, objectMapper).publish(message))
+                .doesNotThrowAnyException();
+
+        verify(redisTemplate, never()).convertAndSend(anyString(), anyString());
+    }
 }

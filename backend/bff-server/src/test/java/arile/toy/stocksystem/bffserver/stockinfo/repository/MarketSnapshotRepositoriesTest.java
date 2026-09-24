@@ -159,5 +159,16 @@ class MarketSnapshotRepositoriesTest {
             given(valueOps.get("stock:detail:snapshot:005930")).willThrow(new RedisConnectionFailureException("down"));
             assertThat(repository.getLatest("005930")).isNull();
         }
+
+        @Test
+        @DisplayName("저장이 실패해도 예외를 던지지 않는다")
+        void saveFails() {
+            StockDetailTickMessage message = mock(StockDetailTickMessage.class);
+            given(message.stockCode()).willReturn("005930");
+            willThrow(new RedisConnectionFailureException("down"))
+                    .given(valueOps).set(anyString(), anyString(), eq(TTL));
+
+            assertThatCode(() -> repository.save(message)).doesNotThrowAnyException();
+        }
     }
 }

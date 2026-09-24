@@ -139,4 +139,17 @@ class StockInfoControllerTest {
 
         verifyNoInteractions(slackNotifier);
     }
+
+    @Test
+    @DisplayName("수급 순위: 시장·투자자·매매 구분을 넘기고, 기간을 생략하면 DAY로 조회한다")
+    void dealRank() throws Exception {
+        mockMvc.perform(get(BASE + "/deal-rank").with(loggedIn())
+                        .param("market", DealRankMarket.values()[0].name())
+                        .param("investorType", InvestorType.values()[0].name())
+                        .param("dealType", "BUY"))
+                .andExpect(status().isOk());
+
+        verify(stockInfoService).getDealRank(
+                DealRankMarket.values()[0], InvestorType.values()[0], DealType.BUY, PeriodType.DAY);
+    }
 }
