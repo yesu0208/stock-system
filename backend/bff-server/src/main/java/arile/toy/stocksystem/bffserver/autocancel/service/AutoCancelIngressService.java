@@ -13,10 +13,9 @@ public class AutoCancelIngressService {
 
     private final RedisAutoCancelRequestEventPublisher publisher;
 
-    public AutoCancelResponse receive(AutoCancelRequest autoCancelRequest) {
+    public AutoCancelResponse receive(String username, AutoCancelRequest autoCancelRequest) {
 
-
-        publisher.publishAutoCancel(AutoCancelRequestEvent.fromRequest(autoCancelRequest));
+        publisher.publishAutoCancel(AutoCancelRequestEvent.fromRequest(username, autoCancelRequest));
 
         return new AutoCancelResponse(autoCancelRequest.autoOrderId(), autoCancelRequest.stockCode());
     }

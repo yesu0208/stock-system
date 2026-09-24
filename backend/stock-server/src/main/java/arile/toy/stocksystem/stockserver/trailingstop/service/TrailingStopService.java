@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -114,11 +115,38 @@ public class TrailingStopService {
         return UpdateTrailingStopStatusResult.of(entity, prevStatus);
     }
 
+    /** 시스템 강제 취소(장 마감 정리 등)용. 소유자 검증 없이 취소 상태로 변경. */
     @Transactional
     public UpdateTrailingStopStatusResult updateTrailingStopStatusByCancel(Long trailingStopId) {
 
         TrailingStopEntity entity = trailingStopRepository.findByIdForUpdate(trailingStopId)
                 .orElseThrow(() -> new IllegalArgumentException("trailing stop not found"));
+
+        return markCanceled(entity);
+    }
+
+    /**
+     * 사용자 취소 요청용.
+     * 요청자가 트레일링 스탑 소유자이고 요청 종목코드가 트레일링 스탑 종목코드와 같을 때만 취소 상태로 변경함.
+     * 불일치 시 상태를 변경하지 않고 empty를 반환. (타인 트레일링 스탑 취소, 다른 샤드로의 취소 라우팅 방지)
+     */
+    @Transactional
+    public Optional<UpdateTrailingStopStatusResult> updateTrailingStopStatusByUserCancel(
+            Long trailingStopId, String username, String stockCode) {
+
+        TrailingStopEntity entity = trailingStopRepository.findByIdForUpdate(trailingStopId)
+                .orElseThrow(() -> new IllegalArgumentException("trailing stop not found"));
+
+        if (username == null
+                || !username.equals(entity.getUsername())
+                || !entity.getStockCode().equals(stockCode)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(markCanceled(entity));
+    }
+
+    private UpdateTrailingStopStatusResult markCanceled(TrailingStopEntity entity) {
 
         TrailingStopStatus prevStatus = entity.getTrailingStopStatus();
 

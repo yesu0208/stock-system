@@ -35,8 +35,11 @@ public class DiscussionController {
             @AuthenticationPrincipal UserDetails user,
             @PathVariable Long postId
     ) {
-        String viewerId = user != null ? user.getUsername() : null;
-        return ResponseEntity.ok(discussionService.getPost(postId, viewerId));
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return ResponseEntity.ok(discussionService.getPost(postId, user.getUsername()));
     }
 
     @PatchMapping("/{postId}")
@@ -72,8 +75,11 @@ public class DiscussionController {
             @PathVariable String stockCode,
             @RequestParam(required = false) Long cursor
     ) {
-        String viewerId = user != null ? user.getUsername() : null;
-        return ResponseEntity.ok(discussionService.getPostsByStock(stockCode, cursor, viewerId));
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return ResponseEntity.ok(discussionService.getPostsByStock(stockCode, cursor, user.getUsername()));
     }
 
     @GetMapping("/my/posts")

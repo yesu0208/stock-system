@@ -6,5 +6,4 @@ import java.util.List;
 
 public interface BffServerStockSummaryRepository {
     BffServerStockSummaryTickMessage findByStockCode(String stockCode);
-    List<BffServerStockSummaryTickMessage> findAll();
 }

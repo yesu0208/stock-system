@@ -1,4 +1,4 @@
-package arile.toy.stocksystem.bffserver.config; // 또는 stockserver.config
+package arile.toy.stocksystem.bffserver.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

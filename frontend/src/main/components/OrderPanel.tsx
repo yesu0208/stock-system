@@ -299,6 +299,9 @@ export default function OrderPanel() {
                     case "COMPLETED":
                         success(`[${stockName}] 익절 또는 손절 조건이 충족되어 청산되었습니다.`);
                         break;
+                    case "CANCELED":
+                        success(`[${stockName}] 진입 주문이 취소되어 OTOCO 주문이 종료되었습니다.`);
+                        break;
                     default:
                         success(`[${stockName}] OTOCO 주문 상태가 갱신되었습니다.`);
                 }

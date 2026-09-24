@@ -39,8 +39,9 @@ public class OtocoCancelController {
             throw new MarketClosedException();
         }
 
+        // 요청자를 함께 전달해 stock-server에서 OTOCO 소유자 확인 (타인 OTOCO 취소 방지)
         OtocoCancelResponse otocoCancelResponse =
-                otocoCancelIngressService.receive(otocoCancelRequest);
+                otocoCancelIngressService.receive(user.getUsername(), otocoCancelRequest);
 
         return ResponseEntity.ok(otocoCancelResponse);
     }

@@ -13,9 +13,9 @@ public class CancelIngressService {
 
     private final CancelRequestEventPublisher publisher;
 
-    public CancelResponse receive(CancelRequest cancelRequest) {
-        
-        publisher.publishCancel(CancelRequestEvent.fromRequest(cancelRequest));
+    public CancelResponse receive(String username, CancelRequest cancelRequest) {
+
+        publisher.publishCancel(CancelRequestEvent.fromRequest(username, cancelRequest));
 
         return new CancelResponse(cancelRequest.orderId(), cancelRequest.stockCode());
     }

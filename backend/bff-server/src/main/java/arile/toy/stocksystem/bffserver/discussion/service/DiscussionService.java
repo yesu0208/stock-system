@@ -132,7 +132,7 @@ public class DiscussionService {
         var comment = getCommentEntity(postId, commentId);
         validateAuthor(comment.getAuthorId(), authorId);
 
-        reactionRepository.deleteByTargetTypeAndTargetIdAndUserId(TargetType.COMMENT, commentId, authorId);
+        reactionRepository.deleteByTargetTypeAndTargetIdIn(TargetType.COMMENT, List.of(commentId));
         commentRepository.delete(comment);
     }
 

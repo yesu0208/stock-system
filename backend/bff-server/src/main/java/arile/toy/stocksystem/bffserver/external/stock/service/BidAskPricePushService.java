@@ -16,6 +16,9 @@ public class BidAskPricePushService {
 
         var bidAskPriceTickMessage = bffServerRedisBidAskPriceRepository.findByStockCode(stockCode);
 
+        // 호가가 아직 저장되지 않았거나 만료되었으면 보내지 않음 (null 페이로드는 전송 시 예외 발생)
+        if (bidAskPriceTickMessage == null) return;
+
         messagingTemplate.convertAndSend(
                 "/sub/stock/" + stockCode,
                 bidAskPriceTickMessage);

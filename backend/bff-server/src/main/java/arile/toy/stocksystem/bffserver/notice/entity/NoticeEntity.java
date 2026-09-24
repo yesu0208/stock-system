@@ -1,7 +1,6 @@
 package arile.toy.stocksystem.bffserver.notice.entity;
 
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -11,7 +10,6 @@ import java.time.Instant;
 
 @Getter
 @Setter
-@EqualsAndHashCode
 @Entity
 @Table(name = "notices")
 @EntityListeners(AuditingEntityListener.class)

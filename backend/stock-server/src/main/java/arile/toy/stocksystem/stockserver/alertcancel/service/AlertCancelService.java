@@ -30,7 +30,18 @@ public class AlertCancelService {
     @Transactional
     public void registerAlertCancel(AlertCancelRequestEvent request) {
 
-        UpdateAlertStatusResult result = alertService.updateAlertStatusByCancel(request.alertId());
+        // 요청자가 알림 소유자가 아니거나 종목코드가 다르면 취소하지 않음 (타인 알림 취소 방지)
+        // 취소 응답은 소유자 채널로 발행되므로, 거부 시에는 응답을 보내지 않고 로그만 남김
+        var ownedResult = alertService.updateAlertStatusByUserCancel(
+                request.alertId(), request.username(), request.stockCode());
+
+        if (ownedResult.isEmpty()) {
+            log.warn("Alert cancel rejected: not the owner or stock code mismatch. alertId={}, requester={}, stockCode={}",
+                    request.alertId(), request.username(), request.stockCode());
+            return;
+        }
+
+        UpdateAlertStatusResult result = ownedResult.get();
         var alertEntity = result.alertEntity();
 
         switch (result.previousStatus()) {

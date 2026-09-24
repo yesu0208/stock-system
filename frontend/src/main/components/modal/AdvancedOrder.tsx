@@ -90,7 +90,7 @@ const MAX_QTY = 99_999_999;
 const GAP_PCT = 0.08;
 
 const OTOCO_MIN_PCT     = 0.1;
-const OTOCO_MAX_PCT     = 50;
+const OTOCO_MAX_PCT     = 30;
 const OTOCO_STEP_PCT    = 0.1;
 const DEFAULT_TP_PCT    = 5.0;
 const DEFAULT_SL_PCT    = 3.0;
@@ -1307,6 +1307,10 @@ function OtocoInputPanel() {
         }
         if (slInvalid) {
             error("손절가는 진입가보다 낮아야 합니다.");
+            return;
+        }
+        if (slDerivedPrice <= 0) {
+            error("손절가는 0원보다 커야 합니다.");
             return;
         }
 

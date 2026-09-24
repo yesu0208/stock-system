@@ -15,7 +15,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,16 +38,21 @@ public class StockRealtimeRedisSubscriptionManager {
     private final ExecutorService stockDetailCrawlExecutor;
 
     private final ConcurrentHashMap<String, AtomicInteger> stockRefCount = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Set<String>> sessionSubscriptions = new ConcurrentHashMap<>();
+
+    /**
+     * 구독 키(sessionId:subscriptionId) -> 종목코드.
+     * 참조 카운트는 이 구독 단위로 증감. (구독 1건당 +1, 해제 1건당 -1)
+     * 기존에는 증가는 구독 단위, 감소는 세션별 종목 Set 단위로 해서,
+     * 같은 세션이 같은 종목을 두 번 구독하면 카운트가 0이 되지 않아 Redis 구독이 해제되지 않았음.
+     */
     private final ConcurrentHashMap<String, String> subscriptionKeyToStockCode = new ConcurrentHashMap<>();
 
     public void subscribe(String sessionId, String subscriptionId, String stockCode) {
 
-        subscriptionKeyToStockCode.put(subscriptionKey(sessionId, subscriptionId), stockCode);
-
-        sessionSubscriptions
-                .computeIfAbsent(sessionId, k -> ConcurrentHashMap.newKeySet())
-                .add(stockCode);
+        // 같은 구독 ID가 중복 전달되면 한 번만 셈
+        if (subscriptionKeyToStockCode.putIfAbsent(subscriptionKey(sessionId, subscriptionId), stockCode) != null) {
+            return;
+        }
 
         AtomicBoolean isFirstSubscriber = new AtomicBoolean(false);
 
@@ -78,22 +83,23 @@ public class StockRealtimeRedisSubscriptionManager {
         String stockCode = subscriptionKeyToStockCode.remove(subscriptionKey(sessionId, subscriptionId));
         if (stockCode == null) return;
 
-        unsubscribe(sessionId, stockCode);
+        decreaseRefCount(stockCode);
     }
 
-    public void unsubscribe(String sessionId, String stockCode) {
-        Set<String> stocks = sessionSubscriptions.get(sessionId);
-        if (stocks != null && stocks.remove(stockCode)) {
-            decreaseRefCount(stockCode);
-        }
-    }
-
+    /** 세션의 모든 구독을 하나씩 해제하며, 구독마다 참조 카운트를 1씩 낮춤 */
     public void unsubscribeAll(String sessionId) {
-        Set<String> stocks = sessionSubscriptions.remove(sessionId);
-        if (stocks == null) return;
-        for (String stockCode : stocks) decreaseRefCount(stockCode);
+        String prefix = sessionId + ":";
 
-        subscriptionKeyToStockCode.keySet().removeIf(key -> key.startsWith(sessionId + ":"));
+        List<String> sessionKeys = subscriptionKeyToStockCode.keySet().stream()
+                .filter(key -> key.startsWith(prefix))
+                .toList();
+
+        for (String key : sessionKeys) {
+            String stockCode = subscriptionKeyToStockCode.remove(key);
+            if (stockCode != null) {
+                decreaseRefCount(stockCode);
+            }
+        }
     }
 
     public void disconnect(String sessionId) {

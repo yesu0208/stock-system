@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
@@ -29,9 +30,13 @@ public class NewsService {
     private final ObjectMapper objectMapper;
 
     public List<NaverNewsItem> searchNews(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+
         String cacheKey = buildKey(keyword);
 
-        String cached = redisTemplate.opsForValue().get(cacheKey);
+        String cached = readCache(cacheKey);
         if (cached != null) {
             List<NaverNewsItem> cachedItems = deserialize(cached);
             if (cachedItems != null) {
@@ -44,6 +49,16 @@ public class NewsService {
         cacheItems(cacheKey, items);
 
         return items;
+    }
+
+    /** 캐시 조회 실패(Redis 장애 등)는 캐시 미스로 보고 API 조회로 대체 */
+    private String readCache(String cacheKey) {
+        try {
+            return redisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("News 캐시 조회 실패. API 조회로 대체. key={}", cacheKey, e);
+            return null;
+        }
     }
 
     private List<NaverNewsItem> fetchAndClean(String keyword) {
@@ -95,9 +110,14 @@ public class NewsService {
     private String formatPubDate(String pubDate) {
         if (pubDate == null) return null;
 
-        ZonedDateTime dateTime = ZonedDateTime.parse(pubDate,
-                DateTimeFormatter.RFC_1123_DATE_TIME);
+        try {
+            ZonedDateTime dateTime = ZonedDateTime.parse(pubDate,
+                    DateTimeFormatter.RFC_1123_DATE_TIME);
 
-        return dateTime.format(DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm"));
+            return dateTime.format(DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm"));
+        } catch (DateTimeParseException e) {
+            log.warn("뉴스 발행일 형식 변환 실패. pubDate={}", pubDate);
+            return pubDate;
+        }
     }
 }

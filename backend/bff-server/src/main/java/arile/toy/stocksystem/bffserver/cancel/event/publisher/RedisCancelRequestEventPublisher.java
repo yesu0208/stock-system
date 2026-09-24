@@ -22,10 +22,12 @@ public class RedisCancelRequestEventPublisher implements CancelRequestEventPubli
     public void publishCancel(CancelRequestEvent event) {
         String streamKey = shardResolver.resolveStreamKey(event.stockCode());
 
+        // username: stock-server에서 주문 소유자 검증에 사용
         Map<String, Object> payload = Map.of(
                 "type", "CANCEL_CREATED",
                 "orderId", String.valueOf(event.orderId()),
-                "stockCode", event.stockCode()
+                "stockCode", event.stockCode(),
+                "username", event.username()
         );
 
         RecordId recordId = streamRedisTemplate.opsForStream().add(

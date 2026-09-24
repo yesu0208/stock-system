@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -51,11 +52,38 @@ public class AlertService {
         alertResponseEventPublisher.publishRegistered(responseMessage);
     }
 
+    /** 소유자 검증 없이 취소 상태로 변경. 사용자 요청에는 updateAlertStatusByUserCancel을 사용할 것. */
     @Transactional
     public UpdateAlertStatusResult updateAlertStatusByCancel(Long alertId) {
 
         AlertEntity alertEntity = alertRepository.findByIdForUpdate(alertId)
                 .orElseThrow(() -> new IllegalArgumentException("alert not found"));
+
+        return markCanceled(alertEntity);
+    }
+
+    /**
+     * 사용자 취소 요청용.
+     * 요청자가 알림 소유자이고 요청 종목코드가 알림 종목코드와 같을 때만 취소 상태로 변경.
+     * 불일치 시 상태를 변경하지 않고 empty를 반환. (타인 알림 취소, 다른 샤드로의 취소 라우팅 방지)
+     */
+    @Transactional
+    public Optional<UpdateAlertStatusResult> updateAlertStatusByUserCancel(
+            Long alertId, String username, String stockCode) {
+
+        AlertEntity alertEntity = alertRepository.findByIdForUpdate(alertId)
+                .orElseThrow(() -> new IllegalArgumentException("alert not found"));
+
+        if (username == null
+                || !username.equals(alertEntity.getUsername())
+                || !alertEntity.getStockCode().equals(stockCode)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(markCanceled(alertEntity));
+    }
+
+    private UpdateAlertStatusResult markCanceled(AlertEntity alertEntity) {
 
         AlertStatus prevStatus = alertEntity.getStatus();
 

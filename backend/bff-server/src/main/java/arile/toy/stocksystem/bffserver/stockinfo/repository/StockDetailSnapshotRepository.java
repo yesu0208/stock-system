@@ -30,13 +30,13 @@ public class StockDetailSnapshotRepository {
     }
 
     public StockDetailTickMessage getLatest(String stockCode) {
-        String cached = redisTemplate.opsForValue().get(key(stockCode));
-        if (cached == null) return null;
-
         try {
+            String cached = redisTemplate.opsForValue().get(key(stockCode));
+            if (cached == null) return null;
+
             return objectMapper.readValue(cached, StockDetailTickMessage.class);
         } catch (Exception e) {
-            log.warn("StockDetail 캐시 역직렬화 실패. stockCode={}", stockCode, e);
+            log.warn("StockDetail 캐시 조회 실패. stockCode={}", stockCode, e);
             return null;
         }
     }

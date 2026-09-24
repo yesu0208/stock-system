@@ -8,12 +8,14 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,13 +33,21 @@ public class NaverStockCrawlerClient {
     private final RestClient stockApiClient;
 
     public NaverStockCrawlerClient() {
+        // 타임아웃이 없으면 네이버가 응답하지 않을 때 호출 스레드가 무기한 대기함
+        // (스케줄러 스레드가 묶이면 다른 주기 작업까지 멈춤). 뉴스 클라이언트와 같은 기준 적용
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(3));
+        requestFactory.setReadTimeout(Duration.ofSeconds(5));
+
         this.restClient = RestClient.builder()
                 .baseUrl("https://finance.naver.com")
+                .requestFactory(requestFactory)
                 .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
                 .build();
 
         this.stockApiClient = RestClient.builder()
                 .baseUrl("https://stock.naver.com")
+                .requestFactory(requestFactory)
                 .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
                 .defaultHeader(HttpHeaders.ACCEPT, "application/json")
                 .build();
@@ -147,9 +157,9 @@ public class NaverStockCrawlerClient {
                             .build(code))
                     .retrieve()
                     .body(new ParameterizedTypeReference<List<NaverForeignTrendItem>>() {});
-        } catch (RestClientResponseException e) {
-            log.error("Naver 외국인/기관 매매동향 API 호출 실패. status={}, code={}, page={}",
-                    e.getStatusCode(), code, page);
+        } catch (RestClientException e) {
+            log.error("Naver 외국인/기관 매매동향 API 호출 실패. code={}, page={}, reason={}",
+                    code, page, e.getMessage());
             throw new IllegalStateException("네이버 외국인/기관 매매동향 크롤링 실패", e);
         }
 
@@ -282,8 +292,8 @@ public class NaverStockCrawlerClient {
                             .build())
                     .retrieve()
                     .body(new ParameterizedTypeReference<List<NaverPopularStockItem>>() {});
-        } catch (RestClientResponseException e) {
-            log.error("Naver 인기 종목 API 호출 실패. status={}", e.getStatusCode());
+        } catch (RestClientException e) {
+            log.error("Naver 인기 종목 API 호출 실패. reason={}", e.getMessage());
             throw new IllegalStateException("네이버 인기 종목 조회 실패", e);
         }
 
@@ -344,8 +354,8 @@ public class NaverStockCrawlerClient {
                     .uri("/api/securityFe/api/index/{code}/integration", code)
                     .retrieve()
                     .body(NaverIndexIntegrationResponse.class);
-        } catch (RestClientResponseException e) {
-            log.error("Naver 지수 API 호출 실패. status={}, code={}", e.getStatusCode(), code);
+        } catch (RestClientException e) {
+            log.error("Naver 지수 API 호출 실패. code={}, reason={}", code, e.getMessage());
             throw new IllegalStateException("네이버 지수 크롤링 실패", e);
         }
 
@@ -510,8 +520,8 @@ public class NaverStockCrawlerClient {
                             .build())
                     .retrieve()
                     .body(NaverIndustryRankingResponse.class);
-        } catch (RestClientResponseException e) {
-            log.error("Naver 업종 목록 API 호출 실패. status={}", e.getStatusCode());
+        } catch (RestClientException e) {
+            log.error("Naver 업종 목록 API 호출 실패. reason={}", e.getMessage());
             throw new IllegalStateException("네이버 업종 목록 크롤링 실패", e);
         }
 
@@ -635,8 +645,8 @@ public class NaverStockCrawlerClient {
                             .build(upjongNo))
                     .retrieve()
                     .body(new ParameterizedTypeReference<List<NaverUpjongStockItem>>() {});
-        } catch (RestClientResponseException e) {
-            log.error("Naver 업종별 종목 API 호출 실패. status={}, no={}", e.getStatusCode(), upjongNo);
+        } catch (RestClientException e) {
+            log.error("Naver 업종별 종목 API 호출 실패. no={}, reason={}", upjongNo, e.getMessage());
             throw new IllegalStateException("네이버 업종별 종목 크롤링 실패", e);
         }
 
@@ -778,7 +788,7 @@ public class NaverStockCrawlerClient {
                     .retrieve()
                     .body(NaverSosokResponse.class);
             return res != null ? res.sosok() : "";
-        } catch (RestClientResponseException e) {
+        } catch (RestClientException e) {
             log.warn("sosok 조회 실패. code={}", code);
             return "";
         }
@@ -790,8 +800,8 @@ public class NaverStockCrawlerClient {
                     .uri("/api/domestic/detail/{code}/detail?codeType=KRX", code)
                     .retrieve()
                     .body(NaverStockDetailResponse.class);
-        } catch (RestClientResponseException e) {
-            log.error("detail API 호출 실패. status={}, code={}", e.getStatusCode(), code);
+        } catch (RestClientException e) {
+            log.error("detail API 호출 실패. code={}, reason={}", code, e.getMessage());
             throw new IllegalStateException("네이버 종목 상세 API 실패", e);
         }
     }
@@ -802,7 +812,7 @@ public class NaverStockCrawlerClient {
                     .uri("/api/domestic/detail/{code}/traderInfo", code)
                     .retrieve()
                     .body(NaverTraderInfoResponse.class);
-        } catch (RestClientResponseException e) {
+        } catch (RestClientException e) {
             log.warn("traderInfo 조회 실패. code={}", code);
             return null;
         }
@@ -935,7 +945,7 @@ public class NaverStockCrawlerClient {
                     .uri("/api/domestic/detail/{code}/consensus", code)
                     .retrieve()
                     .body(NaverConsensusResponse.class);
-        } catch (RestClientResponseException e) {
+        } catch (RestClientException e) {
             log.warn("consensus 조회 실패. code={}", code);
             return null;
         }
@@ -949,8 +959,8 @@ public class NaverStockCrawlerClient {
                     .uri("/api/securityService/marketindex/majors/rpc")
                     .retrieve()
                     .body(new ParameterizedTypeReference<List<NaverMarketIndexItem>>() {});
-        } catch (RestClientResponseException e) {
-            log.error("Naver 환율 API 호출 실패. status={}", e.getStatusCode());
+        } catch (RestClientException e) {
+            log.error("Naver 환율 API 호출 실패. reason={}", e.getMessage());
             throw new IllegalStateException("네이버 환율 크롤링 실패", e);
         }
 
@@ -1030,9 +1040,9 @@ public class NaverStockCrawlerClient {
                             .build(type.getPath()))
                     .retrieve()
                     .body(NaverInvestorTrendApiResponse.class);
-        } catch (RestClientResponseException e) {
-            log.error("Naver 투자자별 매매동향 API 호출 실패. status={}, market={}, type={}, page={}",
-                    e.getStatusCode(), market, type, page);
+        } catch (RestClientException e) {
+            log.error("Naver 투자자별 매매동향 API 호출 실패. market={}, type={}, page={}, reason={}",
+                    market, type, page, e.getMessage());
             throw new IllegalStateException("네이버 투자자별 매매동향 크롤링 실패", e);
         }
 
@@ -1132,9 +1142,9 @@ public class NaverStockCrawlerClient {
                             .build())
                     .retrieve()
                     .body(NaverForeignOrgTrendResponse.class);
-        } catch (RestClientResponseException e) {
-            log.error("Naver 수급 순위 API 호출 실패. status={}, market={}, investorType={}, dealType={}, periodType={}",
-                    e.getStatusCode(), market, investorType, dealType, periodType);
+        } catch (RestClientException e) {
+            log.error("Naver 수급 순위 API 호출 실패. market={}, investorType={}, dealType={}, periodType={}, reason={}",
+                    market, investorType, dealType, periodType, e.getMessage());
             throw new IllegalStateException("네이버 수급 순위 크롤링 실패", e);
         }
 

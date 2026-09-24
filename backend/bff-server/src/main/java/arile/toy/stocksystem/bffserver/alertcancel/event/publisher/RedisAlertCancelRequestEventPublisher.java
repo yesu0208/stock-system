@@ -22,10 +22,12 @@ public class RedisAlertCancelRequestEventPublisher implements AlertCancelRequest
     public void publishAlertCancel(AlertCancelRequestEvent event) {
         String streamKey = shardResolver.resolveStreamKey(event.stockCode());
 
+        // username: stock-server에서 알림 소유자 검증에 사용
         Map<String, Object> payload = Map.of(
                 "type", "ALERT_CANCEL_CREATED",
                 "alertId", String.valueOf(event.alertId()),
-                "stockCode", event.stockCode()
+                "stockCode", event.stockCode(),
+                "username", event.username()
         );
 
         RecordId recordId = streamRedisTemplate.opsForStream().add(

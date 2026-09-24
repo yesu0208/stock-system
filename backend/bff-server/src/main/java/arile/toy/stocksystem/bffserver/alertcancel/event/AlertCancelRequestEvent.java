@@ -4,9 +4,10 @@ import arile.toy.stocksystem.bffserver.alertcancel.dto.AlertCancelRequest;
 
 public record AlertCancelRequestEvent(
         Long alertId,
-        String stockCode
+        String stockCode,
+        String username
 ) {
-    public static AlertCancelRequestEvent fromRequest(AlertCancelRequest alertCancelRequest) {
-        return new AlertCancelRequestEvent(alertCancelRequest.alertId(), alertCancelRequest.stockCode());
+    public static AlertCancelRequestEvent fromRequest(String username, AlertCancelRequest alertCancelRequest) {
+        return new AlertCancelRequestEvent(alertCancelRequest.alertId(), alertCancelRequest.stockCode(), username);
     }
 }

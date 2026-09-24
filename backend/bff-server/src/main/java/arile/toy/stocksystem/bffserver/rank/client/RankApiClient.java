@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.rank.client;
 
+import arile.toy.stocksystem.bffserver.history.client.HistoryUriBuilder;
 import arile.toy.stocksystem.bffserver.rank.dto.RankHistoryResponse;
 import arile.toy.stocksystem.bffserver.rank.dto.RankResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class RankApiClient {
     public RankResponse getRank(String username) {
         try {
             return restClient.get()
-                    .uri(baseUrl + "/internal/ranks/" + username)
+                    .uri(baseUrl + "/internal/ranks/{username}", username)
                     .retrieve()
                     .body(RankResponse.class);
         } catch (RestClientException e) {
@@ -31,10 +32,11 @@ public class RankApiClient {
         }
     }
 
+    /** 조회 개수는 1~100으로 제한 (HistoryUriBuilder, 다른 이력 조회와 동일한 기준) */
     public RankHistoryResponse getRankHistory(String username, int page, int size) {
         try {
             return restClient.get()
-                    .uri(baseUrl + "/internal/ranks/" + username + "/history?page=" + page + "&size=" + size)
+                    .uri(HistoryUriBuilder.build(baseUrl, "/internal/ranks/" + username + "/history", page, size))
                     .retrieve()
                     .body(RankHistoryResponse.class);
         } catch (RestClientException e) {

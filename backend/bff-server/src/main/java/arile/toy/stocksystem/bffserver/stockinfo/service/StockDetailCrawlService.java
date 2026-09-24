@@ -22,13 +22,17 @@ public class StockDetailCrawlService {
     private final StockDetailRedisPublisher publisher;
     private final StringRedisTemplate redisTemplate;
 
+    /**
+     * 종목 상세를 크롤링해 발행.
+     * 스레드 풀(submit)에서 실행되면 밖으로 나간 예외는 로그 없이 사라지므로,
+     * 락 획득(Redis 장애 등)을 포함한 모든 실패를 여기서 잡아 기록.
+     */
     public void crawlAndPublish(String stockCode) {
-
-        if (!tryAcquireLock(stockCode)) {
-            return; // 다른 인스턴스가 이미 처리 중이거나 방금 처리함
-        }
-
         try {
+            if (!tryAcquireLock(stockCode)) {
+                return; // 다른 인스턴스가 이미 처리 중이거나 방금 처리함
+            }
+
             StockDetailTickMessage message = naverStockCrawlerClient.getStockDetailSummary(stockCode);
             publisher.publish(message);
         } catch (Exception e) {

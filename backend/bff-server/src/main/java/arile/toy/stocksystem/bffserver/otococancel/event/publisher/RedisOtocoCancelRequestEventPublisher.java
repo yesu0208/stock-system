@@ -22,10 +22,12 @@ public class RedisOtocoCancelRequestEventPublisher implements OtocoCancelRequest
     public void publishOtocoCancel(OtocoCancelRequestEvent event) {
         String streamKey = shardResolver.resolveStreamKey(event.stockCode());
 
+        // username: stock-server에서 OTOCO 소유자 검증에 사용
         Map<String, Object> payload = Map.of(
                 "type", "OTOCO_CANCEL_CREATED",
                 "otocoId", String.valueOf(event.otocoId()),
-                "stockCode", event.stockCode()
+                "stockCode", event.stockCode(),
+                "username", event.username()
         );
 
         RecordId recordId = streamRedisTemplate.opsForStream().add(

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -127,11 +128,38 @@ public class OrderService {
         return reserveAmountCalculator.calculateReserveAmount(leverageRatio, orderAmount);
     }
 
+    /** 시스템 강제 취소(장 마감 정리, OTOCO 연동 등)용. 소유자 검증 없이 취소 상태로 변경. */
     @Transactional
     public UpdateOrderStatusResult updateOrderStatusByCancelEvent(Long orderId) {
 
         OrderEntity orderEntity = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("order not found"));
+
+        return markCanceled(orderEntity);
+    }
+
+    /**
+     * 사용자 취소 요청용.
+     * 요청자가 주문 소유자이고 요청 종목코드가 주문 종목코드와 같을 때만 취소 상태로 변경한.
+     * 불일치 시 상태를 변경하지 않고 empty를 반환 (타인 주문 취소, 다른 샤드로의 취소 라우팅 방지)
+     */
+    @Transactional
+    public Optional<UpdateOrderStatusResult> updateOrderStatusByUserCancel(
+            Long orderId, String username, String stockCode) {
+
+        OrderEntity orderEntity = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("order not found"));
+
+        if (username == null
+                || !username.equals(orderEntity.getUsername())
+                || !orderEntity.getStockCode().equals(stockCode)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(markCanceled(orderEntity));
+    }
+
+    private UpdateOrderStatusResult markCanceled(OrderEntity orderEntity) {
 
         OrderStatus prevStatus = orderEntity.getOrderStatus();
 

@@ -29,13 +29,7 @@ public class StockTalkService {
         StockTalkRoom room = roomRegistry.getOrCreate(ticker);
         boolean isNew = room.join(username);
 
-        StockTalkJoinResponse response = StockTalkJoinResponse.of(
-                ticker,
-                room.participantCount(),
-                room.getRecentMessages(HISTORY_SEND_COUNT)
-        );
-
-        sendToSession(username, sessionId, response);
+        sendHistory(ticker, username, sessionId);
 
         if (isNew) {
             UserProfile profile = userProfileService.getProfile(username);
@@ -45,6 +39,19 @@ public class StockTalkService {
             broadcast(ticker, enterMsg);
             log.info("[StockTalk] {} joined {}, participants={}", username, ticker, room.participantCount());
         }
+    }
+
+    /** 입장한 세션에게 현재 참여자 수와 최근 메시지를 보냄 (같은 세션의 재입장 요청 시에도 사용) */
+    public void sendHistory(String ticker, String username, String sessionId) {
+        StockTalkRoom room = roomRegistry.getOrCreate(ticker);
+
+        StockTalkJoinResponse response = StockTalkJoinResponse.of(
+                ticker,
+                room.participantCount(),
+                room.getRecentMessages(HISTORY_SEND_COUNT)
+        );
+
+        sendToSession(username, sessionId, response);
     }
 
     public void leave(String ticker, String username) {

@@ -13,9 +13,9 @@ public class TrailingStopCancelIngressService {
 
     private final TrailingStopCancelRequestEventPublisher publisher;
 
-    public TrailingStopCancelResponse receive(TrailingStopCancelRequest request) {
+    public TrailingStopCancelResponse receive(String username, TrailingStopCancelRequest request) {
 
-        publisher.publishTrailingStopCancel(TrailingStopCancelRequestEvent.fromRequest(request));
+        publisher.publishTrailingStopCancel(TrailingStopCancelRequestEvent.fromRequest(username, request));
 
         return new TrailingStopCancelResponse(request.trailingStopId(), request.stockCode());
     }
