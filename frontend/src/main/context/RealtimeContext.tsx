@@ -103,8 +103,18 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     )
 
     const subscribeStock = useCallback(
-        (code: string, onTick: (tick: StockTickMessage) => void) =>
-            subscribeDestination(`/sub/stock/${code}`, onTick),
+        (code: string, onTick: (tick: StockTickMessage) => void) => {
+            // 실시간 틱은 공용 종목 채널로, 초기 스냅샷(호가·체결가·상세·일봉·분봉)은
+            // 구독한 세션 전용 채널로 받음. 스냅샷을 종목 구독자 전원에게 다시 보내지 않기 위함.
+            // 실시간 채널을 먼저 구독해, 스냅샷 이후의 틱을 놓치지 않게 함.
+            const unsubscribeLive = subscribeDestination(`/sub/stock/${code}`, onTick)
+            const unsubscribeSnapshot = subscribeDestination(`/user/sub/stock/${code}/snapshot`, onTick)
+
+            return () => {
+                unsubscribeLive()
+                unsubscribeSnapshot()
+            }
+        },
         [subscribeDestination]
     )
 
