@@ -2,6 +2,7 @@ package arile.toy.stocksystem.bffserver.discussion.service;
 
 import arile.toy.stocksystem.bffserver.discussion.dto.CommentCreateRequest;
 import arile.toy.stocksystem.bffserver.discussion.dto.CommentEditRequest;
+import arile.toy.stocksystem.bffserver.discussion.dto.CommentResponse;
 import arile.toy.stocksystem.bffserver.discussion.dto.CursorPage;
 import arile.toy.stocksystem.bffserver.discussion.dto.PostCreateRequest;
 import arile.toy.stocksystem.bffserver.discussion.dto.PostDetail;
@@ -381,6 +382,25 @@ class DiscussionServiceTest {
         }
 
         @Test
+        @DisplayName("댓글 반응: 처음 반응하면 댓글 대상으로 저장하고, 댓글의 좋아요·싫어요 수를 반환한다")
+        void commentReaction_new() {
+            givenComment(10L, 1L, AUTHOR);
+            given(reactionRepository.findByTargetTypeAndTargetIdAndUserId(TargetType.COMMENT, 10L, OTHER))
+                    .willReturn(Optional.empty());
+            given(reactionRepository.countByTargetTypeAndTargetIdAndReactionType(TargetType.COMMENT, 10L, ReactionType.LIKE))
+                    .willReturn(1L);
+            given(reactionRepository.countByTargetTypeAndTargetIdAndReactionType(TargetType.COMMENT, 10L, ReactionType.DISLIKE))
+                    .willReturn(0L);
+
+            ReactionResponse response = service.reactToComment(OTHER, 1L, 10L, new ReactionRequest(ReactionType.LIKE));
+
+            verify(reactionRepository).save(argThat(r ->
+                    r.getTargetType() == TargetType.COMMENT && r.getTargetId().equals(10L)
+                            && r.getReactionType() == ReactionType.LIKE));
+            assertThat(response).isEqualTo(new ReactionResponse(1, 0));
+        }
+
+        @Test
         @DisplayName("스크랩: 없으면 추가하고, 있으면 해제하며 현재 스크랩 수를 반환한다")
         void toggleScrap() {
             givenPost(1L, AUTHOR);
@@ -454,6 +474,102 @@ class DiscussionServiceTest {
             given(postRepository.findByCommentAuthor(eq(AUTHOR), eq(null), any())).willReturn(posts(1));
 
             assertThat(service.getPostsICommentedOn(AUTHOR, null).items()).hasSize(1);
+        }
+    }
+
+    // ===================== 묶음 조회 결과 반영 =====================
+
+    @Nested
+    @DisplayName("묶음 조회 결과 반영")
+    class BatchCounts {
+
+        private DiscussionReactionRepository.ReactionCountRow reactionRow(Long targetId, ReactionType type, long cnt) {
+            DiscussionReactionRepository.ReactionCountRow row = mock(DiscussionReactionRepository.ReactionCountRow.class);
+            given(row.getTargetId()).willReturn(targetId);
+            given(row.getReactionType()).willReturn(type);
+            given(row.getCnt()).willReturn(cnt);
+            return row;
+        }
+
+        private DiscussionScrapRepository.ScrapCountRow scrapRow(Long postId, long cnt) {
+            DiscussionScrapRepository.ScrapCountRow row = mock(DiscussionScrapRepository.ScrapCountRow.class);
+            given(row.getPostId()).willReturn(postId);
+            given(row.getCnt()).willReturn(cnt);
+            return row;
+        }
+
+        private DiscussionCommentRepository.CommentCountRow commentRow(Long postId, long cnt) {
+            DiscussionCommentRepository.CommentCountRow row = mock(DiscussionCommentRepository.CommentCountRow.class);
+            given(row.getPostId()).willReturn(postId);
+            given(row.getCnt()).willReturn(cnt);
+            return row;
+        }
+
+        @Test
+        @DisplayName("목록: 게시글마다 좋아요·싫어요·댓글·스크랩 수와 내 반응·스크랩 여부를 제자리에 담는다")
+        void cursorPage_countsPerPost() {
+            List<Long> postIds = List.of(20L, 10L);
+
+            // 행 목은 given(...) 밖에서 먼저 만든다 (given 괄호 안에서 다른 목을 설정하면 UnfinishedStubbingException)
+            List<DiscussionReactionRepository.ReactionCountRow> reactionRows = List.of(
+                    reactionRow(20L, ReactionType.LIKE, 5),
+                    reactionRow(20L, ReactionType.DISLIKE, 2),
+                    reactionRow(10L, ReactionType.DISLIKE, 1));
+            List<DiscussionScrapRepository.ScrapCountRow> scrapRows = List.of(scrapRow(20L, 3));
+            List<DiscussionCommentRepository.CommentCountRow> commentRows = List.of(commentRow(10L, 7));
+
+            given(postRepository.findByStockCode(eq("005930"), eq(null), any()))
+                    .willReturn(List.of(post(20L, AUTHOR), post(10L, OTHER)));
+            given(reactionRepository.countGroupByTargetIds(TargetType.POST, postIds)).willReturn(reactionRows);
+            given(scrapRepository.countGroupByPostIds(postIds)).willReturn(scrapRows);
+            given(commentRepository.countGroupByPostIds(postIds)).willReturn(commentRows);
+            given(reactionRepository.findByTargetTypeAndTargetIdInAndUserId(TargetType.POST, postIds, AUTHOR))
+                    .willReturn(List.of(DiscussionReactionEntity.of(TargetType.POST, 20L, AUTHOR, ReactionType.LIKE)));
+            given(scrapRepository.findByPostIdInAndUserId(postIds, AUTHOR))
+                    .willReturn(List.of(DiscussionScrapEntity.of(10L, AUTHOR)));
+
+            List<PostSummary> items = service.getPostsByStock("005930", null, AUTHOR).items();
+
+            PostSummary first = items.get(0);
+            assertThat(first.likes()).isEqualTo(5);
+            assertThat(first.dislikes()).isEqualTo(2);
+            assertThat(first.scraps()).isEqualTo(3);
+            assertThat(first.commentCount()).isZero();
+            assertThat(first.myReaction()).isEqualTo(ReactionType.LIKE);
+            assertThat(first.myScrapped()).isFalse();
+
+            PostSummary second = items.get(1);
+            assertThat(second.likes()).isZero();
+            assertThat(second.dislikes()).isEqualTo(1);
+            assertThat(second.scraps()).isZero();
+            assertThat(second.commentCount()).isEqualTo(7);
+            assertThat(second.myReaction()).isNull();
+            assertThat(second.myScrapped()).isTrue();
+        }
+
+        @Test
+        @DisplayName("상세: 댓글마다 좋아요·싫어요 수와 내 반응을 제자리에 담는다")
+        void detail_commentCounts() {
+            List<Long> commentIds = List.of(10L, 11L);
+            List<DiscussionReactionRepository.ReactionCountRow> reactionRows = List.of(
+                    reactionRow(10L, ReactionType.LIKE, 4),
+                    reactionRow(11L, ReactionType.DISLIKE, 2));
+
+            givenPost(1L, AUTHOR);
+            given(commentRepository.findByPostIdOrderByCommentIdAsc(1L))
+                    .willReturn(List.of(comment(10L, 1L, AUTHOR), comment(11L, 1L, OTHER)));
+            given(reactionRepository.countGroupByTargetIds(TargetType.COMMENT, commentIds)).willReturn(reactionRows);
+            given(reactionRepository.findByTargetTypeAndTargetIdInAndUserId(TargetType.COMMENT, commentIds, AUTHOR))
+                    .willReturn(List.of(DiscussionReactionEntity.of(TargetType.COMMENT, 11L, AUTHOR, ReactionType.DISLIKE)));
+
+            List<CommentResponse> comments = service.getPost(1L, AUTHOR).comments();
+
+            assertThat(comments.get(0).likes()).isEqualTo(4);
+            assertThat(comments.get(0).dislikes()).isZero();
+            assertThat(comments.get(0).myReaction()).isNull();
+            assertThat(comments.get(1).likes()).isZero();
+            assertThat(comments.get(1).dislikes()).isEqualTo(2);
+            assertThat(comments.get(1).myReaction()).isEqualTo(ReactionType.DISLIKE);
         }
     }
 }
