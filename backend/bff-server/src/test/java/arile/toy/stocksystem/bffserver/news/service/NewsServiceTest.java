@@ -151,4 +151,16 @@ class NewsServiceTest {
         assertThat(service.searchNews("삼성전자")).isEmpty();
         assertThat(service.searchNews("카카오")).isEmpty();
     }
+
+    @Test
+    @DisplayName("제목·설명이 없는 기사는 null 그대로 두고, 나머지 필드는 정상 처리한다")
+    void nullTitleAndDescription() {
+        given(naverNewsClient.search("삼성전자")).willReturn(response(
+                new NaverNewsItem(null, "https://origin", "https://naver", null, "Thu, 24 Sep 2026 09:05:00 +0900")));
+
+        List<NaverNewsItem> items = service.searchNews("삼성전자");
+
+        assertThat(items).containsExactly(new NaverNewsItem(
+                null, "https://origin", "https://naver", null, "2026.09.24 09:05"));
+    }
 }
