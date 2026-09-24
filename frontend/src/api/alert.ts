@@ -13,7 +13,6 @@ export interface AlertRequest {
 }
 
 export interface AlertResponse extends AlertRequest {
-    alertId: number
     username: string
 }
 
