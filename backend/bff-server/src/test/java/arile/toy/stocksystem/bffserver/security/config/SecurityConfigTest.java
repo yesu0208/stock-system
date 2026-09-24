@@ -67,7 +67,6 @@ class SecurityConfigTest {
             "POST, /api/v1/auth/refresh",
             "GET, /api/v1/users/check-username",
             "GET, /api/v1/users/check-nickname",
-            "GET, /api/v1/news",
             "GET, /api/v1/stocks/005930",
             "GET, /api/v1/market/phase",
             "GET, /actuator/health"
@@ -97,6 +96,16 @@ class SecurityConfigTest {
         void withoutToken_401() throws Exception {
             mockMvc.perform(get("/api/v1/orders"))
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("뉴스는 로그인 사용자 전용이라 토큰 없이 요청하면 401, 로그인하면 접근할 수 있다")
+        void news_requiresLogin() throws Exception {
+            mockMvc.perform(get("/api/v1/news"))
+                    .andExpect(status().isUnauthorized());
+
+            mockMvc.perform(get("/api/v1/news").with(user("user1")))
+                    .andExpect(status().isOk());
         }
 
         @Test

@@ -71,7 +71,6 @@ class JwtAuthenticationFilterTest {
             "/api/v1/users/check-nickname",
             "/api/v1/auth/refresh",
             "/actuator/health",
-            "/api/v1/news",
             "/api/v1/stocks/005930",
             "/uploads/profile/a.png",
             "/api/v1/chart/005930"
@@ -83,6 +82,17 @@ class JwtAuthenticationFilterTest {
         assertThat(chain.getRequest()).isNotNull();
         assertThat(currentAuthentication()).isNull();
         verifyNoInteractions(jwtService, userService);
+    }
+
+    @Test
+    @DisplayName("뉴스 경로는 토큰을 검사해 인증 정보를 설정한다 (로그인 사용자 전용)")
+    void news_validatesToken() throws Exception {
+        given(jwtService.getUsernameFromAccessToken("valid-token")).willReturn("user1");
+        given(userService.loadUserByUsername("user1")).willReturn(user);
+
+        run("/api/v1/news", "Bearer valid-token");
+
+        assertThat(currentAuthentication().getPrincipal()).isEqualTo(user);
     }
 
     @Test
