@@ -3,6 +3,7 @@ package arile.toy.stocksystem.bffserver.common;
 import arile.toy.stocksystem.bffserver.alert.dto.AlertDirection;
 import arile.toy.stocksystem.bffserver.alert.dto.AlertResponseMessage;
 import arile.toy.stocksystem.bffserver.dailyreturn.dto.DailyReturnHistoryItem;
+import arile.toy.stocksystem.bffserver.external.stock.event.PriceLevel;
 import arile.toy.stocksystem.bffserver.external.stock.message.BffServerBidAskPriceTickMessage;
 import arile.toy.stocksystem.bffserver.external.stock.message.TickMessageType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,12 +31,22 @@ class ResponseRecordsSerializationTest {
     }
 
     @Test
-    @DisplayName("호가: 메시지 유형·종목이 JSON에 담긴다")
+    @DisplayName("호가: 매도·매수 호가(가격·잔량)를 읽고, 같은 모양으로 다시 JSON에 담는다")
     void bidAskPriceTickMessage() throws Exception {
-        String json = OBJECT_MAPPER.writeValueAsString(new BffServerBidAskPriceTickMessage(
-                TickMessageType.values()[0], "005930", List.of(), List.of(), 1_000, 2_000));
+        String json = """
+                {"tickMessageType": "%s", "stockCode": "005930",
+                 "asks": [{"price": 71100, "quantity": 300}, {"price": 71200, "quantity": 500}],
+                 "bids": [{"price": 71000, "quantity": 400}],
+                 "totalAskNum": 800, "totalBidNum": 400}
+                """.formatted(TickMessageType.values()[0].name());
 
-        assertThat(json).contains("\"005930\"", "1000", "2000");
+        BffServerBidAskPriceTickMessage message = OBJECT_MAPPER.readValue(json, BffServerBidAskPriceTickMessage.class);
+
+        assertThat(message.asks()).containsExactly(new PriceLevel(71_100, 300), new PriceLevel(71_200, 500));
+        assertThat(message.bids()).containsExactly(new PriceLevel(71_000, 400));
+        assertThat(message.totalAskNum()).isEqualTo(800);
+        assertThat(OBJECT_MAPPER.writeValueAsString(message))
+                .contains("\"price\":71100", "\"quantity\":300", "\"totalBidNum\":400");
     }
 
     @Test
