@@ -55,8 +55,6 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/users/check-nickname")
                                 .permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/*/news")
-                                .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/stocks/**")
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/market/phase") // [신규]
