@@ -863,17 +863,15 @@ public class NaverStockCrawlerClient {
                 .limit(5).toList();
 
         List<BrokerTradeInfo> result = new ArrayList<>();
-        int size = Math.max(sellTop.size(), buyTop.size());
-
-        for (int i = 0; i < size; i++) {
-            NaverTraderItem s = i < sellTop.size() ? sellTop.get(i) : null;
-            NaverTraderItem b = i < buyTop.size() ? buyTop.get(i) : null;
+        for (int i = 0; i < sellTop.size(); i++) {
+            NaverTraderItem s = sellTop.get(i);
+            NaverTraderItem b = buyTop.get(i);
 
             result.add(new BrokerTradeInfo(
-                    s != null ? s.display_name() : "",
-                    s != null ? formatComma(s.sellQuant()) : "",
-                    b != null ? b.display_name() : "",
-                    b != null ? formatComma(b.buyQuant()) : ""
+                    s.display_name(),
+                    formatComma(s.sellQuant()),
+                    b.display_name(),
+                    formatComma(b.buyQuant())
             ));
         }
         return result;
