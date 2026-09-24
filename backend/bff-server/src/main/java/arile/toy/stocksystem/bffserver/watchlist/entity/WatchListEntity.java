@@ -9,7 +9,6 @@ import java.time.Instant;
 
 @Getter
 @Setter
-@EqualsAndHashCode
 @Entity
 @Table(name = "watch_lists",
         uniqueConstraints = @UniqueConstraint(columnNames = {"username", "stockCode"}))
