@@ -90,4 +90,16 @@ class StockInfoRedisPublishersTest {
 
         verify(redisTemplate, never()).convertAndSend(anyString(), anyString());
     }
+
+    @Test
+    @DisplayName("환율: JSON 변환에 실패해도 예외를 던지지 않고 발행하지 않는다")
+    void globalMarket_serializationFails() throws Exception {
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        given(objectMapper.writeValueAsString(any())).willThrow(new JsonProcessingException("boom") {});
+
+        assertThatCode(() -> new GlobalMarketRedisPublisher(redisTemplate, objectMapper)
+                .publish(new GlobalMarketResponse(List.of()))).doesNotThrowAnyException();
+
+        verify(redisTemplate, never()).convertAndSend(anyString(), anyString());
+    }
 }
