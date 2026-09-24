@@ -30,13 +30,13 @@ public class MarketMainSnapshotRepository {
     }
 
     public MarketMainResponse getLatest() {
-        String cached = redisTemplate.opsForValue().get(SNAPSHOT_KEY);
-        if (cached == null) return null;
-
         try {
+            String cached = redisTemplate.opsForValue().get(SNAPSHOT_KEY);
+            if (cached == null) return null;
+
             return objectMapper.readValue(cached, MarketMainResponse.class);
         } catch (Exception e) {
-            log.warn("MarketMainSnapshot 캐시 역직렬화 실패", e);
+            log.warn("MarketMainSnapshot 캐시 조회 실패", e);
             return null;
         }
     }
