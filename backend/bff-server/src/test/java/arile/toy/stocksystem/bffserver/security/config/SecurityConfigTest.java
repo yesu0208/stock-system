@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -43,7 +44,7 @@ class SecurityConfigTest {
         String publicPost() { return "ok"; }
 
         @GetMapping({"/api/v1/users/check-username", "/api/v1/users/check-nickname", "/api/v1/news",
-                "/api/v1/stocks/005930", "/api/v1/market/phase",
+                "/api/v1/stocks/005930", "/api/v1/stocks/market/popular", "/api/v1/market/phase",
                 "/actuator/health", "/api/v1/users/all", "/api/v1/admin/holidays", "/api/v1/orders"})
         String get() { return "ok"; }
 
@@ -67,7 +68,6 @@ class SecurityConfigTest {
             "POST, /api/v1/auth/refresh",
             "GET, /api/v1/users/check-username",
             "GET, /api/v1/users/check-nickname",
-            "GET, /api/v1/stocks/005930",
             "GET, /api/v1/market/phase",
             "GET, /actuator/health"
     })
@@ -91,13 +91,14 @@ class SecurityConfigTest {
                     .andExpect(status().isUnauthorized());
         }
 
-        @Test
-        @DisplayName("뉴스는 로그인 사용자 전용이라 토큰 없이 요청하면 401, 로그인하면 접근할 수 있다")
-        void news_requiresLogin() throws Exception {
-            mockMvc.perform(get("/api/v1/news"))
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"/api/v1/news", "/api/v1/stocks/005930", "/api/v1/stocks/market/popular"})
+        @DisplayName("뉴스·시세 정보는 로그인 사용자 전용이라 토큰 없이 요청하면 401, 로그인하면 접근할 수 있다")
+        void externalDataApis_requireLogin(String path) throws Exception {
+            mockMvc.perform(get(path))
                     .andExpect(status().isUnauthorized());
 
-            mockMvc.perform(get("/api/v1/news").with(user("user1")))
+            mockMvc.perform(get(path).with(user("user1")))
                     .andExpect(status().isOk());
         }
 

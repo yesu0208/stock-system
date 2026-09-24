@@ -71,7 +71,6 @@ class JwtAuthenticationFilterTest {
             "/api/v1/users/check-nickname",
             "/api/v1/auth/refresh",
             "/actuator/health",
-            "/api/v1/stocks/005930",
             "/uploads/profile/a.png"
     })
     @DisplayName("공개 경로는 토큰이 있어도 검사하지 않고 통과시킨다")
@@ -83,13 +82,14 @@ class JwtAuthenticationFilterTest {
         verifyNoInteractions(jwtService, userService);
     }
 
-    @Test
-    @DisplayName("뉴스 경로는 토큰을 검사해 인증 정보를 설정한다 (로그인 사용자 전용)")
-    void news_validatesToken() throws Exception {
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"/api/v1/news", "/api/v1/stocks/005930", "/api/v1/stocks/market/popular"})
+    @DisplayName("뉴스·시세 정보 경로는 토큰을 검사해 인증 정보를 설정한다 (로그인 사용자 전용)")
+    void externalDataApis_validateToken(String path) throws Exception {
         given(jwtService.getUsernameFromAccessToken("valid-token")).willReturn("user1");
         given(userService.loadUserByUsername("user1")).willReturn(user);
 
-        run("/api/v1/news", "Bearer valid-token");
+        run(path, "Bearer valid-token");
 
         assertThat(currentAuthentication().getPrincipal()).isEqualTo(user);
     }
