@@ -40,9 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/auth/refresh")
                 || path.equals("/actuator/health")
                 || path.startsWith("/api/v1/stocks/")
-                || path.startsWith("/uploads/")
-                // TODO: [임시 오픈] Postman 테스트용. 테스트 끝나면 반드시 제거
-                || path.startsWith("/api/v1/chart/");
+                || path.startsWith("/uploads/");
     }
 
     @Override

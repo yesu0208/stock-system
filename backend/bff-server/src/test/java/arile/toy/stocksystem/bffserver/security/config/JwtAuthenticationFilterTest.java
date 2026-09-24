@@ -72,8 +72,7 @@ class JwtAuthenticationFilterTest {
             "/api/v1/auth/refresh",
             "/actuator/health",
             "/api/v1/stocks/005930",
-            "/uploads/profile/a.png",
-            "/api/v1/chart/005930"
+            "/uploads/profile/a.png"
     })
     @DisplayName("공개 경로는 토큰이 있어도 검사하지 않고 통과시킨다")
     void publicPaths_skipFilter(String path) throws Exception {

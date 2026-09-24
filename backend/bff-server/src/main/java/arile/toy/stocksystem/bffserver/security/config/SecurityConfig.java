@@ -59,9 +59,6 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/market/phase") // [신규]
                                 .permitAll()
-                                // TODO: [임시 오픈] Postman 테스트용. 테스트 끝나면 반드시 제거하고 인증 정책 다시 정할 것
-                                .requestMatchers("/api/*/chart/**")
-                                .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/uploads/**")
                                 .permitAll()
                                 .requestMatchers("/index.html", "/ws-stock/**", "/ws-order/**")

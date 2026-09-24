@@ -43,7 +43,7 @@ class SecurityConfigTest {
         String publicPost() { return "ok"; }
 
         @GetMapping({"/api/v1/users/check-username", "/api/v1/users/check-nickname", "/api/v1/news",
-                "/api/v1/stocks/005930", "/api/v1/market/phase", "/api/v1/chart/005930",
+                "/api/v1/stocks/005930", "/api/v1/market/phase",
                 "/actuator/health", "/api/v1/users/all", "/api/v1/admin/holidays", "/api/v1/orders"})
         String get() { return "ok"; }
 
@@ -76,13 +76,6 @@ class SecurityConfigTest {
         mockMvc.perform(request(HttpMethod.valueOf(method), path))
                 .andExpect(status().isOk())
                 .andExpect(content().string("ok"));
-    }
-
-    @Test
-    @DisplayName("[임시 공개] 차트 API는 인증 없이 접근할 수 있다 (TODO: Postman 테스트 후 제거 예정)")
-    void chart_temporarilyPublic() throws Exception {
-        mockMvc.perform(get("/api/v1/chart/005930"))
-                .andExpect(status().isOk());
     }
 
     // ===================== 보호된 경로 =====================
