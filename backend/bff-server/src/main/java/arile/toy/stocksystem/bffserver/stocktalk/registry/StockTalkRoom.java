@@ -69,7 +69,8 @@ public class StockTalkRoom {
     public List<StockTalkMessage> getRecentMessages(int n) {
         int size = messages.size();
         int from = Math.max(0, size - n);
-        return Collections.unmodifiableList(messages.subList(from, size));
+        // subList는 원본의 뷰라 이후 메시지가 추가되면 직렬화 시 ConcurrentModificationException이 날 수 있으므로 복사본 반환
+        return List.copyOf(messages.subList(from, size));
     }
 
     public List<StockTalkMessage> getAllMessages() {

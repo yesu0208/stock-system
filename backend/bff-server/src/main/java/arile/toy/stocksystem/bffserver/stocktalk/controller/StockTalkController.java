@@ -43,8 +43,11 @@ public class StockTalkController {
         String username = requireUsername(principal, ticker, "join");
         if (username == null) return;
 
-        stockTalkService.join(ticker, username, sessionId);
-        sessionRegistry.registerJoin(sessionId, username, ticker);
+        if (sessionRegistry.registerJoin(sessionId, username, ticker)) {
+            stockTalkService.join(ticker, username, sessionId);
+        } else {
+            stockTalkService.sendHistory(ticker, username, sessionId);
+        }
     }
 
     @MessageMapping("/stock-talk/{ticker}/leave")
@@ -56,8 +59,9 @@ public class StockTalkController {
         String username = requireUsername(principal, ticker, "leave");
         if (username == null) return;
 
-        stockTalkService.leave(ticker, username);
-        sessionRegistry.registerLeave(sessionId, ticker);
+        if (sessionRegistry.registerLeave(sessionId, ticker)) {
+            stockTalkService.leave(ticker, username);
+        }
     }
 
     @MessageMapping("/stock-talk/{ticker}/send")

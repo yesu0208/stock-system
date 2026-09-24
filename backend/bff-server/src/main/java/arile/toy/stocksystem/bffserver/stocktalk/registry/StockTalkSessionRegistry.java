@@ -11,23 +11,26 @@ public class StockTalkSessionRegistry {
     private final ConcurrentHashMap<String, Set<String>> sessionTickers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> sessionUsername = new ConcurrentHashMap<>();
 
-    public void registerJoin(String sessionId, String username, String ticker) {
+    /** @return 이 세션이 해당 종목에 처음 입장했으면 true (이미 입장해 있으면 false) */
+    public boolean registerJoin(String sessionId, String username, String ticker) {
         sessionUsername.putIfAbsent(sessionId, username);
-        sessionTickers
+        return sessionTickers
                 .computeIfAbsent(sessionId, k -> ConcurrentHashMap.newKeySet())
                 .add(ticker.toUpperCase());
     }
 
-    public void registerLeave(String sessionId, String ticker) {
+    /** @return 이 세션이 해당 종목에 입장해 있었으면 true (입장한 적 없으면 false) */
+    public boolean registerLeave(String sessionId, String ticker) {
         Set<String> tickers = sessionTickers.get(sessionId);
-        if (tickers == null) return;
+        if (tickers == null) return false;
 
-        tickers.remove(ticker.toUpperCase());
+        boolean removed = tickers.remove(ticker.toUpperCase());
 
         if (tickers.isEmpty()) {
             sessionTickers.remove(sessionId);
             sessionUsername.remove(sessionId);
         }
+        return removed;
     }
 
     public SessionParticipation removeSession(String sessionId) {
