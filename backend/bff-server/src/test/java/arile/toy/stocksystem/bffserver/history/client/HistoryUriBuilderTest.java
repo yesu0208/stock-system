@@ -86,4 +86,13 @@ class HistoryUriBuilderTest {
         assertThat(queryParam(uri, "size")).isEqualTo("100");
         assertThat(queryParam(uri, "stockCode")).isNull();
     }
+
+    @Test
+    @DisplayName("기간·종목 없는 이력(랭크)도 같은 개수·페이지 제한을 적용한다")
+    void build_pagingOnly() {
+        URI uri = HistoryUriBuilder.build("http://account-server", "/internal/ranks/user1/history", -1, 1_000_000);
+
+        assertThat(uri.getPath()).isEqualTo("/internal/ranks/user1/history");
+        assertThat(uri.getQuery()).isEqualTo("page=0&size=100");
+    }
 }
