@@ -1,7 +1,9 @@
 package arile.toy.stocksystem.bffserver.sharding;
 
+import arile.toy.stocksystem.bffserver.exception.ClientErrorException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -27,7 +29,7 @@ public class StockGroupRegistry {
     public String resolveGroup(String stockCode) {
         String group = stockCodeToGroup.get(stockCode);
         if (group == null) {
-            throw new IllegalStateException("No group mapped for stockCode: " + stockCode);
+            throw new ClientErrorException(HttpStatus.BAD_REQUEST, "지원하지 않는 종목입니다.");
         }
         return group;
     }
