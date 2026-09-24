@@ -19,12 +19,4 @@ public class BffServerRedisStockSummaryRepository implements BffServerStockSumma
         return (BffServerStockSummaryTickMessage) redisTemplate.opsForHash()
                 .get(KEY, stockCode);
     }
-
-    public List<BffServerStockSummaryTickMessage> findAll() {
-        return redisTemplate.opsForHash()
-                .values(KEY)
-                .stream()
-                .map(v -> (BffServerStockSummaryTickMessage) v)
-                .toList();
-    }
 }
