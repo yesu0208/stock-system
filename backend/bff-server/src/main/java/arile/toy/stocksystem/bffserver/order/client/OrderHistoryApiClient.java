@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.order.client;
 
+import arile.toy.stocksystem.bffserver.history.client.HistoryUriBuilder;
 import arile.toy.stocksystem.bffserver.history.dto.HistoryPageResponse;
 import arile.toy.stocksystem.bffserver.order.dto.OrderHistoryItem;
 import arile.toy.stocksystem.bffserver.trade.dto.TradeHistoryItem;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.net.URI;
 import java.time.Instant;
 
 @Component
@@ -50,12 +52,9 @@ public class OrderHistoryApiClient {
     private <T> T get(String path, String stockCode, Instant from, Instant to, int page, int size,
                       ParameterizedTypeReference<T> type) {
         try {
-            StringBuilder uri = new StringBuilder(baseUrl + path + "?page=" + page + "&size=" + size);
-            if (stockCode != null) uri.append("&stockCode=").append(stockCode);
-            if (from != null) uri.append("&from=").append(from);
-            if (to != null) uri.append("&to=").append(to);
+            URI uri = HistoryUriBuilder.build(baseUrl, path, stockCode, from, to, page, size);
 
-            return restClient.get().uri(uri.toString()).retrieve().body(type);
+            return restClient.get().uri(uri).retrieve().body(type);
         } catch (RestClientException e) {
             log.warn("Order history API call failed. path={}", path, e);
             return null;

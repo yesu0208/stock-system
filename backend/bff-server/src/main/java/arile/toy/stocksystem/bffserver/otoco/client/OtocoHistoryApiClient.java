@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.bffserver.otoco.client;
 
+import arile.toy.stocksystem.bffserver.history.client.HistoryUriBuilder;
 import arile.toy.stocksystem.bffserver.history.dto.HistoryPageResponse;
 import arile.toy.stocksystem.bffserver.otoco.dto.OtocoHistoryItem;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.net.URI;
 import java.time.Instant;
 
 @Component
@@ -45,12 +47,9 @@ public class OtocoHistoryApiClient {
     private HistoryPageResponse<OtocoHistoryItem> get(
             String path, String stockCode, Instant from, Instant to, int page, int size) {
         try {
-            StringBuilder uri = new StringBuilder(baseUrl + path + "?page=" + page + "&size=" + size);
-            if (stockCode != null) uri.append("&stockCode=").append(stockCode);
-            if (from != null) uri.append("&from=").append(from);
-            if (to != null) uri.append("&to=").append(to);
+            URI uri = HistoryUriBuilder.build(baseUrl, path, stockCode, from, to, page, size);
 
-            return restClient.get().uri(uri.toString()).retrieve()
+            return restClient.get().uri(uri).retrieve()
                     .body(new ParameterizedTypeReference<HistoryPageResponse<OtocoHistoryItem>>() {});
         } catch (RestClientException e) {
             log.warn("Otoco history API call failed. path={}", path, e);
