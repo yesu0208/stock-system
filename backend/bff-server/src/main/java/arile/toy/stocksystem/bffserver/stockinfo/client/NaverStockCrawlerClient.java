@@ -3,9 +3,6 @@ package arile.toy.stocksystem.bffserver.stockinfo.client;
 import arile.toy.stocksystem.bffserver.stockinfo.dto.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -22,30 +19,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 @Component
 @Slf4j
 public class NaverStockCrawlerClient {
 
-    private final RestClient restClient;
     private final RestClient stockApiClient;
 
+    /** 운영용: 네이버 증권 API 클라이언트를 만들어 사용 */
     public NaverStockCrawlerClient() {
+        this(createStockApiClient());
+    }
+
+    /** 테스트용: 가짜 서버가 연결된 RestClient를 주입 */
+    NaverStockCrawlerClient(RestClient stockApiClient) {
+        this.stockApiClient = stockApiClient;
+    }
+
+    private static RestClient createStockApiClient() {
         // 타임아웃이 없으면 네이버가 응답하지 않을 때 호출 스레드가 무기한 대기함
         // (스케줄러 스레드가 묶이면 다른 주기 작업까지 멈춤). 뉴스 클라이언트와 같은 기준 적용
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(3));
         requestFactory.setReadTimeout(Duration.ofSeconds(5));
 
-        this.restClient = RestClient.builder()
-                .baseUrl("https://finance.naver.com")
-                .requestFactory(requestFactory)
-                .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
-                .build();
-
-        this.stockApiClient = RestClient.builder()
+        return RestClient.builder()
                 .baseUrl("https://stock.naver.com")
                 .requestFactory(requestFactory)
                 .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
@@ -94,40 +92,6 @@ public class NaverStockCrawlerClient {
                 d.sameIndustryPer(),
                 formatSignedRate(d.sameIndustryChangeRate())
         );
-    }
-
-    private String getValueByTh(Document doc, String thText) {
-        String target = thText.replace(" ", "");
-        return findRowValue(doc, thValue -> thValue.contains(target));
-    }
-
-    private String getValueByThContains(Document doc, String keyword) {
-        return findRowValue(doc, thValue -> thValue.contains(keyword));
-    }
-
-    private String findRowValue(Document doc, Predicate<String> matcher) {
-        Elements rows = doc.select("tr");
-
-        for (Element row : rows) {
-            Element th = row.selectFirst("th");
-            Element td = row.selectFirst("td");
-
-            if (th != null && td != null) {
-                String thValue = th.text().replace(" ", "").replace("|", "l");
-                if (matcher.test(thValue)) {
-                    return td.text();
-                }
-            }
-        }
-        return "";
-    }
-
-    private String[] splitBar(String text) {
-        String[] split = text.split("l");
-        if (split.length < 2) {
-            return new String[]{text, ""};
-        }
-        return new String[]{split[0].trim(), split[1].trim()};
     }
 
     private static final int FOREIGN_TRADE_PAGE_SIZE = 10;
@@ -818,9 +782,6 @@ public class NaverStockCrawlerClient {
         }
     }
 
-    private record PriceInfo(String currentPrice, String diffPrice, String diffRate, String direction) {
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record NaverPopularStockItem(
             String itemcode,
@@ -920,8 +881,6 @@ public class NaverStockCrawlerClient {
 
     private ForeignBrokerSummary mapForeignBrokerSummary(NaverTraderInfoResponse trader) {
         if (trader == null) return null;
-
-        long quant = parseLongSafely(trader.quant());
 
         return new ForeignBrokerSummary(
                 "외국계 합계",
@@ -1229,27 +1188,5 @@ public class NaverStockCrawlerClient {
             String prevChangePrice,
             String type
     ) {
-    }
-
-    private static final Pattern DEAL_RANK_CODE_PATTERN = Pattern.compile("code=([^&\"]+)");
-
-    private int indexOf(List<String> colNames, String... keywords) {
-        for (int i = 0; i < colNames.size(); i++) {
-            for (String kw : keywords) {
-                if (colNames.get(i).contains(kw)) return i;
-            }
-        }
-        return -1;
-    }
-
-    private BigDecimal toDealRankNumber(String raw) {
-        if (raw == null) return null;
-        String cleaned = raw.replace(",", "").trim();
-        if (cleaned.isEmpty() || cleaned.equals("-")) return null;
-        try {
-            return new BigDecimal(cleaned);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 }
