@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -814,7 +815,7 @@ public class NaverStockCrawlerClient {
         NaverTraderInfoResponse trader = fetchTraderInfo(code);
 
         String companySummary = String.join("\n",
-                List.of(d.comment1(), d.comment2(), d.comment3()).stream()
+                Stream.of(d.comment1(), d.comment2(), d.comment3())
                         .filter(s -> s != null && !s.isBlank())
                         .toList());
 
