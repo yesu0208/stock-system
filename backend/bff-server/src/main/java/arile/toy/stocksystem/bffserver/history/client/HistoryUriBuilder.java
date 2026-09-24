@@ -30,6 +30,11 @@ public final class HistoryUriBuilder {
         return create(baseUrl, path, null, from, to, page, size);
     }
 
+    /** 랭크 이력 (기간·종목 필터 없음) */
+    public static URI build(String baseUrl, String path, int page, int size) {
+        return create(baseUrl, path, null, null, null, page, size);
+    }
+
     private static URI create(String baseUrl, String path, String stockCode, Object from, Object to,
                               int page, int size) {
         return UriComponentsBuilder.fromUriString(baseUrl)
