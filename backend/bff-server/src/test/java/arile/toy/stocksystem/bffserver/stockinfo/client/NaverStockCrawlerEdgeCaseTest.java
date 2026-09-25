@@ -207,4 +207,13 @@ class NaverStockCrawlerEdgeCaseTest {
         assertThatThrownBy(() -> client.getDealRank(DealRankMarket.values()[0], InvestorType.values()[0],
                 DealType.BUY, PeriodType.values()[0])).isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    @DisplayName("지수: 기본 정보는 있는데 상세 정보 응답이 비어 있으면 IllegalStateException")
+    void marketIndices_integrationEmpty() {
+        respond("/api/securityFe/api/index/KOSPI/basic", "{\"closePrice\": \"2,600\"}");
+        respond("/api/securityFe/api/index/KOSPI/integration", "null");
+
+        assertThatThrownBy(() -> client.getMarketIndices()).isInstanceOf(IllegalStateException.class);
+    }
 }
