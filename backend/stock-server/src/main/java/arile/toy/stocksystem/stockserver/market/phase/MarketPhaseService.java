@@ -46,11 +46,6 @@ public class MarketPhaseService {
         closeScheduledCloseMarkets();
     }
 
-    public void openScheduledOpenMarkets() {
-        stockProperties.getOpen()
-                .forEach(stockCode -> updateMarketPhase(stockCode, StockServerMarketPhase.OPEN));
-    }
-
     public void closeScheduledOpenMarkets() {
         stockProperties.getOpen()
                 .forEach(stockCode -> updateMarketPhase(stockCode, StockServerMarketPhase.CLOSED));
