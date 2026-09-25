@@ -70,6 +70,10 @@ public class AutoCancelService {
 
                     autoCancelResponseEventPublisher.publish(
                             AutoCancelResponseEvent.of(autoOrderEntity, false, AutoCancelErrorCode.INTERNAL_ERROR));
+
+                    // 예외를 삼키면 트랜잭션이 커밋되어, 환불되지 않은 자동주문이 CANCELED로 남고 재시도도 불가능해짐
+                    // → 다시 던져 롤백(ACTIVE 유지)하고 컨슈머 재시도로 넘김
+                    throw e;
                 }
             }
         }
@@ -94,7 +98,27 @@ public class AutoCancelService {
         }
     }
 
+    /**
+     * 실행 순서 주의: 되돌릴 수 있는 DB 작업 -> 되돌릴 수 없는 외부 환불 -> 메모리 대기열 제거.
+     * 환불 이후 단계에서 예외가 나 트랜잭션이 롤백되면, 자동주문은 ACTIVE로 돌아가는데 돈은 이미 환불된 상태가 되고
+     * 재시도 시 한 번 더 환불됨. 따라서 실패할 수 있는 DB 작업은 환불 전에 끝냄.
+     */
     private void cancelInternal(AutoOrderEntity autoOrderEntity) {
+
+        autoCancelRepository.save(
+                AutoCancelEntity.of(autoOrderEntity.getAutoOrderId())
+        );
+
+        refund(autoOrderEntity);
+
+        // 환불까지 끝난 뒤에 대기열에서 제거 (환불 실패로 롤백되면 자동주문은 대기열에 그대로 남아 있어야 함)
+        autoOrderQueueRegistry.autoOrderCancel(
+                autoOrderEntity.getAutoOrderId(),
+                autoOrderEntity.getStockCode()
+        );
+    }
+
+    private void refund(AutoOrderEntity autoOrderEntity) {
 
         boolean refunded;
         LeverageRatio leverageRatio = autoOrderEntity.getLeverageRatio();
@@ -129,22 +153,18 @@ public class AutoCancelService {
                 throw new IllegalStateException("Stock refund failed");
             }
         }
-
-        autoCancelRepository.save(
-                AutoCancelEntity.of(autoOrderEntity.getAutoOrderId())
-        );
-
-        autoOrderQueueRegistry.autoOrderCancel(
-                autoOrderEntity.getAutoOrderId(),
-                autoOrderEntity.getStockCode()
-        );
     }
 
     private void publishSuccess(AutoOrderEntity autoOrderEntity) {
 
         AutoCancelResponseEvent event = AutoCancelResponseEvent.of(autoOrderEntity, true, null);
 
-        stockServerAutoOrderResponseRepository.delete(event.username(), event.autoOrderId());
+        // 환불 이후 단계이므로 Redis 응답 삭제 실패로 트랜잭션이 롤백되지 않도록 예외를 삼킴
+        try {
+            stockServerAutoOrderResponseRepository.delete(event.username(), event.autoOrderId());
+        } catch (Exception e) {
+            log.warn("Auto order response delete failed after cancel. autoOrderId={}", event.autoOrderId(), e);
+        }
 
         autoCancelResponseEventPublisher.publish(event);
     }
