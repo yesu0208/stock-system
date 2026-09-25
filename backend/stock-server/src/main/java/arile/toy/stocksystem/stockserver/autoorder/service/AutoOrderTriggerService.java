@@ -148,6 +148,6 @@ public class AutoOrderTriggerService {
                     autoOrderDto.autoOrderId(), e);
         }
 
-        autoOrderResponseEventPublisher.publishTriggerFailure(autoOrderDto, AutoOrderResultCode.INTERNAL_ERROR);
+        autoOrderResponseEventPublisher.publishTriggerFailure(autoOrderDto, AutoOrderResultCode.TRIGGER_FAILED);
     }
 }
