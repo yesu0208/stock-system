@@ -148,17 +148,7 @@ public class OtocoCancelService {
 
     private void cancelWaitingExit(OtocoEntity entity) {
 
-        LeverageRatio leverageRatio = entity.getLeverageRatio();
-
-        boolean refunded = leverageRatio.isSpot()
-                ? accountApiClient.refundReservedStock(entity.getUsername(), entity.getStockCode(), entity.getOrderQuantity())
-                : accountApiClient.refundReservedLeverageStock(entity.getUsername(), entity.getStockCode(),
-                leverageRatio.name(), entity.getOrderQuantity());
-
-        if (!refunded) {
-            log.error("Otoco stock refund failed. otocoId={}, username={}", entity.getOtocoId(), entity.getUsername());
-            throw new IllegalStateException("Stock refund failed");
-        }
+        // 청산용 주식은 청산 발동 시점에 예약하므로 WAITING_EXIT 단계에는 환불할 예약이 없음
 
         otocoExitBookRegistry.remove(entity.getStockCode(), entity.getOtocoId());
 
