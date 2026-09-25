@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -26,6 +27,12 @@ public class StockMinuteChartService {
     // 정규장 시간 (필요시 동시호가/시간외 포함 여부에 맞게 조정)
     private static final String MARKET_OPEN_TIME = "090000";
     private static final String MARKET_CLOSE_TIME = "153000";
+
+    // 응답이 계속 비면(토큰 없음·API 오류 등) 날짜만 하루씩 무한히 거슬러 올라가며 호출하게 되므로 상한을 둠
+    // (연휴를 넘길 수 있도록 연속 빈 응답 10일까지 허용)
+    private static final int MAX_CONSECUTIVE_EMPTY_DAYS = 10;
+    private static final int MAX_REQUESTS = 50;
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     @Value("${chart-api.appkey}")
     private String appKey;
@@ -46,12 +53,18 @@ public class StockMinuteChartService {
 
         String currentDate = date;
         String currentHour = hour;
+        int consecutiveEmptyDays = 0;
+        int requests = 0;
 
-        while (result.size() < count) {
+        while (result.size() < count
+                && consecutiveEmptyDays < MAX_CONSECUTIVE_EMPTY_DAYS
+                && requests < MAX_REQUESTS) {
 
             MinuteResponse response = requestMinuteChart(stockCode, currentDate, currentHour);
+            requests++;
 
             if (response == null || response.output2() == null || response.output2().isEmpty()) {
+                consecutiveEmptyDays++;
                 // 해당 날짜에 더 이상 데이터가 없으면 전 거래일로 점프해서 재시도
                 String[] jumped = jumpToPreviousTradingSession(currentDate);
                 if (jumped[0].equals(currentDate)) {
@@ -76,6 +89,7 @@ public class StockMinuteChartService {
                     .toList();
 
             if (batch.isEmpty()) {
+                consecutiveEmptyDays++;
                 String[] jumped = jumpToPreviousTradingSession(currentDate);
                 if (jumped[0].equals(currentDate)) break;
                 currentDate = jumped[0];
@@ -83,6 +97,7 @@ public class StockMinuteChartService {
                 continue;
             }
 
+            consecutiveEmptyDays = 0;
             result.addAll(batch);
 
             String oldestDate = batch.get(batch.size() - 1).date();
@@ -133,13 +148,13 @@ public class StockMinuteChartService {
                 .header("custtype", "P")
                 .retrieve()
                 .bodyToMono(MinuteResponse.class)
-                .block();
+                .block(REQUEST_TIMEOUT);
     }
 
     /**
      * date+time 기준 1초 전 시각을 구하되,
      * 장 시작(09:00:00) 이전으로 내려가면 08:59:00 ~ 전일 15:31:00 구간은 건너뛰고
-     * 바로 전 거래일의 장 마감(15:30:00)으로 점프한다.
+     * 바로 전 거래일의 장 마감(15:30:00)으로 점프
      */
     private String[] previousTradingTimestamp(String date, String hhmmss) {
         String decremented = decrementSecond(hhmmss);

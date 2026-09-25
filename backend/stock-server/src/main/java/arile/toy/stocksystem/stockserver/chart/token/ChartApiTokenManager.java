@@ -49,7 +49,8 @@ public class ChartApiTokenManager {
                     .bodyValue(ChartApiTokenRequest.of(appKey, appSecret))
                     .retrieve()
                     .bodyToMono(ChartApiTokenResponse.class)
-                    .block();
+                    // 외부 API 무응답 시 기동(@PostConstruct)이 멈추지 않도록 제한
+                    .block(java.time.Duration.ofSeconds(10));
 
             if (response == null || response.access_token() == null) {
                 log.error("ChartApi accessToken 발급 실패: 응답이 비어있음");
