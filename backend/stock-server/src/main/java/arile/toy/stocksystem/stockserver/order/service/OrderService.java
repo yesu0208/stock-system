@@ -8,6 +8,7 @@ import arile.toy.stocksystem.stockserver.order.repository.OrderRepository;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -128,7 +130,12 @@ public class OrderService {
                 savedOrder.getOrderTime(), savedOrder.getOrderExecutionType(),
                 savedOrder.getOrigin(), savedOrder.getOriginId());
 
-        stockServerOrderResponseRepository.save(orderResponseMessage);
+        // 등록은 이미 완료됨: 응답 캐시 저장 실패가 예외로 전파되면 컨슈머 재시도로 예약·주문이 중복되므로 로그만 남김
+        try {
+            stockServerOrderResponseRepository.save(orderResponseMessage);
+        } catch (Exception e) {
+            log.warn("Order response save failed after registration. orderId={}", savedOrder.getOrderId(), e);
+        }
         orderResponseEventPublisher.publish(orderResponseMessage);
 
         return savedOrder;
