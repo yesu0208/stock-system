@@ -73,9 +73,14 @@ public class TrailingStopTriggerService {
 
                 trailingStopBookRegistry.update(updated);
 
-                stockServerTrailingStopResponseRepository.update(
-                        updated.username(), updated.trailingStopId(),
-                        arile.toy.stocksystem.stockserver.trailingstop.dto.StockServerTrailingStopResponseMessage.fromDto(updated));
+                // 화면 표시용 부가 작업: 실패해도 같은 틱의 나머지 트레일링 스탑 처리를 멈추지 않음
+                try {
+                    stockServerTrailingStopResponseRepository.update(
+                            updated.username(), updated.trailingStopId(),
+                            StockServerTrailingStopResponseMessage.fromDto(updated));
+                } catch (Exception e) {
+                    log.warn("Trailing stop response update failed. trailingStopId={}", updated.trailingStopId(), e);
+                }
 
                 trailingStopResponseEventPublisher.publishTrailingUpdate(updated);
             }
@@ -84,7 +89,15 @@ public class TrailingStopTriggerService {
 
     private void triggerAndRegisterOrder(TrailingStopDto dto) {
 
-        var result = trailingStopService.updateTrailingStopStatusByTrigger(dto.trailingStopId());
+        UpdateTrailingStopStatusResult result;
+        try {
+            result = trailingStopService.updateTrailingStopStatusByTrigger(dto.trailingStopId());
+        } catch (Exception e) {
+            // 발동 상태 변경 실패(롤백): 북에서 이미 제거했으므로 다시 등록해 다음 틱에 재시도
+            log.error("Trailing stop trigger status update failed. trailingStopId={}", dto.trailingStopId(), e);
+            trailingStopBookRegistry.register(dto);
+            return;
+        }
 
         if (result.previousStatus() != TrailingStopStatus.ACTIVE) {
             return;
@@ -100,8 +113,10 @@ public class TrailingStopTriggerService {
                     dto.leverageRatio(), (long) dto.triggerPrice() * dto.orderQuantity());
             long refund = reservedAmount - orderAmount;
 
-            if (refund > 0) {
-                accountApiClient.refundReservedCash(dto.username(), refund);
+            if (refund > 0 && !accountApiClient.refundReservedCash(dto.username(), refund)) {
+                // 차액이 예약된 채로 남음 (장 마감 정산에서 해제됨)
+                log.error("Trailing stop trigger difference refund failed. trailingStopId={}, refund={}",
+                        dto.trailingStopId(), refund);
             }
         }
 
@@ -109,17 +124,22 @@ public class TrailingStopTriggerService {
 
         try {
             orderService.registerOrder(event, true);
-
-            stockServerTrailingStopResponseRepository.delete(dto.username(), dto.trailingStopId());
-            trailingStopResponseEventPublisher.publishTrigger(dto.username());
-
         } catch (Exception e) {
 
             log.error("Trailing stop trigger -> order registration failed. trailingStopId={}, username={}, stockCode={}",
                     dto.trailingStopId(), dto.username(), dto.stockCode(), e);
 
             compensateFailedTrigger(dto);
+            return;
         }
+
+        // 주문 등록 성공: 예약금은 주문으로 넘어갔으므로, 이후 부가 작업이 실패해도 보상(환불)하면 안 됨
+        try {
+            stockServerTrailingStopResponseRepository.delete(dto.username(), dto.trailingStopId());
+        } catch (Exception e) {
+            log.warn("Trailing stop response delete failed after trigger. trailingStopId={}", dto.trailingStopId(), e);
+        }
+        trailingStopResponseEventPublisher.publishTrigger(dto.username());
     }
 
     private void compensateFailedTrigger(TrailingStopDto dto) {
@@ -143,7 +163,12 @@ public class TrailingStopTriggerService {
                     dto.trailingStopId(), dto.username(), dto.stockCode(), dto.trailingStopType());
         }
 
-        stockServerTrailingStopResponseRepository.delete(dto.username(), dto.trailingStopId());
+        try {
+            stockServerTrailingStopResponseRepository.delete(dto.username(), dto.trailingStopId());
+        } catch (Exception e) {
+            log.warn("Trailing stop response delete failed after trigger compensation. trailingStopId={}",
+                    dto.trailingStopId(), e);
+        }
 
         trailingStopResponseEventPublisher.publishTriggerFailure(dto, TrailingStopResultCode.INTERNAL_ERROR);
     }
