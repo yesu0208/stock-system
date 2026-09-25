@@ -281,12 +281,10 @@ public class DiscussionService {
         int dislikes = countReaction(TargetType.COMMENT, comment.getCommentId(), ReactionType.DISLIKE);
         UserProfile authorProfile = userProfileService.getProfile(comment.getAuthorId());
 
-        ReactionType myReaction = viewerId != null
-                ? reactionRepository.findByTargetTypeAndTargetIdAndUserId(
+        ReactionType myReaction = reactionRepository.findByTargetTypeAndTargetIdAndUserId(
                         TargetType.COMMENT, comment.getCommentId(), viewerId)
                 .map(DiscussionReactionEntity::getReactionType)
-                .orElse(null)
-                : null;
+                .orElse(null);
 
         return CommentResponse.of(comment, authorProfile, likes, dislikes, myReaction);
     }
