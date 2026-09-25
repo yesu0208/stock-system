@@ -1,6 +1,5 @@
 package arile.toy.stocksystem.stockserver.autoorder.dto;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -12,12 +11,12 @@ public class InMemorySingleStockAutoOrderQueue implements SingleStockAutoOrderQu
 
     private static final Comparator<AutoOrderDto> BUY_ORDER =
             Comparator
-                    .comparing(AutoOrderDto::orderPrice)
+                    .comparing(AutoOrderDto::triggerPrice)
                     .thenComparing(AutoOrderDto::orderTime);
 
     private static final Comparator<AutoOrderDto> SELL_ORDER =
             Comparator
-                    .comparing(AutoOrderDto::orderPrice).reversed()
+                    .comparing(AutoOrderDto::triggerPrice).reversed()
                     .thenComparing(AutoOrderDto::orderTime);
 
     public InMemorySingleStockAutoOrderQueue() {
