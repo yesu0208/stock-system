@@ -37,19 +37,23 @@ public class RedisAlertRequestEventConsumer extends AbstractRedisStreamConsumer 
         String stockCode = (String) value.get("stockCode");
         String directionStr = (String) value.get("direction");
 
+        // 잘못된 값은 재시도해도 같은 결과이므로 예외(재시도·DLQ) 대신 로그만 남기고 건너뜀
         AlertDirection direction;
         try {
             direction = AlertDirection.valueOf(directionStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             log.error("Invalid direction: {}", directionStr);
             return;
         }
 
         Object rawTriggerPrice = value.get("triggerPrice");
-        Integer triggerPrice = null;
-
-        if (rawTriggerPrice != null) {
+        Integer triggerPrice;
+        try {
             triggerPrice = Integer.parseInt(rawTriggerPrice.toString());
+        } catch (NumberFormatException | NullPointerException e) {
+            // 가격이 없으면 저장 시 not null 제약 위반으로 매번 실패함
+            log.error("Invalid triggerPrice: {}", rawTriggerPrice);
+            return;
         }
 
         log.info("Processing alert username: {} for stock {}", username, stockCode);
