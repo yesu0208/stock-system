@@ -62,7 +62,10 @@ public class MarketTimeChecker {
     }
 
     public boolean shouldMaintainConnection() {
-        ZonedDateTime now = ZonedDateTime.now(KST);
+        return shouldMaintainConnection(ZonedDateTime.now(KST));
+    }
+
+    public boolean shouldMaintainConnection(ZonedDateTime now) {
         DayOfWeek day = now.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
             return false;
