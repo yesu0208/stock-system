@@ -14,6 +14,7 @@ export interface AutoOrderResultResponse {
     orderQuantity: number
     orderTime?: string
     errorMessage?: string | null
+    resultCode?: string | null
 }
 
 export interface AutoOrderResponseMessage {

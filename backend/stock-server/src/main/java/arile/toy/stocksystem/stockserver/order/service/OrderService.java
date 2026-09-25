@@ -8,6 +8,7 @@ import arile.toy.stocksystem.stockserver.order.repository.OrderRepository;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -66,7 +68,7 @@ public class OrderService {
             }
         }
 
-        OrderEntity savedOrder;
+        OrderEntity savedOrder = null;
 
         try {
             OrderEntity orderEntity = OrderEntity.of(
@@ -91,6 +93,19 @@ public class OrderService {
             queuePositionBroadcastService.broadcast(orderDto.stockCode(), orderDto.orderType());
 
         } catch (Exception e) {
+            // 저장 이후 단계(대기열 등록·브로드캐스트)에서 실패한 경우,
+            // 예약분만 환불하고 주문을 OPEN으로 남겨 두면 재시작 시 워밍업으로 예약금 없는 주문이 대기열에 복구될 수 있음
+            // -> 대기열에서 제거하고 CANCELED로 저장해 무효화
+            if (savedOrder != null) {
+                try {
+                    orderQueueRegistry.orderCancel(savedOrder.getOrderId(), savedOrder.getStockCode());
+                    savedOrder.changeOrderStatus(OrderStatus.CANCELED);
+                    orderRepository.save(savedOrder);
+                } catch (Exception cancelException) {
+                    e.addSuppressed(cancelException);
+                }
+            }
+
             if (!fromAutoOrder) {
                 if (request.orderType() == OrderType.BUY) {
                     accountApiClient.refundReservedCash(request.username(), reserveAmount);
@@ -115,7 +130,12 @@ public class OrderService {
                 savedOrder.getOrderTime(), savedOrder.getOrderExecutionType(),
                 savedOrder.getOrigin(), savedOrder.getOriginId());
 
-        stockServerOrderResponseRepository.save(orderResponseMessage);
+        // 등록은 이미 완료됨: 응답 캐시 저장 실패가 예외로 전파되면 컨슈머 재시도로 예약·주문이 중복되므로 로그만 남김
+        try {
+            stockServerOrderResponseRepository.save(orderResponseMessage);
+        } catch (Exception e) {
+            log.warn("Order response save failed after registration. orderId={}", savedOrder.getOrderId(), e);
+        }
         orderResponseEventPublisher.publish(orderResponseMessage);
 
         return savedOrder;

@@ -9,11 +9,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class MarketHolidayService {
+
+    // 휴장일 판정(MarketTimeChecker)과 같은 기준으로 "오늘"을 계산 (서버 기본 시간대가 UTC여도 KST 기준 유지)
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final MarketHolidayRepository marketHolidayRepository;
     private final MarketHolidayRedisPublisher marketHolidayRedisPublisher;
@@ -24,7 +28,7 @@ public class MarketHolidayService {
 
     @Transactional
     public MarketHolidayEntity addHoliday(LocalDate date, String memo) {
-        if (!date.isAfter(LocalDate.now())) {
+        if (!date.isAfter(LocalDate.now(KST))) {
             throw new PastMarketHolidayDateException();
         }
 

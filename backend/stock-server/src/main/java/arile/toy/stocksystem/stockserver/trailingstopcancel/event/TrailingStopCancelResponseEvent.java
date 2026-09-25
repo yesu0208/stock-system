@@ -20,7 +20,7 @@ public record TrailingStopCancelResponseEvent(
                 entity.getUsername(),
                 entity.getStockCode(),
                 entity.getTrailingStopType(),
-                entity.getTriggerPrice(),
+                entity.resolveCurrentTriggerPrice(),
                 entity.getOrderQuantity(),
                 success,
                 errorCode

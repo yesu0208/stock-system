@@ -8,7 +8,9 @@ import arile.toy.stocksystem.accountserver.rank.publisher.RankUpdatedPublisher;
 import arile.toy.stocksystem.accountserver.rank.repository.UserRankRepository;
 import arile.toy.stocksystem.accountserver.trade.TradeCommand;
 import arile.toy.stocksystem.accountserver.trade.dto.TradeType;
+import arile.toy.stocksystem.accountserver.trade.entity.AppliedTradeEntity;
 import arile.toy.stocksystem.accountserver.trade.event.TradeExecutedEvent;
+import arile.toy.stocksystem.accountserver.trade.repository.AppliedTradeRepository;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
@@ -34,9 +36,24 @@ public class TradeExecutionApplyService {
     private final TradeCostCalculator tradeCostCalculator;
     private final AccountBalanceCommand accountBalanceCommand;
     private final RankUpdatedPublisher rankUpdatedPublisher;
+    private final AppliedTradeRepository appliedTradeRepository;
 
     @Transactional
     public void apply(TradeExecutedEvent event) {
+
+        if (event.tradeId() == null) {
+            throw new IllegalArgumentException("tradeId is required to apply trade.");
+        }
+
+        // 체결 outbox는 중복 발행될 수 있으므로(최소 1회 전달), 이미 반영한 체결은 건너뜀
+        if (appliedTradeRepository.existsByStockCodeAndTradeId(event.stockCode(), event.tradeId())) {
+            log.warn("Duplicate trade skipped. stockCode={}, tradeId={}", event.stockCode(), event.tradeId());
+            return;
+        }
+
+        // 반영 기록을 정산보다 먼저 즉시 INSERT: 같은 체결이 동시에 처리되면 두 번째 건은
+        // 유니크 제약 위반으로 여기서 실패해, 되돌릴 수 없는 Redis 반영 전에 중단됨 (이후 재시도 시 위에서 건너뜀)
+        appliedTradeRepository.saveAndFlush(AppliedTradeEntity.of(event.stockCode(), event.tradeId()));
 
         LeverageRatio leverageRatio = event.leverageRatio() == null ? LeverageRatio.SPOT : event.leverageRatio();
 

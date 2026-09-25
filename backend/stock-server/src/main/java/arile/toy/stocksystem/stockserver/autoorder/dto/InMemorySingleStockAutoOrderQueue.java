@@ -1,6 +1,5 @@
 package arile.toy.stocksystem.stockserver.autoorder.dto;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -12,12 +11,12 @@ public class InMemorySingleStockAutoOrderQueue implements SingleStockAutoOrderQu
 
     private static final Comparator<AutoOrderDto> BUY_ORDER =
             Comparator
-                    .comparing(AutoOrderDto::orderPrice)
+                    .comparing(AutoOrderDto::triggerPrice)
                     .thenComparing(AutoOrderDto::orderTime);
 
     private static final Comparator<AutoOrderDto> SELL_ORDER =
             Comparator
-                    .comparing(AutoOrderDto::orderPrice).reversed()
+                    .comparing(AutoOrderDto::triggerPrice).reversed()
                     .thenComparing(AutoOrderDto::orderTime);
 
     public InMemorySingleStockAutoOrderQueue() {
@@ -32,22 +31,6 @@ public class InMemorySingleStockAutoOrderQueue implements SingleStockAutoOrderQu
         } else {
             sellQueue.offer(autoOrderDto);
         }
-
-        System.out.println("=== PriorityBlockingQueue DEBUGGING(AUTO)===");
-        // Todo: debugging(buyQueue)
-        AutoOrderDto[] snapshot = buyQueue.toArray(new AutoOrderDto[0]);
-        Arrays.sort(snapshot, BUY_ORDER);
-        for (AutoOrderDto t : snapshot) {
-            System.out.println(t);
-        }
-
-        // Todo: debugging(sellQueue)
-        AutoOrderDto[] snapshot2 = sellQueue.toArray(new AutoOrderDto[0]);
-        Arrays.sort(snapshot2, SELL_ORDER);
-        for (AutoOrderDto t : snapshot2) {
-            System.out.println(t);
-        }
-
     }
 
     @Override

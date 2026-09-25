@@ -66,6 +66,9 @@ public class TrailingStopCancelService {
                     log.error("Trailing stop cancel failed. trailingStopId={}", entity.getTrailingStopId(), e);
                     trailingStopCancelResponseEventPublisher.publish(
                             TrailingStopCancelResponseEvent.of(entity, false, TrailingStopCancelErrorCode.INTERNAL_ERROR));
+                    // 예외를 삼키면 CANCELED 상태만 커밋되고 예약분은 환불되지 않은 채 남음
+                    // → 다시 던져 트랜잭션을 롤백하고 컨슈머 재시도로 처리
+                    throw e;
                 }
             }
         }
@@ -92,6 +95,11 @@ public class TrailingStopCancelService {
 
     private void cancelInternal(TrailingStopEntity entity) {
 
+        // 롤백 가능한 DB 작업을 먼저 확정: 환불 이후 저장이 실패해 롤백되면 ACTIVE로 돌아가
+        // 예약금 없는 트레일링 스탑이 북에 남고, 재시도 시 이중 환불될 수 있음
+        trailingStopCancelRepository.saveAndFlush(TrailingStopCancelEntity.of(entity.getTrailingStopId()));
+
+        // 되돌릴 수 없는 외부 환불
         boolean refunded;
         LeverageRatio leverageRatio = entity.getLeverageRatio();
 
@@ -123,16 +131,25 @@ public class TrailingStopCancelService {
             }
         }
 
-        trailingStopCancelRepository.save(TrailingStopCancelEntity.of(entity.getTrailingStopId()));
-
-        trailingStopBookRegistry.remove(entity.getStockCode(), entity.getTrailingStopId());
+        // 메모리 북에서 제거: 환불 이후이므로 실패해도 예외를 던지지 않음 (롤백·재시도 시 이중 환불 방지)
+        // 북에 남더라도 발동 시 상태가 CANCELED라 주문되지 않음
+        try {
+            trailingStopBookRegistry.remove(entity.getStockCode(), entity.getTrailingStopId());
+        } catch (Exception e) {
+            log.warn("Trailing stop book remove failed after cancel. trailingStopId={}", entity.getTrailingStopId(), e);
+        }
     }
 
     private void publishSuccess(TrailingStopEntity entity) {
 
         TrailingStopCancelResponseEvent event = TrailingStopCancelResponseEvent.of(entity, true, null);
 
-        stockServerTrailingStopResponseRepository.delete(event.username(), event.trailingStopId());
+        // 취소는 이미 완료됨: 응답 캐시 삭제 실패가 예외로 전파되면 롤백·재시도로 이중 환불될 수 있으므로 로그만 남김
+        try {
+            stockServerTrailingStopResponseRepository.delete(event.username(), event.trailingStopId());
+        } catch (Exception e) {
+            log.warn("Trailing stop response delete failed after cancel. trailingStopId={}", event.trailingStopId(), e);
+        }
 
         trailingStopCancelResponseEventPublisher.publish(event);
     }

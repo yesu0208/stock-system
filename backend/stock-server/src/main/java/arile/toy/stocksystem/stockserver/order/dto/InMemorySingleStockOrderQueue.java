@@ -33,20 +33,6 @@ public class InMemorySingleStockOrderQueue implements SingleStockOrderQueue {
         } else {
             sellQueue.offer(orderDto);
         }
-
-        System.out.println("=== PriorityBlockingQueue DEBUGGING===");
-        OrderDto[] snapshot = buyQueue.toArray(new OrderDto[0]);
-        Arrays.sort(snapshot, BUY_ORDER);
-        for (OrderDto t : snapshot) {
-            System.out.println(t);
-        }
-
-        OrderDto[] snapshot2 = sellQueue.toArray(new OrderDto[0]);
-        Arrays.sort(snapshot2, SELL_ORDER);
-        for (OrderDto t : snapshot2) {
-            System.out.println(t);
-        }
-
     }
 
     @Override

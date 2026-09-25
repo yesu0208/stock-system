@@ -76,15 +76,31 @@ class AutoOrderResponsePushServiceTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @EnumSource(value = AutoOrderResultCode.class, names = "TRIGGERED", mode = EnumSource.Mode.EXCLUDE)
-    @DisplayName("실패: 결과 코드의 안내 문구를 담은 ERROR 결과만 보내고, 목록은 다시 조회하지 않는다")
+    @EnumSource(value = AutoOrderResultCode.class, names = {"TRIGGERED", "TRIGGER_FAILED"}, mode = EnumSource.Mode.EXCLUDE)
+    @DisplayName("등록 실패: 결과 코드·안내 문구를 담은 ERROR 결과만 보내고, 목록은 다시 조회하지 않는다")
     void failure(AutoOrderResultCode resultCode) {
         service.push(event(null, false, resultCode));
 
         verify(messagingTemplate).convertAndSendToUser("user1", "/sub/auto/order/result",
                 AutoOrderResultResponse.of(ResponseType.ERROR, null, "user1", "005930", AutoOrderType.BUY,
-                        LeverageRatio.X1_5, 68_000, 69_000, 10, null, resultCode.userMessage()));
+                        LeverageRatio.X1_5, 68_000, 69_000, 10, null, resultCode.userMessage(), resultCode));
         verifyNoInteractions(bffServerAutoOrderResponseRepository);
+    }
+
+    @Test
+    @DisplayName("발동 실패: TRIGGER_FAILED 코드를 담은 ERROR 결과를 보내고, 취소된 주문이 빠진 목록도 보낸다")
+    void triggerFailure() {
+        List<AutoOrderResponseMessage> pending = List.of();
+        given(bffServerAutoOrderResponseRepository.findAll("user1")).willReturn(pending);
+
+        service.push(event(1L, false, AutoOrderResultCode.TRIGGER_FAILED));
+
+        InOrder inOrder = inOrder(messagingTemplate);
+        inOrder.verify(messagingTemplate).convertAndSendToUser("user1", "/sub/auto/order/result",
+                AutoOrderResultResponse.of(ResponseType.ERROR, null, "user1", "005930", AutoOrderType.BUY,
+                        LeverageRatio.X1_5, 68_000, 69_000, 10, null,
+                        AutoOrderResultCode.TRIGGER_FAILED.userMessage(), AutoOrderResultCode.TRIGGER_FAILED));
+        inOrder.verify(messagingTemplate).convertAndSendToUser("user1", "/sub/auto/order", pending);
     }
 
     @Test

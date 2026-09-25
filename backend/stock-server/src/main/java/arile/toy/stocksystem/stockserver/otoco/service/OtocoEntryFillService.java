@@ -1,8 +1,6 @@
 package arile.toy.stocksystem.stockserver.otoco.service;
 
-import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoDto;
-import arile.toy.stocksystem.stockserver.otoco.dto.OtocoResultCode;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoStatus;
 import arile.toy.stocksystem.stockserver.otoco.dto.StockServerOtocoResponseMessage;
 import arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity;
@@ -10,7 +8,6 @@ import arile.toy.stocksystem.stockserver.otoco.event.publisher.OtocoResponseEven
 import arile.toy.stocksystem.stockserver.otoco.registry.OtocoExitBookRegistry;
 import arile.toy.stocksystem.stockserver.otoco.repository.OtocoRepository;
 import arile.toy.stocksystem.stockserver.otoco.repository.StockServerOtocoResponseRepository;
-import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +23,6 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
     private final OtocoExitBookRegistry otocoExitBookRegistry;
     private final OtocoResponseEventPublisher otocoResponseEventPublisher;
     private final StockServerOtocoResponseRepository stockServerOtocoResponseRepository;
-    private final AccountApiClient accountApiClient;
 
     @Override
     public void onOrderFilled(Long orderId) {
@@ -41,33 +37,21 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
             return; // 이미 처리됨(중복 호출 방지)
         }
 
-        LeverageRatio leverageRatio = entity.getLeverageRatio();
-
-        boolean reserved = leverageRatio.isSpot()
-                ? accountApiClient.reserveStock(entity.getUsername(), entity.getStockCode(), entity.getOrderQuantity())
-                : accountApiClient.reserveLeverageStock(entity.getUsername(), entity.getStockCode(),
-                leverageRatio.name(), entity.getOrderQuantity());
-
-        if (!reserved) {
-            // 방금 체결로 보유하게 된 수량에 대한 예약이므로 사실상 실패할 수 없지만, 방어적으로 처리
-            // 포지션 자체는 유지되고 OCO 추적만 포기
-            log.error("CRITICAL: OTOCO exit stock reservation failed right after entry fill. otocoId={}, username={}",
-                    entity.getOtocoId(), entity.getUsername());
-            entity.changeStatus(OtocoStatus.CANCELED);
-            otocoRepository.save(entity);
-            stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
-            otocoResponseEventPublisher.publishEntryFailed(OtocoDto.fromEntity(entity), OtocoResultCode.ENTRY_FAILED);
-            return;
-        }
-
+        // 청산용 주식은 여기서 예약하지 않음: 이 시점(체결 트랜잭션 내부)에는 체결분이 아직
+        // account-server에 반영되지 않아 보유 수량이 없음. 청산 발동 시 매도 주문 등록 과정에서 예약함.
         entity.changeStatus(OtocoStatus.WAITING_EXIT);
         otocoRepository.save(entity);
 
         otocoExitBookRegistry.register(OtocoDto.fromEntity(entity));
 
         // 완전체결되었으므로 잔량 개념이 사라짐 — 캐시에도 entryRemainingQuantity 없이 저장
-        stockServerOtocoResponseRepository.update(entity.getUsername(), entity.getOtocoId(),
-                StockServerOtocoResponseMessage.fromEntity(entity));
+        // 체결 트랜잭션 안에서 호출되므로 부가 작업 실패가 체결 롤백으로 번지지 않도록 로그만 남김
+        try {
+            stockServerOtocoResponseRepository.update(entity.getUsername(), entity.getOtocoId(),
+                    StockServerOtocoResponseMessage.fromEntity(entity));
+        } catch (Exception e) {
+            log.warn("Otoco response update failed after entry fill. otocoId={}", entity.getOtocoId(), e);
+        }
 
         otocoResponseEventPublisher.publishEntryFilled(OtocoDto.fromEntity(entity));
     }
@@ -86,8 +70,12 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
             return; // 이미 취소/완전체결 등으로 상태가 바뀐 경우 — 오작동 방지
         }
 
-        stockServerOtocoResponseRepository.update(entity.getUsername(), entity.getOtocoId(),
-                StockServerOtocoResponseMessage.fromEntity(entity, remainingQuantity));
+        try {
+            stockServerOtocoResponseRepository.update(entity.getUsername(), entity.getOtocoId(),
+                    StockServerOtocoResponseMessage.fromEntity(entity, remainingQuantity));
+        } catch (Exception e) {
+            log.warn("Otoco response update failed after entry partial fill. otocoId={}", entity.getOtocoId(), e);
+        }
 
         otocoResponseEventPublisher.publishEntryPartiallyFilled(OtocoDto.fromEntity(entity, remainingQuantity));
     }
@@ -108,7 +96,11 @@ public class OtocoEntryFillService implements OtocoOrderLifecycleListener {
         entity.changeStatus(OtocoStatus.CANCELED);
         otocoRepository.save(entity);
 
-        stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
+        try {
+            stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
+        } catch (Exception e) {
+            log.warn("Otoco response delete failed after entry cancel. otocoId={}", entity.getOtocoId(), e);
+        }
 
         otocoResponseEventPublisher.publishEntryCanceled(OtocoDto.fromEntity(entity));
     }

@@ -11,8 +11,7 @@ public class OrderQueueRegistry {
     private final ConcurrentHashMap<String, InMemorySingleStockOrderQueue> orderQueues = new ConcurrentHashMap<>();
 
     private InMemorySingleStockOrderQueue book(String stockCode) {
-        return orderQueues.computeIfAbsent(stockCode, key -> new InMemorySingleStockOrderQueue() {
-        });
+        return orderQueues.computeIfAbsent(stockCode, key -> new InMemorySingleStockOrderQueue());
     }
 
     public void orderEnqueue(OrderDto orderDto) {

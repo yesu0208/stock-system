@@ -72,18 +72,30 @@ public class AlertCancelService {
 
     private void cancelInternal(AlertEntity alertEntity) {
 
-        alertQueueRegistry.alertCancel(alertEntity.getAlertId(), alertEntity.getStockCode());
-
-        alertCancelRepository.save(
+        // 취소 이력을 먼저 확정: 큐에서 먼저 뺀 뒤 저장이 실패해 롤백되면
+        // ACTIVE인데 큐에는 없는 알림이 되어 재시작 전까지 발송되지 않음
+        alertCancelRepository.saveAndFlush(
                 AlertCancelEntity.of(alertEntity.getAlertId())
         );
+
+        // 큐에 남더라도 발송 시 상태가 CANCELED라 무시되므로, 실패해도 롤백시키지 않음
+        try {
+            alertQueueRegistry.alertCancel(alertEntity.getAlertId(), alertEntity.getStockCode());
+        } catch (Exception e) {
+            log.warn("Alert queue remove failed after cancel. alertId={}", alertEntity.getAlertId(), e);
+        }
     }
 
     private void publishSuccess(AlertEntity alertEntity) {
 
         AlertCancelResponseEvent event = AlertCancelResponseEvent.of(alertEntity, true, null);
 
-        stockServerAlertResponseRepository.delete(event.username(), event.alertId());
+        // 취소는 이미 완료됨: 응답 캐시 삭제 실패로 롤백되면 큐에서 빠진 ACTIVE 알림이 남으므로 로그만 남김
+        try {
+            stockServerAlertResponseRepository.delete(event.username(), event.alertId());
+        } catch (Exception e) {
+            log.warn("Alert response delete failed after cancel. alertId={}", event.alertId(), e);
+        }
 
         alertCancelResponseEventPublisher.publish(event);
     }

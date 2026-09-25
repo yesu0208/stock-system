@@ -54,8 +54,11 @@ public class TradeOutboxPublisher {
                 log.info("Trade outbox event published. outboxId={}", outbox.getOutboxId());
 
             } catch (Exception e) {
-                // 발행 실패한 건은 상태를 바꾸지 않고 다음 폴링 주기에 재시도
-                log.error("Failed to publish trade outbox event. outboxId={}", outbox.getOutboxId(), e);
+                // 발행 실패 시 이후 건은 보내지 않고 중단: 체결 순서(예: 매수 → 같은 종목 매도)가
+                // 뒤바뀌어 account-server에 도착하지 않도록, 다음 폴링 주기에 실패한 건부터 순서대로 재시도
+                log.error("Failed to publish trade outbox event. Stop publishing until next poll. outboxId={}",
+                        outbox.getOutboxId(), e);
+                break;
             }
         }
 

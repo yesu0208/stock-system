@@ -34,10 +34,19 @@ public class AutoOrderResponsePushService {
                     AutoOrderResultResponse.of(ResponseType.ERROR, null, autoOrderResponseEvent.username(),
                             autoOrderResponseEvent.stockCode(), autoOrderResponseEvent.autoOrderType(), autoOrderResponseEvent.leverageRatio(),
                             autoOrderResponseEvent.triggerPrice(), autoOrderResponseEvent.orderPrice(), autoOrderResponseEvent.orderQuantity(),
-                            null, errorMessage
-
+                            null, errorMessage, autoOrderResponseEvent.resultCode()
                     )
             );
+
+            if (autoOrderResponseEvent.resultCode() == AutoOrderResultCode.TRIGGER_FAILED) {
+                List<AutoOrderResponseMessage> responses
+                        = bffServerAutoOrderResponseRepository.findAll(autoOrderResponseEvent.username());
+                messagingTemplate.convertAndSendToUser(
+                        autoOrderResponseEvent.username(),
+                        "/sub/auto/order",
+                        responses
+                );
+            }
         } else if (autoOrderResponseEvent.resultCode() == AutoOrderResultCode.TRIGGERED) {
 
             List<AutoOrderResponseMessage> responses

@@ -86,27 +86,33 @@ public class TradePriceTickMessageHandler {
                         Integer.parseInt(fields[offset + 41])
                 );
 
-                stockServerTradePriceRepository.save(tradePriceTickMessage);
-                redisTradePriceEventPublisher.publish(
-                        TradePriceTickEvent.fromMessage(tradePriceTickMessage));
-
-                autoOrderTriggerService.getExternalTickMessageAndTrigger(tradePriceTickMessage);
-                trailingStopTriggerService.getExternalTickMessageAndTrail(tradePriceTickMessage);
-                otocoEntryTriggerService.getExternalTickMessageAndTriggerEntry(tradePriceTickMessage);
-                otocoExitTriggerService.getExternalTickMessageAndSettleExit(tradePriceTickMessage);
-                tradeMatchingService.getExternalTickMessageAndTrade(tradePriceTickMessage);
-                alertTriggerService.getExternalTickMessageAndCheckAlerts(tradePriceTickMessage);
-
-                marketPhaseService.closeMarketAfterClosingCall(tradePriceTickMessage.stockCode(),
-                        tradePriceTickMessage.tradeTime());
-
-                liveDailyCandleService.buildAndPublish(stockCode, tradePriceTickMessage);
-                liveMinuteCandleService.updateAndPublish(stockCode, tradePriceTickMessage);
-
+                // 단계별로 격리: 앞 단계(예: Redis 저장, 자동주문 발동)가 실패해도
+                // 같은 틱의 체결 매칭·장 마감 전환 등 나머지 단계는 반드시 수행되어야 함
+                runStep(stockCode, "saveTradePrice", () -> stockServerTradePriceRepository.save(tradePriceTickMessage));
+                runStep(stockCode, "publishTradePrice", () -> redisTradePriceEventPublisher.publish(
+                        TradePriceTickEvent.fromMessage(tradePriceTickMessage)));
+                runStep(stockCode, "autoOrder", () -> autoOrderTriggerService.getExternalTickMessageAndTrigger(tradePriceTickMessage));
+                runStep(stockCode, "trailingStop", () -> trailingStopTriggerService.getExternalTickMessageAndTrail(tradePriceTickMessage));
+                runStep(stockCode, "otocoEntry", () -> otocoEntryTriggerService.getExternalTickMessageAndTriggerEntry(tradePriceTickMessage));
+                runStep(stockCode, "otocoExit", () -> otocoExitTriggerService.getExternalTickMessageAndSettleExit(tradePriceTickMessage));
+                runStep(stockCode, "tradeMatching", () -> tradeMatchingService.getExternalTickMessageAndTrade(tradePriceTickMessage));
+                runStep(stockCode, "alert", () -> alertTriggerService.getExternalTickMessageAndCheckAlerts(tradePriceTickMessage));
+                runStep(stockCode, "closingCall", () -> marketPhaseService.closeMarketAfterClosingCall(
+                        tradePriceTickMessage.stockCode(), tradePriceTickMessage.tradeTime()));
+                runStep(stockCode, "dailyCandle", () -> liveDailyCandleService.buildAndPublish(stockCode, tradePriceTickMessage));
+                runStep(stockCode, "minuteCandle", () -> liveMinuteCandleService.updateAndPublish(stockCode, tradePriceTickMessage));
             } catch (NumberFormatException e) {
                 log.warn("[TICK 파싱 실패] 소수점 등 처리 불가 가격 데이터 무시. stockCode={}, message={}",
                         stockCode, e.getMessage());
             }
+        }
+    }
+
+    private void runStep(String stockCode, String step, Runnable action) {
+        try {
+            action.run();
+        } catch (Exception e) {
+            log.error("Trade price tick step failed. stockCode={}, step={}", stockCode, step, e);
         }
     }
 }

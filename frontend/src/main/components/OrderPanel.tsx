@@ -219,6 +219,9 @@ export default function OrderPanel() {
                 if (data.responseType === "SUCCESS") {
                     const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
                     success(`[${stockName}] ${sideLabel} 주문이 등록되었습니다.`);
+                } else if (data.resultCode === "TRIGGER_FAILED") {
+                    const stockName = stockNameMap[data.stockCode] ?? data.stockCode;
+                    error(`[${stockName}] ${sideLabel} 발동 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 } else {
                     error(`${sideLabel} 등록 실패: ${data.errorMessage ?? "알 수 없는 오류"}`);
                 }

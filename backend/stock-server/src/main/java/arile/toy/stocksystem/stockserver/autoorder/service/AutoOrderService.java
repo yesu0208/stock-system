@@ -10,6 +10,7 @@ import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.order.service.ReserveAmountCalculator;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AutoOrderService {
 
     private final AutoOrderRepository autoOrderRepository;
@@ -52,7 +54,7 @@ public class AutoOrderService {
             }
         }
 
-        AutoOrderEntity savedAutoOrder;
+        AutoOrderEntity savedAutoOrder = null;
 
         try {
             AutoOrderEntity autoOrderEntity = AutoOrderEntity.of(
@@ -71,6 +73,18 @@ public class AutoOrderService {
             autoOrderQueueRegistry.autoOrderEnqueue(autoOrderDto);
 
         } catch (Exception e) {
+            // 저장 이후 실패 시 예약분만 환불하고 ACTIVE로 남겨 두면, 재시작 시 워밍업으로
+            // 예약금 없는 자동주문이 대기열에 복구될 수 있음 -> 대기열에서 제거하고 CANCELED로 저장해 무효화
+            if (savedAutoOrder != null) {
+                try {
+                    autoOrderQueueRegistry.autoOrderCancel(savedAutoOrder.getAutoOrderId(), savedAutoOrder.getStockCode());
+                    savedAutoOrder.changeAutoOrderStatus(AutoOrderStatus.CANCELED);
+                    autoOrderRepository.save(savedAutoOrder);
+                } catch (Exception cancelException) {
+                    e.addSuppressed(cancelException);
+                }
+            }
+
             if (request.autoOrderType() == AutoOrderType.BUY) {
                 accountApiClient.refundReservedCash(request.username(), reserveAmount);
             } else {
@@ -92,7 +106,13 @@ public class AutoOrderService {
                 savedAutoOrder.getOrderPrice(), savedAutoOrder.getOrderQuantity(),
                 savedAutoOrder.getOrderTime());
 
-        stockServerAutoOrderResponseRepository.save(autoOrderResponseMessage);
+        // 등록은 이미 완료됨: 응답 캐시 저장 실패가 예외로 전파되면 컨슈머 재시도로 예약·등록이 중복되므로 로그만 남김
+        try {
+            stockServerAutoOrderResponseRepository.save(autoOrderResponseMessage);
+        } catch (Exception e) {
+            log.warn("Auto order response save failed after registration. autoOrderId={}",
+                    savedAutoOrder.getAutoOrderId(), e);
+        }
         autoOrderResponseEventPublisher.publish(autoOrderResponseMessage);
     }
 

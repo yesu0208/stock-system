@@ -59,7 +59,7 @@ public class AutoOrderTriggerService {
                 break;
             }
 
-            triggerAndRegisterOrder(autoOrderDto);
+            if (!triggerAndRegisterOrder(autoOrderDto)) break;
         }
     }
 
@@ -74,34 +74,49 @@ public class AutoOrderTriggerService {
                 break;
             }
 
-            triggerAndRegisterOrder(autoOrderDto);
+            if (!triggerAndRegisterOrder(autoOrderDto)) break;
         }
     }
 
-    private void triggerAndRegisterOrder(AutoOrderDto autoOrderDto) {
+    /** @return 다음 자동주문 처리를 계속해도 되면 true, 이번 틱 처리를 멈춰야 하면 false */
+    private boolean triggerAndRegisterOrder(AutoOrderDto autoOrderDto) {
 
-        UpdateAutoOrderStatusResult result =
-                autoOrderService.updateAutoOrderStatusByTrigger(autoOrderDto.autoOrderId());
+        UpdateAutoOrderStatusResult result;
+        try {
+            result = autoOrderService.updateAutoOrderStatusByTrigger(autoOrderDto.autoOrderId());
+        } catch (Exception e) {
+            // 발동 상태 변경 실패(롤백): 꺼낸 자동주문을 대기열로 되돌리고 이번 틱 처리 중단
+            // (계속 진행하면 되돌린 주문을 다시 꺼내 같은 실패를 반복함)
+            log.error("Auto order trigger status update failed. autoOrderId={}", autoOrderDto.autoOrderId(), e);
+            autoOrderQueueRegistry.autoOrderEnqueue(autoOrderDto);
+            return false;
+        }
 
         if (result.previousStatus() != AutoOrderStatus.ACTIVE) {
-            return;
+            return true;
         }
 
         StockServerOrderRequestEvent event = StockServerOrderRequestEvent.fromAutoOrderDto(autoOrderDto);
 
         try {
             orderService.registerOrder(event, true);
-
-            stockServerAutoOrderResponseRepository.delete(autoOrderDto.username(), autoOrderDto.autoOrderId());
-            autoOrderResponseEventPublisher.publishTrigger(autoOrderDto.username());
-
         } catch (Exception e) {
 
             log.error("Auto order trigger -> order registration failed. autoOrderId={}, username={}, stockCode={}",
                     autoOrderDto.autoOrderId(), autoOrderDto.username(), autoOrderDto.stockCode(), e);
 
             compensateFailedTrigger(autoOrderDto);
+            return true;
         }
+
+        // 주문 등록 성공: 예약금은 주문으로 넘어갔으므로, 이후 부가 작업이 실패해도 보상(환불)하면 안 됨
+        try {
+            stockServerAutoOrderResponseRepository.delete(autoOrderDto.username(), autoOrderDto.autoOrderId());
+        } catch (Exception e) {
+            log.warn("Auto order response delete failed after trigger. autoOrderId={}", autoOrderDto.autoOrderId(), e);
+        }
+        autoOrderResponseEventPublisher.publishTrigger(autoOrderDto.username());
+        return true;
     }
 
     private void compensateFailedTrigger(AutoOrderDto autoOrderDto) {
@@ -126,8 +141,13 @@ public class AutoOrderTriggerService {
                     autoOrderDto.stockCode(), autoOrderDto.autoOrderType());
         }
 
-        stockServerAutoOrderResponseRepository.delete(autoOrderDto.username(), autoOrderDto.autoOrderId());
+        try {
+            stockServerAutoOrderResponseRepository.delete(autoOrderDto.username(), autoOrderDto.autoOrderId());
+        } catch (Exception e) {
+            log.warn("Auto order response delete failed after trigger compensation. autoOrderId={}",
+                    autoOrderDto.autoOrderId(), e);
+        }
 
-        autoOrderResponseEventPublisher.publishTriggerFailure(autoOrderDto, AutoOrderResultCode.INTERNAL_ERROR);
+        autoOrderResponseEventPublisher.publishTriggerFailure(autoOrderDto, AutoOrderResultCode.TRIGGER_FAILED);
     }
 }

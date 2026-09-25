@@ -7,6 +7,7 @@ import arile.toy.stocksystem.stockserver.alert.event.publisher.AlertResponseEven
 import arile.toy.stocksystem.stockserver.alert.repository.AlertRepository;
 import arile.toy.stocksystem.stockserver.alert.repository.StockServerAlertResponseRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AlertService {
 
     private final AlertRepository alertRepository;
@@ -24,7 +26,7 @@ public class AlertService {
 
     public void registerAlert(AlertRequestEvent request) {
 
-        AlertEntity savedAlert;
+        AlertEntity savedAlert = null;
 
         try {
             AlertEntity alertEntity = AlertEntity.of(
@@ -40,6 +42,17 @@ public class AlertService {
             alertQueueRegistry.alertEnqueue(alertDto);
 
         } catch (Exception e) {
+            // 저장 이후 실패 시 ACTIVE로 남겨 두면, 사용자는 실패 응답을 받았는데 재시작 워밍업으로
+            // 알림이 복구되고(컨슈머 재시도 시 중복 등록까지) 나중에 발송될 수 있음 -> CANCELED로 무효화
+            if (savedAlert != null) {
+                try {
+                    alertQueueRegistry.alertCancel(savedAlert.getAlertId(), savedAlert.getStockCode());
+                    savedAlert.changeStatus(AlertStatus.CANCELED);
+                    alertRepository.save(savedAlert);
+                } catch (Exception cancelException) {
+                    e.addSuppressed(cancelException);
+                }
+            }
             alertResponseEventPublisher.publishRegisterError(request, AlertErrorCode.INTERNAL_ERROR);
             throw e;
         }
@@ -48,7 +61,12 @@ public class AlertService {
                 savedAlert.getUsername(), savedAlert.getStockCode(), savedAlert.getDirection(),
                 savedAlert.getTriggerPrice(), savedAlert.getRegisteredTime());
 
-        stockServerAlertResponseRepository.save(responseMessage);
+        // 등록은 이미 완료됨: 응답 캐시 저장 실패가 예외로 전파되면 컨슈머 재시도로 중복 등록되므로 로그만 남김
+        try {
+            stockServerAlertResponseRepository.save(responseMessage);
+        } catch (Exception e) {
+            log.warn("Alert response save failed after registration. alertId={}", savedAlert.getAlertId(), e);
+        }
         alertResponseEventPublisher.publishRegistered(responseMessage);
     }
 

@@ -8,11 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
 public class LiveDailyCandleService {
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -32,7 +35,7 @@ public class LiveDailyCandleService {
         }
 
         CandleData todayCandle = new CandleData(
-                LocalDate.now().format(DATE_FORMAT),
+                LocalDate.now(KST).format(DATE_FORMAT),
                 startPrice, highPrice, lowPrice, curPrice, totalVolume
         );
 

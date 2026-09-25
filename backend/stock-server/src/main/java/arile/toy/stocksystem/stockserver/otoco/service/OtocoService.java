@@ -12,7 +12,9 @@ import arile.toy.stocksystem.stockserver.otoco.registry.OtocoEntryBookRegistry;
 import arile.toy.stocksystem.stockserver.otoco.repository.OtocoRepository;
 import arile.toy.stocksystem.stockserver.otoco.repository.StockServerOtocoResponseRepository;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OtocoService {
 
     private final OtocoRepository otocoRepository;
@@ -56,7 +59,7 @@ public class OtocoService {
             return;
         }
 
-        OtocoEntity savedOtoco;
+        OtocoEntity savedOtoco = null;
 
         try {
             OtocoEntity entity = OtocoEntity.of(
@@ -70,13 +73,31 @@ public class OtocoService {
             otocoEntryBookRegistry.register(OtocoDto.fromEntity(savedOtoco));
 
         } catch (Exception e) {
+            // 저장 이후 실패 시 예약분만 환불하고 WAITING_ENTRY로 남겨 두면, 재시작 시 워밍업으로
+            // 예약금 없는 OTOCO가 북에 복구될 수 있음 → 북에서 제거하고 CANCELED로 저장해 무효화
+            if (savedOtoco != null) {
+                try {
+                    otocoEntryBookRegistry.remove(savedOtoco.getStockCode(), savedOtoco.getOtocoId());
+                    savedOtoco.changeStatus(OtocoStatus.CANCELED);
+                    otocoRepository.save(savedOtoco);
+                } catch (Exception cancelException) {
+                    e.addSuppressed(cancelException);
+                }
+            }
+
             accountApiClient.refundReservedCash(request.username(), reserveAmount);
             otocoResponseEventPublisher.publishError(request, OtocoResultCode.INTERNAL_ERROR);
             throw e;
         }
 
         var responseMessage = StockServerOtocoResponseMessage.fromEntity(savedOtoco);
-        stockServerOtocoResponseRepository.save(responseMessage);
+
+        // 등록은 이미 완료됨: 응답 캐시 저장 실패가 예외로 전파되면 컨슈머 재시도로 예약·등록이 중복되므로 로그만 남김
+        try {
+            stockServerOtocoResponseRepository.save(responseMessage);
+        } catch (Exception e) {
+            log.warn("Otoco response save failed after registration. otocoId={}", savedOtoco.getOtocoId(), e);
+        }
         otocoResponseEventPublisher.publish(responseMessage);
     }
 

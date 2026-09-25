@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -22,6 +23,9 @@ public class StockChartService {
 
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    // 외부 API가 응답하지 않을 때 스케줄러 스레드가 무기한 대기하지 않도록 제한
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     @Value("${chart-api.appkey}")
     private String appKey;
@@ -123,6 +127,6 @@ public class StockChartService {
                 .header("custtype", "P")
                 .retrieve()
                 .bodyToMono(ChartResponse.class)
-                .block();
+                .block(REQUEST_TIMEOUT);
     }
 }

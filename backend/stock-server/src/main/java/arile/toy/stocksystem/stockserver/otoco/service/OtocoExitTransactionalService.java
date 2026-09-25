@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.otoco.service;
 
+import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
 import arile.toy.stocksystem.stockserver.otoco.dto.*;
@@ -7,7 +8,6 @@ import arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity;
 import arile.toy.stocksystem.stockserver.otoco.event.publisher.OtocoResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.otoco.repository.OtocoRepository;
 import arile.toy.stocksystem.stockserver.otoco.repository.StockServerOtocoResponseRepository;
-import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,6 @@ public class OtocoExitTransactionalService {
     private final OrderService orderService;
     private final StockServerOtocoResponseRepository stockServerOtocoResponseRepository;
     private final OtocoResponseEventPublisher otocoResponseEventPublisher;
-    private final AccountApiClient accountApiClient;
 
     @Transactional
     public void triggerExit(OtocoDto dto, OtocoLeg leg) {
@@ -38,40 +37,44 @@ public class OtocoExitTransactionalService {
 
         StockServerOrderRequestEvent event = StockServerOrderRequestEvent.fromOtocoExit(dto, exitPrice, leg);
 
-        try {
-            orderService.registerOrder(event, true);
-        } catch (Exception e) {
-            log.error("Otoco exit -> order registration failed. otocoId={}, username={}, leg={}",
-                    dto.otocoId(), dto.username(), leg, e);
-            compensateFailedExit(entity, leg);
+        // 청산용 주식은 진입 체결 시점이 아니라 여기서 일반 매도 주문처럼 예약함.
+        // (진입 체결분은 account-server 반영 이후에야 보유 수량에 잡히므로 체결 직후에는 예약할 수 없음)
+        // 주문 등록 중 예외: OrderService가 자체 예약분을 환불한 뒤 던지므로 그대로 전파
+        // -> 롤백으로 WAITING_EXIT 유지, 트리거 서비스가 북에 다시 등록해 다음 틱에 재시도
+        OrderEntity savedOrder = orderService.registerOrder(event, false);
+
+        if (savedOrder == null) {
+            // 보유 수량 부족 등으로 예약 실패 (대기 중 사용자가 직접 매도한 경우 등)
+            failExit(entity, leg);
             return;
         }
 
         entity.markCompleted(leg);
         otocoRepository.save(entity);
 
-        stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
+        // 청산 주문 등록 완료: 이후 부가 작업 실패로 롤백되지 않도록 로그만 남김
+        try {
+            stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
+        } catch (Exception e) {
+            log.warn("Otoco response delete failed after exit trigger. otocoId={}", entity.getOtocoId(), e);
+        }
 
         otocoResponseEventPublisher.publishExitTriggered(OtocoDto.fromEntity(entity), leg);
     }
 
-    private void compensateFailedExit(OtocoEntity entity, OtocoLeg leg) {
+    private void failExit(OtocoEntity entity, OtocoLeg leg) {
 
-        boolean refunded = entity.getLeverageRatio().isSpot()
-                ? accountApiClient.refundReservedStock(entity.getUsername(), entity.getStockCode(), entity.getOrderQuantity())
-                : accountApiClient.refundReservedLeverageStock(entity.getUsername(), entity.getStockCode(),
-                entity.getLeverageRatio().name(), entity.getOrderQuantity());
-
-        if (!refunded) {
-            log.error("CRITICAL: Otoco exit trigger compensation refund FAILED. " +
-                            "Manual intervention required. otocoId={}, username={}, leg={}",
-                    entity.getOtocoId(), entity.getUsername(), leg);
-        }
+        log.warn("Otoco exit order rejected (stock reservation failed). otocoId={}, username={}, leg={}",
+                entity.getOtocoId(), entity.getUsername(), leg);
 
         entity.changeStatus(OtocoStatus.CANCELED);
         otocoRepository.save(entity);
 
-        stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
+        try {
+            stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
+        } catch (Exception e) {
+            log.warn("Otoco response delete failed after exit failure. otocoId={}", entity.getOtocoId(), e);
+        }
         otocoResponseEventPublisher.publishExitFailed(OtocoDto.fromEntity(entity), OtocoResultCode.INTERNAL_ERROR);
     }
 }

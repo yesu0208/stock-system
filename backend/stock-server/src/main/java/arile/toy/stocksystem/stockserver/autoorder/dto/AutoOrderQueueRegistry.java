@@ -10,8 +10,7 @@ public class AutoOrderQueueRegistry {
     private final ConcurrentHashMap<String, InMemorySingleStockAutoOrderQueue> autoOrderQueues = new ConcurrentHashMap<>();
 
     private InMemorySingleStockAutoOrderQueue book(String stockCode) {
-        return autoOrderQueues.computeIfAbsent(stockCode, key -> new InMemorySingleStockAutoOrderQueue() {
-        });
+        return autoOrderQueues.computeIfAbsent(stockCode, key -> new InMemorySingleStockAutoOrderQueue());
     }
 
     public void autoOrderEnqueue(AutoOrderDto autoOrderDto) {

@@ -60,39 +60,18 @@ public class OtocoCancelService {
             case COMPLETED -> otocoCancelResponseEventPublisher.publish(
                     OtocoCancelResponseEvent.of(entity, false, OtocoCancelErrorCode.ALREADY_COMPLETED));
 
-            case WAITING_ENTRY -> {
+            default -> {
+                OtocoStatus previousStatus = entity.getOtocoStatus();
                 try {
-                    cancelWaitingEntry(entity);
+                    cancelOpen(entity);
                     publishSuccess(entity);
                 } catch (Exception e) {
-                    log.error("Otoco cancel(WAITING_ENTRY) failed. otocoId={}", entity.getOtocoId(), e);
+                    log.error("Otoco cancel({}) failed. otocoId={}", previousStatus, entity.getOtocoId(), e);
                     otocoCancelResponseEventPublisher.publish(
                             OtocoCancelResponseEvent.of(entity, false, OtocoCancelErrorCode.INTERNAL_ERROR));
-                }
-            }
-
-            case ENTRY_ORDER_PLACED -> {
-                try {
-                    entity.changeStatus(OtocoStatus.CANCELED);
-                    otocoRepository.save(entity);
-
-                    cancelService.forceCancel(entity.getEntryOrderId());
-                    publishSuccess(entity);
-                } catch (Exception e) {
-                    log.error("Otoco cancel(ENTRY_ORDER_PLACED) failed. otocoId={}", entity.getOtocoId(), e);
-                    otocoCancelResponseEventPublisher.publish(
-                            OtocoCancelResponseEvent.of(entity, false, OtocoCancelErrorCode.INTERNAL_ERROR));
-                }
-            }
-
-            case WAITING_EXIT -> {
-                try {
-                    cancelWaitingExit(entity);
-                    publishSuccess(entity);
-                } catch (Exception e) {
-                    log.error("Otoco cancel(WAITING_EXIT) failed. otocoId={}", entity.getOtocoId(), e);
-                    otocoCancelResponseEventPublisher.publish(
-                            OtocoCancelResponseEvent.of(entity, false, OtocoCancelErrorCode.INTERNAL_ERROR));
+                    // 예외를 삼키면 일부 작업만 커밋되고 예약분이 남을 수 있음
+                    // → 다시 던져 트랜잭션을 롤백하고 컨슈머 재시도로 처리
+                    throw e;
                 }
             }
         }
@@ -104,29 +83,51 @@ public class OtocoCancelService {
         OtocoEntity entity = otocoRepository.findByIdForUpdate(otocoId)
                 .orElseThrow(() -> new IllegalArgumentException("otoco not found"));
 
+        if (!entity.getOtocoStatus().isOpen()) {
+            return; // 이미 종료 상태 - 아무 것도 하지 않음
+        }
+
         try {
-            switch (entity.getOtocoStatus()) {
-                case WAITING_ENTRY -> {
-                    cancelWaitingEntry(entity);
-                    publishSuccess(entity);
-                }
-                case ENTRY_ORDER_PLACED -> {
-                    entity.changeStatus(OtocoStatus.CANCELED);
-                    otocoRepository.save(entity);
-                    cancelService.forceCancel(entity.getEntryOrderId());
-                }
-                case WAITING_EXIT -> {
-                    cancelWaitingExit(entity);
-                    publishSuccess(entity);
-                }
-                default -> { /* 이미 종료 상태 - 아무 것도 하지 않음 */ }
-            }
+            cancelOpen(entity);
+            publishSuccess(entity);
         } catch (Exception e) {
+            // 장 마감 정리용: 남은 예약은 정산에서 해제됨
             log.error("Force otoco cancel failed. otocoId={}", otocoId, e);
         }
     }
 
-    private void cancelWaitingEntry(OtocoEntity entity) {
+    /**
+     * 진행 중인 OTOCO를 단계별로 취소.
+     * 롤백 가능한 DB 작업(상태·취소 이력) → 되돌릴 수 없는 환불 → 메모리 북 제거 순으로 처리.
+     */
+    private void cancelOpen(OtocoEntity entity) {
+
+        OtocoStatus previousStatus = entity.getOtocoStatus();
+
+        entity.changeStatus(OtocoStatus.CANCELED);
+        otocoRepository.save(entity);
+        otocoCancelRepository.saveAndFlush(OtocoCancelEntity.of(entity.getOtocoId()));
+
+        switch (previousStatus) {
+
+            case WAITING_ENTRY -> {
+                refundEntryReservation(entity);
+                removeFromBook(() -> otocoEntryBookRegistry.remove(entity.getStockCode(), entity.getOtocoId()), entity);
+            }
+
+            // 진입 주문이 큐에 있음: 주문 취소가 주문의 남은 예약분을 환불함
+            // (주문 취소 훅은 OTOCO가 이미 CANCELED라 추가 처리하지 않음)
+            case ENTRY_ORDER_PLACED -> cancelService.forceCancel(entity.getEntryOrderId());
+
+            // 청산용 주식은 청산 발동 시점에 예약하므로 WAITING_EXIT 단계에는 환불할 예약이 없음
+            case WAITING_EXIT ->
+                    removeFromBook(() -> otocoExitBookRegistry.remove(entity.getStockCode(), entity.getOtocoId()), entity);
+
+            default -> throw new IllegalStateException("Not an open otoco status: " + previousStatus);
+        }
+    }
+
+    private void refundEntryReservation(OtocoEntity entity) {
 
         LeverageRatio leverageRatio = entity.getLeverageRatio();
         long orderAmount = (long) entity.getEntryTriggerPrice() * entity.getOrderQuantity();
@@ -137,39 +138,24 @@ public class OtocoCancelService {
             log.error("Otoco cash refund failed. otocoId={}, username={}", entity.getOtocoId(), entity.getUsername());
             throw new IllegalStateException("Cash refund failed");
         }
-
-        otocoEntryBookRegistry.remove(entity.getStockCode(), entity.getOtocoId());
-
-        entity.changeStatus(arile.toy.stocksystem.stockserver.otoco.dto.OtocoStatus.CANCELED);
-        otocoRepository.save(entity);
-
-        otocoCancelRepository.save(OtocoCancelEntity.of(entity.getOtocoId()));
     }
 
-    private void cancelWaitingExit(OtocoEntity entity) {
-
-        LeverageRatio leverageRatio = entity.getLeverageRatio();
-
-        boolean refunded = leverageRatio.isSpot()
-                ? accountApiClient.refundReservedStock(entity.getUsername(), entity.getStockCode(), entity.getOrderQuantity())
-                : accountApiClient.refundReservedLeverageStock(entity.getUsername(), entity.getStockCode(),
-                leverageRatio.name(), entity.getOrderQuantity());
-
-        if (!refunded) {
-            log.error("Otoco stock refund failed. otocoId={}, username={}", entity.getOtocoId(), entity.getUsername());
-            throw new IllegalStateException("Stock refund failed");
+    /** 환불 이후 단계: 실패해도 예외를 던지지 않음 (롤백·재시도 시 이중 환불 방지). 북에 남아도 발동 시 상태 검사로 무시됨 */
+    private void removeFromBook(Runnable removal, OtocoEntity entity) {
+        try {
+            removal.run();
+        } catch (Exception e) {
+            log.warn("Otoco book remove failed after cancel. otocoId={}", entity.getOtocoId(), e);
         }
-
-        otocoExitBookRegistry.remove(entity.getStockCode(), entity.getOtocoId());
-
-        entity.changeStatus(OtocoStatus.CANCELED);
-        otocoRepository.save(entity);
-
-        otocoCancelRepository.save(OtocoCancelEntity.of(entity.getOtocoId()));
     }
 
     private void publishSuccess(OtocoEntity entity) {
-        stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
+        // 취소는 이미 완료됨: 응답 캐시 삭제 실패가 롤백·재시도로 이어지지 않도록 로그만 남김
+        try {
+            stockServerOtocoResponseRepository.delete(entity.getUsername(), entity.getOtocoId());
+        } catch (Exception e) {
+            log.warn("Otoco response delete failed after cancel. otocoId={}", entity.getOtocoId(), e);
+        }
         otocoCancelResponseEventPublisher.publish(OtocoCancelResponseEvent.of(entity, true, null));
     }
 }
