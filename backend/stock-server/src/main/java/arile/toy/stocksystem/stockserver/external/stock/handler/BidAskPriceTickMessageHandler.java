@@ -43,36 +43,42 @@ public class BidAskPriceTickMessageHandler {
 
             String stockCode = fields[offset];
 
-            BidAskPriceTickMessage bidAskPriceTickMessage = new BidAskPriceTickMessage(
-                    TickMessageType.BIDASKPRICE,
-                    stockCode,
-                    List.of(new PriceLevel(Integer.parseInt(fields[offset + 3]), Integer.parseInt(fields[offset+23])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 4]), Integer.parseInt(fields[offset+24])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 5]), Integer.parseInt(fields[offset+25])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 6]), Integer.parseInt(fields[offset+26])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 7]), Integer.parseInt(fields[offset+27])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 8]), Integer.parseInt(fields[offset+28])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 9]), Integer.parseInt(fields[offset+29])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 10]), Integer.parseInt(fields[offset+30])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 11]), Integer.parseInt(fields[offset+31])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 12]), Integer.parseInt(fields[offset+32]))),
-                    List.of(new PriceLevel(Integer.parseInt(fields[offset + 13]), Integer.parseInt(fields[offset+33])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 14]), Integer.parseInt(fields[offset+34])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 15]), Integer.parseInt(fields[offset+35])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 16]), Integer.parseInt(fields[offset+36])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 17]), Integer.parseInt(fields[offset+37])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 18]), Integer.parseInt(fields[offset+38])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 19]), Integer.parseInt(fields[offset+39])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 20]), Integer.parseInt(fields[offset+40])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 21]), Integer.parseInt(fields[offset+41])),
-                            new PriceLevel(Integer.parseInt(fields[offset + 22]), Integer.parseInt(fields[offset+42]))),
-                    Integer.parseInt(fields[offset + 43]),
-                    Integer.parseInt(fields[offset + 44])
-            );
+            // 체결가·요약 핸들러와 동일하게, 파싱할 수 없는 레코드는 건너뛰고 다음 레코드를 처리
+            try {
+                BidAskPriceTickMessage bidAskPriceTickMessage = new BidAskPriceTickMessage(
+                        TickMessageType.BIDASKPRICE,
+                        stockCode,
+                        List.of(new PriceLevel(Integer.parseInt(fields[offset + 3]), Integer.parseInt(fields[offset+23])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 4]), Integer.parseInt(fields[offset+24])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 5]), Integer.parseInt(fields[offset+25])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 6]), Integer.parseInt(fields[offset+26])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 7]), Integer.parseInt(fields[offset+27])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 8]), Integer.parseInt(fields[offset+28])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 9]), Integer.parseInt(fields[offset+29])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 10]), Integer.parseInt(fields[offset+30])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 11]), Integer.parseInt(fields[offset+31])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 12]), Integer.parseInt(fields[offset+32]))),
+                        List.of(new PriceLevel(Integer.parseInt(fields[offset + 13]), Integer.parseInt(fields[offset+33])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 14]), Integer.parseInt(fields[offset+34])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 15]), Integer.parseInt(fields[offset+35])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 16]), Integer.parseInt(fields[offset+36])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 17]), Integer.parseInt(fields[offset+37])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 18]), Integer.parseInt(fields[offset+38])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 19]), Integer.parseInt(fields[offset+39])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 20]), Integer.parseInt(fields[offset+40])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 21]), Integer.parseInt(fields[offset+41])),
+                                new PriceLevel(Integer.parseInt(fields[offset + 22]), Integer.parseInt(fields[offset+42]))),
+                        Integer.parseInt(fields[offset + 43]),
+                        Integer.parseInt(fields[offset + 44])
+                );
 
-            stockServerBidAskPriceRepository.save(bidAskPriceTickMessage);
-            redisBidAskPriceEventPublisher.publish(
-                    BidAskPriceTickEvent.fromMessage(bidAskPriceTickMessage));
+                stockServerBidAskPriceRepository.save(bidAskPriceTickMessage);
+                redisBidAskPriceEventPublisher.publish(
+                        BidAskPriceTickEvent.fromMessage(bidAskPriceTickMessage));
+            } catch (NumberFormatException e) {
+                log.warn("[BIDASK 파싱 실패] 처리 불가 데이터 무시. stockCode={}, message={}",
+                        stockCode, e.getMessage());
+            }
         }
     }
 }

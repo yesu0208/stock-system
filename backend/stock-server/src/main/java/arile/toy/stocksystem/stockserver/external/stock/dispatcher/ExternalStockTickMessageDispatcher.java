@@ -5,10 +5,12 @@ import arile.toy.stocksystem.stockserver.external.stock.handler.StateTickMessage
 import arile.toy.stocksystem.stockserver.external.stock.handler.StockSummaryTickMessageHandler;
 import arile.toy.stocksystem.stockserver.external.stock.handler.TradePriceTickMessageHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ExternalStockTickMessageDispatcher {
 
     private final StateTickMessageHandler stateTickMessageHandler;
@@ -18,19 +20,31 @@ public class ExternalStockTickMessageDispatcher {
 
     public void dispatch(String message) {
 
-        if (!message.contains("|")) {
-            stateTickMessageHandler.handle(message);
-            return;
+        try {
+            if (!message.contains("|")) {
+                runSafely("state", () -> stateTickMessageHandler.handle(message));
+                return;
+            }
+
+            String[] parts = message.split("\\|", 4);
+            String trId = parts[1];
+
+            if (trId.equals("H0STCNT0")) {
+                runSafely("tradePrice", () -> tradePriceTickMessageHandler.handle(message));
+                runSafely("stockSummary", () -> stockSummaryTickMessageHandler.handle(message));
+            } else {
+                runSafely("bidAskPrice", () -> bidAskPriceTickMessageHandler.handle(message));
+            }
+        } catch (Exception e) {
+            log.error("External stock tick message dispatch failed. message={}", message, e);
         }
+    }
 
-        String[] parts = message.split("\\|", 4);
-        String trId = parts[1];
-
-        if (trId.equals("H0STCNT0")) {
-            tradePriceTickMessageHandler.handle(message);
-            stockSummaryTickMessageHandler.handle(message);
-        } else {
-            bidAskPriceTickMessageHandler.handle(message);
+    private void runSafely(String handlerName, Runnable handler) {
+        try {
+            handler.run();
+        } catch (Exception e) {
+            log.error("External stock tick handler failed. handler={}", handlerName, e);
         }
     }
 }
