@@ -66,7 +66,7 @@ public class OrderService {
             }
         }
 
-        OrderEntity savedOrder;
+        OrderEntity savedOrder = null;
 
         try {
             OrderEntity orderEntity = OrderEntity.of(
@@ -91,6 +91,19 @@ public class OrderService {
             queuePositionBroadcastService.broadcast(orderDto.stockCode(), orderDto.orderType());
 
         } catch (Exception e) {
+            // 저장 이후 단계(대기열 등록·브로드캐스트)에서 실패한 경우,
+            // 예약분만 환불하고 주문을 OPEN으로 남겨 두면 재시작 시 워밍업으로 예약금 없는 주문이 대기열에 복구될 수 있음
+            // -> 대기열에서 제거하고 CANCELED로 저장해 무효화
+            if (savedOrder != null) {
+                try {
+                    orderQueueRegistry.orderCancel(savedOrder.getOrderId(), savedOrder.getStockCode());
+                    savedOrder.changeOrderStatus(OrderStatus.CANCELED);
+                    orderRepository.save(savedOrder);
+                } catch (Exception cancelException) {
+                    e.addSuppressed(cancelException);
+                }
+            }
+
             if (!fromAutoOrder) {
                 if (request.orderType() == OrderType.BUY) {
                     accountApiClient.refundReservedCash(request.username(), reserveAmount);
