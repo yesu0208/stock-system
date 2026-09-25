@@ -97,17 +97,9 @@ public class UserRedisSubscriptionRegistry {
         userRefCount.computeIfPresent(username, (user, count) -> {
             if (count.decrementAndGet() == 0) {
 
-                Map<UserEventType, RedisSubscription> userSubs =
-                        subscriptions.remove(user);
-
-                if (userSubs != null) {
-                    userSubs.values().forEach(sub ->
-                            container.removeMessageListener(
-                                    sub.subscriber(),
-                                    sub.topic()
-                            )
-                    );
-                }
+                subscriptions.remove(user).values().forEach(sub ->
+                        container.removeMessageListener(sub.subscriber(), sub.topic())
+                );
 
                 log.info("Redis unsubscribe all user events username={}", user);
                 return null;
