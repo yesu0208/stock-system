@@ -32,22 +32,6 @@ public class InMemorySingleStockAutoOrderQueue implements SingleStockAutoOrderQu
         } else {
             sellQueue.offer(autoOrderDto);
         }
-
-        System.out.println("=== PriorityBlockingQueue DEBUGGING(AUTO)===");
-        // Todo: debugging(buyQueue)
-        AutoOrderDto[] snapshot = buyQueue.toArray(new AutoOrderDto[0]);
-        Arrays.sort(snapshot, BUY_ORDER);
-        for (AutoOrderDto t : snapshot) {
-            System.out.println(t);
-        }
-
-        // Todo: debugging(sellQueue)
-        AutoOrderDto[] snapshot2 = sellQueue.toArray(new AutoOrderDto[0]);
-        Arrays.sort(snapshot2, SELL_ORDER);
-        for (AutoOrderDto t : snapshot2) {
-            System.out.println(t);
-        }
-
     }
 
     @Override
