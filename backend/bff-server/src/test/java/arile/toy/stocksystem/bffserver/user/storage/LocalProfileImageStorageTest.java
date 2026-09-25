@@ -174,4 +174,16 @@ class LocalProfileImageStorageTest {
                     assertThat(e.getMessage()).isEqualTo("파일 업로드에 실패했습니다.");
                 });
     }
+
+    @Test
+    @DisplayName("파일 이름이 없으면(null) 확장자를 알 수 없으므로 400으로 거부한다")
+    void nullOriginalFilename_rejected() {
+        MultipartFile file = mock(MultipartFile.class);
+        given(file.isEmpty()).willReturn(false);
+        given(file.getOriginalFilename()).willReturn(null);
+
+        assertThatThrownBy(() -> storage.store(file, "user1"))
+                .isInstanceOfSatisfying(ClientErrorException.class,
+                        e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
 }
