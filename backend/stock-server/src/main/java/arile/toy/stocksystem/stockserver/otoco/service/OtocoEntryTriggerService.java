@@ -47,7 +47,15 @@ public class OtocoEntryTriggerService {
             }
 
             otocoEntryBookRegistry.remove(stockCode, dto.otocoId());
-            otocoEntryTransactionalService.triggerEntryAndRegisterOrder(dto);
+
+            try {
+                otocoEntryTransactionalService.triggerEntryAndRegisterOrder(dto);
+            } catch (Exception e) {
+                // 트랜잭션 롤백으로 WAITING_ENTRY 유지: 북에 다시 등록해 다음 틱에 재시도
+                // (같은 틱의 나머지 OTOCO 처리는 계속 진행)
+                log.error("Otoco entry trigger failed. otocoId={}", dto.otocoId(), e);
+                otocoEntryBookRegistry.register(dto);
+            }
         }
     }
 }

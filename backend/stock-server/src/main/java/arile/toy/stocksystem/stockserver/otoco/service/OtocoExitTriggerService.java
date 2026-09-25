@@ -51,7 +51,15 @@ public class OtocoExitTriggerService {
             OtocoLeg leg = slHit ? OtocoLeg.STOP_LOSS : OtocoLeg.TAKE_PROFIT;
 
             otocoExitBookRegistry.remove(stockCode, dto.otocoId());
-            otocoExitTransactionalService.triggerExit(dto, leg);
+
+            try {
+                otocoExitTransactionalService.triggerExit(dto, leg);
+            } catch (Exception e) {
+                // 트랜잭션 롤백으로 WAITING_EXIT 유지: 북에 다시 등록해 다음 틱에 재시도
+                // (같은 틱의 나머지 OTOCO 처리는 계속 진행)
+                log.error("Otoco exit trigger failed. otocoId={}, leg={}", dto.otocoId(), leg, e);
+                otocoExitBookRegistry.register(dto);
+            }
         }
     }
 }
