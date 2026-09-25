@@ -8,12 +8,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
 public class LiveMinuteCandleService {
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -33,7 +36,7 @@ public class LiveMinuteCandleService {
 
         int safeVolumeTick = volumeTick != null ? volumeTick : 0;
         String minuteKey = toMinuteKey(tradeTime);
-        String today = LocalDate.now().format(DATE_FORMAT);
+        String today = LocalDate.now(KST).format(DATE_FORMAT);
 
         MinuteCandleBuilder builder = builders.compute(stockCode, (code, existing) -> {
             if (existing == null || !existing.minuteKey.equals(minuteKey)) {
