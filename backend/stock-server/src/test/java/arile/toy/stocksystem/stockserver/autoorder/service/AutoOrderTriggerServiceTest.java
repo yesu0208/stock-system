@@ -144,7 +144,7 @@ class AutoOrderTriggerServiceTest {
 
         then(accountApiClient).should().refundReservedCash(USERNAME, 695_104L);
         then(stockServerAutoOrderResponseRepository).should().delete(USERNAME, 1L);
-        then(autoOrderResponseEventPublisher).should().publishTriggerFailure(dto, AutoOrderResultCode.INTERNAL_ERROR);
+        then(autoOrderResponseEventPublisher).should().publishTriggerFailure(dto, AutoOrderResultCode.TRIGGER_FAILED);
         then(autoOrderResponseEventPublisher).should(never()).publishTrigger(anyString());
     }
 
@@ -177,7 +177,7 @@ class AutoOrderTriggerServiceTest {
 
         sut.getExternalTickMessageAndTrigger(tick(70_000));
 
-        then(autoOrderResponseEventPublisher).should().publishTriggerFailure(dto, AutoOrderResultCode.INTERNAL_ERROR);
+        then(autoOrderResponseEventPublisher).should().publishTriggerFailure(dto, AutoOrderResultCode.TRIGGER_FAILED);
     }
 
     @DisplayName("주문 등록 성공 후 Redis 응답 삭제가 실패해도 환불하지 않고 발동 알림을 보낸다 (이중 환불 방지)")
