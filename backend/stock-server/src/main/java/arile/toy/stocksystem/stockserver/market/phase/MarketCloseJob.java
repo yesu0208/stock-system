@@ -1,26 +1,12 @@
 package arile.toy.stocksystem.stockserver.market.phase;
 
-import arile.toy.stocksystem.stockserver.autocancel.service.AutoCancelService;
-import arile.toy.stocksystem.stockserver.autoorder.entity.AutoOrderEntity;
-import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderService;
-import arile.toy.stocksystem.stockserver.cancel.service.CancelService;
 import arile.toy.stocksystem.stockserver.external.stock.checker.MarketTimeChecker;
 import arile.toy.stocksystem.stockserver.external.stock.manager.ExternalStockProperties;
-import arile.toy.stocksystem.stockserver.order.entity.OrderEntity;
-import arile.toy.stocksystem.stockserver.order.service.OrderService;
-import arile.toy.stocksystem.stockserver.otoco.entity.OtocoEntity;
-import arile.toy.stocksystem.stockserver.otoco.service.OtocoService;
-import arile.toy.stocksystem.stockserver.otococancel.service.OtocoCancelService;
-import arile.toy.stocksystem.stockserver.trailingstop.entity.TrailingStopEntity;
-import arile.toy.stocksystem.stockserver.trailingstop.service.TrailingStopService;
-import arile.toy.stocksystem.stockserver.trailingstopcancel.service.TrailingStopCancelService;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -28,14 +14,7 @@ import java.util.List;
 public class MarketCloseJob {
 
     private final MarketCloseLock marketCloseLock;
-    private final OrderService orderService;
-    private final CancelService cancelService;
-    private final AutoOrderService autoOrderService;
-    private final AutoCancelService autoCancelService;
-    private final TrailingStopService trailingStopService;
-    private final TrailingStopCancelService trailingStopCancelService;
-    private final OtocoService otocoService;
-    private final OtocoCancelService otocoCancelService;
+    private final MarketCloseCleanupService marketCloseCleanupService;
     private final AccountApiClient accountApiClient;
     private final MarketClosePublisher marketClosePublisher;
     private final ExternalStockProperties externalStockProperties;
@@ -58,37 +37,8 @@ public class MarketCloseJob {
         log.info("[MarketCloseJob] market close job started.");
 
         try {
-            List<String> myStockCodes = externalStockProperties.getOpen();
-
-            List<OrderEntity> unfilledOrders = orderService.findAllUnfilledOrders(myStockCodes);
-
-            for (OrderEntity order : unfilledOrders) {
-                cancelService.forceCancel(order.getOrderId());
-            }
-
-            List<AutoOrderEntity> untriggeredAutoOrders = autoOrderService.findAllUntriggeredAutoOrders(myStockCodes);
-
-            for (AutoOrderEntity autoOrder : untriggeredAutoOrders) {
-                autoCancelService.forceAutoCancel(autoOrder.getAutoOrderId());
-            }
-
-            log.info("[MarketCloseJob] cancel finished for this group. stockCodes={}", myStockCodes);
-
-            List<TrailingStopEntity> untriggeredTrailingStops = trailingStopService.findAllUntriggeredTrailingStops(myStockCodes);
-
-            for (TrailingStopEntity trailingStop : untriggeredTrailingStops) {
-                trailingStopCancelService.forceCancelTrailingStop(trailingStop.getTrailingStopId());
-            }
-
-            log.info("[MarketCloseJob] trailing-stop cancel finished for this group. stockCodes={}", myStockCodes);
-
-            List<OtocoEntity> unfinishedOtocos = otocoService.findAllUnfinishedOtocos(myStockCodes);
-
-            for (OtocoEntity otoco : unfinishedOtocos) {
-                otocoCancelService.forceCancelOtoco(otoco.getOtocoId());
-            }
-
-            log.info("[MarketCloseJob] otoco cancel finished for this group. stockCodes={}", myStockCodes);
+            // 정리 실패 건이 있어도 완료 표시·정산까지 진행 (정산이 묶인 예약금을 풀어 주는 안전망)
+            marketCloseCleanupService.cleanUp(externalStockProperties.getOpen());
 
             boolean isLast = marketCloseCoordinator.markDoneAndCheckLast();
 
