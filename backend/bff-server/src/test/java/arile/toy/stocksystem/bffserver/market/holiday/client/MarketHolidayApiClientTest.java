@@ -12,6 +12,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,10 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withNoContent;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 class MarketHolidayApiClientTest {
 
@@ -109,5 +107,14 @@ class MarketHolidayApiClientTest {
 
         assertStatus(() -> client.removeHoliday(DATE), HttpStatus.NOT_FOUND);
         assertStatus(() -> client.removeHoliday(DATE), HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    @Test
+    @DisplayName("휴장일 등록: stock-server에 연결할 수 없으면(응답 없음) 503으로 바꾼다")
+    void addHoliday_connectionFailure_503() {
+        server.expect(requestTo(HOLIDAYS)).andRespond(withException(new IOException("Connection refused")));
+
+        assertStatus(() -> client.addHoliday(new MarketHolidayCreateRequest(DATE, "한글날")),
+                HttpStatus.SERVICE_UNAVAILABLE);
     }
 }
