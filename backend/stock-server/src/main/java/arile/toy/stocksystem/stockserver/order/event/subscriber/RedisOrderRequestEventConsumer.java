@@ -63,6 +63,11 @@ public class RedisOrderRequestEventConsumer {
         }
 
         for (MapRecord<String, Object, Object> record : records) {
+            String recordId = record.getId().getValue();
+            // 이번 호출에서 PROCESSING 선점에 성공했는지 / 주문 처리(DONE 기록)까지 끝났는지
+            // -> 실패 시 "내가 잡은 미완료 PROCESSING"만 지우기 위함 (DONE을 지우면 재시도에서 중복 주문 발생)
+            boolean acquired = false;
+            boolean done = false;
             try {
 
                 Map<Object, Object> value = record.getValue();
@@ -74,7 +79,6 @@ public class RedisOrderRequestEventConsumer {
                     continue;
                 }
 
-                String recordId = record.getId().getValue();
                 String status = getStatus(recordId);
 
                 if ("DONE".equals(status)) {
@@ -92,16 +96,20 @@ public class RedisOrderRequestEventConsumer {
                 if (!tryStartProcess(recordId)) {
                     continue;
                 }
+                acquired = true;
 
                 handle(record);
 
                 markProcessed(recordId);
+                done = true;
 
                 streamRedisTemplate.opsForStream()
                         .acknowledge(streamKey, group, record.getId());
             } catch (Exception e) {
                 log.error("Failed to process {}", record.getId(), e);
-                clearProcessingMark(record.getId().getValue());
+                if (acquired && !done) {
+                    clearProcessingMark(recordId);
+                }
             }
         }
     }
@@ -146,6 +154,8 @@ public class RedisOrderRequestEventConsumer {
     private void processRetry(String streamKey, MapRecord<String, Object, Object> record) {
 
         String recordId = record.getId().getValue();
+        boolean acquired = false;
+        boolean done = false;
         try {
             String status = getStatus(recordId);
 
@@ -162,10 +172,12 @@ public class RedisOrderRequestEventConsumer {
             if (!tryStartProcess(recordId)) {
                 return;
             }
+            acquired = true;
 
             handle(record);
 
             markProcessed(recordId);
+            done = true;
 
             streamRedisTemplate.opsForStream()
                     .acknowledge(streamKey, group, record.getId());
@@ -173,6 +185,18 @@ public class RedisOrderRequestEventConsumer {
             clearRetryCount(record);
 
         } catch (Exception e) {
+
+            // 주문 처리는 끝났고 후처리(ack 등)만 실패한 경우: 재시도 횟수 증가·DLQ 이동을 하지 않음
+            // -> 다음 재시도에서 DONE을 보고 ack만 수행
+            if (done) {
+                log.error("Retry post-processing failed after DONE {}", record.getId(), e);
+                return;
+            }
+
+            // 다음 재시도가 PROCESSING에 막혀 TTL(5분)까지 멈추지 않도록 내가 잡은 표시 해제
+            if (acquired) {
+                clearProcessingMark(recordId);
+            }
 
             int retryCount = getRetryCount(record);
 
