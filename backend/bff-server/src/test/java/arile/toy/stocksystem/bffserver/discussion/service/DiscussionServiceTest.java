@@ -220,6 +220,16 @@ class DiscussionServiceTest {
             verify(postRepository, never()).delete(any());
             verify(commentRepository, never()).deleteByPostId(anyLong());
         }
+
+        @Test
+        @DisplayName("상세: 로그인 사용자가 스크랩한 게시글이면 스크랩 여부가 참이다")
+        void detail_myScrapped() {
+            givenPost(1L, AUTHOR);
+            given(scrapRepository.findByPostIdAndUserId(1L, OTHER))
+                    .willReturn(Optional.of(DiscussionScrapEntity.of(1L, OTHER)));
+
+            assertThat(service.getPost(1L, OTHER).myScrapped()).isTrue();
+        }
     }
 
     // ===================== 댓글 =====================
@@ -314,6 +324,18 @@ class DiscussionServiceTest {
 
             verify(commentRepository, never()).delete(any());
             verify(reactionRepository, never()).deleteByTargetTypeAndTargetIdIn(any(), any());
+        }
+
+        @Test
+        @DisplayName("수정: 응답에 작성자가 이 댓글에 남긴 반응을 담는다")
+        void edit_includesMyReaction() {
+            givenComment(10L, 1L, AUTHOR);
+            given(reactionRepository.findByTargetTypeAndTargetIdAndUserId(TargetType.COMMENT, 10L, AUTHOR))
+                    .willReturn(Optional.of(DiscussionReactionEntity.of(TargetType.COMMENT, 10L, AUTHOR, ReactionType.LIKE)));
+
+            CommentResponse response = service.editComment(AUTHOR, 1L, 10L, new CommentEditRequest("수정"));
+
+            assertThat(response.myReaction()).isEqualTo(ReactionType.LIKE);
         }
     }
 
