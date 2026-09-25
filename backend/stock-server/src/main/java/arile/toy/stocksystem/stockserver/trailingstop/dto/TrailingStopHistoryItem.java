@@ -20,7 +20,8 @@ public record TrailingStopHistoryItem(
     public static TrailingStopHistoryItem fromEntity(TrailingStopEntity entity) {
         return new TrailingStopHistoryItem(
                 entity.getTrailingStopId(), entity.getStockCode(), entity.getTrailingStopType(), entity.getLeverageRatio(),
-                entity.getOrderQuantity(), entity.getStopPercent(), entity.getBasePrice(), entity.getTriggerPrice(),
+                entity.getOrderQuantity(), entity.getStopPercent(),
+                entity.resolveCurrentBasePrice(), entity.resolveCurrentTriggerPrice(),
                 entity.getTrailingStopStatus(), entity.getOrderTime()
         );
     }
