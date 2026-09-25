@@ -8,7 +8,9 @@ import arile.toy.stocksystem.accountserver.rank.publisher.RankUpdatedPublisher;
 import arile.toy.stocksystem.accountserver.rank.repository.UserRankRepository;
 import arile.toy.stocksystem.accountserver.trade.TradeCommand;
 import arile.toy.stocksystem.accountserver.trade.dto.TradeType;
+import arile.toy.stocksystem.accountserver.trade.entity.AppliedTradeEntity;
 import arile.toy.stocksystem.accountserver.trade.event.TradeExecutedEvent;
+import arile.toy.stocksystem.accountserver.trade.repository.AppliedTradeRepository;
 import arile.toy.stocksystem.accountserver.useraccount.entity.UserAccountEntity;
 import arile.toy.stocksystem.accountserver.useraccount.event.publisher.AccountUpdateEventPublisher;
 import arile.toy.stocksystem.accountserver.useraccount.repository.AccountBalanceCommand;
@@ -22,9 +24,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
 
@@ -34,7 +38,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -54,6 +60,7 @@ class TradeExecutionApplyServiceTest {
     @Mock private TradeCostCalculator tradeCostCalculator;
     @Mock private AccountBalanceCommand accountBalanceCommand;
     @Mock private RankUpdatedPublisher rankUpdatedPublisher;
+    @Mock private AppliedTradeRepository appliedTradeRepository;
 
     @InjectMocks
     private TradeExecutionApplyService service;
@@ -87,6 +94,69 @@ class TradeExecutionApplyServiceTest {
     private void givenStock(UserStockEntity stock) {
         given(userStockRepository.findByUsernameAndStockCode(USERNAME, STOCK_CODE))
                 .willReturn(Optional.ofNullable(stock));
+    }
+
+    // ===================== 중복 체결 방지 =====================
+
+    @Nested
+    @DisplayName("apply: 중복 체결 방지")
+    class Idempotency {
+
+        private final TradeExecutedEvent event =
+                event(TradeType.BUY, LeverageRatio.X2, 70_000, 69_000, 10, 105L);
+
+        @Test
+        @DisplayName("이미 반영한 체결(종목코드 + 체결 ID)이면 기록·정산·랭크·이벤트를 모두 건너뛴다")
+        void alreadyApplied_skipsEverything() {
+            given(appliedTradeRepository.existsByStockCodeAndTradeId(STOCK_CODE, 1L)).willReturn(true);
+
+            service.apply(event);
+
+            verify(appliedTradeRepository, never()).saveAndFlush(any());
+            verifyNoInteractions(userAccountRepository, userStockRepository, tradeCommand,
+                    leveragePositionApplyService, userRankRepository, accountUpdateEventPublisher,
+                    accountBalanceCommand, rankUpdatedPublisher);
+        }
+
+        @Test
+        @DisplayName("처음 반영하는 체결은 정산보다 먼저 반영 기록을 저장한다")
+        void newTrade_recordsBeforeSettlement() {
+            givenRank(true);
+
+            service.apply(event);
+
+            InOrder inOrder = inOrder(appliedTradeRepository, leveragePositionApplyService);
+            inOrder.verify(appliedTradeRepository).saveAndFlush(argThat((AppliedTradeEntity e) ->
+                    e.getStockCode().equals(STOCK_CODE) && e.getTradeId().equals(1L)));
+            inOrder.verify(leveragePositionApplyService).applyLeverageBuy(event, LeverageRatio.X2);
+        }
+
+        @Test
+        @DisplayName("동시 처리로 반영 기록 저장이 유니크 제약에 걸리면 정산 전에 예외를 던진다")
+        void concurrentDuplicate_throwsBeforeSettlement() {
+            given(appliedTradeRepository.saveAndFlush(any(AppliedTradeEntity.class)))
+                    .willThrow(new DataIntegrityViolationException("uk_applied_trade"));
+
+            assertThatThrownBy(() -> service.apply(event))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+
+            verifyNoInteractions(userAccountRepository, userStockRepository, tradeCommand,
+                    leveragePositionApplyService, userRankRepository, accountUpdateEventPublisher);
+        }
+
+        @Test
+        @DisplayName("체결 ID가 없으면 예외를 던지고 아무것도 반영하지 않는다")
+        void nullTradeId_throws() {
+            TradeExecutedEvent noIdEvent = new TradeExecutedEvent(null, 10L, USERNAME, STOCK_CODE,
+                    TradeType.BUY, LeverageRatio.SPOT, 70_000, 70_000, 1, 11L, null);
+
+            assertThatThrownBy(() -> service.apply(noIdEvent))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("tradeId is required to apply trade.");
+
+            verifyNoInteractions(appliedTradeRepository, userAccountRepository, tradeCommand,
+                    leveragePositionApplyService, userRankRepository);
+        }
     }
 
     // ===================== 라우팅 =====================
