@@ -31,6 +31,7 @@ public class TrailingStopTriggerService {
     private final TrailingStopResponseEventPublisher trailingStopResponseEventPublisher;
     private final AccountApiClient accountApiClient;
     private final ReserveAmountCalculator reserveAmountCalculator;
+    private final TrailingStopTrailPersister trailingStopTrailPersister;
 
     public void getExternalTickMessageAndTrail(TradePriceTickMessage tick) {
         ReentrantLock lock = trailingStopLockRegistry.lock(tick.stockCode());
@@ -72,6 +73,9 @@ public class TrailingStopTriggerService {
                 TrailingStopDto updated = dto.withUpdatedTrail(currentPrice, newTrigger);
 
                 trailingStopBookRegistry.update(updated);
+
+                // 재시작 시 추적 상태 복구를 위해 저장 대상으로 표시 (DB 저장은 별도 주기로 수행)
+                trailingStopTrailPersister.markDirty(updated);
 
                 // 화면 표시용 부가 작업: 실패해도 같은 틱의 나머지 트레일링 스탑 처리를 멈추지 않음
                 try {

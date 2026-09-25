@@ -7,9 +7,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -48,4 +50,20 @@ public interface TrailingStopRepository extends JpaRepository<TrailingStopEntity
             @Param("from") Instant from,
             @Param("to") Instant to,
             Pageable pageable);
+
+    /**
+     * 추적 중인 기준가·발동가를 저장. 이미 발동·취소된 트레일링 스탑은 갱신하지 않도록 상태 조건을 둠.
+     * @return 갱신된 행 수 (0이면 이미 종료된 트레일링 스탑)
+     */
+    @Modifying
+    @Transactional
+    @Query("""
+            update TrailingStopEntity t
+            set t.currentBasePrice = :currentBasePrice, t.currentTriggerPrice = :currentTriggerPrice
+            where t.trailingStopId = :trailingStopId and t.trailingStopStatus = :status
+            """)
+    int updateTrail(@Param("trailingStopId") Long trailingStopId,
+                    @Param("currentBasePrice") Integer currentBasePrice,
+                    @Param("currentTriggerPrice") Integer currentTriggerPrice,
+                    @Param("status") TrailingStopStatus status);
 }

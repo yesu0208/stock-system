@@ -28,8 +28,10 @@ public record TrailingStopDto(
                 entity.getLeverageRatio(),
                 entity.getOrderQuantity(),
                 entity.getStopPercent(),
-                entity.getBasePrice(),
-                entity.getTriggerPrice(),
+                // 추적 상태는 저장된 추적값(없으면 등록 시점 값)으로 복구
+                entity.resolveCurrentBasePrice(),
+                entity.resolveCurrentTriggerPrice(),
+                // 예약 금액 기준은 항상 등록 시점 발동가
                 entity.getTriggerPrice(),
                 entity.getTrailingStopStatus(),
                 entity.getOrderTime()
