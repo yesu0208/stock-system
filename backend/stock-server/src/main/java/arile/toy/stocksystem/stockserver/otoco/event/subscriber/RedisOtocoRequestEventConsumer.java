@@ -62,8 +62,13 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
             return;
         }
 
-        OtocoExitMode tpMode = OtocoExitMode.valueOf(((String) value.get("tpMode")).toUpperCase());
-        OtocoExitMode slMode = OtocoExitMode.valueOf(((String) value.get("slMode")).toUpperCase());
+        // 잘못된 모드 값은 재시도해도 같은 결과이므로 예외(재시도·DLQ) 대신 로그만 남기고 건너뜀
+        OtocoExitMode tpMode = parseExitMode(value.get("tpMode"));
+        OtocoExitMode slMode = parseExitMode(value.get("slMode"));
+        if (tpMode == null || slMode == null) {
+            log.error("Invalid exit mode: tpMode={}, slMode={}", value.get("tpMode"), value.get("slMode"));
+            return;
+        }
 
         Integer orderQuantity = parseInt(value.get("orderQuantity"));
         Integer entryTriggerPrice = parseInt(value.get("entryTriggerPrice"));
@@ -71,6 +76,13 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
         Double tpPct = parseDouble(value.get("tpPct"));
         Integer slPrice = parseInt(value.get("slPrice"));
         Double slPct = parseDouble(value.get("slPct"));
+
+        // 모드에 필요한 값이 없으면 익절·손절가 계산 중 NPE가 나므로 미리 걸러냄
+        if (!hasExitValue(tpMode, tpPrice, tpPct) || !hasExitValue(slMode, slPrice, slPct)) {
+            log.error("Missing exit value: tpMode={}, tpPrice={}, tpPct={}, slMode={}, slPrice={}, slPct={}",
+                    tpMode, tpPrice, tpPct, slMode, slPrice, slPct);
+            return;
+        }
 
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip otoco for stockCode {}", stockCode);
@@ -82,6 +94,21 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
         otocoService.registerOtoco(new StockServerOtocoRequestEvent(
                 username, stockCode, entryDirection, orderQuantity, entryTriggerPrice,
                 tpMode, tpPrice, tpPct, slMode, slPrice, slPct, leverageRatio));
+    }
+
+    private OtocoExitMode parseExitMode(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return OtocoExitMode.valueOf(raw.toString().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private boolean hasExitValue(OtocoExitMode mode, Integer price, Double pct) {
+        return mode == OtocoExitMode.PRICE ? price != null : pct != null;
     }
 
     private Integer parseInt(Object raw) {
