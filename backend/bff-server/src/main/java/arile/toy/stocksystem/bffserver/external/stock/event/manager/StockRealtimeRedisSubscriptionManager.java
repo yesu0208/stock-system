@@ -80,30 +80,18 @@ public class StockRealtimeRedisSubscriptionManager {
     }
 
     public void unsubscribeBySubscriptionId(String sessionId, String subscriptionId) {
-        String stockCode = subscriptionKeyToStockCode.remove(subscriptionKey(sessionId, subscriptionId));
-        if (stockCode == null) return;
-
-        decreaseRefCount(stockCode);
+        releaseSubscription(subscriptionKey(sessionId, subscriptionId));
     }
 
     /** 세션의 모든 구독을 하나씩 해제하며, 구독마다 참조 카운트를 1씩 낮춤 */
-    public void unsubscribeAll(String sessionId) {
+    public void disconnect(String sessionId) {
         String prefix = sessionId + ":";
 
         List<String> sessionKeys = subscriptionKeyToStockCode.keySet().stream()
                 .filter(key -> key.startsWith(prefix))
                 .toList();
 
-        for (String key : sessionKeys) {
-            String stockCode = subscriptionKeyToStockCode.remove(key);
-            if (stockCode != null) {
-                decreaseRefCount(stockCode);
-            }
-        }
-    }
-
-    public void disconnect(String sessionId) {
-        unsubscribeAll(sessionId);
+        sessionKeys.forEach(this::releaseSubscription);
     }
 
     @Scheduled(fixedRate = 10_000)
@@ -111,6 +99,18 @@ public class StockRealtimeRedisSubscriptionManager {
         stockRefCount.forEach((stockCode, count) -> {
             if (count.get() > 0) watchRegistry.heartbeat(stockCode);
         });
+    }
+
+    /**
+     * 구독 하나를 해제하고, 실제로 지운 경우에만 참조 카운트를 낮춤.
+     * 이미 없는 구독(모르는 ID, 또는 연결 종료와 구독 해제가 동시에 처리되어 먼저 지워진 경우)이면
+     * 카운트를 다시 낮추지 않아, 다른 사용자가 보는 종목의 Redis 구독이 끊기지 않도록 함.
+     */
+    private void releaseSubscription(String subscriptionKey) {
+        String stockCode = subscriptionKeyToStockCode.remove(subscriptionKey);
+        if (stockCode == null) return;
+
+        decreaseRefCount(stockCode);
     }
 
     private void decreaseRefCount(String stockCode) {
