@@ -99,7 +99,37 @@ public class CancelService {
         }
     }
 
+    /**
+     * 실행 순서 주의: 되돌릴 수 있는 DB 작업 -> 되돌릴 수 없는 외부 환불 -> 메모리 대기열 제거 -> 부가 알림.
+     * 환불 이후 단계에서 예외가 나 트랜잭션이 롤백되면, 주문은 OPEN으로 돌아가는데 돈은 이미 환불된 상태가 되고
+     * 재시도 시 한 번 더 환불됨. 따라서 실패할 수 있는 DB 작업은 모두 환불 전에 끝내고,
+     * 환불 이후에는 예외가 밖으로 나가지 않도록 함.
+     */
     private void cancelInternal(OrderEntity orderEntity) {
+
+        cancelRepository.save(
+                CancelEntity.of(orderEntity.getOrderId())
+        );
+
+        otocoOrderLifecycleListener.onOrderCanceled(orderEntity.getOrderId());
+
+        refund(orderEntity);
+
+        // 환불까지 끝난 뒤에 대기열에서 제거 (환불 실패로 롤백되면 주문은 대기열에 그대로 남아 있어야 함)
+        orderQueueRegistry.orderCancel(
+                orderEntity.getOrderId(),
+                orderEntity.getStockCode()
+        );
+
+        // 대기열 순번 알림은 부가 기능: 실패해도 취소 결과(환불 완료)를 되돌리지 않음
+        try {
+            queuePositionBroadcastService.broadcast(orderEntity.getStockCode(), orderEntity.getOrderType());
+        } catch (Exception e) {
+            log.warn("Queue position broadcast failed after cancel. orderId={}", orderEntity.getOrderId(), e);
+        }
+    }
+
+    private void refund(OrderEntity orderEntity) {
 
         boolean refunded;
         LeverageRatio leverageRatio = orderEntity.getLeverageRatio();
@@ -148,26 +178,18 @@ public class CancelService {
                 throw new IllegalStateException("Stock refund failed");
             }
         }
-
-        cancelRepository.save(
-                CancelEntity.of(orderEntity.getOrderId())
-        );
-
-        orderQueueRegistry.orderCancel(
-                orderEntity.getOrderId(),
-                orderEntity.getStockCode()
-        );
-
-        queuePositionBroadcastService.broadcast(orderEntity.getStockCode(), orderEntity.getOrderType());
-        
-        otocoOrderLifecycleListener.onOrderCanceled(orderEntity.getOrderId());
     }
 
     private void publishSuccess(OrderEntity orderEntity) {
 
         CancelResponseEvent event = CancelResponseEvent.of(orderEntity, true, null);
 
-        stockServerOrderResponseRepository.delete(event.username(), event.orderId());
+        // 환불 이후 단계이므로 Redis 응답 삭제 실패로 트랜잭션이 롤백되지 않도록 예외를 삼킴
+        try {
+            stockServerOrderResponseRepository.delete(event.username(), event.orderId());
+        } catch (Exception e) {
+            log.warn("Order response delete failed after cancel. orderId={}", event.orderId(), e);
+        }
 
         cancelResponseEventPublisher.publish(event);
     }
