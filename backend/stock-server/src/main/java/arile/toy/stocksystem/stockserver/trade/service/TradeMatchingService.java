@@ -8,6 +8,7 @@ import arile.toy.stocksystem.stockserver.order.dto.OrderStatus;
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.order.service.QueuePositionBroadcastService;
+import arile.toy.stocksystem.stockserver.trade.dto.TradeResult;
 import arile.toy.stocksystem.stockserver.trade.event.TradeResponseEvent;
 import arile.toy.stocksystem.stockserver.trade.event.publisher.TradeResponseEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +69,15 @@ public class TradeMatchingService {
 
             int executable = Math.min(leftQuantity, sell.remainingQuantity());
 
-            var tradeResult = tradeExecutionService.executeSellTrade(sell, tradePrice, executable);
+            TradeResult tradeResult;
+            try {
+                tradeResult = tradeExecutionService.executeSellTrade(sell, tradePrice, executable);
+            } catch (Exception e) {
+                // 체결 트랜잭션 실패(롤백): 꺼낸 주문을 대기열로 되돌리고 이번 틱 매칭 중단
+                log.error("Sell trade execution failed. orderId={}", sell.orderId(), e);
+                orderQueueRegistry.orderEnqueue(sell);
+                return;
+            }
 
             if (tradeResult == null) {
                 log.info("skip canceled order.");
@@ -99,7 +108,15 @@ public class TradeMatchingService {
 
             int executable = Math.min(leftQuantity, buy.remainingQuantity());
 
-            var tradeResult = tradeExecutionService.executeBuyTrade(buy, tradePrice, executable);
+            TradeResult tradeResult;
+            try {
+                tradeResult = tradeExecutionService.executeBuyTrade(buy, tradePrice, executable);
+            } catch (Exception e) {
+                // 체결 트랜잭션 실패(롤백): 꺼낸 주문을 대기열로 되돌리고 이번 틱 매칭 중단
+                log.error("Buy trade execution failed. orderId={}", buy.orderId(), e);
+                orderQueueRegistry.orderEnqueue(buy);
+                return;
+            }
 
             if (tradeResult == null) {
                 log.info("skip canceled order.");
@@ -139,18 +156,37 @@ public class TradeMatchingService {
                     Math.min(buy.remainingQuantity(), sell.remainingQuantity())
             );
 
-            var sellResult = tradeExecutionService.executeSellTrade(sell, tradePrice, executable);
+            TradeResult sellResult;
+            try {
+                sellResult = tradeExecutionService.executeSellTrade(sell, tradePrice, executable);
+            } catch (Exception e) {
+                // 매도 체결 실패(롤백): 아직 체결 전인 매수·매도 모두 대기열로 되돌리고 중단
+                log.error("Call auction sell execution failed. orderId={}", sell.orderId(), e);
+                orderQueueRegistry.orderEnqueue(buy);
+                orderQueueRegistry.orderEnqueue(sell);
+                break;
+            }
 
             if (sellResult != null) {
+                tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(sellResult.tradeEntity()));
                 int remaining = sell.remainingQuantity() - executable;
                 finalizeOrderAfterExecution(sell, remaining);
             } else {
                 log.info("skip canceled order.");
             }
 
-            var buyResult = tradeExecutionService.executeBuyTrade(buy, tradePrice, executable);
+            TradeResult buyResult;
+            try {
+                buyResult = tradeExecutionService.executeBuyTrade(buy, tradePrice, executable);
+            } catch (Exception e) {
+                // 매수 체결 실패(롤백): 매도는 이미 처리됐으므로 매수만 대기열로 되돌리고 중단
+                log.error("Call auction buy execution failed. orderId={}", buy.orderId(), e);
+                orderQueueRegistry.orderEnqueue(buy);
+                break;
+            }
 
             if (buyResult != null) {
+                tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(buyResult.tradeEntity()));
                 int remaining = buy.remainingQuantity() - executable;
                 finalizeOrderAfterExecution(buy, remaining);
             } else {
@@ -184,32 +220,41 @@ public class TradeMatchingService {
             );
         }
 
-        if (remainingQuantity == 0) {
-            stockServerOrderResponseRepository.delete(
-                    order.username(),
-                    order.orderId()
-            );
-        } else {
-            stockServerOrderResponseRepository.update(
-                    order.username(),
-                    order.orderId(),
-                    StockServerOrderResponseMessage.of(
-                            order.orderId(),
-                            order.username(),
-                            order.stockCode(),
-                            order.orderType(),
-                            order.leverageRatio(),
-                            order.orderPrice(),
-                            order.orderQuantity(),
-                            remainingQuantity,
-                            order.orderTime(),
-                            order.orderExecutionType(),
-                            order.origin(),
-                            order.originId()
-                    )
-            );
+        // 이하 체결 커밋 이후의 부가 작업: 실패해도 매칭을 중단하지 않음 (체결 결과는 이미 DB에 반영됨)
+        try {
+            if (remainingQuantity == 0) {
+                stockServerOrderResponseRepository.delete(
+                        order.username(),
+                        order.orderId()
+                );
+            } else {
+                stockServerOrderResponseRepository.update(
+                        order.username(),
+                        order.orderId(),
+                        StockServerOrderResponseMessage.of(
+                                order.orderId(),
+                                order.username(),
+                                order.stockCode(),
+                                order.orderType(),
+                                order.leverageRatio(),
+                                order.orderPrice(),
+                                order.orderQuantity(),
+                                remainingQuantity,
+                                order.orderTime(),
+                                order.orderExecutionType(),
+                                order.origin(),
+                                order.originId()
+                        )
+                );
+            }
+        } catch (Exception e) {
+            log.warn("Order response update failed after trade. orderId={}", order.orderId(), e);
         }
 
-        queuePositionBroadcastService.broadcast(order.stockCode(), order.orderType());
+        try {
+            queuePositionBroadcastService.broadcast(order.stockCode(), order.orderType());
+        } catch (Exception e) {
+            log.warn("Queue position broadcast failed after trade. orderId={}", order.orderId(), e);
+        }
     }
 }
