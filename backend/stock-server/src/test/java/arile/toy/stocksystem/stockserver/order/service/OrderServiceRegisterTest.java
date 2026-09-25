@@ -309,6 +309,23 @@ class OrderServiceRegisterTest {
         then(orderResponseEventPublisher).should().publishError(request, OrderErrorCode.INTERNAL_ERROR);
     }
 
+    @DisplayName("등록 후 Redis 응답 저장이 실패해도 예외 없이 주문을 반환하고 응답을 발행한다 (재시도로 인한 중복 등록 방지)")
+    @Test
+    void givenResponseSaveFails_whenRegistering_thenStillReturnsOrder() {
+        var request = request(OrderType.BUY, LeverageRatio.SPOT);
+        given(accountApiClient.reserveCash(USERNAME, 700_000L + FEE)).willReturn(true);
+        givenSaveAssignsId();
+        willThrow(new IllegalStateException("redis down"))
+                .given(stockServerOrderResponseRepository).save(any(StockServerOrderResponseMessage.class));
+
+        OrderEntity result = sut.registerOrder(request, false);
+
+        assertThat(result.getOrderId()).isEqualTo(1L);
+        assertThat(result.getOrderStatus()).isEqualTo(OrderStatus.OPEN);
+        then(orderResponseEventPublisher).should().publish(any(StockServerOrderResponseMessage.class));
+        then(accountApiClient).should(never()).refundReservedCash(any(), anyLong());
+    }
+
     // ===== helpers =====
 
     private StockServerOrderRequestEvent request(OrderType orderType, LeverageRatio leverageRatio) {
