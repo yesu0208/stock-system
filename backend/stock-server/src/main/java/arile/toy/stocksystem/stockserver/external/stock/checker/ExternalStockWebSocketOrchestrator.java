@@ -32,7 +32,7 @@ public class ExternalStockWebSocketOrchestrator {
         if (marketTimeChecker.isMarketOpenNow()) {
             log.info("Server started during market hours");
             marketPhaseService.setScheduledMarkets();
-            connectAndSubscribeIfNeeded();
+            tryConnectAndSubscribe();
             globalMarketPhasePublisher.publish(marketTimeChecker.resolvePhase());
         } else {
             log.info("Market closed at startup. Skip connect.");
@@ -52,7 +52,7 @@ public class ExternalStockWebSocketOrchestrator {
     public void connectAtMorningCall() {
         if (marketTimeChecker.isTodayHoliday()) return;
         log.info("Morning call trigger");
-        connectAndSubscribeIfNeeded();
+        tryConnectAndSubscribe();
         marketPhaseService.openMorningCall();
         globalMarketPhasePublisher.publish(StockServerMarketPhase.MORNING_CALL);
     }
@@ -88,7 +88,7 @@ public class ExternalStockWebSocketOrchestrator {
     public void openAfterMarket() {
         if (marketTimeChecker.isTodayHoliday()) return;
         log.info("After-market trigger");
-        connectAndSubscribeIfNeeded();
+        tryConnectAndSubscribe();
         marketPhaseService.openAfterMarket();
         globalMarketPhasePublisher.publish(StockServerMarketPhase.AFTER);
     }
@@ -109,6 +109,14 @@ public class ExternalStockWebSocketOrchestrator {
         externalStockWebSocketClient.disconnect();
         marketPhaseService.closeAllMarkets();
         globalMarketPhasePublisher.publish(StockServerMarketPhase.CLOSED);
+    }
+
+    private void tryConnectAndSubscribe() {
+        try {
+            connectAndSubscribeIfNeeded();
+        } catch (Exception e) {
+            log.error("External stock websocket connect failed. Will retry by reconnect scheduler.", e);
+        }
     }
 
     private synchronized void connectAndSubscribeIfNeeded() {
