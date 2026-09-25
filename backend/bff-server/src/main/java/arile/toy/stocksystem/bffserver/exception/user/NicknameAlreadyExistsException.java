@@ -9,7 +9,4 @@ public class NicknameAlreadyExistsException extends ClientErrorException {
         super(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.");
     }
 
-    public NicknameAlreadyExistsException(String nickname) {
-        super(HttpStatus.CONFLICT, "닉네임 '" + nickname + "'은(는) 이미 사용 중입니다.");
-    }
 }

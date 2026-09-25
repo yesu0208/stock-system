@@ -17,6 +17,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.beans.TypeMismatchException;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -119,5 +122,29 @@ class GlobalExceptionHandlerTest {
                 handler.handleRuntimeException(new IllegalStateException("boom"), request());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    @DisplayName("컨트롤러 파라미터가 아닌 타입 오류는 바인딩 속성 이름을 담아 400으로 응답한다")
+    void typeMismatch_propertyName() {
+        TypeMismatchException exception = new TypeMismatchException("abc", Long.class);
+        exception.initPropertyName("quantity");
+
+        ResponseEntity<ErrorResponse> response = handler.handleTypeMismatchException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message()).isEqualTo("Invalid value for parameter 'quantity'.");
+    }
+
+    @Test
+    @DisplayName("HttpStatus에 정의되지 않은 상태 코드의 Spring 예외는 400으로 응답하고 Slack 알림을 보내지 않는다")
+    void nonStandardStatus_badRequest() {
+        ResponseStatusException exception = new ResponseStatusException(HttpStatusCode.valueOf(499), "client closed");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/orders");
+
+        ResponseEntity<ErrorResponse> response = handler.handleRuntimeException(exception, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verifyNoInteractions(slackNotifier);
     }
 }

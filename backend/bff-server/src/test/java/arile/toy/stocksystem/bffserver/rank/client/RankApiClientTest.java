@@ -1,5 +1,7 @@
 package arile.toy.stocksystem.bffserver.rank.client;
 
+import arile.toy.stocksystem.bffserver.rank.dto.RankHistoryItem;
+import arile.toy.stocksystem.bffserver.rank.dto.RankHistoryResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -7,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -61,14 +65,22 @@ class RankApiClientTest {
     }
 
     @Test
-    @DisplayName("랭크 이력은 페이지·개수를 붙여 요청하고, 개수는 100으로 제한한다")
+    @DisplayName("랭크 이력은 페이지·개수를 붙여 요청하고 항목(날짜·등급·RP 변화)을 읽으며, 개수는 100으로 제한한다")
     void getRankHistory() {
         server.expect(requestTo(BASE_URL + "/internal/ranks/user1/history?page=0&size=20"))
-                .andRespond(withSuccess("{\"items\": [], \"hasNext\": false}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("""
+                        {"items": [{"date": "2026-09-24", "tier": "GOLD", "subTier": 3, "rp": 2000, "rpChange": 25},
+                                   {"date": "2026-09-23", "tier": "GOLD", "subTier": 3, "rp": 1975, "rpChange": -10}],
+                         "hasNext": true}
+                        """, MediaType.APPLICATION_JSON));
         server.expect(requestTo(BASE_URL + "/internal/ranks/user1/history?page=2&size=100"))
-                .andRespond(withSuccess("{\"items\": [], \"hasNext\": true}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("{\"items\": [], \"hasNext\": false}", MediaType.APPLICATION_JSON));
 
-        assertThat(client.getRankHistory("user1", 0, 20)).isNotNull();
+        RankHistoryResponse response = client.getRankHistory("user1", 0, 20);
+
+        assertThat(response.items()).containsExactly(
+                new RankHistoryItem(LocalDate.of(2026, 9, 24), "GOLD", 3, 2000L, 25L),
+                new RankHistoryItem(LocalDate.of(2026, 9, 23), "GOLD", 3, 1975L, -10L));
         assertThat(client.getRankHistory("user1", 2, 1_000_000)).isNotNull();
         server.verify();
     }

@@ -282,6 +282,39 @@ class UserWebSocketSessionEventListenerTest {
 
             verifyNoInteractions(messagingTemplate);
         }
+
+        @Test
+        @DisplayName("종목코드가 빈 스냅샷 구독(/user/sub/stock//snapshot)이면 아무것도 조회·전송하지 않는다")
+        void stockSnapshot_blankStockCode_ignored() {
+            StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+            accessor.setSessionId("session-A");
+            accessor.setDestination("/user/sub/stock//snapshot");
+
+            listener.handleSubscribe(new SessionSubscribeEvent(this,
+                    MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders())));
+
+            verifyNoInteractions(initialDataService, messagingTemplate);
+        }
+
+        @Test
+        @DisplayName("세션 정보가 없는 스냅샷 구독이면 보낼 대상이 없으므로 아무것도 조회·전송하지 않는다")
+        void stockSnapshot_noSession_ignored() {
+            StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+            accessor.setDestination("/user/sub/stock/005930/snapshot");
+
+            listener.handleSubscribe(new SessionSubscribeEvent(this,
+                    MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders())));
+
+            verifyNoInteractions(initialDataService, messagingTemplate);
+        }
+
+        @Test
+        @DisplayName("/snapshot으로 끝나지 않는 사용자 종목 주소는 스냅샷 채널로 보지 않고 아무것도 보내지 않는다")
+        void userStockWithoutSnapshotSuffix_ignored() {
+            subscribe("/user/sub/stock/005930", USER1);
+
+            verifyNoInteractions(messagingTemplate);
+        }
     }
 
     // ===================== 사용자 전용 채널 =====================

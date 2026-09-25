@@ -1,7 +1,10 @@
 package arile.toy.stocksystem.bffserver.order.client;
 
 import arile.toy.stocksystem.bffserver.history.dto.HistoryPageResponse;
-import arile.toy.stocksystem.bffserver.order.dto.OrderHistoryItem;
+import arile.toy.stocksystem.bffserver.leverage.dto.LeverageRatio;
+import arile.toy.stocksystem.bffserver.order.dto.*;
+import arile.toy.stocksystem.bffserver.trade.dto.TradeHistoryItem;
+import arile.toy.stocksystem.bffserver.trade.dto.TradeType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,6 +13,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -40,20 +45,29 @@ class OrderHistoryApiClientTest {
     }
 
     @Test
-    @DisplayName("사용자별 주문 이력 경로로 페이지·개수를 붙여 요청하고 응답을 변환한다")
+    @DisplayName("사용자별 주문 이력 경로로 요청하고, 이력 항목(부분 체결·주문 출처 포함)을 필드 그대로 역직렬화한다")
     void getHistory() {
+        OrderStatus status = OrderStatus.values()[0];
+        OrderExecutionType execution = OrderExecutionType.values()[0];
+        OrderOrigin origin = OrderOrigin.values()[0];
+
         server.expect(requestTo(BASE_URL + "/internal/orders/user1/history?page=1&size=20"))
                 .andExpect(method(HttpMethod.GET))
-                .andRespond(withSuccess(PAGE_JSON, MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("""
+                        {"items": [{"orderId": 11, "stockCode": "005930", "orderType": "BUY", "leverageRatio": "SPOT",
+                                    "orderPrice": 69000, "orderQuantity": 10, "remainingQuantity": 4,
+                                    "orderStatus": "%s", "orderTime": "2026-09-24T00:30:00Z", "notionalValue": 690000,
+                                    "orderExecutionType": "%s", "origin": "%s", "originId": 7}],
+                         "page": 1, "size": 20, "totalElements": 25, "hasNext": false}
+                        """.formatted(status.name(), execution.name(), origin.name()), MediaType.APPLICATION_JSON));
 
         HistoryPageResponse<OrderHistoryItem> response = client.getHistory("user1", null, null, null, 1, 20);
 
-        assertThat(response).isNotNull();
-        assertThat(response.items()).isEmpty();
+        assertThat(response.items()).containsExactly(new OrderHistoryItem(
+                11L, "005930", OrderType.BUY, LeverageRatio.SPOT, 69_000, 10, 4, status,
+                Instant.parse("2026-09-24T00:30:00Z"), 690_000L, null, null, null, execution, origin, 7L));
         assertThat(response.page()).isEqualTo(1);
-        assertThat(response.size()).isEqualTo(20);
         assertThat(response.totalElements()).isEqualTo(25L);
-        assertThat(response.hasNext()).isFalse();
         server.verify();
     }
 
@@ -94,5 +108,29 @@ class OrderHistoryApiClientTest {
                 .andRespond(withServerError());
 
         assertThat(client.getHistory("user1", null, null, null, 0, 20)).isNull();
+    }
+
+    @Test
+    @DisplayName("체결 이력 항목(체결가·체결 수량·증거금·주문 출처 포함)을 필드 그대로 역직렬화한다")
+    void getTrades_deserializesItem() {
+        TradeType tradeType = TradeType.values()[0];
+        OrderOrigin origin = OrderOrigin.values()[0];
+
+        server.expect(requestTo(BASE_URL + "/internal/orders/user1/trades?page=0&size=20"))
+                .andRespond(withSuccess("""
+                        {"items": [{"tradeId": 21, "orderId": 11, "stockCode": "005930", "tradeType": "%s",
+                                    "tradePrice": 69000, "tradeQuantity": 6, "executedAt": "2026-09-24T00:31:00Z",
+                                    "leverageRatio": "X2", "notionalValue": 414000, "initialMargin": 207000,
+                                    "maintenanceMarginRate": 1.4, "liquidationPrice": 48300,
+                                    "origin": "%s", "originId": 7}],
+                         "page": 0, "size": 20, "totalElements": 1, "hasNext": false}
+                        """.formatted(tradeType.name(), origin.name()), MediaType.APPLICATION_JSON));
+
+        HistoryPageResponse<TradeHistoryItem> response = client.getTrades("user1", null, null, null, 0, 20);
+
+        assertThat(response.items()).containsExactly(new TradeHistoryItem(
+                21L, 11L, "005930", tradeType, 69_000, 6, Instant.parse("2026-09-24T00:31:00Z"),
+                LeverageRatio.X2, 414_000L, 207_000L, 1.4, 48_300L, origin, 7L));
+        server.verify();
     }
 }

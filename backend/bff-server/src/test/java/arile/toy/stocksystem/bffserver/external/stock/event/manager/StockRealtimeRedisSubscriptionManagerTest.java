@@ -23,6 +23,7 @@ import org.springframework.data.redis.listener.Topic;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
@@ -189,6 +190,19 @@ class StockRealtimeRedisSubscriptionManagerTest {
             manager.unsubscribeBySubscriptionId("session-A", "sub-1");
 
             verifyNotUnsubscribed();
+        }
+
+        @Test
+        @DisplayName("[동시 처리 방어] 카운트가 0으로 내려간 순간의 종목에는 하트비트를 보내지 않는다 (크롤링 대상에서 제외)")
+        void heartbeat_zeroCount_skipped() {
+            // 마지막 구독 해제가 카운트를 0으로 내린 직후, 항목을 지우기 전에 하트비트가 돈 순간을 재현
+            manager.getStockRefCount().put("005930", new AtomicInteger(0));
+            manager.getStockRefCount().put("000660", new AtomicInteger(1));
+
+            manager.heartbeatActiveStocks();
+
+            verify(watchRegistry).heartbeat("000660");
+            verify(watchRegistry, never()).heartbeat("005930");
         }
     }
 
