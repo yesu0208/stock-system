@@ -104,6 +104,26 @@ class AlertTriggerServiceTest {
         then(alertResponseEventPublisher).should().publishFired(any(), eq(70_000));
     }
 
+    @DisplayName("BELOW 알림의 발송 상태 변경이 실패하면 큐에 되돌리고 이번 틱 BELOW 처리를 멈춘다")
+    @Test
+    void givenBelowStatusUpdateFails_whenTick_thenRestoresAndStops() {
+        // 둘 다 현재가 70,000 ≤ 발동가라 발송 대상
+        enqueue(1L, AlertDirection.BELOW, 70_100);
+        enqueue(2L, AlertDirection.BELOW, 70_000);
+        given(alertService.updateAlertStatusByFire(anyLong())).willThrow(new IllegalStateException("db error"));
+
+        sut.getExternalTickMessageAndCheckAlerts(tick(70_000));
+
+        // 첫 알림에서 실패하면 바로 멈추므로 상태 변경은 1번만 시도
+        then(alertService).should(times(1)).updateAlertStatusByFire(anyLong());
+        then(alertResponseEventPublisher).shouldHaveNoInteractions();
+
+        // 두 알림 모두 큐에 남아 있음
+        assertThat(alertQueueRegistry.pollBelow("005930")).isNotNull();
+        assertThat(alertQueueRegistry.pollBelow("005930")).isNotNull();
+        assertThat(alertQueueRegistry.pollBelow("005930")).isNull();
+    }
+
     private void enqueue(Long id, AlertDirection direction, int triggerPrice) {
         alertQueueRegistry.alertEnqueue(new AlertDto(id, "user", "005930", direction, triggerPrice, Instant.now()));
     }
