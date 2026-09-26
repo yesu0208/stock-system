@@ -118,9 +118,26 @@ class StockMinuteChartServiceTest {
         List<ClientRequest> requests = new ArrayList<>();
         var sut = withKeys(new StockMinuteChartService(StubWebClients.of(requests, request ->
                 StubWebClients.query(request, "FID_INPUT_DATE_1").equals("20260925")
-                        ? null   // 본문 없음 -> bodyToMono가 비어 block()이 null을 돌려줌
+                        ? "null"   // 본문 없음 -> bodyToMono가 비어 block()이 null을 돌려줌
                         : response(StubWebClients.query(request, "FID_INPUT_DATE_1"), "153000")
         ), mock(ChartApiTokenManager.class)));
+
+        List<MinuteCandle> candles = sut.getMinuteChart("005930", "20260925", "100000", 1);
+
+        assertThat(StubWebClients.query(requests.get(1), "FID_INPUT_DATE_1")).isEqualTo("20260924");
+        assertThat(candles).extracting(c -> c.date() + c.time()).containsExactly("20260924153000");
+    }
+
+    @DisplayName("output2가 빈 배열이면 빈 응답처럼 전날로 넘어간다")
+    @Test
+    void givenEmptyOutput_whenGettingMinuteChart_thenJumpsToPreviousDay() {
+        List<ClientRequest> requests = new ArrayList<>();
+        var sut = withKeys(new StockMinuteChartService(StubWebClients.of(requests, request -> {
+            String date = StubWebClients.query(request, "FID_INPUT_DATE_1");
+            return date.equals("20260925")
+                    ? "{\"rt_cd\":\"0\",\"output2\":[]}"
+                    : response(date, "153000");
+        }), mock(ChartApiTokenManager.class)));
 
         List<MinuteCandle> candles = sut.getMinuteChart("005930", "20260925", "100000", 1);
 
