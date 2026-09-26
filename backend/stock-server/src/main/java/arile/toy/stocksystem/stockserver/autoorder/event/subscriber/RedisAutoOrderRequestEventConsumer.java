@@ -42,10 +42,11 @@ public class RedisAutoOrderRequestEventConsumer extends AbstractRedisStreamConsu
         String stockCode = (String) value.get("stockCode");
         String autoOrderTypeStr = (String) value.get("autoOrderType");
 
+        // 잘못된 값은 재시도해도 같은 결과이므로 예외(재시도·DLQ) 대신 로그만 남기고 건너뜀
         AutoOrderType autoOrderType;
         try {
             autoOrderType = AutoOrderType.valueOf(autoOrderTypeStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             log.error("Invalid orderType: {}", autoOrderTypeStr);
             return;
         }
@@ -61,26 +62,15 @@ public class RedisAutoOrderRequestEventConsumer extends AbstractRedisStreamConsu
             return;
         }
 
-        Object rawOrderPrice = value.get("orderPrice");
-        Integer orderPrice = null;
-
-        if (rawOrderPrice != null) {
-            orderPrice = Integer.parseInt(rawOrderPrice.toString());
-        }
-
-        Object rawTriggerPrice = value.get("triggerPrice");
-        Integer triggerPrice = null;
-
-        if (rawTriggerPrice != null) {
-            triggerPrice = Integer.parseInt(rawTriggerPrice.toString());
-        }
-
-
-        Object rawOrderQuantity = value.get("orderQuantity");
-        Integer orderQuantity = null;
-
-        if (rawOrderQuantity != null) {
-            orderQuantity = Integer.parseInt(rawOrderQuantity.toString());
+        // 가격·수량이 없거나 숫자가 아니면 예약 금액 계산에서 매번 실패하므로
+        // 예외(재시도·DLQ) 대신 로그만 남기고 건너뜀
+        Integer orderPrice = parseInt(value.get("orderPrice"));
+        Integer triggerPrice = parseInt(value.get("triggerPrice"));
+        Integer orderQuantity = parseInt(value.get("orderQuantity"));
+        if (orderPrice == null || triggerPrice == null || orderQuantity == null) {
+            log.error("Invalid auto order values: orderPrice={}, triggerPrice={}, orderQuantity={}",
+                    value.get("orderPrice"), value.get("triggerPrice"), value.get("orderQuantity"));
+            return;
         }
 
         if (registry.isClosed(stockCode)) {
@@ -92,5 +82,16 @@ public class RedisAutoOrderRequestEventConsumer extends AbstractRedisStreamConsu
 
         autoOrderService.registerAutoOrder(StockServerAutoOrderRequestEvent
                 .of(username, stockCode, autoOrderType, triggerPrice, orderPrice, orderQuantity, leverageRatio));
+    }
+
+    private Integer parseInt(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

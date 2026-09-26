@@ -83,6 +83,17 @@ class AbstractRedisStreamConsumerTest {
             then(valueOps).shouldHaveNoInteractions();
         }
 
+        @DisplayName("읽은 결과가 null이면 아무것도 하지 않는다")
+        @Test
+        void givenNullRecords_whenConsuming_thenDoesNothing() {
+            givenRead(null);
+
+            sut.consume();
+
+            then(handler).shouldHaveNoInteractions();
+            then(valueOps).shouldHaveNoInteractions();
+        }
+
         @DisplayName("대상 이벤트 타입이 아닌 레코드는 처리 없이 ack한다")
         @Test
         void givenOtherType_whenConsuming_thenAcksWithoutProcessing() {
@@ -213,6 +224,16 @@ class AbstractRedisStreamConsumerTest {
             then(streamOps).should(never()).claim(anyString(), anyString(), anyString(), any(Duration.class), any(RecordId[].class));
         }
 
+        @DisplayName("pending 결과가 null이면 아무것도 하지 않는다")
+        @Test
+        void givenNullPending_whenRetrying_thenDoesNothing() {
+            doReturn(null).when(streamOps).pending(eq(STREAM_KEY), eq(GROUP), any(Range.class), eq(20L));
+
+            sut.retry();
+
+            then(streamOps).should(never()).claim(anyString(), anyString(), anyString(), any(Duration.class), any(RecordId[].class));
+        }
+
         @DisplayName("마지막 전달 후 10초가 지나지 않은 메시지는 가져오지 않는다")
         @Test
         void givenRecentlyDelivered_whenRetrying_thenDoesNotClaim() {
@@ -258,6 +279,33 @@ class AbstractRedisStreamConsumerTest {
 
             then(handler).shouldHaveNoInteractions();
             then(streamOps).should(never()).acknowledge(anyString(), anyString(), any(RecordId[].class));
+        }
+
+        @DisplayName("재처리 시 PROCESSING 선점에 실패하면 처리·ack 없이 넘어간다")
+        @Test
+        void givenAcquireFails_whenRetrying_thenSkips() {
+            givenClaimed(record());
+            given(valueOps.setIfAbsent(PROCESSED_KEY, "PROCESSING", Duration.ofMinutes(5))).willReturn(false);
+
+            sut.retry();
+
+            then(handler).shouldHaveNoInteractions();
+            then(streamOps).should(never()).acknowledge(anyString(), anyString(), any(RecordId[].class));
+        }
+
+        @DisplayName("재처리 중 선점 전에 실패하면 표시를 지우지 않고 재시도 횟수만 올린다")
+        @Test
+        void givenFailureBeforeAcquire_whenRetrying_thenOnlyIncreasesCount() {
+            givenClaimed(record());
+            given(valueOps.get(PROCESSED_KEY)).willThrow(new IllegalStateException("redis"));
+            given(valueOps.get(RETRY_KEY)).willReturn(null);
+
+            sut.retry();
+
+            then(handler).shouldHaveNoInteractions();
+            then(streamRedisTemplate).should(never()).delete(anyString());
+            then(valueOps).should().increment(RETRY_KEY);
+            then(streamOps).should(never()).add(any(MapRecord.class));
         }
 
         @DisplayName("재처리 실패 횟수가 한도 미만이면 PROCESSING 표시를 지우고 재시도 횟수를 올린다")

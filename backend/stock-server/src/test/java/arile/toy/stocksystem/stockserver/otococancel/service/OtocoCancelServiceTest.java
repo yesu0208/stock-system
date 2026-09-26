@@ -20,12 +20,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -223,6 +226,25 @@ class OtocoCancelServiceTest {
 
             then(otocoCancelResponseEventPublisher).shouldHaveNoInteractions();
         }
+    }
+
+    @DisplayName("강제 취소 시 OTOCO가 없으면 예외를 던진다")
+    @Test
+    void givenNotFound_whenForceCanceling_thenThrows() {
+        given(otocoRepository.findByIdForUpdate(1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sut.forceCancelOtoco(1L)).hasMessage("otoco not found");
+    }
+
+    @DisplayName("열린 상태가 아닌 OTOCO를 단계별 취소에 넘기면 예외를 던진다 (방어 코드)")
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = OtocoStatus.class, names = {"COMPLETED", "CANCELED"})
+    void givenClosedStatus_whenCancelOpen_thenThrows(OtocoStatus status) {
+        OtocoEntity entity = OtocoFixtures.entity(1L, status, LeverageRatio.SPOT);
+
+        assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(sut, "cancelOpen", entity))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Not an open otoco status: " + status);
     }
 
     private OtocoCancelRequestEvent request() {

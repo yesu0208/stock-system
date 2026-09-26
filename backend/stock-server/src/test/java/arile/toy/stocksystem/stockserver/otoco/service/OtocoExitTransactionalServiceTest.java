@@ -112,6 +112,33 @@ class OtocoExitTransactionalServiceTest {
         then(otocoResponseEventPublisher).shouldHaveNoInteractions();
     }
 
+    @DisplayName("OTOCO가 없으면 예외를 던지고 주문을 등록하지 않는다")
+    @Test
+    void givenNotFound_whenTriggering_thenThrows() {
+        given(otocoRepository.findByIdForUpdate(1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sut.triggerExit(OtocoFixtures.dto(OtocoStatus.WAITING_EXIT), OtocoLeg.TAKE_PROFIT))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("otoco not found");
+
+        then(orderService).shouldHaveNoInteractions();
+        then(otocoResponseEventPublisher).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("주문이 등록되지 않으면 응답을 삭제하고 CANCELED로 저장한 뒤 청산 실패를 발행한다")
+    @Test
+    void givenOrderNull_whenTriggering_thenDeletesResponseAndCancels() {
+        OtocoEntity entity = givenEntity(OtocoStatus.WAITING_EXIT);
+
+        sut.triggerExit(OtocoFixtures.dto(OtocoStatus.WAITING_EXIT), OtocoLeg.STOP_LOSS);
+
+        assertThat(entity.getOtocoStatus()).isEqualTo(OtocoStatus.CANCELED);
+        then(otocoRepository).should().save(entity);
+        then(stockServerOtocoResponseRepository).should().delete("user", 1L);
+        then(otocoResponseEventPublisher).should().publishExitFailed(any(), eq(OtocoResultCode.INTERNAL_ERROR));
+        then(otocoResponseEventPublisher).should(never()).publishExitTriggered(any(), any());
+    }
+
     private OtocoEntity givenEntity(OtocoStatus status) {
         OtocoEntity entity = OtocoFixtures.entity(status);
         given(otocoRepository.findByIdForUpdate(1L)).willReturn(Optional.of(entity));

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
@@ -132,16 +134,34 @@ class RedisOrderRequestEventConsumerTest {
         then(orderService).shouldHaveNoInteractions();
     }
 
-    @DisplayName("orderType이 없으면 예외를 던져 재시도 대상이 된다")
+    @DisplayName("주문유형이 없으면 예외 없이 건너뛴다 (재시도·DLQ 방지)")
     @Test
-    void givenMissingOrderType_whenHandling_thenThrows() {
+    void givenMissingOrderType_whenHandling_thenSkips() {
         Map<Object, Object> value = orderValue();
         value.remove("orderType");
 
-        assertThatThrownBy(() -> sut.handle(record(value)))
-                .isInstanceOf(NullPointerException.class);
+        assertThatNoException().isThrownBy(() -> sut.handle(record(value)));
 
         then(orderService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("주문가·수량이 없거나 숫자가 아니면 등록하지 않고 건너뛴다")
+    @ParameterizedTest(name = "{0} = {1}")
+    @CsvSource(value = {"orderPrice, NULL", "orderQuantity, NULL", "orderPrice, abc", "orderQuantity, 1.5"},
+            nullValues = "NULL")
+    void givenMissingOrInvalidNumber_whenHandling_thenSkips(String field, String rawValue) {
+        Map<Object, Object> value = orderValue();
+        if (rawValue == null) {
+            value.remove(field);
+        } else {
+            value.put(field, rawValue);
+        }
+
+        sut.handle(record(value));
+
+        then(orderService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
     }
 
     private Map<Object, Object> orderValue() {

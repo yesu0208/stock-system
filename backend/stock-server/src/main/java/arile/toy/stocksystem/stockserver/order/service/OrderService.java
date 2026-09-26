@@ -56,7 +56,7 @@ public class OrderService {
                 orderResponseEventPublisher.publishError(request, OrderErrorCode.INSUFFICIENT_BALANCE);
                 return null;
             }
-        } else if (!fromAutoOrder && request.orderType() == OrderType.SELL) {
+        } else if (!fromAutoOrder) {
             // 레버리지 매도는 현물 재고가 아니라 레버리지 포지션 수량을 검증해야 하므로 별도 분기
             boolean reserved = leverageRatio.isSpot()
                     ? accountApiClient.reserveStock(request.username(), request.stockCode(), request.orderQuantity())

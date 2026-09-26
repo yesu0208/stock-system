@@ -260,6 +260,12 @@ class TrailingStopServiceTest {
             assertThatThrownBy(() -> sut.updateTrailingStopStatusByTrigger(1L))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("trailing stop not found");
+            assertThatThrownBy(() -> sut.updateTrailingStopStatusByCancel(1L))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("trailing stop not found");
+            assertThatThrownBy(() -> sut.updateTrailingStopStatusByUserCancel(1L, USERNAME, STOCK_CODE))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("trailing stop not found");
         }
 
         @DisplayName("미발동 트레일링 스탑 조회를 저장소에 위임한다")

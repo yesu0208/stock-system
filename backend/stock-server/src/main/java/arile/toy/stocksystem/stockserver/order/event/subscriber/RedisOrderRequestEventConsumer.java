@@ -43,10 +43,11 @@ public class RedisOrderRequestEventConsumer extends AbstractRedisStreamConsumer 
         String stockCode = (String) value.get("stockCode");
         String orderTypeStr = (String) value.get("orderType");
 
+        // 잘못된 값은 재시도해도 같은 결과이므로 예외(재시도·DLQ) 대신 로그만 남기고 건너뜀
         OrderType orderType;
         try {
             orderType = OrderType.valueOf(orderTypeStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             log.error("Invalid orderType: {}", orderTypeStr);
             return;
         }
@@ -74,18 +75,14 @@ public class RedisOrderRequestEventConsumer extends AbstractRedisStreamConsumer 
             return;
         }
 
-        Object rawOrderPrice = value.get("orderPrice");
-        Integer orderPrice = null;
-
-        if (rawOrderPrice != null) {
-            orderPrice = Integer.parseInt(rawOrderPrice.toString());
-        }
-
-        Object rawOrderQuantity = value.get("orderQuantity");
-        Integer orderQuantity = null;
-
-        if (rawOrderQuantity != null) {
-            orderQuantity = Integer.parseInt(rawOrderQuantity.toString());
+        // 가격·수량이 없거나 숫자가 아니면 예약 금액 계산에서 매번 실패하므로
+        // 예외(재시도·DLQ) 대신 로그만 남기고 건너뜀 (bff에서 가격·수량은 필수값)
+        Integer orderPrice = parseInt(value.get("orderPrice"));
+        Integer orderQuantity = parseInt(value.get("orderQuantity"));
+        if (orderPrice == null || orderQuantity == null) {
+            log.error("Invalid order values: orderPrice={}, orderQuantity={}",
+                    value.get("orderPrice"), value.get("orderQuantity"));
+            return;
         }
 
         if (registry.isClosed(stockCode)) {
@@ -96,5 +93,16 @@ public class RedisOrderRequestEventConsumer extends AbstractRedisStreamConsumer 
 
         orderService.registerOrder(StockServerOrderRequestEvent
                 .of(username, stockCode, orderType, orderPrice, orderQuantity, leverageRatio, orderExecutionType), false);
+    }
+
+    private Integer parseInt(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

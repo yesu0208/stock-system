@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.connection.stream.MapRecord;
@@ -21,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.BDDMockito.*;
 
 @DisplayName("[Consumer] 자동주문 요청 컨슈머 설정·파싱 테스트")
@@ -98,14 +100,34 @@ class RedisAutoOrderRequestEventConsumerTest {
         then(autoOrderService).shouldHaveNoInteractions();
     }
 
-    @DisplayName("자동주문 유형이 없으면 예외를 던져 재시도 대상이 된다")
+    @DisplayName("자동 주문 타입이 없으면 예외 없이 건너뛴다 (재시도·DLQ 방지)")
     @Test
-    void givenMissingType_whenHandling_thenThrows() {
+    void givenMissingType_whenHandling_thenSkips() {
         Map<Object, Object> value = autoOrderValue();
         value.remove("autoOrderType");
 
-        assertThatThrownBy(() -> sut.handle(record(value))).isInstanceOf(NullPointerException.class);
-        then(autoOrderService).shouldHaveNoInteractions();
+        assertThatNoException().isThrownBy(() -> sut.handle(record(value)));
+
+        then(autoOrderService).should(never()).registerAutoOrder(any());
+        then(registry).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("주문가·발동가·수량이 없거나 숫자가 아니면 등록하지 않고 건너뛴다")
+    @ParameterizedTest(name = "{0} = {1}")
+    @CsvSource(value = {"orderPrice, NULL", "triggerPrice, NULL", "orderQuantity, NULL", "orderPrice, abc"},
+            nullValues = "NULL")
+    void givenMissingOrInvalidNumber_whenHandling_thenSkips(String field, String rawValue) {
+        Map<Object, Object> value = autoOrderValue();
+        if (rawValue == null) {
+            value.remove(field);
+        } else {
+            value.put(field, rawValue);
+        }
+
+        sut.handle(record(value));
+
+        then(autoOrderService).should(never()).registerAutoOrder(any());
+        then(registry).shouldHaveNoInteractions();
     }
 
     private Map<Object, Object> autoOrderValue() {

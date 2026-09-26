@@ -61,6 +61,48 @@ class StockChartServiceTest {
         assertThat(StubWebClients.query(requests.get(0), "FID_INPUT_DATE_2")).isEqualTo("20260925");
     }
 
+    @DisplayName("응답 본문이 없거나(null) output2가 없으면 조회를 멈추고 빈 목록을 돌려준다")
+    @Test
+    void givenNullBodyOrNoOutput_whenGettingDailyChart_thenEmpty() {
+        var nullBody = withKeys(new StockChartService(StubWebClients.of(r -> null), mock(ChartApiTokenManager.class)));
+        var noOutput = withKeys(new StockChartService(StubWebClients.of(r -> "{\"rt_cd\":\"1\",\"msg1\":\"error\"}"),
+                mock(ChartApiTokenManager.class)));
+
+        assertThat(nullBody.getDailyChart("005930", "20260101", "20260925")).isEmpty();
+        assertThat(noOutput.getDailyChart("005930", "20260101", "20260925")).isEmpty();
+    }
+
+    @DisplayName("100건을 받아 다음 조회 기준일이 시작일보다 앞서면 반복 조건으로 종료한다")
+    @Test
+    void givenFullPageReachingFrom_whenGettingDailyChart_thenStopsByLoopCondition() {
+        List<ClientRequest> requests = new ArrayList<>();
+        var sut = withKeys(new StockChartService(StubWebClients.of(requests, request -> {
+            LocalDate to = LocalDate.parse(StubWebClients.query(request, "FID_INPUT_DATE_2"), F);
+            return response(IntStream.range(0, 100).mapToObj(to::minusDays).toList());
+        }), mock(ChartApiTokenManager.class)));
+
+        // 0925부터 100일 전(0618)까지 받으면 다음 기준일 0617이 시작일 0701보다 앞섬
+        List<CandleData> candles = sut.getDailyChart("005930", "20260701", "20260925");
+
+        assertThat(requests).hasSize(1);
+        assertThat(candles).hasSize(100);
+    }
+
+    @DisplayName("응답의 가장 오래된 날짜가 요청 기준일보다 늦으면(진행 불가) 무한 반복 없이 종료한다")
+    @Test
+    void givenNoProgress_whenGettingDailyChart_thenStops() {
+        List<ClientRequest> requests = new ArrayList<>();
+        var sut = withKeys(new StockChartService(StubWebClients.of(requests, request ->
+                // 요청 기준일(0925)보다 하루 늦은 날짜만 돌려줌 → 다음 기준일이 줄어들지 않음
+                response(List.of(LocalDate.of(2026, 9, 26)))
+        ), mock(ChartApiTokenManager.class)));
+
+        List<CandleData> candles = sut.getDailyChart("005930", "20260101", "20260925");
+
+        assertThat(requests).hasSize(1);
+        assertThat(candles).extracting(CandleData::date).containsExactly("20260926");
+    }
+
     private static <T> T withKeys(T service) {
         ReflectionTestUtils.setField(service, "appKey", "key");
         ReflectionTestUtils.setField(service, "appSecret", "secret");

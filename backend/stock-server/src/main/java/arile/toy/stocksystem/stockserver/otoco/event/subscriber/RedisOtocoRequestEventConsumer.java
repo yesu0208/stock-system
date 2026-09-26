@@ -46,7 +46,7 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
         OtocoEntryDirection entryDirection;
         try {
             entryDirection = OtocoEntryDirection.valueOf(entryDirectionStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             log.error("Invalid entryDirection: {}", entryDirectionStr);
             return;
         }
@@ -76,6 +76,13 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
         Double tpPct = parseDouble(value.get("tpPct"));
         Integer slPrice = parseInt(value.get("slPrice"));
         Double slPct = parseDouble(value.get("slPct"));
+
+        // 수량·진입가는 예약 금액 계산에 필요하므로, 없거나 잘못된 값이면 재시도하지 않고 건너뜀
+        if (orderQuantity == null || entryTriggerPrice == null) {
+            log.error("Invalid otoco values. orderQuantity: {}, entryTriggerPrice: {}",
+                    value.get("orderQuantity"), value.get("entryTriggerPrice"));
+            return;
+        }
 
         // 모드에 필요한 값이 없으면 익절·손절가 계산 중 NPE가 나므로 미리 걸러냄
         if (!hasExitValue(tpMode, tpPrice, tpPct) || !hasExitValue(slMode, slPrice, slPct)) {
@@ -112,10 +119,20 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
     }
 
     private Integer parseInt(Object raw) {
-        return raw == null || "null".equals(raw.toString()) ? null : Integer.parseInt(raw.toString());
+        if (raw == null || "null".equals(raw.toString())) return null;
+        try {
+            return Integer.parseInt(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private Double parseDouble(Object raw) {
-        return raw == null || "null".equals(raw.toString()) ? null : Double.parseDouble(raw.toString());
+        if (raw == null || "null".equals(raw.toString())) return null;
+        try {
+            return Double.parseDouble(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

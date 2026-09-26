@@ -253,8 +253,6 @@ public abstract class AbstractRedisStreamConsumer {
     }
 
     private boolean tryStartProcess(String recordId) {
-        if (recordId == null) return false;
-
         Boolean success = streamRedisTemplate.opsForValue()
                 .setIfAbsent(processedKey(recordId), PROCESSING, Duration.ofMinutes(5));
 
@@ -267,8 +265,6 @@ public abstract class AbstractRedisStreamConsumer {
     }
 
     private String getStatus(String recordId) {
-        if (recordId == null) return null;
-
         Object val = streamRedisTemplate.opsForValue().get(processedKey(recordId));
 
         return val == null ? null : val.toString();

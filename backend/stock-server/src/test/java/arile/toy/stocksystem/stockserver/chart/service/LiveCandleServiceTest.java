@@ -11,6 +11,8 @@ import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMe
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -46,6 +48,24 @@ class LiveCandleServiceTest {
         then(dailyPublisher).shouldHaveNoMoreInteractions();
     }
 
+    @DisplayName("일봉: 시가·고가·저가·현재가·누적거래량 중 하나라도 없으면 발행하지 않는다")
+    @ParameterizedTest(name = "{0} 없음")
+    @ValueSource(strings = {"startPrice", "highPrice", "lowPrice", "curPrice", "totalVolume"})
+    void givenMissingField_whenBuildingDaily_thenSkips(String missing) {
+        var sut = new LiveDailyCandleService(dailyPublisher);
+
+        sut.buildAndPublish("005930", new TradePriceTickMessage(TickMessageType.TRADEPRICE, "005930", "093000",
+                missing.equals("curPrice") ? null : 70_000, 0, 70_000, "0.00",
+                missing.equals("startPrice") ? null : 69_000,
+                missing.equals("highPrice") ? null : 71_000,
+                missing.equals("lowPrice") ? null : 68_500,
+                10,
+                missing.equals("totalVolume") ? null : 1000,
+                0L, 0, 0, "1", 0));
+
+        then(dailyPublisher).shouldHaveNoInteractions();
+    }
+
     @DisplayName("분봉: 같은 분의 틱은 고가·저가·종가·거래량을 누적하고, 분이 바뀌면 새 봉을 시작한다")
     @Test
     void whenUpdatingMinute_thenAccumulatesPerMinute() {
@@ -70,8 +90,22 @@ class LiveCandleServiceTest {
 
         sut.updateAndPublish("005930", tick(null, 70_000, 10));
         sut.updateAndPublish("005930", tick("093", 70_000, 10));
+        sut.updateAndPublish("005930", new TradePriceTickMessage(TickMessageType.TRADEPRICE, "005930", "093000",
+                null, 0, 70_000, "0.00", 69_000, 71_000, 68_500, 10, 1000, 0L, 0, 0, "1", 0));
 
         then(minutePublisher).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("분봉: 체결량이 없으면 0으로 보고 봉을 만든다")
+    @Test
+    void givenNullVolumeTick_whenUpdatingMinute_thenTreatsAsZero() {
+        var sut = new LiveMinuteCandleService(minutePublisher);
+
+        sut.updateAndPublish("005930", new TradePriceTickMessage(TickMessageType.TRADEPRICE, "005930", "093000",
+                70_000, 0, 70_000, "0.00", 69_000, 71_000, 68_500, null, 1000, 0L, 0, 0, "1", 0));
+
+        then(minutePublisher).should().publish(MinuteCandleUpdateEvent.of("005930",
+                new MinuteCandle(TODAY_KST, "093000", 70_000, 70_000, 70_000, 70_000, 0)));
     }
 
     private TradePriceTickMessage tick(String time, int price, int volumeTick) {

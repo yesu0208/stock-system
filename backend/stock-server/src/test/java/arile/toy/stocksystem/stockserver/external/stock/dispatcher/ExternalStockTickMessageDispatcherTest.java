@@ -56,4 +56,15 @@ class ExternalStockTickMessageDispatcherTest {
 
         then(stockSummaryTickMessageHandler).should().handle("0|H0STCNT0|1|x");
     }
+
+    @DisplayName("메시지가 null이어도 예외를 던지지 않고 어떤 핸들러도 호출하지 않는다")
+    @Test
+    void givenNullMessage_whenDispatching_thenSwallows() {
+        assertThatNoException().isThrownBy(() -> sut.dispatch(null));
+
+        then(stateTickMessageHandler).shouldHaveNoInteractions();
+        then(tradePriceTickMessageHandler).shouldHaveNoInteractions();
+        then(bidAskPriceTickMessageHandler).shouldHaveNoInteractions();
+        then(stockSummaryTickMessageHandler).shouldHaveNoInteractions();
+    }
 }

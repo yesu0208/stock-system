@@ -78,4 +78,24 @@ class MarketCloseCoordinatorTest {
         assertThat(last).isTrue();
         then(redisTemplate).should().expire(afterKey, Duration.ofHours(2));
     }
+
+    @DisplayName("애프터마켓: 완료 그룹 수가 거래 그룹 수에 못 미치면 마지막이 아니다")
+    @Test
+    void givenAfterMarketNotAllDone_whenMarking_thenNotLast() {
+        given(valueOps.increment(afterKey)).willReturn(1L);
+
+        boolean last = new AfterMarketCloseCoordinator(redisTemplate, stockGroupProperties).markDoneAndCheckLast();
+
+        assertThat(last).isFalse();
+    }
+
+    @DisplayName("애프터마켓: 증가 결과가 null이면 마지막이 아니다")
+    @Test
+    void givenAfterMarketNullCount_whenMarking_thenNotLast() {
+        given(valueOps.increment(afterKey)).willReturn(null);
+
+        boolean last = new AfterMarketCloseCoordinator(redisTemplate, stockGroupProperties).markDoneAndCheckLast();
+
+        assertThat(last).isFalse();
+    }
 }
