@@ -15,27 +15,4 @@ public record StockServerAutoOrderResponseMessage(
         Integer orderQuantity,
         Instant orderTime
 ) {
-    public static StockServerAutoOrderResponseMessage of(
-            Long autoOrderId,
-            String username,
-            String stockCode,
-            AutoOrderType autoOrderType,
-            Integer triggerPrice,
-            LeverageRatio leverageRatio,
-            Integer orderPrice,
-            Integer orderQuantity,
-            Instant orderTime
-    ) {
-        return new StockServerAutoOrderResponseMessage(
-                autoOrderId,
-                username,
-                stockCode,
-                autoOrderType,
-                leverageRatio,
-                triggerPrice,
-                orderPrice,
-                orderQuantity,
-                orderTime
-        );
-    }
 }
