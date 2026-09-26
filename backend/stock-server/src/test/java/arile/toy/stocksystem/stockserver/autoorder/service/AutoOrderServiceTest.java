@@ -197,6 +197,28 @@ class AutoOrderServiceTest {
             then(autoOrderResponseEventPublisher).should().publish(any(StockServerAutoOrderResponseMessage.class));
             then(accountApiClient).should(never()).refundReservedCash(anyString(), anyLong());
         }
+
+        @DisplayName("대기열 등록 실패 후 취소 처리까지 실패해도 환불·에러 발행하고 원래 예외에 취소 실패를 덧붙여 던진다")
+        @Test
+        void givenCancelAlsoFails_whenRegistering_thenRefundsAndRethrowsWithSuppressed() {
+            var request = request(AutoOrderType.BUY, LeverageRatio.SPOT);
+            given(accountApiClient.reserveCash(USERNAME, SPOT_RESERVE)).willReturn(true);
+            givenSaveAssignsId();
+            willThrow(new IllegalStateException("queue error")).given(autoOrderQueueRegistry).autoOrderEnqueue(any());
+            willThrow(new IllegalStateException("cancel error")).given(autoOrderQueueRegistry).autoOrderCancel(1L, STOCK_CODE);
+
+            assertThatThrownBy(() -> sut.registerAutoOrder(request))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("queue error")
+                    .satisfies(e -> assertThat(e.getSuppressed())
+                            .extracting(Throwable::getMessage)
+                            .containsExactly("cancel error"));
+
+            // 취소 처리가 대기열 제거에서 실패했으므로 CANCELED 저장까지 가지 않음 (최초 저장 1번만)
+            then(autoOrderRepository).should(times(1)).save(any(AutoOrderEntity.class));
+            then(accountApiClient).should().refundReservedCash(USERNAME, SPOT_RESERVE);
+            then(autoOrderResponseEventPublisher).should().publishError(request, AutoOrderResultCode.INTERNAL_ERROR);
+        }
     }
 
     @Nested
@@ -238,12 +260,18 @@ class AutoOrderServiceTest {
             assertThat(entity.getAutoOrderStatus()).isEqualTo(status);
         }
 
-        @DisplayName("자동주문이 없으면 예외를 던진다")
+        @DisplayName("자동주문이 없으면 취소·사용자 취소·발동 모두 예외를 던진다")
         @Test
         void givenNotFound_whenChangingStatus_thenThrows() {
             given(autoOrderRepository.findByIdForUpdate(1L)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> sut.updateAutoOrderStatusByCancel(1L))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("auto order not found");
+            assertThatThrownBy(() -> sut.updateAutoOrderStatusByUserCancel(1L, USERNAME, STOCK_CODE))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("auto order not found");
+            assertThatThrownBy(() -> sut.updateAutoOrderStatusByTrigger(1L))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("auto order not found");
         }
