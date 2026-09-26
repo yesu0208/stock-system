@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.connection.stream.MapRecord;
@@ -19,6 +21,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
@@ -80,6 +83,34 @@ class RedisOtocoRequestEventConsumerTest {
         then(registry).shouldHaveNoInteractions();
     }
 
+    @DisplayName("진입 방향이 없으면 예외 없이 건너뛴다")
+    @Test
+    void givenMissingEntryDirection_whenHandling_thenSkips() {
+        assertThatNoException().isThrownBy(() -> sut.handle(record(Map.of(), "entryDirection")));
+
+        then(otocoService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("수량·진입가·익절가·손절가가 없거나 숫자가 아니면 예외 없이 건너뛴다")
+    @ParameterizedTest
+    @CsvSource(value = {
+            "orderQuantity, NULL",
+            "orderQuantity, abc",
+            "entryTriggerPrice, NULL",
+            "entryTriggerPrice, 1.5",
+            "tpPrice, abc",
+            "slPrice, abc"
+    }, nullValues = "NULL")
+    void givenInvalidNumber_whenHandling_thenSkips(String field, String raw) {
+        var record = raw == null ? record(Map.of(), field) : record(Map.of(field, raw));
+
+        assertThatNoException().isThrownBy(() -> sut.handle(record));
+
+        then(otocoService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
+    }
+
     @DisplayName("장이 닫혀 있으면 등록하지 않는다")
     @Test
     void givenClosed_whenHandling_thenSkips() {
@@ -88,6 +119,28 @@ class RedisOtocoRequestEventConsumerTest {
         sut.handle(record(Map.of()));
 
         then(otocoService).should(never()).registerOtoco(any());
+    }
+
+    @DisplayName("PRICE 모드인데 익절가가 \"null\" 문자열이면 예외 없이 건너뛴다")
+    @Test
+    void givenNullStringPrice_whenHandling_thenSkips() {
+        assertThatNoException().isThrownBy(() -> sut.handle(record(Map.of("tpPrice", "null"))));
+
+        then(otocoService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("PCT 모드인데 비율이 숫자가 아니면 예외 없이 건너뛴다")
+    @Test
+    void givenInvalidPct_whenHandling_thenSkips() {
+        Map<String, String> overrides = new HashMap<>();
+        overrides.put("tpMode", "PCT");
+        overrides.put("tpPct", "abc");
+
+        assertThatNoException().isThrownBy(() -> sut.handle(record(overrides)));
+
+        then(otocoService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
     }
 
     private MapRecord<String, Object, Object> record(Map<String, String> overrides, String... removed) {
