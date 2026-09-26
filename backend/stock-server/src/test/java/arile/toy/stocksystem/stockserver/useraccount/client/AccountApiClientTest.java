@@ -80,6 +80,27 @@ class AccountApiClientTest {
         server.verify();
     }
 
+    @DisplayName("정산 요청이 서버 오류로 실패해도 예외를 던지지 않는다")
+    @Test
+    void givenServerError_whenSettling_thenNoException() {
+        server.expect(requestTo(BASE_URL + "/internal/accounts/settle"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withServerError());
+
+        assertThatNoException().isThrownBy(() -> sut.settle(Set.of("user")));
+        server.verify();
+    }
+
+    @DisplayName("응답 본문이 없으면 false를 돌려준다")
+    @Test
+    void givenNullBody_whenReserving_thenFalse() {
+        server.expect(requestTo(BASE_URL + "/internal/accounts/user/reserve-cash"))
+                .andRespond(withSuccess("null", MediaType.APPLICATION_JSON));
+
+        assertThat(sut.reserveCash("user", 100L)).isFalse();
+        server.verify();
+    }
+
     private void expectPost(String path, String body, boolean success) {
         server.expect(requestTo(BASE_URL + path))
                 .andExpect(method(HttpMethod.POST))
