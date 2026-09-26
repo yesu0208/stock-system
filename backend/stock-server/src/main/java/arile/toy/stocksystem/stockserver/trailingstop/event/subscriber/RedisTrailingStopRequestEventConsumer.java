@@ -45,7 +45,7 @@ public class RedisTrailingStopRequestEventConsumer extends AbstractRedisStreamCo
         TrailingStopType trailingStopType;
         try {
             trailingStopType = TrailingStopType.valueOf(trailingStopTypeStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             log.error("Invalid trailingStopType: {}", trailingStopTypeStr);
             return;
         }
@@ -65,6 +65,13 @@ public class RedisTrailingStopRequestEventConsumer extends AbstractRedisStreamCo
         Double stopPercent = parseDouble(value.get("stopPercent"));
         Integer basePrice = parseInt(value.get("basePrice"));
 
+        // 수량·비율·기준가는 트리거 가격·예약 금액 계산에 필요하므로, 없거나 잘못된 값이면 재시도하지 않고 건너뜀
+        if (orderQuantity == null || stopPercent == null || basePrice == null) {
+            log.error("Invalid trailing stop values. orderQuantity: {}, stopPercent: {}, basePrice: {}",
+                    value.get("orderQuantity"), value.get("stopPercent"), value.get("basePrice"));
+            return;
+        }
+
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip trailing stop for stockCode {}", stockCode);
             return;
@@ -77,10 +84,20 @@ public class RedisTrailingStopRequestEventConsumer extends AbstractRedisStreamCo
     }
 
     private Integer parseInt(Object raw) {
-        return raw == null ? null : Integer.parseInt(raw.toString());
+        if (raw == null) return null;
+        try {
+            return Integer.parseInt(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private Double parseDouble(Object raw) {
-        return raw == null ? null : Double.parseDouble(raw.toString());
+        if (raw == null) return null;
+        try {
+            return Double.parseDouble(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
