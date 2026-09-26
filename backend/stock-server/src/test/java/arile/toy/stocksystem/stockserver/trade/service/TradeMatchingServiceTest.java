@@ -14,6 +14,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -199,6 +201,31 @@ class TradeMatchingServiceTest {
                     .extracting(OrderDto::orderId)
                     .containsExactly(1L);
         }
+
+        @DisplayName("대기 중인 매수 주문이 없으면 아무것도 체결하지 않는다")
+        @Test
+        void givenNoBuyOrders_whenTick_thenNothing() {
+            sut.getExternalTickMessageAndTrade(tick(70_000, 5, "5"));
+
+            then(tradeExecutionService).shouldHaveNoInteractions();
+            then(tradeResponseEventPublisher).shouldHaveNoInteractions();
+        }
+
+        @DisplayName("이미 취소된 매수 주문(null)은 건너뛰고 다음 매수 주문을 체결한다")
+        @Test
+        void givenCanceledBuy_whenTick_thenSkipsAndContinues() {
+            enqueue(order(1L, OrderType.BUY, 71_000, 5, T0));
+            enqueue(order(2L, OrderType.BUY, 70_000, 5, T0));
+            given(tradeExecutionService.executeBuyTrade(argThat(o -> o != null && o.orderId() == 1L), eq(70_000), eq(5)))
+                    .willReturn(null);
+            givenBuyExecutes(2L, 70_000, 5);
+
+            sut.getExternalTickMessageAndTrade(tick(70_000, 5, "5"));
+
+            then(tradeResponseEventPublisher).should(times(1)).publish(any(TradeResponseEvent.class));
+            then(stockServerOrderResponseRepository).should().delete("user", 2L);
+            assertThat(orderQueueRegistry.snapshotRanked(STOCK_CODE, OrderType.BUY)).isEmpty();
+        }
     }
 
     @Nested
@@ -290,6 +317,66 @@ class TradeMatchingServiceTest {
             assertThat(orderQueueRegistry.snapshotRanked(STOCK_CODE, OrderType.BUY))
                     .extracting(OrderDto::orderId).containsExactly(1L);
             assertThat(orderQueueRegistry.snapshotRanked(STOCK_CODE, OrderType.SELL)).isEmpty();
+        }
+
+        @DisplayName("매수나 매도 한쪽만 있으면 체결하지 않고 꺼낸 주문을 되돌린다")
+        @Test
+        void givenOnlyOneSide_whenTick_thenRestores() {
+            enqueue(order(1L, OrderType.BUY, 70_000, 5, T0));
+            sut.getExternalTickMessageAndTrade(tick(70_000, 5, "3"));
+
+            orderQueueRegistry.pollBuy(STOCK_CODE);
+            enqueue(order(2L, OrderType.SELL, 70_000, 5, T0));
+            sut.getExternalTickMessageAndTrade(tick(70_000, 5, "3"));
+
+            then(tradeExecutionService).shouldHaveNoInteractions();
+            assertThat(orderQueueRegistry.snapshotRanked(STOCK_CODE, OrderType.BUY)).isEmpty();
+            assertThat(orderQueueRegistry.snapshotRanked(STOCK_CODE, OrderType.SELL))
+                    .extracting(OrderDto::orderId).containsExactly(2L);
+        }
+
+        @DisplayName("매수가가 체결가보다 낮거나 매도가가 체결가보다 높으면 체결하지 않고 양쪽을 되돌린다")
+        @ParameterizedTest
+        @CsvSource({"69000, 70000", "70000, 71000"})
+        void givenPriceMismatch_whenTick_thenRestoresBoth(int buyPrice, int sellPrice) {
+            enqueue(order(1L, OrderType.BUY, buyPrice, 5, T0));
+            enqueue(order(2L, OrderType.SELL, sellPrice, 5, T0));
+
+            sut.getExternalTickMessageAndTrade(tick(70_000, 5, "3"));
+
+            then(tradeExecutionService).shouldHaveNoInteractions();
+            assertThat(orderQueueRegistry.snapshotRanked(STOCK_CODE, OrderType.BUY)).hasSize(1);
+            assertThat(orderQueueRegistry.snapshotRanked(STOCK_CODE, OrderType.SELL)).hasSize(1);
+        }
+
+        @DisplayName("매도 주문이 이미 취소됐으면(null) 매도는 건너뛰고 매수만 체결한다")
+        @Test
+        void givenCanceledSell_whenTick_thenOnlyBuyFills() {
+            enqueue(order(1L, OrderType.BUY, 70_000, 5, T0));
+            enqueue(order(2L, OrderType.SELL, 70_000, 5, T0));
+            given(tradeExecutionService.executeSellTrade(any(), eq(70_000), eq(5))).willReturn(null);
+            givenBuyExecutes(1L, 70_000, 5);
+
+            sut.getExternalTickMessageAndTrade(tick(70_000, 5, "3"));
+
+            then(tradeResponseEventPublisher).should(times(1)).publish(any(TradeResponseEvent.class));
+            then(stockServerOrderResponseRepository).should().delete("user", 1L);
+            then(stockServerOrderResponseRepository).should(never()).delete("user", 2L);
+        }
+
+        @DisplayName("매수 주문이 이미 취소됐으면(null) 매수는 건너뛰고 매도만 체결한다")
+        @Test
+        void givenCanceledBuy_whenTick_thenOnlySellFills() {
+            enqueue(order(1L, OrderType.BUY, 70_000, 5, T0));
+            enqueue(order(2L, OrderType.SELL, 70_000, 5, T0));
+            givenSellExecutes(2L, 70_000, 5);
+            given(tradeExecutionService.executeBuyTrade(any(), eq(70_000), eq(5))).willReturn(null);
+
+            sut.getExternalTickMessageAndTrade(tick(70_000, 5, "3"));
+
+            then(tradeResponseEventPublisher).should(times(1)).publish(any(TradeResponseEvent.class));
+            then(stockServerOrderResponseRepository).should().delete("user", 2L);
+            then(stockServerOrderResponseRepository).should(never()).delete("user", 1L);
         }
     }
 
