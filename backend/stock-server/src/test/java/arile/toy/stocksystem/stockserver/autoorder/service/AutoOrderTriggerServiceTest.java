@@ -208,6 +208,39 @@ class AutoOrderTriggerServiceTest {
         assertThat(autoOrderQueueRegistry.peekSell(STOCK_CODE)).isPresent();
     }
 
+    @DisplayName("매도 쪽 발동 상태 변경이 실패해도 자동주문을 대기열로 되돌리고 이번 틱 매도 처리를 멈춘다")
+    @Test
+    void givenSellStatusUpdateFails_whenTick_thenRestoresAndStops() {
+        // 매도 자동주문은 현재가가 발동가 이하로 내려오면 발동 (발동가 71,000 ≥ 현재가 70,000)
+        enqueue(dto(1L, AutoOrderType.SELL, 71_000));
+        enqueue(dto(2L, AutoOrderType.SELL, 70_000));
+        given(autoOrderService.updateAutoOrderStatusByTrigger(1L)).willThrow(new IllegalStateException("db error"));
+
+        assertThatCode(() -> sut.getExternalTickMessageAndTrigger(tick(70_000))).doesNotThrowAnyException();
+
+        then(autoOrderService).should(times(1)).updateAutoOrderStatusByTrigger(anyLong());
+        then(orderService).shouldHaveNoInteractions();
+        assertThat(autoOrderQueueRegistry.pollSell(STOCK_CODE).autoOrderId()).isEqualTo(1L);
+        assertThat(autoOrderQueueRegistry.pollSell(STOCK_CODE).autoOrderId()).isEqualTo(2L);
+    }
+
+    @DisplayName("보상 중 응답 삭제가 실패해도 발동 실패를 알린다")
+    @Test
+    void givenDeleteFailsDuringCompensation_whenTick_thenStillPublishesFailure() {
+        AutoOrderDto dto = dto(1L, AutoOrderType.SELL, 71_000);
+        enqueue(dto);
+        givenTriggerable(1L);
+        given(orderService.registerOrder(any(), eq(true))).willThrow(new IllegalStateException("fail"));
+        given(accountApiClient.refundReservedStock(USERNAME, STOCK_CODE, 10)).willReturn(true);
+        willThrow(new IllegalStateException("redis down"))
+                .given(stockServerAutoOrderResponseRepository).delete(USERNAME, 1L);
+
+        assertThatCode(() -> sut.getExternalTickMessageAndTrigger(tick(70_000))).doesNotThrowAnyException();
+
+        then(accountApiClient).should().refundReservedStock(USERNAME, STOCK_CODE, 10);
+        then(autoOrderResponseEventPublisher).should().publishTriggerFailure(dto, AutoOrderResultCode.TRIGGER_FAILED);
+    }
+
     // ===== helpers =====
 
     private void enqueue(AutoOrderDto dto) {
