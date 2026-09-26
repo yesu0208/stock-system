@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.connection.stream.MapRecord;
@@ -18,6 +20,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
@@ -71,6 +74,39 @@ class RedisTrailingStopRequestEventConsumerTest {
         then(trailingStopService).should(never()).registerTrailingStop(any());
     }
 
+    @DisplayName("트레일링 스탑 타입이 없으면 예외 없이 건너뛴다")
+    @Test
+    void givenMissingTrailingStopType_whenHandling_thenSkips() {
+        Map<String, String> overrides = new HashMap<>();
+        overrides.put("trailingStopType", null);
+
+        assertThatNoException().isThrownBy(() -> sut.handle(record(overrides)));
+
+        then(trailingStopService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("수량·비율·기준가가 없거나 숫자가 아니면 예외 없이 건너뛴다")
+    @ParameterizedTest
+    @CsvSource(value = {
+            "orderQuantity, NULL",
+            "orderQuantity, abc",
+            "stopPercent, NULL",
+            "stopPercent, abc",
+            "basePrice, NULL",
+            "basePrice, 1.5"
+    }, nullValues = "NULL")
+    void givenInvalidNumber_whenHandling_thenSkips(String field, String raw) {
+        Map<String, String> overrides = new HashMap<>();
+        overrides.put(field, raw);
+
+        assertThatNoException().isThrownBy(() -> sut.handle(record(overrides)));
+
+        then(trailingStopService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
+    }
+
+    // overrides의 값이 null이면 해당 필드를 레코드에서 제거
     private MapRecord<String, Object, Object> record(Map<String, String> overrides) {
         Map<Object, Object> value = new HashMap<>();
         value.put("type", "TRAILING_STOP_CREATED");
@@ -81,6 +117,7 @@ class RedisTrailingStopRequestEventConsumerTest {
         value.put("stopPercent", "3.0");
         value.put("basePrice", "70000");
         value.putAll(overrides);
+        value.values().removeIf(v -> v == null);
         return StreamRecords.newRecord().in("trailing-stop-A").ofMap(value);
     }
 }
