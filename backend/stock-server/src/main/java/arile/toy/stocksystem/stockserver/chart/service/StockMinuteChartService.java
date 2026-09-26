@@ -66,10 +66,8 @@ public class StockMinuteChartService {
             if (response == null || response.output2() == null || response.output2().isEmpty()) {
                 consecutiveEmptyDays++;
                 // 해당 날짜에 더 이상 데이터가 없으면 전 거래일로 점프해서 재시도
+                // (점프는 항상 하루 전으로 이동하므로 종료는 연속 빈 응답 일수 상한이 보장)
                 String[] jumped = jumpToPreviousTradingSession(currentDate);
-                if (jumped[0].equals(currentDate)) {
-                    break; // 더 이상 진행 불가
-                }
                 currentDate = jumped[0];
                 currentHour = jumped[1];
                 continue;
@@ -91,7 +89,6 @@ public class StockMinuteChartService {
             if (batch.isEmpty()) {
                 consecutiveEmptyDays++;
                 String[] jumped = jumpToPreviousTradingSession(currentDate);
-                if (jumped[0].equals(currentDate)) break;
                 currentDate = jumped[0];
                 currentHour = jumped[1];
                 continue;
@@ -107,11 +104,8 @@ public class StockMinuteChartService {
             String[] next = previousTradingTimestamp(oldestDate, oldestHour);
             currentDate = next[0];
             currentHour = next[1];
-
-            if (batch.size() < 100) {
-                // 이번 배치가 마지막 페이지였다면, 해당 날짜에서는 더 받을 게 없으니
-                // 다음 루프에서 자연히 전 거래일로 점프하도록 그대로 진행
-            }
+            // 이번 배치가 마지막 페이지(100건 미만)였다면 해당 날짜에서는 더 받을 게 없으니
+            // 다음 루프에서 빈 응답을 받아 자연히 전 거래일로 점프함
         }
 
         return result.stream()
