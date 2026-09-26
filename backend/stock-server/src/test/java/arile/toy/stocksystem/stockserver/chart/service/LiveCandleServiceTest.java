@@ -11,6 +11,8 @@ import arile.toy.stocksystem.stockserver.external.stock.message.TradePriceTickMe
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -44,6 +46,24 @@ class LiveCandleServiceTest {
         then(dailyPublisher).should().publish(DailyCandleUpdateEvent.of("005930",
                 new CandleData(TODAY_KST, 69_000, 71_000, 68_500, 70_000, 1000)));
         then(dailyPublisher).shouldHaveNoMoreInteractions();
+    }
+
+    @DisplayName("일봉: 시가·고가·저가·현재가·누적거래량 중 하나라도 없으면 발행하지 않는다")
+    @ParameterizedTest(name = "{0} 없음")
+    @ValueSource(strings = {"startPrice", "highPrice", "lowPrice", "curPrice", "totalVolume"})
+    void givenMissingField_whenBuildingDaily_thenSkips(String missing) {
+        var sut = new LiveDailyCandleService(dailyPublisher);
+
+        sut.buildAndPublish("005930", new TradePriceTickMessage(TickMessageType.TRADEPRICE, "005930", "093000",
+                missing.equals("curPrice") ? null : 70_000, 0, 70_000, "0.00",
+                missing.equals("startPrice") ? null : 69_000,
+                missing.equals("highPrice") ? null : 71_000,
+                missing.equals("lowPrice") ? null : 68_500,
+                10,
+                missing.equals("totalVolume") ? null : 1000,
+                0L, 0, 0, "1", 0));
+
+        then(dailyPublisher).shouldHaveNoInteractions();
     }
 
     @DisplayName("분봉: 같은 분의 틱은 고가·저가·종가·거래량을 누적하고, 분이 바뀌면 새 봉을 시작한다")
