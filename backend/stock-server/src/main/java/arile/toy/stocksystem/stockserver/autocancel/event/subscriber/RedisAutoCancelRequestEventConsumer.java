@@ -36,14 +36,11 @@ public class RedisAutoCancelRequestEventConsumer extends AbstractRedisStreamCons
     protected void handle(MapRecord<String, Object, Object> record) {
         Map<Object, Object> value = record.getValue();
 
-        Object autoOrderIdObj = value.get("autoOrderId");
-        Long autoOrderId = null;
-        if (autoOrderIdObj != null) {
-            if (autoOrderIdObj instanceof Number) {
-                autoOrderId = ((Number) autoOrderIdObj).longValue();
-            } else {
-                autoOrderId = Long.parseLong(autoOrderIdObj.toString());
-            }
+        Long autoOrderId = parseLong(value.get("autoOrderId"));
+        // 자동 주문 ID가 없거나 숫자가 아니면 재시도해도 성공할 수 없으므로 건너뜀
+        if (autoOrderId == null) {
+            log.error("Invalid autoOrderId: {}", value.get("autoOrderId"));
+            return;
         }
 
         String stockCode = (String) value.get("stockCode");
@@ -58,5 +55,15 @@ public class RedisAutoCancelRequestEventConsumer extends AbstractRedisStreamCons
         log.info("Processing cancel autoOrderId: {} for stockCode {}", autoOrderId, stockCode);
 
         autoCancelService.registerAutoCancel(AutoCancelRequestEvent.of(autoOrderId, stockCode, username));
+    }
+
+    private Long parseLong(Object raw) {
+        if (raw == null) return null;
+        if (raw instanceof Number number) return number.longValue();
+        try {
+            return Long.parseLong(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
