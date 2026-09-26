@@ -167,6 +167,9 @@ class AlertServiceTest {
             given(alertRepository.findByIdForUpdate(1L)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> sut.updateAlertStatusByFire(1L)).hasMessage("alert not found");
+            assertThatThrownBy(() -> sut.updateAlertStatusByCancel(1L)).hasMessage("alert not found");
+            assertThatThrownBy(() -> sut.updateAlertStatusByUserCancel(1L, "user", "005930"))
+                    .hasMessage("alert not found");
         }
 
         @DisplayName("활성 알림 조회를 저장소에 위임한다")
