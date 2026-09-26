@@ -7,6 +7,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.connection.stream.MapRecord;
@@ -19,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.mockito.BDDMockito.*;
 
 @DisplayName("[Consumer] 자동주문 취소 요청 컨슈머 설정·파싱 테스트")
@@ -68,6 +72,21 @@ class RedisAutoCancelRequestEventConsumerTest {
         sut.handle(record(value()));
 
         then(autoCancelService).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("자동주문 ID가 없거나 숫자가 아니면 취소를 요청하지 않고 건너뛴다")
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"abc", "1.5"})
+    void givenInvalidAutoOrderId_whenHandling_thenSkips(String raw) {
+        Map<Object, Object> value = value();
+        if (raw == null) value.remove("autoOrderId");
+        else value.put("autoOrderId", raw);
+
+        assertThatNoException().isThrownBy(() -> sut.handle(record(value)));
+
+        then(autoCancelService).shouldHaveNoInteractions();
+        then(registry).shouldHaveNoInteractions();
     }
 
     private Map<Object, Object> value() {
