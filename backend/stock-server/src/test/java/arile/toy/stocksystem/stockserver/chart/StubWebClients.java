@@ -23,10 +23,13 @@ public final class StubWebClients {
                 .baseUrl("http://chart")
                 .exchangeFunction(request -> {
                     captured.add(request);
-                    return Mono.just(ClientResponse.create(HttpStatus.OK)
-                            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                            .body(responder.apply(request))
-                            .build());
+                    String body = responder.apply(request);
+                    ClientResponse.Builder response = ClientResponse.create(HttpStatus.OK);
+                    // null이면 본문·Content-Type 없는 응답 (bodyToMono가 비어 block()이 null을 돌려줌)
+                    if (body != null) {
+                        response.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(body);
+                    }
+                    return Mono.just(response.build());
                 })
                 .build();
     }
