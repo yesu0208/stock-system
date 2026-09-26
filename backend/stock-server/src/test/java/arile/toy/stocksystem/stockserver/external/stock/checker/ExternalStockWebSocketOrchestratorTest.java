@@ -104,6 +104,34 @@ class ExternalStockWebSocketOrchestratorTest {
             then(globalMarketPhasePublisher).shouldHaveNoInteractions();
         }
 
+        @DisplayName("동시호가 전 사전 연결: 끊겨 있으면 연결·구독하고 장 단계는 바꾸지 않는다")
+        @Test
+        void givenDisconnected_whenPreConnecting_thenConnectsWithoutPhaseChange() {
+            given(marketTimeChecker.isTodayHoliday()).willReturn(false);
+            given(externalStockWebSocketClient.isConnected()).willReturn(false);
+            given(approvalKeyService.issueApprovalKey()).willReturn("key");
+            given(stockProperties.getOpen()).willReturn(List.of("005930"));
+
+            sut.preConnectBeforeMorningCall();
+
+            then(externalStockWebSocketClient).should().connect("key");
+            then(externalStockWebSocketClient).should().subscribe("005930");
+            then(marketPhaseService).shouldHaveNoInteractions();
+            then(globalMarketPhasePublisher).shouldHaveNoInteractions();
+        }
+
+        @DisplayName("동시호가 전 사전 연결: 이미 연결되어 있으면 다시 연결하지 않는다")
+        @Test
+        void givenConnected_whenPreConnecting_thenSkipsConnect() {
+            given(marketTimeChecker.isTodayHoliday()).willReturn(false);
+            given(externalStockWebSocketClient.isConnected()).willReturn(true);
+
+            sut.preConnectBeforeMorningCall();
+
+            then(approvalKeyService).shouldHaveNoInteractions();
+            then(externalStockWebSocketClient).should(never()).connect(anyString());
+        }
+
         @DisplayName("아침 동시호가·애프터 시작: 연결이 실패해도 장 단계는 연다")
         @Test
         void givenConnectFails_whenPhaseStarts_thenStillOpensPhase() {
