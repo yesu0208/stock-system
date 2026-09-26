@@ -5,6 +5,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.ClientRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,5 +45,47 @@ class ChartApiTokenManagerTest {
 
         assertThatNoException().isThrownBy(sut::init);
         assertThat(sut.getAccessToken()).isNull();
+    }
+
+    @DisplayName("응답 본문이 없으면 토큰을 갱신하지 않는다")
+    @Test
+    void givenNullBody_whenRefreshing_thenKeepsToken() {
+        var sut = new ChartApiTokenManager(StubWebClients.of(r -> "null"));
+
+        sut.init();
+
+        assertThat(sut.getAccessToken()).isNull();
+    }
+
+    @DisplayName("오류 응답(4xx/5xx)이면 예외 없이 토큰을 유지한다")
+    @Test
+    void givenErrorStatus_whenRefreshing_thenKeepsToken() {
+        var sut = new ChartApiTokenManager(statusClient(HttpStatus.INTERNAL_SERVER_ERROR, "{\"error\":\"down\"}"));
+
+        assertThatNoException().isThrownBy(sut::init);
+        assertThat(sut.getAccessToken()).isNull();
+    }
+
+    @DisplayName("요청 중 예외가 나면 예외 없이 토큰을 유지한다")
+    @Test
+    void givenExchangeError_whenRefreshing_thenKeepsToken() {
+        WebClient client = WebClient.builder()
+                .baseUrl("http://chart")
+                .exchangeFunction(request -> Mono.error(new IllegalStateException("connection refused")))
+                .build();
+        var sut = new ChartApiTokenManager(client);
+
+        assertThatNoException().isThrownBy(sut::init);
+        assertThat(sut.getAccessToken()).isNull();
+    }
+
+    private static WebClient statusClient(HttpStatus status, String body) {
+        return WebClient.builder()
+                .baseUrl("http://chart")
+                .exchangeFunction(request -> Mono.just(ClientResponse.create(status)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .body(body)
+                        .build()))
+                .build();
     }
 }
