@@ -90,8 +90,22 @@ class LiveCandleServiceTest {
 
         sut.updateAndPublish("005930", tick(null, 70_000, 10));
         sut.updateAndPublish("005930", tick("093", 70_000, 10));
+        sut.updateAndPublish("005930", new TradePriceTickMessage(TickMessageType.TRADEPRICE, "005930", "093000",
+                null, 0, 70_000, "0.00", 69_000, 71_000, 68_500, 10, 1000, 0L, 0, 0, "1", 0));
 
         then(minutePublisher).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("분봉: 체결량이 없으면 0으로 보고 봉을 만든다")
+    @Test
+    void givenNullVolumeTick_whenUpdatingMinute_thenTreatsAsZero() {
+        var sut = new LiveMinuteCandleService(minutePublisher);
+
+        sut.updateAndPublish("005930", new TradePriceTickMessage(TickMessageType.TRADEPRICE, "005930", "093000",
+                70_000, 0, 70_000, "0.00", 69_000, 71_000, 68_500, null, 1000, 0L, 0, 0, "1", 0));
+
+        then(minutePublisher).should().publish(MinuteCandleUpdateEvent.of("005930",
+                new MinuteCandle(TODAY_KST, "093000", 70_000, 70_000, 70_000, 70_000, 0)));
     }
 
     private TradePriceTickMessage tick(String time, int price, int volumeTick) {
