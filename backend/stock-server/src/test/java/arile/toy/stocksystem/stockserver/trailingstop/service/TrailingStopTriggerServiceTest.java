@@ -102,6 +102,20 @@ class TrailingStopTriggerServiceTest {
             then(trailingStopResponseEventPublisher).shouldHaveNoInteractions();
         }
 
+        @DisplayName("매수: 기준가 이상이고 발동가 미만이면 아무것도 하지 않는다")
+        @Test
+        void givenBuyPriceBetween_whenTick_thenNothing() {
+            // 기준가 70,000 / 발동가 72,100 -> 71,000은 새 저점도 아니고 발동도 아님
+            givenBook(dto(TrailingStopType.BUY, 70_000, 72_100, 72_100));
+
+            sut.getExternalTickMessageAndTrail(tick(71_000));
+
+            then(trailingStopBookRegistry).should(never()).update(any());
+            then(trailingStopTrailPersister).shouldHaveNoInteractions();
+            then(trailingStopResponseEventPublisher).shouldHaveNoInteractions();
+            then(trailingStopService).shouldHaveNoInteractions();
+        }
+
         @DisplayName("응답 갱신이 실패해도 발행하고 같은 틱의 다음 트레일링 스탑을 계속 처리한다")
         @Test
         void givenResponseUpdateFails_whenTick_thenContinues() {
@@ -254,6 +268,23 @@ class TrailingStopTriggerServiceTest {
             sut.getExternalTickMessageAndTrail(tick(67_000));
 
             then(trailingStopResponseEventPublisher).should().publishTriggerFailure(dto, TrailingStopResultCode.INTERNAL_ERROR);
+        }
+
+        @DisplayName("보상 환불까지 실패해도 응답 삭제·실패 이벤트 발행은 계속한다 (수동 조치 필요 로그)")
+        @Test
+        void givenCompensationRefundFails_whenTriggered_thenStillPublishesFailure() {
+            TrailingStopDto dto = dto(TrailingStopType.SELL, 70_000, 67_900, 67_900);
+            givenBook(dto);
+            givenTriggerResult(TrailingStopStatus.ACTIVE);
+            given(accountApiClient.refundReservedStock(USERNAME, STOCK_CODE, 10)).willReturn(false);
+            willThrow(new IllegalStateException("order error")).given(orderService).registerOrder(any(), eq(true));
+
+            sut.getExternalTickMessageAndTrail(tick(67_000));
+
+            then(accountApiClient).should().refundReservedStock(USERNAME, STOCK_CODE, 10);
+            then(stockServerTrailingStopResponseRepository).should().delete(USERNAME, 1L);
+            then(trailingStopResponseEventPublisher).should()
+                    .publishTriggerFailure(dto, TrailingStopResultCode.INTERNAL_ERROR);
         }
 
         @DisplayName("주문 등록 성공 후 응답 삭제가 실패해도 환불(보상)하지 않고 발동 이벤트를 발행한다")
