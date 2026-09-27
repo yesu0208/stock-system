@@ -185,7 +185,8 @@ export default function MarketHolidayInfoModal({ open, onClose }: Props) {
                                     const wd = idx % 7
                                     // 오늘 이전, 마지막 휴장일 이후는 조회 범위 밖
                                     const outOfRange = key < today || key > (lastDate ?? today)
-                                    const isHoliday = holidayMap.has(key)
+                                    const holiday = holidayMap.get(key)
+                                    const isHoliday = !!holiday
 
                                     const cls = [
                                         'hi-day',
@@ -207,10 +208,10 @@ export default function MarketHolidayInfoModal({ open, onClose }: Props) {
                                             type="button"
                                             className={cls}
                                             onClick={() => selectHoliday(key)}
-                                            title={holidayMap.get(key)?.memo ?? '휴장일'}
+                                            title={holiday?.memo || '휴장'}
                                         >
                                             <span className="hi-day__num">{parseKey(key).d}</span>
-                                            <span className="hi-day__dot" />
+                                            <span className="hi-day__memo">{holiday?.memo || '휴장'}</span>
                                         </button>
                                     ) : (
                                         <span key={key} className={cls}>
