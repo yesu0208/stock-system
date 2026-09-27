@@ -103,197 +103,202 @@ export default function ManagedModal({ open, onClose }: Props) {
     }
 
     return (
-        <ModalV2 open={open} title="관리자" onClose={onClose}>
-            <div className="managed-modal__content">
-                {!selectedUser ? (
-                    <>
-                        <div className="managed-modal__list-header">
-                            <p className="managed-modal__section-label">전체 회원</p>
-                            <button
-                                onClick={() => setHolidayOpen(true)}
-                                className="managed-modal__action"
-                            >
-                                휴무일 지정
-                            </button>
-                        </div>
-                        <div className="managed-modal__user-list">
-                            {users.length === 0 ? (
-                                <EmptyRow />
-                            ) : (
-                                users.map(u => (
-                                    <button
-                                        key={u.username}
-                                        onClick={() => openUser(u)}
-                                        className="managed-modal__user-row"
-                                    >
-                                        <span className="managed-modal__user-info">
-                                            <span className="managed-modal__user-nickname">{u.nickname}</span>
-                                            <span className="managed-modal__user-id">({u.username})</span>
-                                        </span>
-                                        <RankBadge rank={u.rank} size={16} />
-                                    </button>
-                                ))
-                            )}
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <div className="managed-modal__user-header">
-                            <h4 className="managed-modal__user-header-name">
-                                {selectedUser.nickname}
-                                <span className="managed-modal__user-id">({selectedUser.username})</span>
-                            </h4>
-                            {selectedUser.rank && <RankBadge rank={selectedUser.rank} size={18} />}
-                            <button
-                                onClick={refreshUser}
-                                disabled={loading}
-                                className="managed-modal__refresh"
-                            >
-                                ↻ 새로고침
-                            </button>
-                            <button
-                                onClick={() => setSelectedUser(null)}
-                                className="managed-modal__back"
-                            >
-                                ← 목록으로
-                            </button>
-                        </div>
-
-                        <div className="managed-modal__tabs">
-                            {(Object.keys(TAB_LABEL) as DetailTab[]).map(tab => (
+        <>
+            <ModalV2 open={open} title="관리자" onClose={onClose}>
+                <div className="managed-modal__content">
+                    {!selectedUser ? (
+                        <>
+                            <div className="managed-modal__list-header">
+                                <p className="managed-modal__section-label">전체 회원</p>
                                 <button
-                                    key={tab}
-                                    onClick={() => setDetailTab(tab)}
-                                    className={`managed-modal__tab${detailTab === tab ? ' active' : ''}`}
+                                    onClick={() => setHolidayOpen(true)}
+                                    className="managed-modal__action"
                                 >
-                                    {TAB_LABEL[tab]}
-                                    {tab === 'HOLDINGS' && ` (${Object.keys(account?.stocks ?? {}).length})`}
-                                    {tab === 'LEVERAGE' && ` (${account?.leveragePositions?.length ?? 0})`}
-                                    {tab === 'ORDERS' && ` (${orders.length})`}
-                                    {tab === 'AUTO_ORDERS' && ` (${autoOrders.length})`}
-                                    {tab === 'OTOCO' && ` (${otocos.length})`}
-                                    {tab === 'TRAILING' && ` (${trailingStops.length})`}
-                                    {tab === 'ALERTS' && ` (${alerts.length})`}
+                                    휴무일 지정
                                 </button>
-                            ))}
-                        </div>
-
-                        {loading ? (
-                            <div className="managed-modal__loading">불러오는 중...</div>
-                        ) : (
-                            <div className="managed-modal__detail-body">
-                                {detailTab === 'OVERVIEW' && (
-                                    !account ? <EmptyRow /> : (
-                                        <div className="mam-account">
-                                            <AccountSummary account={account} />
-                                        </div>
-                                    )
-                                )}
-
-                                {detailTab === 'HOLDINGS' && (
-                                    !account ? <EmptyRow /> : (
-                                        <div className="mam-holdings managed-modal__table-wrap">
-                                            <HoldingsTable account={account} />
-                                        </div>
-                                    )
-                                )}
-
-                                {detailTab === 'LEVERAGE' && (
-                                    !account ? <EmptyRow /> : (
-                                        <div className="mam-holdings managed-modal__table-wrap">
-                                            <LeverageTable account={account} />
-                                        </div>
-                                    )
-                                )}
-
-                                {detailTab === 'ORDERS' && (
-                                    orders.length === 0 ? <EmptyRow /> : orders.map(o => (
-                                        <div key={o.orderId} className="managed-modal__item-card">
-                                            <div className="managed-modal__item-header">
-                                                <span>{stockNameMap[o.stockCode] ?? o.stockCode}</span>
-                                                <span style={{ color: o.orderType === 'BUY' ? '#f87171' : '#60a5fa' }}>
-                                                    {o.orderType === 'BUY' ? '매수' : '매도'}
-                                                </span>
-                                            </div>
-                                            <div className="managed-modal__item-sub">
-                                                {o.orderPrice.toLocaleString()}원 · {o.orderQuantity - o.remainingQuantity}/{o.orderQuantity}주 체결
-                                                {o.leverageRatio && o.leverageRatio !== 'SPOT' && <> · {o.leverageRatio.replace('X', '').replace('_', '.')}배</>}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-
-                                {detailTab === 'AUTO_ORDERS' && (
-                                    autoOrders.length === 0 ? <EmptyRow /> : autoOrders.map(o => (
-                                        <div key={o.autoOrderId} className="managed-modal__item-card">
-                                            <div className="managed-modal__item-header">
-                                                <span>{stockNameMap[o.stockCode] ?? o.stockCode}</span>
-                                                <span style={{ color: o.autoOrderType === 'BUY' ? '#f87171' : '#60a5fa' }}>
-                                                    {o.autoOrderType === 'BUY' ? '매수' : '매도'}
-                                                </span>
-                                            </div>
-                                            <div className="managed-modal__item-sub">
-                                                트리거 {o.triggerPrice.toLocaleString()}원 → {o.orderPrice.toLocaleString()}원 · {o.orderQuantity}주
-                                                {o.leverageRatio && o.leverageRatio !== 'SPOT' && <> · {o.leverageRatio.replace('X', '').replace('_', '.')}배</>}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-
-                                {detailTab === 'OTOCO' && (
-                                    otocos.length === 0 ? <EmptyRow /> : otocos.map(o => (
-                                        <div key={o.otocoId} className="managed-modal__item-card">
-                                            <div className="managed-modal__item-header">
-                                                <span>{stockNameMap[o.stockCode] ?? o.stockCode}</span>
-                                                <span className="managed-modal__item-status">
-                                                    {OTOCO_STATUS_LABEL[o.otocoStatus] ?? o.otocoStatus}
-                                                </span>
-                                            </div>
-                                            <div className="managed-modal__item-sub">
-                                                진입 {o.entryDirection === 'ABOVE' ? '≥' : '≤'} {o.entryTriggerPrice.toLocaleString()}원 · {o.orderQuantity}주
-                                                {o.tpTriggerPrice && <> · TP {o.tpTriggerPrice.toLocaleString()}원</>}
-                                                {o.slTriggerPrice && <> · SL {o.slTriggerPrice.toLocaleString()}원</>}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-
-                                {detailTab === 'TRAILING' && (
-                                    trailingStops.length === 0 ? <EmptyRow /> : trailingStops.map(t => (
-                                        <div key={t.trailingStopId} className="managed-modal__item-card">
-                                            <div className="managed-modal__item-header">
-                                                <span>{stockNameMap[t.stockCode] ?? t.stockCode}</span>
-                                                <span style={{ color: t.trailingStopType === 'BUY' ? '#f87171' : '#60a5fa' }}>
-                                                    {t.trailingStopType === 'BUY' ? '매수' : '매도'}
-                                                </span>
-                                            </div>
-                                            <div className="managed-modal__item-sub">
-                                                기준가 {t.basePrice.toLocaleString()}원 · 추적 {t.stopPercent}% · {t.orderQuantity}주
-                                                {t.triggerPrice != null && <> · 현재 감시가 {t.triggerPrice.toLocaleString()}원</>}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-
-                                {detailTab === 'ALERTS' && (
-                                    alerts.length === 0 ? <EmptyRow /> : alerts.map(a => (
-                                        <div key={a.alertId} className="managed-modal__item-card">
-                                            <div className="managed-modal__item-header">
-                                                <span>{stockNameMap[a.stockCode] ?? a.stockCode}</span>
-                                                <span>
-                                                    {a.triggerPrice.toLocaleString()}원 {a.direction === 'ABOVE' ? '이상' : '이하'}
-                                                </span>
-                                            </div>
-                                        </div>
+                            </div>
+                            <div className="managed-modal__user-list">
+                                {users.length === 0 ? (
+                                    <EmptyRow />
+                                ) : (
+                                    users.map(u => (
+                                        <button
+                                            key={u.username}
+                                            onClick={() => openUser(u)}
+                                            className="managed-modal__user-row"
+                                        >
+                                            <span className="managed-modal__user-info">
+                                                <span className="managed-modal__user-nickname">{u.nickname}</span>
+                                                <span className="managed-modal__user-id">({u.username})</span>
+                                            </span>
+                                            <RankBadge rank={u.rank} size={16} />
+                                        </button>
                                     ))
                                 )}
                             </div>
-                        )}
-                    </>
-                )}
-            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="managed-modal__user-header">
+                                <h4 className="managed-modal__user-header-name">
+                                    {selectedUser.nickname}
+                                    <span className="managed-modal__user-id">({selectedUser.username})</span>
+                                </h4>
+                                {selectedUser.rank && <RankBadge rank={selectedUser.rank} size={18} />}
+                                <button
+                                    onClick={refreshUser}
+                                    disabled={loading}
+                                    className="managed-modal__refresh"
+                                >
+                                    ↻ 새로고침
+                                </button>
+                                <button
+                                    onClick={() => setSelectedUser(null)}
+                                    className="managed-modal__back"
+                                >
+                                    ← 목록으로
+                                </button>
+                            </div>
 
-            <HolidayModal open={holidayOpen} onClose={() => setHolidayOpen(false)} />
-        </ModalV2>
+                            <div className="managed-modal__tabs">
+                                {(Object.keys(TAB_LABEL) as DetailTab[]).map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setDetailTab(tab)}
+                                        className={`managed-modal__tab${detailTab === tab ? ' active' : ''}`}
+                                    >
+                                        {TAB_LABEL[tab]}
+                                        {tab === 'HOLDINGS' && ` (${Object.keys(account?.stocks ?? {}).length})`}
+                                        {tab === 'LEVERAGE' && ` (${account?.leveragePositions?.length ?? 0})`}
+                                        {tab === 'ORDERS' && ` (${orders.length})`}
+                                        {tab === 'AUTO_ORDERS' && ` (${autoOrders.length})`}
+                                        {tab === 'OTOCO' && ` (${otocos.length})`}
+                                        {tab === 'TRAILING' && ` (${trailingStops.length})`}
+                                        {tab === 'ALERTS' && ` (${alerts.length})`}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {loading ? (
+                                <div className="managed-modal__loading">불러오는 중...</div>
+                            ) : (
+                                <div className="managed-modal__detail-body">
+                                    {detailTab === 'OVERVIEW' && (
+                                        !account ? <EmptyRow /> : (
+                                            <div className="mam-account">
+                                                <AccountSummary account={account} />
+                                            </div>
+                                        )
+                                    )}
+
+                                    {detailTab === 'HOLDINGS' && (
+                                        !account ? <EmptyRow /> : (
+                                            <div className="mam-holdings managed-modal__table-wrap">
+                                                <HoldingsTable account={account} />
+                                            </div>
+                                        )
+                                    )}
+
+                                    {detailTab === 'LEVERAGE' && (
+                                        !account ? <EmptyRow /> : (
+                                            <div className="mam-holdings managed-modal__table-wrap">
+                                                <LeverageTable account={account} />
+                                            </div>
+                                        )
+                                    )}
+
+                                    {detailTab === 'ORDERS' && (
+                                        orders.length === 0 ? <EmptyRow /> : orders.map(o => (
+                                            <div key={o.orderId} className="managed-modal__item-card">
+                                                <div className="managed-modal__item-header">
+                                                    <span>{stockNameMap[o.stockCode] ?? o.stockCode}</span>
+                                                    <span style={{ color: o.orderType === 'BUY' ? '#f87171' : '#60a5fa' }}>
+                                                        {o.orderType === 'BUY' ? '매수' : '매도'}
+                                                    </span>
+                                                </div>
+                                                <div className="managed-modal__item-sub">
+                                                    {o.orderPrice.toLocaleString()}원 · {o.orderQuantity - o.remainingQuantity}/{o.orderQuantity}주 체결
+                                                    {o.leverageRatio && o.leverageRatio !== 'SPOT' && <> · {o.leverageRatio.replace('X', '').replace('_', '.')}배</>}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+
+                                    {detailTab === 'AUTO_ORDERS' && (
+                                        autoOrders.length === 0 ? <EmptyRow /> : autoOrders.map(o => (
+                                            <div key={o.autoOrderId} className="managed-modal__item-card">
+                                                <div className="managed-modal__item-header">
+                                                    <span>{stockNameMap[o.stockCode] ?? o.stockCode}</span>
+                                                    <span style={{ color: o.autoOrderType === 'BUY' ? '#f87171' : '#60a5fa' }}>
+                                                        {o.autoOrderType === 'BUY' ? '매수' : '매도'}
+                                                    </span>
+                                                </div>
+                                                <div className="managed-modal__item-sub">
+                                                    트리거 {o.triggerPrice.toLocaleString()}원 → {o.orderPrice.toLocaleString()}원 · {o.orderQuantity}주
+                                                    {o.leverageRatio && o.leverageRatio !== 'SPOT' && <> · {o.leverageRatio.replace('X', '').replace('_', '.')}배</>}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+
+                                    {detailTab === 'OTOCO' && (
+                                        otocos.length === 0 ? <EmptyRow /> : otocos.map(o => (
+                                            <div key={o.otocoId} className="managed-modal__item-card">
+                                                <div className="managed-modal__item-header">
+                                                    <span>{stockNameMap[o.stockCode] ?? o.stockCode}</span>
+                                                    <span className="managed-modal__item-status">
+                                                        {OTOCO_STATUS_LABEL[o.otocoStatus] ?? o.otocoStatus}
+                                                    </span>
+                                                </div>
+                                                <div className="managed-modal__item-sub">
+                                                    진입 {o.entryDirection === 'ABOVE' ? '≥' : '≤'} {o.entryTriggerPrice.toLocaleString()}원 · {o.orderQuantity}주
+                                                    {o.tpTriggerPrice && <> · TP {o.tpTriggerPrice.toLocaleString()}원</>}
+                                                    {o.slTriggerPrice && <> · SL {o.slTriggerPrice.toLocaleString()}원</>}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+
+                                    {detailTab === 'TRAILING' && (
+                                        trailingStops.length === 0 ? <EmptyRow /> : trailingStops.map(t => (
+                                            <div key={t.trailingStopId} className="managed-modal__item-card">
+                                                <div className="managed-modal__item-header">
+                                                    <span>{stockNameMap[t.stockCode] ?? t.stockCode}</span>
+                                                    <span style={{ color: t.trailingStopType === 'BUY' ? '#f87171' : '#60a5fa' }}>
+                                                        {t.trailingStopType === 'BUY' ? '매수' : '매도'}
+                                                    </span>
+                                                </div>
+                                                <div className="managed-modal__item-sub">
+                                                    기준가 {t.basePrice.toLocaleString()}원 · 추적 {t.stopPercent}% · {t.orderQuantity}주
+                                                    {t.triggerPrice != null && <> · 현재 감시가 {t.triggerPrice.toLocaleString()}원</>}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+
+                                    {detailTab === 'ALERTS' && (
+                                        alerts.length === 0 ? <EmptyRow /> : alerts.map(a => (
+                                            <div key={a.alertId} className="managed-modal__item-card">
+                                                <div className="managed-modal__item-header">
+                                                    <span>{stockNameMap[a.stockCode] ?? a.stockCode}</span>
+                                                    <span>
+                                                        {a.triggerPrice.toLocaleString()}원 {a.direction === 'ABOVE' ? '이상' : '이하'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            </ModalV2>
+
+            <HolidayModal
+                open={holidayOpen}
+                onClose={() => setHolidayOpen(false)}
+            />
+        </>
     )
 }
