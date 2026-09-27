@@ -10,31 +10,38 @@ import type { MinuteCandle, MinuteChartSnapshotMessage, MinuteCandleTickMessage 
  * 분봉 갱신(1건씩, MINUTE_CANDLE)도 함께 흘러옴.
  * RealtimeContext(5단계)의 subscribeStock을 그대로 재사용
  */
+const EMPTY: MinuteCandle[] = []
+
 export function useMinuteCandles(stockCode: string) {
     const { subscribeStock } = useRealtime()
-    const [candles, setCandles] = useState<MinuteCandle[]>([])
+    // 캔들이 어느 종목 것인지 함께 저장 (종목 변경 직후 이전 종목 캔들이 반환되지 않도록)
+    const [state, setState] = useState<{ code: string; candles: MinuteCandle[] }>({
+        code: stockCode,
+        candles: EMPTY,
+    })
 
     useEffect(() => {
-        setCandles([])
-
+        // 종목 변경 시 별도 초기화 불필요: 반환 시 code가 다르면 빈 배열을 돌려줌
         return subscribeStock(stockCode, (tick: any) => {
             if (tick.tickMessageType === 'MINUTE_CHART_SNAPSHOT') {
-                setCandles((tick as MinuteChartSnapshotMessage).candles)
+                setState({ code: stockCode, candles: (tick as MinuteChartSnapshotMessage).candles })
             }
 
             if (tick.tickMessageType === 'MINUTE_CANDLE') {
                 const { candle } = tick as MinuteCandleTickMessage
-                setCandles(prev => {
-                    const last = prev[prev.length - 1]
+                setState(prev => {
+                    const prevCandles = prev.code === stockCode ? prev.candles : EMPTY
+                    const last = prevCandles[prevCandles.length - 1]
                     // 같은 분(date+time)이면 마지막 캔들 갱신, 새 분이면 추가
                     if (last && last.date === candle.date && last.time === candle.time) {
-                        return [...prev.slice(0, -1), candle]
+                        return { code: stockCode, candles: [...prevCandles.slice(0, -1), candle] }
                     }
-                    return [...prev, candle]
+                    return { code: stockCode, candles: [...prevCandles, candle] }
                 })
             }
         })
     }, [stockCode, subscribeStock])
 
-    return candles
+    // 종목이 바뀐 첫 렌더에서는 이전 종목 캔들 대신 빈 배열 반환
+    return state.code === stockCode ? state.candles : EMPTY
 }
