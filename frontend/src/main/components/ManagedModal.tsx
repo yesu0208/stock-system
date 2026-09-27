@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import ModalV2 from '../../components/ModalV2'
 import {
-    getAllUsersAdmin, getUserAccountAdmin, getUserPortfolioAdmin,
+    getAllUsersAdmin, getUserAccountAdmin,
     getUserOrdersAdmin, getUserAutoOrdersAdmin, getUserOtocosAdmin,
     getUserTrailingStopsAdmin, getUserAlertsAdmin,
 } from '../../api/admin'
 import RankBadge from './RankBadge'
+import { AccountSummary, HoldingsTable, LeverageTable } from './AccountSections'
 import { stockNameMap } from '../data/stocks'
 import type { UserDto } from '../../types/user'
 import type { AccountResponse } from '../../types/account'
-import type { PortfolioResponse } from '../../types/portfolio'
 import type { OrderResponseMessage } from '../../types/order'
 import type { AutoOrderResponseMessage } from '../../types/autoOrder'
 import type { OtocoResponseMessage } from '../../types/otoco'
@@ -22,7 +22,7 @@ interface Props {
     onClose: () => void
 }
 
-type DetailTab = 'OVERVIEW' | 'ORDERS' | 'AUTO_ORDERS' | 'OTOCO' | 'TRAILING' | 'ALERTS'
+type DetailTab = 'OVERVIEW' | 'HOLDINGS' | 'LEVERAGE' | 'ORDERS' | 'AUTO_ORDERS' | 'OTOCO' | 'TRAILING' | 'ALERTS'
 
 const OTOCO_STATUS_LABEL: Record<string, string> = {
     WAITING_ENTRY: '진입 대기',
@@ -34,6 +34,8 @@ const OTOCO_STATUS_LABEL: Record<string, string> = {
 
 const TAB_LABEL: Record<DetailTab, string> = {
     OVERVIEW: '개요',
+    HOLDINGS: '보유주식',
+    LEVERAGE: '레버리지',
     ORDERS: '주문',
     AUTO_ORDERS: '자동주문',
     OTOCO: 'OTOCO',
@@ -42,7 +44,7 @@ const TAB_LABEL: Record<DetailTab, string> = {
 }
 
 function EmptyRow() {
-    return <div className="managed-modal__empty">데이터가 없습니다.</div>
+    return <div className="managed-modal__empty">데이터가 없습니다</div>
 }
 
 export default function ManagedModal({ open, onClose }: Props) {
@@ -51,7 +53,6 @@ export default function ManagedModal({ open, onClose }: Props) {
     const [detailTab, setDetailTab] = useState<DetailTab>('OVERVIEW')
 
     const [account, setAccount] = useState<AccountResponse | null>(null)
-    const [portfolio, setPortfolio] = useState<PortfolioResponse | null>(null)
     const [orders, setOrders] = useState<OrderResponseMessage[]>([])
     const [autoOrders, setAutoOrders] = useState<AutoOrderResponseMessage[]>([])
     const [otocos, setOtocos] = useState<OtocoResponseMessage[]>([])
@@ -66,14 +67,11 @@ export default function ManagedModal({ open, onClose }: Props) {
         getAllUsersAdmin().then(setUsers).catch(() => setUsers([]))
     }, [open])
 
-    const openUser = async (user: UserDto) => {
-        setSelectedUser(user)
-        setDetailTab('OVERVIEW')
+    const loadUserDetail = async (user: UserDto) => {
         setLoading(true)
         try {
-            const [acc, port, ord, auto, otoco, trailing, alertList] = await Promise.all([
+            const [acc, ord, auto, otoco, trailing, alertList] = await Promise.all([
                 getUserAccountAdmin(user.username).catch(() => null),
-                getUserPortfolioAdmin(user.username).catch(() => null),
                 getUserOrdersAdmin(user.username).catch(() => []),
                 getUserAutoOrdersAdmin(user.username).catch(() => []),
                 getUserOtocosAdmin(user.username).catch(() => []),
@@ -81,7 +79,6 @@ export default function ManagedModal({ open, onClose }: Props) {
                 getUserAlertsAdmin(user.username).catch(() => []),
             ])
             setAccount(acc)
-            setPortfolio(port)
             setOrders(ord)
             setAutoOrders(auto)
             setOtocos(otoco)
@@ -90,6 +87,17 @@ export default function ManagedModal({ open, onClose }: Props) {
         } finally {
             setLoading(false)
         }
+    }
+
+    const openUser = (user: UserDto) => {
+        setSelectedUser(user)
+        setDetailTab('OVERVIEW')
+        loadUserDetail(user)
+    }
+
+    const refreshUser = () => {
+        if (!selectedUser || loading) return
+        loadUserDetail(selectedUser)
     }
 
     return (
@@ -112,7 +120,7 @@ export default function ManagedModal({ open, onClose }: Props) {
                                             <span className="managed-modal__user-nickname">{u.nickname}</span>
                                             <span className="managed-modal__user-id">({u.username})</span>
                                         </span>
-                                        <RankBadge rank={u.rank} size={16} showLabel={false} />
+                                        <RankBadge rank={u.rank} size={16} />
                                     </button>
                                 ))
                             )}
@@ -120,19 +128,25 @@ export default function ManagedModal({ open, onClose }: Props) {
                     </>
                 ) : (
                     <>
-                        <button
-                            onClick={() => setSelectedUser(null)}
-                            className="managed-modal__back"
-                        >
-                            ← 목록으로
-                        </button>
-
                         <div className="managed-modal__user-header">
                             <h4 className="managed-modal__user-header-name">
                                 {selectedUser.nickname}
                                 <span className="managed-modal__user-id">({selectedUser.username})</span>
                             </h4>
                             {selectedUser.rank && <RankBadge rank={selectedUser.rank} size={18} />}
+                            <button
+                                onClick={refreshUser}
+                                disabled={loading}
+                                className="managed-modal__refresh"
+                            >
+                                ↻ 새로고침
+                            </button>
+                            <button
+                                onClick={() => setSelectedUser(null)}
+                                className="managed-modal__back"
+                            >
+                                ← 목록으로
+                            </button>
                         </div>
 
                         <div className="managed-modal__tabs">
@@ -143,6 +157,8 @@ export default function ManagedModal({ open, onClose }: Props) {
                                     className={`managed-modal__tab${detailTab === tab ? ' active' : ''}`}
                                 >
                                     {TAB_LABEL[tab]}
+                                    {tab === 'HOLDINGS' && ` (${Object.keys(account?.stocks ?? {}).length})`}
+                                    {tab === 'LEVERAGE' && ` (${account?.leveragePositions?.length ?? 0})`}
                                     {tab === 'ORDERS' && ` (${orders.length})`}
                                     {tab === 'AUTO_ORDERS' && ` (${autoOrders.length})`}
                                     {tab === 'OTOCO' && ` (${otocos.length})`}
@@ -157,50 +173,27 @@ export default function ManagedModal({ open, onClose }: Props) {
                         ) : (
                             <div className="managed-modal__detail-body">
                                 {detailTab === 'OVERVIEW' && (
-                                    <>
-                                        <div className="managed-modal__section">
-                                            <div className="managed-modal__row">
-                                                <span>총 자산</span>
-                                                <span>{(account?.totalValue ?? 0).toLocaleString()}원</span>
-                                            </div>
-                                            <div className="managed-modal__row">
-                                                <span>현금</span>
-                                                <span>{(account?.totalCash ?? 0).toLocaleString()}원</span>
-                                            </div>
-                                            <div className="managed-modal__row">
-                                                <span>총 손익</span>
-                                                <span>
-                                                    {(account?.totalProfit ?? 0).toLocaleString()}원
-                                                    ({(account?.totalProfitRate ?? 0).toFixed(2)}%)
-                                                </span>
-                                            </div>
-                                            <div className="managed-modal__row">
-                                                <span>레버리지 순자산</span>
-                                                <span>{(account?.leverageNetValue ?? 0).toLocaleString()}원</span>
-                                            </div>
-                                            <div className="managed-modal__row">
-                                                <span>레버리지 대출금</span>
-                                                <span>{(account?.leverageLoanTotal ?? 0).toLocaleString()}원</span>
-                                            </div>
+                                    !account ? <EmptyRow /> : (
+                                        <div className="mam-account">
+                                            <AccountSummary account={account} />
                                         </div>
+                                    )
+                                )}
 
-                                        <p className="managed-modal__section-label">포트폴리오 (업종별)</p>
-                                        <div className="managed-modal__section">
-                                            {(portfolio?.sectors ?? []).length === 0 ? (
-                                                <EmptyRow />
-                                            ) : (
-                                                portfolio!.sectors.map(s => (
-                                                    <div key={s.sector} className="managed-modal__row">
-                                                        <span>{s.sector}</span>
-                                                        <span>
-                                                            {s.evaluationAmount.toLocaleString()}원
-                                                            ({s.ratioInTotal.toFixed(1)}%)
-                                                        </span>
-                                                    </div>
-                                                ))
-                                            )}
+                                {detailTab === 'HOLDINGS' && (
+                                    !account ? <EmptyRow /> : (
+                                        <div className="mam-holdings managed-modal__table-wrap">
+                                            <HoldingsTable account={account} />
                                         </div>
-                                    </>
+                                    )
+                                )}
+
+                                {detailTab === 'LEVERAGE' && (
+                                    !account ? <EmptyRow /> : (
+                                        <div className="mam-holdings managed-modal__table-wrap">
+                                            <LeverageTable account={account} />
+                                        </div>
+                                    )
                                 )}
 
                                 {detailTab === 'ORDERS' && (
