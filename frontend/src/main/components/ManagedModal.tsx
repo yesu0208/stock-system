@@ -119,19 +119,18 @@ export default function ManagedModal({ open, onClose }: Props) {
                     </>
                 ) : (
                     <>
-                        <button
-                            onClick={() => setSelectedUser(null)}
-                            className="managed-modal__back"
-                        >
-                            ← 목록으로
-                        </button>
-
                         <div className="managed-modal__user-header">
                             <h4 className="managed-modal__user-header-name">
                                 {selectedUser.nickname}
                                 <span className="managed-modal__user-id">({selectedUser.username})</span>
                             </h4>
                             {selectedUser.rank && <RankBadge rank={selectedUser.rank} size={18} />}
+                            <button
+                                onClick={() => setSelectedUser(null)}
+                                className="managed-modal__back"
+                            >
+                                ← 목록으로
+                            </button>
                         </div>
 
                         <div className="managed-modal__tabs">

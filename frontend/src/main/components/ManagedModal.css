@@ -86,7 +86,7 @@
 }
 
 .managed-modal__back {
-    align-self: flex-start;
+    margin-left: auto;
 
     background: transparent;
     border: none;
