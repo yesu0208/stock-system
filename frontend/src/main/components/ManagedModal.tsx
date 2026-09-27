@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import ModalV2 from '../../components/ModalV2'
 import {
-    getAllUsersAdmin, getUserAccountAdmin, getUserPortfolioAdmin,
+    getAllUsersAdmin, getUserAccountAdmin,
     getUserOrdersAdmin, getUserAutoOrdersAdmin, getUserOtocosAdmin,
     getUserTrailingStopsAdmin, getUserAlertsAdmin,
 } from '../../api/admin'
@@ -9,7 +9,6 @@ import RankBadge from './RankBadge'
 import { stockNameMap } from '../data/stocks'
 import type { UserDto } from '../../types/user'
 import type { AccountResponse } from '../../types/account'
-import type { PortfolioResponse } from '../../types/portfolio'
 import type { OrderResponseMessage } from '../../types/order'
 import type { AutoOrderResponseMessage } from '../../types/autoOrder'
 import type { OtocoResponseMessage } from '../../types/otoco'
@@ -51,7 +50,6 @@ export default function ManagedModal({ open, onClose }: Props) {
     const [detailTab, setDetailTab] = useState<DetailTab>('OVERVIEW')
 
     const [account, setAccount] = useState<AccountResponse | null>(null)
-    const [portfolio, setPortfolio] = useState<PortfolioResponse | null>(null)
     const [orders, setOrders] = useState<OrderResponseMessage[]>([])
     const [autoOrders, setAutoOrders] = useState<AutoOrderResponseMessage[]>([])
     const [otocos, setOtocos] = useState<OtocoResponseMessage[]>([])
@@ -71,9 +69,8 @@ export default function ManagedModal({ open, onClose }: Props) {
         setDetailTab('OVERVIEW')
         setLoading(true)
         try {
-            const [acc, port, ord, auto, otoco, trailing, alertList] = await Promise.all([
+            const [acc, ord, auto, otoco, trailing, alertList] = await Promise.all([
                 getUserAccountAdmin(user.username).catch(() => null),
-                getUserPortfolioAdmin(user.username).catch(() => null),
                 getUserOrdersAdmin(user.username).catch(() => []),
                 getUserAutoOrdersAdmin(user.username).catch(() => []),
                 getUserOtocosAdmin(user.username).catch(() => []),
@@ -81,7 +78,6 @@ export default function ManagedModal({ open, onClose }: Props) {
                 getUserAlertsAdmin(user.username).catch(() => []),
             ])
             setAccount(acc)
-            setPortfolio(port)
             setOrders(ord)
             setAutoOrders(auto)
             setOtocos(otoco)
@@ -112,7 +108,7 @@ export default function ManagedModal({ open, onClose }: Props) {
                                             <span className="managed-modal__user-nickname">{u.nickname}</span>
                                             <span className="managed-modal__user-id">({u.username})</span>
                                         </span>
-                                        <RankBadge rank={u.rank} size={16} showLabel={false} />
+                                        <RankBadge rank={u.rank} size={16} />
                                     </button>
                                 ))
                             )}
@@ -184,22 +180,6 @@ export default function ManagedModal({ open, onClose }: Props) {
                                             </div>
                                         </div>
 
-                                        <p className="managed-modal__section-label">포트폴리오 (업종별)</p>
-                                        <div className="managed-modal__section">
-                                            {(portfolio?.sectors ?? []).length === 0 ? (
-                                                <EmptyRow />
-                                            ) : (
-                                                portfolio!.sectors.map(s => (
-                                                    <div key={s.sector} className="managed-modal__row">
-                                                        <span>{s.sector}</span>
-                                                        <span>
-                                                            {s.evaluationAmount.toLocaleString()}원
-                                                            ({s.ratioInTotal.toFixed(1)}%)
-                                                        </span>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
                                     </>
                                 )}
 
