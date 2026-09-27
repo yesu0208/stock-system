@@ -154,6 +154,13 @@
     flex-direction: column;
 }
 
+.modal-v2-box.holiday-modal {
+    width: 480px;
+    height: 560px;
+    display: flex;
+    flex-direction: column;
+}
+
 .modal-v2-box.logout-result-modal {
     width: 280px;
     height: 150px;
