@@ -162,8 +162,9 @@
 }
 
 .modal-v2-box.holiday-info-modal {
-    width: 420px;
-    height: 560px;
+    width: 440px;
+    height: 700px;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
 }
