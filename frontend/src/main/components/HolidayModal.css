@@ -1,0 +1,630 @@
+.holiday-modal__content {
+    --hm-accent: #a5b4fc;
+    --hm-accent-strong: #6366f1;
+    --hm-gold: #f5c16c;
+    --hm-gold-soft: rgba(245, 193, 108, 0.14);
+    --hm-line: rgba(255, 255, 255, 0.06);
+    --hm-surface: rgba(255, 255, 255, 0.025);
+    --hm-muted: #64748b;
+    --hm-sun: #f87171;
+    --hm-sat: #60a5fa;
+
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 14px;
+    min-height: 0;
+
+    color: #e2e8f0;
+    font-size: 13px;
+}
+
+.holiday-modal__content button {
+    font-family: inherit;
+    outline: none;
+}
+
+/* ═════════════ 달력 ═════════════ */
+.hm-calendar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    padding: 16px;
+    background:
+            radial-gradient(120% 80% at 0% 0%, rgba(99, 102, 241, 0.10), transparent 60%),
+            var(--hm-surface);
+    border: 1px solid var(--hm-line);
+    border-radius: 12px;
+}
+
+.hm-calendar__head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.hm-calendar__title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 6px;
+    min-width: 108px;
+    justify-content: center;
+}
+
+.hm-calendar__year {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--hm-muted);
+    letter-spacing: 0.04em;
+}
+
+.hm-calendar__month {
+    font-size: 20px;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: -0.01em;
+}
+
+.hm-icon-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent;
+    border: 1px solid var(--hm-line);
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.hm-icon-btn:hover {
+    color: var(--hm-accent);
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.hm-today-btn {
+    margin-left: auto;
+    padding: 5px 11px;
+
+    background: transparent;
+    border: 1px solid var(--hm-line);
+    border-radius: 999px;
+    color: #94a3b8;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.hm-today-btn:hover:not(:disabled) {
+    color: var(--hm-accent);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.hm-today-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.hm-calendar__weekdays,
+.hm-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.hm-calendar__weekdays {
+    margin-bottom: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--hm-line);
+}
+
+.hm-calendar__weekdays span {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hm-muted);
+    letter-spacing: 0.05em;
+}
+
+.hm-calendar__weekdays .is-sun { color: rgba(248, 113, 113, 0.75); }
+.hm-calendar__weekdays .is-sat { color: rgba(96, 165, 250, 0.75); }
+
+.hm-calendar__grid {
+    flex: 1;
+    grid-auto-rows: 1fr;
+    gap: 4px;
+    min-height: 0;
+}
+
+/* 날짜 셀 */
+.hm-day {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+
+    min-height: 38px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+
+    color: #cbd5e1;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.hm-day--empty {
+    cursor: default;
+}
+
+.hm-day:not(.hm-day--empty):hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.hm-day.is-sun { color: var(--hm-sun); }
+.hm-day.is-sat { color: var(--hm-sat); }
+
+.hm-day.is-past {
+    color: #475569;
+}
+
+.hm-day.is-today {
+    border-color: rgba(165, 180, 252, 0.55);
+}
+
+.hm-day.is-today .hm-day__num {
+    font-weight: 700;
+    color: var(--hm-accent);
+}
+
+.hm-day.is-holiday {
+    background: var(--hm-gold-soft);
+    border-color: rgba(245, 193, 108, 0.28);
+    color: var(--hm-gold);
+    font-weight: 600;
+}
+
+.hm-day.is-holiday:not(.is-past):hover {
+    background: rgba(245, 193, 108, 0.22);
+    border-color: rgba(245, 193, 108, 0.45);
+}
+
+.hm-day.is-holiday.is-past {
+    background: rgba(245, 193, 108, 0.05);
+    border-color: transparent;
+    color: rgba(245, 193, 108, 0.45);
+}
+
+.hm-day__dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--hm-gold);
+    box-shadow: 0 0 6px rgba(245, 193, 108, 0.8);
+}
+
+.hm-day.is-selected,
+.hm-day.is-selected:hover {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 6px 18px -6px rgba(99, 102, 241, 0.7);
+    transform: translateY(-1px);
+}
+
+.hm-day.is-selected .hm-day__num { color: #fff; }
+.hm-day.is-selected .hm-day__dot { background: #fff; box-shadow: none; }
+
+/* 범례 */
+.hm-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--hm-line);
+
+    font-size: 11px;
+    color: var(--hm-muted);
+}
+
+.hm-legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.hm-legend__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+}
+
+.hm-legend__dot--holiday {
+    background: var(--hm-gold-soft);
+    border: 1px solid rgba(245, 193, 108, 0.6);
+}
+
+.hm-legend__dot--today {
+    border: 1px solid rgba(165, 180, 252, 0.8);
+}
+
+.hm-legend__note {
+    margin-left: auto;
+    font-size: 10.5px;
+    color: #475569;
+}
+
+/* ═════════════ 우측 패널 ═════════════ */
+.hm-side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+/* 선택한 날짜 카드 */
+.hm-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    padding: 16px;
+    background:
+            linear-gradient(160deg, rgba(99, 102, 241, 0.10), rgba(15, 23, 42, 0) 70%),
+            var(--hm-surface);
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    border-radius: 12px;
+}
+
+.hm-detail__placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 118px;
+
+    color: var(--hm-muted);
+    font-size: 12px;
+}
+
+.hm-detail__placeholder svg {
+    width: 22px;
+    height: 22px;
+    color: #475569;
+}
+
+.hm-detail__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hm-detail__label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #7dd3fc;
+    letter-spacing: 0.04em;
+}
+
+.hm-detail__date {
+    font-size: 19px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+}
+
+.hm-detail__memo {
+    margin: 0;
+    padding: 10px 12px;
+    background: var(--hm-gold-soft);
+    border-left: 2px solid var(--hm-gold);
+    border-radius: 6px;
+    color: #fde7bd;
+    font-size: 12.5px;
+}
+
+.hm-detail__hint {
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--hm-muted);
+}
+
+.hm-badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: var(--hm-accent);
+    font-size: 10.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.hm-badge--holiday {
+    background: var(--hm-gold-soft);
+    border-color: rgba(245, 193, 108, 0.45);
+    color: var(--hm-gold);
+}
+
+.hm-badge--muted {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--hm-line);
+    color: var(--hm-muted);
+}
+
+/* 메모 입력 */
+.hm-field {
+    position: relative;
+}
+
+.hm-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 38px;
+    padding: 0 52px 0 12px;
+
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid #334155;
+    border-radius: 9px;
+
+    color: #f1f5f9;
+    font-size: 12.5px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.hm-input::placeholder {
+    color: #475569;
+}
+
+.hm-input:focus {
+    border-color: rgba(129, 140, 248, 0.8);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.hm-field__count {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    font-size: 10.5px;
+    color: #475569;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 버튼 */
+.hm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 14px;
+
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.hm-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.hm-btn--primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    color: #fff;
+    box-shadow: 0 8px 20px -10px rgba(99, 102, 241, 0.9);
+}
+
+.hm-btn--primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #7c7ff5, #9d74f8);
+    box-shadow: 0 10px 24px -10px rgba(99, 102, 241, 1);
+}
+
+.hm-btn--danger {
+    background: transparent;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    color: #fca5a5;
+}
+
+.hm-btn--danger:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.hm-btn--danger.is-confirm,
+.hm-btn--danger.is-confirm:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.9);
+    border-color: transparent;
+    color: #fff;
+}
+
+/* 예정된 휴장일 목록 */
+.hm-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    background: var(--hm-surface);
+    border: 1px solid var(--hm-line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.hm-list__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--hm-line);
+}
+
+.hm-list__title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.hm-list__count {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--hm-gold-soft);
+    color: var(--hm-gold);
+    font-size: 10.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.hm-list__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.hm-list__body::-webkit-scrollbar { width: 3px; }
+.hm-list__body::-webkit-scrollbar-track { background: transparent; }
+.hm-list__body::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 2px;
+}
+
+.hm-list__empty {
+    height: 100%;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--hm-muted);
+    font-size: 12px;
+}
+
+.hm-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 10px;
+
+    border: 1px solid transparent;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.hm-item:hover {
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.hm-item.is-active {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.hm-item__date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 40px;
+    flex-shrink: 0;
+
+    background: var(--hm-gold-soft);
+    border: 1px solid rgba(245, 193, 108, 0.25);
+    border-radius: 8px;
+}
+
+.hm-item__md {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--hm-gold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.hm-item__wd {
+    font-size: 10px;
+    color: rgba(245, 193, 108, 0.7);
+}
+
+.hm-item__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hm-item__memo {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hm-item__meta {
+    font-size: 10.5px;
+    color: var(--hm-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.hm-item__del {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    flex-shrink: 0;
+
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.hm-item__del:hover:not(:disabled) {
+    color: #fca5a5;
+    background: rgba(248, 113, 113, 0.08);
+    border-color: rgba(248, 113, 113, 0.25);
+}
+
+.hm-item__del.is-confirm,
+.hm-item__del.is-confirm:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.9);
+    border-color: transparent;
+    color: #fff;
+}
+
+.hm-item__del:disabled {
+    opacity: 0.4;
+    cursor: default;
+}

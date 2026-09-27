@@ -18,6 +18,34 @@
     text-transform: uppercase;
 }
 
+.managed-modal__list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.managed-modal__action {
+    padding: 6px 12px;
+
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 8px;
+
+    color: #a5b4fc;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+
+    outline: none;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.managed-modal__action:hover {
+    background: rgba(99, 102, 241, 0.22);
+    border-color: rgba(99, 102, 241, 0.55);
+}
+
 .managed-modal__user-list {
     flex: 1;
     min-height: 0;
@@ -61,6 +89,8 @@
 .managed-modal__back:focus-visible,
 .managed-modal__refresh:focus,
 .managed-modal__refresh:focus-visible,
+.managed-modal__action:focus,
+.managed-modal__action:focus-visible,
 .managed-modal__tab:focus,
 .managed-modal__tab:focus-visible {
     outline: none;
