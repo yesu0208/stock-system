@@ -44,7 +44,7 @@ const TAB_LABEL: Record<DetailTab, string> = {
 }
 
 function EmptyRow() {
-    return <div className="managed-modal__empty">데이터가 없습니다.</div>
+    return <div className="managed-modal__empty">데이터가 없습니다</div>
 }
 
 export default function ManagedModal({ open, onClose }: Props) {
@@ -67,9 +67,7 @@ export default function ManagedModal({ open, onClose }: Props) {
         getAllUsersAdmin().then(setUsers).catch(() => setUsers([]))
     }, [open])
 
-    const openUser = async (user: UserDto) => {
-        setSelectedUser(user)
-        setDetailTab('OVERVIEW')
+    const loadUserDetail = async (user: UserDto) => {
         setLoading(true)
         try {
             const [acc, ord, auto, otoco, trailing, alertList] = await Promise.all([
@@ -89,6 +87,17 @@ export default function ManagedModal({ open, onClose }: Props) {
         } finally {
             setLoading(false)
         }
+    }
+
+    const openUser = (user: UserDto) => {
+        setSelectedUser(user)
+        setDetailTab('OVERVIEW')
+        loadUserDetail(user)
+    }
+
+    const refreshUser = () => {
+        if (!selectedUser || loading) return
+        loadUserDetail(selectedUser)
     }
 
     return (
@@ -125,6 +134,13 @@ export default function ManagedModal({ open, onClose }: Props) {
                                 <span className="managed-modal__user-id">({selectedUser.username})</span>
                             </h4>
                             {selectedUser.rank && <RankBadge rank={selectedUser.rank} size={18} />}
+                            <button
+                                onClick={refreshUser}
+                                disabled={loading}
+                                className="managed-modal__refresh"
+                            >
+                                ↻ 새로고침
+                            </button>
                             <button
                                 onClick={() => setSelectedUser(null)}
                                 className="managed-modal__back"

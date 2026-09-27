@@ -59,6 +59,8 @@
 .managed-modal__user-row:focus-visible,
 .managed-modal__back:focus,
 .managed-modal__back:focus-visible,
+.managed-modal__refresh:focus,
+.managed-modal__refresh:focus-visible,
 .managed-modal__tab:focus,
 .managed-modal__tab:focus-visible {
     outline: none;
@@ -85,9 +87,8 @@
     color: #64748b;
 }
 
+.managed-modal__refresh,
 .managed-modal__back {
-    margin-left: auto;
-
     background: transparent;
     border: none;
     color: #94a3b8;
@@ -100,8 +101,18 @@
     transition: color 0.15s;
 }
 
+.managed-modal__refresh {
+    margin-left: auto;
+}
+
+.managed-modal__refresh:hover:not(:disabled),
 .managed-modal__back:hover {
     color: #a5b4fc;
+}
+
+.managed-modal__refresh:disabled {
+    opacity: 0.4;
+    cursor: default;
 }
 
 .managed-modal__user-header {
@@ -230,7 +241,11 @@
 
 .managed-modal__loading,
 .managed-modal__empty {
-    text-align: center;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     color: #64748b;
     font-size: 12.5px;
     padding: 24px 0;
@@ -239,6 +254,13 @@
 /* 보유주식/레버리지 탭 테이블 */
 .managed-modal__table-wrap {
     overflow-x: auto;
+}
+
+.managed-modal__table-wrap:has(> .mam-empty) {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .managed-modal__table-wrap .mam-holdings-body {
