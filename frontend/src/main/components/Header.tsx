@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import "./Header.css";
 
-import { FiBell, FiHelpCircle, FiLogOut } from "react-icons/fi";
+import { FiBell, FiCalendar, FiHelpCircle, FiLogOut } from "react-icons/fi";
 import { useToast } from "../context/ToastContext";
 import { useUser } from "../context/UserContext";
 import { useMarketPhase, getPhaseColor } from "../context/MarketPhaseContext";
 import HelpModal from "./HelpModal";
 import LogoutModal from "./LogoutModal";
 import ManagedModal from "./ManagedModal";
+import MarketHolidayInfoModal from "./MarketHolidayInfoModal";
 import Tooltip from "../../tooltip/Tooltip";
 
 interface Props {
@@ -32,6 +33,7 @@ export default function Header({ onLogout }: Props) {
     const [helpOpen, setHelpOpen] = useState(false);
     const [logoutOpen, setLogoutOpen] = useState(false);
     const [managedOpen, setManagedOpen] = useState(false);
+    const [holidayInfoOpen, setHolidayInfoOpen] = useState(false);
 
     useEffect(() => {
         const updateTime = () => {
@@ -87,6 +89,15 @@ export default function Header({ onLogout }: Props) {
 
                     <span className="divider" />
 
+                    <button
+                        type="button"
+                        className="holiday-info-btn"
+                        onClick={() => setHolidayInfoOpen(true)}
+                    >
+                        <FiCalendar className="holiday-info-btn__icon" />
+                        휴장 정보
+                    </button>
+
                     <span className="current-date">{date}</span>
 
                     <span className="current-time">{time}</span>
@@ -132,6 +143,11 @@ export default function Header({ onLogout }: Props) {
             </header>
 
             <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+            <MarketHolidayInfoModal
+                open={holidayInfoOpen}
+                onClose={() => setHolidayInfoOpen(false)}
+            />
 
             <LogoutModal
                 open={logoutOpen}
