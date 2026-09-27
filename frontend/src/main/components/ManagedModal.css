@@ -235,3 +235,23 @@
     font-size: 12.5px;
     padding: 24px 0;
 }
+
+/* 개요 탭 - 보유주식/레버리지 테이블 */
+.managed-modal__table-wrap {
+    overflow-x: auto;
+    margin-bottom: 12px;
+}
+
+.managed-modal__table-wrap .mam-holdings-body {
+    overflow-y: visible;
+}
+
+.managed-modal__table-wrap .mam-holding-header,
+.managed-modal__table-wrap .mam-holding-row {
+    min-width: 720px;
+}
+
+.managed-modal__table-wrap .mam-holding-header--leverage,
+.managed-modal__table-wrap .mam-holding-row:has(.mam-holding-row__main--leverage) {
+    min-width: 960px;
+}
