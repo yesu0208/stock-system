@@ -551,6 +551,17 @@ export default function TradingChart() {
     useEffect(() => {
         minuteInitializedRef.current = false;
         dailyInitializedRef.current = false;
+
+        // 이전 종목 데이터 제거 (새 종목 스냅샷이 오기 전까지 이전 차트가 남지 않도록)
+        minuteCandlesRef.current = [];
+        dailyCandlesRef.current = [];
+        minuteCurrentRef.current = null;
+        dailyCurrentRef.current = null;
+
+        seriesRef.current?.setData([]);
+        volumeSeriesRef.current?.setData([]);
+        updateMovingAverages();
+
         setTooltip((prev) => ({ ...prev, visible: false }));
         setExtremeMarks({ max: null, min: null });
     }, [stockCode]);
