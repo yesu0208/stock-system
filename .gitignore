@@ -405,4 +405,7 @@ terraform.rc
 *.tfvars
 *.tfvars.json
 
+# 이미지 업로드
+**/uploads/
+
 # End of https://www.toptal.com/developers/gitignore/api/react,node,java,gradle,intellij+all,windows,macos,visualstudiocode
