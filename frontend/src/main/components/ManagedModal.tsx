@@ -6,6 +6,7 @@ import {
     getUserTrailingStopsAdmin, getUserAlertsAdmin,
 } from '../../api/admin'
 import RankBadge from './RankBadge'
+import HolidayModal from './HolidayModal'
 import { AccountSummary, HoldingsTable, LeverageTable } from './AccountSections'
 import { stockNameMap } from '../data/stocks'
 import type { UserDto } from '../../types/user'
@@ -60,6 +61,7 @@ export default function ManagedModal({ open, onClose }: Props) {
     const [alerts, setAlerts] = useState<AlertResponseMessage[]>([])
 
     const [loading, setLoading] = useState(false)
+    const [holidayOpen, setHolidayOpen] = useState(false)
 
     useEffect(() => {
         if (!open) return
@@ -105,7 +107,15 @@ export default function ManagedModal({ open, onClose }: Props) {
             <div className="managed-modal__content">
                 {!selectedUser ? (
                     <>
-                        <p className="managed-modal__section-label">전체 회원</p>
+                        <div className="managed-modal__list-header">
+                            <p className="managed-modal__section-label">전체 회원</p>
+                            <button
+                                onClick={() => setHolidayOpen(true)}
+                                className="managed-modal__action"
+                            >
+                                휴무일 지정
+                            </button>
+                        </div>
                         <div className="managed-modal__user-list">
                             {users.length === 0 ? (
                                 <EmptyRow />
@@ -282,6 +292,8 @@ export default function ManagedModal({ open, onClose }: Props) {
                     </>
                 )}
             </div>
+
+            <HolidayModal open={holidayOpen} onClose={() => setHolidayOpen(false)} />
         </ModalV2>
     )
 }
