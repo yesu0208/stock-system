@@ -236,10 +236,9 @@
     padding: 24px 0;
 }
 
-/* 개요 탭 - 보유주식/레버리지 테이블 */
+/* 보유주식/레버리지 탭 테이블 */
 .managed-modal__table-wrap {
     overflow-x: auto;
-    margin-bottom: 12px;
 }
 
 .managed-modal__table-wrap .mam-holdings-body {

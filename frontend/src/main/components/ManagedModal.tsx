@@ -22,7 +22,7 @@ interface Props {
     onClose: () => void
 }
 
-type DetailTab = 'OVERVIEW' | 'ORDERS' | 'AUTO_ORDERS' | 'OTOCO' | 'TRAILING' | 'ALERTS'
+type DetailTab = 'OVERVIEW' | 'HOLDINGS' | 'LEVERAGE' | 'ORDERS' | 'AUTO_ORDERS' | 'OTOCO' | 'TRAILING' | 'ALERTS'
 
 const OTOCO_STATUS_LABEL: Record<string, string> = {
     WAITING_ENTRY: '진입 대기',
@@ -34,6 +34,8 @@ const OTOCO_STATUS_LABEL: Record<string, string> = {
 
 const TAB_LABEL: Record<DetailTab, string> = {
     OVERVIEW: '개요',
+    HOLDINGS: '보유주식',
+    LEVERAGE: '레버리지',
     ORDERS: '주문',
     AUTO_ORDERS: '자동주문',
     OTOCO: 'OTOCO',
@@ -140,6 +142,8 @@ export default function ManagedModal({ open, onClose }: Props) {
                                     className={`managed-modal__tab${detailTab === tab ? ' active' : ''}`}
                                 >
                                     {TAB_LABEL[tab]}
+                                    {tab === 'HOLDINGS' && ` (${Object.keys(account?.stocks ?? {}).length})`}
+                                    {tab === 'LEVERAGE' && ` (${account?.leveragePositions?.length ?? 0})`}
                                     {tab === 'ORDERS' && ` (${orders.length})`}
                                     {tab === 'AUTO_ORDERS' && ` (${autoOrders.length})`}
                                     {tab === 'OTOCO' && ` (${otocos.length})`}
@@ -155,22 +159,25 @@ export default function ManagedModal({ open, onClose }: Props) {
                             <div className="managed-modal__detail-body">
                                 {detailTab === 'OVERVIEW' && (
                                     !account ? <EmptyRow /> : (
-                                        <>
-                                            <p className="managed-modal__section-label">계좌</p>
-                                            <div className="mam-account">
-                                                <AccountSummary account={account} />
-                                            </div>
+                                        <div className="mam-account">
+                                            <AccountSummary account={account} />
+                                        </div>
+                                    )
+                                )}
 
-                                            <p className="managed-modal__section-label">보유주식</p>
-                                            <div className="mam-holdings managed-modal__table-wrap">
-                                                <HoldingsTable account={account} />
-                                            </div>
+                                {detailTab === 'HOLDINGS' && (
+                                    !account ? <EmptyRow /> : (
+                                        <div className="mam-holdings managed-modal__table-wrap">
+                                            <HoldingsTable account={account} />
+                                        </div>
+                                    )
+                                )}
 
-                                            <p className="managed-modal__section-label">레버리지</p>
-                                            <div className="mam-holdings managed-modal__table-wrap">
-                                                <LeverageTable account={account} />
-                                            </div>
-                                        </>
+                                {detailTab === 'LEVERAGE' && (
+                                    !account ? <EmptyRow /> : (
+                                        <div className="mam-holdings managed-modal__table-wrap">
+                                            <LeverageTable account={account} />
+                                        </div>
                                     )
                                 )}
 
