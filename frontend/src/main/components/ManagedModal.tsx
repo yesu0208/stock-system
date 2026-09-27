@@ -6,6 +6,7 @@ import {
     getUserTrailingStopsAdmin, getUserAlertsAdmin,
 } from '../../api/admin'
 import RankBadge from './RankBadge'
+import { AccountSummary, HoldingsTable, LeverageTable } from './AccountSections'
 import { stockNameMap } from '../data/stocks'
 import type { UserDto } from '../../types/user'
 import type { AccountResponse } from '../../types/account'
@@ -153,34 +154,24 @@ export default function ManagedModal({ open, onClose }: Props) {
                         ) : (
                             <div className="managed-modal__detail-body">
                                 {detailTab === 'OVERVIEW' && (
-                                    <>
-                                        <div className="managed-modal__section">
-                                            <div className="managed-modal__row">
-                                                <span>총 자산</span>
-                                                <span>{(account?.totalValue ?? 0).toLocaleString()}원</span>
+                                    !account ? <EmptyRow /> : (
+                                        <>
+                                            <p className="managed-modal__section-label">계좌</p>
+                                            <div className="mam-account">
+                                                <AccountSummary account={account} />
                                             </div>
-                                            <div className="managed-modal__row">
-                                                <span>현금</span>
-                                                <span>{(account?.totalCash ?? 0).toLocaleString()}원</span>
-                                            </div>
-                                            <div className="managed-modal__row">
-                                                <span>총 손익</span>
-                                                <span>
-                                                    {(account?.totalProfit ?? 0).toLocaleString()}원
-                                                    ({(account?.totalProfitRate ?? 0).toFixed(2)}%)
-                                                </span>
-                                            </div>
-                                            <div className="managed-modal__row">
-                                                <span>레버리지 순자산</span>
-                                                <span>{(account?.leverageNetValue ?? 0).toLocaleString()}원</span>
-                                            </div>
-                                            <div className="managed-modal__row">
-                                                <span>레버리지 대출금</span>
-                                                <span>{(account?.leverageLoanTotal ?? 0).toLocaleString()}원</span>
-                                            </div>
-                                        </div>
 
-                                    </>
+                                            <p className="managed-modal__section-label">보유주식</p>
+                                            <div className="mam-holdings managed-modal__table-wrap">
+                                                <HoldingsTable account={account} />
+                                            </div>
+
+                                            <p className="managed-modal__section-label">레버리지</p>
+                                            <div className="mam-holdings managed-modal__table-wrap">
+                                                <LeverageTable account={account} />
+                                            </div>
+                                        </>
+                                    )
                                 )}
 
                                 {detailTab === 'ORDERS' && (
