@@ -1,5 +1,7 @@
 import instance from './axios'
-import type { MarketHolidayCreateRequest, MarketHolidayResponse } from '../types/marketHoliday'
+import type {
+    MarketHolidayCalendarResponse, MarketHolidayCreateRequest, MarketHolidayResponse,
+} from '../types/marketHoliday'
 
 export async function getMarketHolidaysAdmin(): Promise<MarketHolidayResponse[]> {
     const res = await instance.get<MarketHolidayResponse[]>('/admin/market/holidays')
@@ -13,4 +15,9 @@ export async function addMarketHolidayAdmin(req: MarketHolidayCreateRequest): Pr
 
 export async function removeMarketHolidayAdmin(holidayDate: string): Promise<void> {
     await instance.delete(`/admin/market/holidays/${holidayDate}`)
+}
+
+export async function getMarketHolidays(): Promise<MarketHolidayCalendarResponse> {
+    const res = await instance.get<MarketHolidayCalendarResponse>('/market/holidays')
+    return res.data
 }
