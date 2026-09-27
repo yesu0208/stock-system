@@ -47,6 +47,7 @@ const TITLE_TO_CLASS: Record<string, string> = {
     "도움말": "help-modal",
     "관리자": "managed-modal",
     "휴무일 지정": "holiday-modal",
+    "휴장 정보": "holiday-info-modal",
     "로그아웃 완료": "logout-result-modal",
     "세션 만료": "session-expired-modal",
     "내 정보": "my-info-modal",

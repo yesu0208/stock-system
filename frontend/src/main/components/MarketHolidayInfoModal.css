@@ -1,0 +1,531 @@
+.holiday-info-modal__content {
+    --hi-accent: #a5b4fc;
+    --hi-gold: #f5c16c;
+    --hi-gold-soft: rgba(245, 193, 108, 0.14);
+    --hi-line: rgba(255, 255, 255, 0.06);
+    --hi-surface: rgba(255, 255, 255, 0.025);
+    --hi-muted: #64748b;
+    --hi-sun: #f87171;
+    --hi-sat: #60a5fa;
+
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 14px;
+    min-height: 0;
+
+    color: #e2e8f0;
+    font-size: 13px;
+}
+
+.holiday-info-modal__content button {
+    font-family: inherit;
+    outline: none;
+}
+
+/* ═════════════ 로딩 / 에러 ═════════════ */
+.hi-state {
+    grid-column: 1 / -1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    color: var(--hi-muted);
+    font-size: 12.5px;
+}
+
+.hi-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 8px;
+    color: var(--hi-accent);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.hi-retry:hover {
+    background: rgba(99, 102, 241, 0.22);
+    border-color: rgba(99, 102, 241, 0.55);
+}
+
+/* ═════════════ 우측 패널 ═════════════ */
+.hi-side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+/* ═════════════ 다음 휴장일 카드 ═════════════ */
+.hi-next {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+
+    padding: 16px;
+    background:
+            linear-gradient(160deg, rgba(99, 102, 241, 0.12), rgba(15, 23, 42, 0) 70%),
+            var(--hi-surface);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 12px;
+}
+
+.hi-next.is-today {
+    background:
+            linear-gradient(160deg, rgba(245, 193, 108, 0.16), rgba(15, 23, 42, 0) 70%),
+            var(--hi-surface);
+    border-color: rgba(245, 193, 108, 0.35);
+}
+
+.hi-next__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hi-next__label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #7dd3fc;
+    letter-spacing: 0.04em;
+}
+
+.hi-next.is-today .hi-next__label {
+    color: var(--hi-gold);
+}
+
+.hi-next__date {
+    font-size: 19px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+}
+
+.hi-next__memo {
+    align-self: flex-start;
+    padding: 4px 10px;
+    background: var(--hi-gold-soft);
+    border-left: 2px solid var(--hi-gold);
+    border-radius: 6px;
+    color: #fde7bd;
+    font-size: 12px;
+}
+
+.hi-next__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+
+    color: #cbd5e1;
+    font-size: 12.5px;
+}
+
+.hi-next__empty svg {
+    width: 20px;
+    height: 20px;
+    color: #475569;
+}
+
+.hi-next__sub {
+    font-size: 11px;
+    color: var(--hi-muted);
+}
+
+.hi-badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: var(--hi-accent);
+    font-size: 10.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.hi-next.is-today .hi-badge {
+    background: var(--hi-gold-soft);
+    border-color: rgba(245, 193, 108, 0.45);
+    color: var(--hi-gold);
+}
+
+/* ═════════════ 달력 ═════════════ */
+.hi-calendar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    padding: 16px;
+    background:
+            radial-gradient(120% 80% at 0% 0%, rgba(99, 102, 241, 0.10), transparent 60%),
+            var(--hi-surface);
+    border: 1px solid var(--hi-line);
+    border-radius: 12px;
+}
+
+.hi-calendar__head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.hi-calendar__title {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    min-width: 108px;
+}
+
+.hi-calendar__year {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+    letter-spacing: 0.04em;
+}
+
+.hi-calendar__month {
+    font-size: 20px;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.hi-icon-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent;
+    border: 1px solid var(--hi-line);
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.hi-icon-btn:hover:not(:disabled) {
+    color: var(--hi-accent);
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.hi-icon-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.hi-calendar__weekdays,
+.hi-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.hi-calendar__weekdays {
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--hi-line);
+}
+
+.hi-calendar__weekdays span {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hi-muted);
+}
+
+.hi-calendar__weekdays .is-sun { color: rgba(248, 113, 113, 0.75); }
+.hi-calendar__weekdays .is-sat { color: rgba(96, 165, 250, 0.75); }
+
+.hi-calendar__grid {
+    flex: 1;
+    grid-auto-rows: 1fr;
+    gap: 4px;
+    min-height: 0;
+}
+
+/* 날짜 셀: 날짜는 상단, 휴장 내용은 그 아래 */
+.hi-day {
+    position: relative;
+    min-width: 0;
+    min-height: 44px;
+    padding: 5px 3px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 3px;
+
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 9px;
+
+    color: #cbd5e1;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.hi-day.is-sun { color: var(--hi-sun); }
+.hi-day.is-sat { color: var(--hi-sat); }
+
+/* 조회 범위 밖(오늘 이전, 마지막 휴장일 이후)은 숫자 없이 흐린 칸으로 표시 */
+.hi-day.is-out {
+    background: rgba(255, 255, 255, 0.012);
+}
+
+.hi-day.is-today {
+    border-color: rgba(165, 180, 252, 0.55);
+}
+
+.hi-day.is-today .hi-day__num {
+    font-weight: 700;
+    color: var(--hi-accent);
+}
+
+.hi-day.is-holiday {
+    background: var(--hi-gold-soft);
+    border-color: rgba(245, 193, 108, 0.28);
+    color: var(--hi-gold);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.hi-day.is-holiday .hi-day__num {
+    color: var(--hi-gold);
+}
+
+.hi-day.is-holiday:hover {
+    background: rgba(245, 193, 108, 0.22);
+    border-color: rgba(245, 193, 108, 0.45);
+}
+
+.hi-day__num {
+    line-height: 1;
+}
+
+.hi-day__memo {
+    width: 100%;
+
+    font-size: 9.5px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: rgba(253, 231, 189, 0.9);
+    text-align: center;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+
+    /* 두 줄까지만 표시 (전체 내용은 title 툴팁과 우측 목록에서 확인) */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.hi-day.is-selected,
+.hi-day.is-selected:hover {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: transparent;
+    box-shadow: 0 6px 18px -6px rgba(99, 102, 241, 0.7);
+    transform: translateY(-1px);
+}
+
+.hi-day.is-selected .hi-day__num { color: #fff; }
+.hi-day.is-selected .hi-day__memo { color: rgba(255, 255, 255, 0.9); }
+
+/* 범례 */
+.hi-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--hi-line);
+
+    font-size: 11px;
+    color: #cbd5e1;
+}
+
+.hi-legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.hi-legend__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+}
+
+.hi-legend__dot--holiday {
+    background: var(--hi-gold-soft);
+    border: 1px solid rgba(245, 193, 108, 0.6);
+}
+
+.hi-legend__dot--today {
+    border: 1px solid rgba(165, 180, 252, 0.8);
+}
+
+.hi-legend__note {
+    margin-left: auto;
+    font-size: 10.5px;
+    color: #94a3b8;
+}
+
+/* ═════════════ 휴장일 목록 ═════════════ */
+.hi-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    background: var(--hi-surface);
+    border: 1px solid var(--hi-line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.hi-list__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--hi-line);
+}
+
+.hi-list__title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.hi-list__count {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--hi-gold-soft);
+    color: var(--hi-gold);
+    font-size: 10.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.hi-list__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.hi-list__body::-webkit-scrollbar { width: 3px; }
+.hi-list__body::-webkit-scrollbar-track { background: transparent; }
+.hi-list__body::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 2px;
+}
+
+.hi-list__empty {
+    height: 100%;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--hi-muted);
+    font-size: 12px;
+}
+
+.hi-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+
+    border: 1px solid transparent;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.hi-item:hover {
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.hi-item.is-active {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.hi-item__date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 38px;
+    flex-shrink: 0;
+
+    background: var(--hi-gold-soft);
+    border: 1px solid rgba(245, 193, 108, 0.25);
+    border-radius: 8px;
+}
+
+.hi-item__md {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--hi-gold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.hi-item__wd {
+    font-size: 10px;
+    color: rgba(245, 193, 108, 0.7);
+}
+
+.hi-item__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hi-item__memo {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hi-item__meta {
+    font-size: 10.5px;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+}
+
+.hi-item__dday {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--hi-accent);
+    font-variant-numeric: tabular-nums;
+}

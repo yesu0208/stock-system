@@ -151,6 +151,39 @@
     font-weight: 600;
 }
 
+.header .holiday-info-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    padding: 3px 10px;
+
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    font-family: inherit;
+
+    color: #a5b4fc;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 12px;
+
+    transform: translateY(1px);
+
+    cursor: pointer;
+    outline: none;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.header .holiday-info-btn:hover {
+    background: rgba(99, 102, 241, 0.22);
+    border-color: rgba(99, 102, 241, 0.55);
+}
+
+.header .holiday-info-btn__icon {
+    font-size: 13px;
+}
+
 .header .current-date {
     display: inline-block;
     transform: translateY(-1px);
