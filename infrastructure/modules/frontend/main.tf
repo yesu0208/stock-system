@@ -12,11 +12,13 @@ locals {
 
 # Buckets
 resource "aws_s3_bucket" "web" {
-  bucket = "${var.name}-web"
+  bucket        = "${var.name}-web"
+  force_destroy = var.force_destroy
 }
 
 resource "aws_s3_bucket" "uploads" {
-  bucket = "${var.name}-uploads"
+  bucket        = "${var.name}-uploads"
+  force_destroy = var.force_destroy
 }
 
 resource "aws_s3_bucket_public_access_block" "this" {

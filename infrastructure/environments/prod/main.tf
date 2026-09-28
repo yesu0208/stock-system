@@ -33,6 +33,7 @@ module "ecr" {
 
   name         = var.project
   repositories = ["bff-server", "stock-server", "account-server"]
+  force_delete = !var.protect_resources
 }
 
 module "secrets" {
@@ -40,6 +41,9 @@ module "secrets" {
 
   name        = local.name
   db_services = ["bff", "stock", "account"]
+
+  # 보호 해제 시 삭제 즉시 반영 (같은 이름으로 바로 다시 생성 가능)
+  recovery_window_in_days = var.protect_resources ? 7 : 0
 
   # application.yaml 의 ${...} 환경변수 이름과 동일하게 맞춤.
   # stock 은 그룹마다 증권사 API 키가 다르므로 그룹별 시크릿 (stock-a, stock-b ...)
@@ -65,6 +69,9 @@ module "rds" {
   security_group_id = module.security.rds_sg_id
   instance_class    = var.db_instance_class
   multi_az          = var.db_multi_az
+
+  deletion_protection = var.protect_resources
+  skip_final_snapshot = !var.protect_resources
 }
 
 module "redis" {
@@ -87,6 +94,8 @@ module "alb" {
   zone_id           = module.dns.zone_id
   api_domain        = module.dns.api_domain
   target_port       = local.ports.bff
+
+  deletion_protection = var.protect_resources
 }
 
 module "frontend" {
@@ -96,6 +105,8 @@ module "frontend" {
   aliases         = module.dns.frontend_aliases
   certificate_arn = module.dns.frontend_certificate_arn
   zone_id         = module.dns.zone_id
+
+  force_destroy = !var.protect_resources
 }
 
 module "ecs_cluster" {
