@@ -19,3 +19,9 @@ variable "keep_image_count" {
   type        = number
   default     = 30
 }
+
+variable "force_delete" {
+  description = "이미지가 남아 있어도 저장소 삭제 허용 (테스트 환경 정리용)"
+  type        = bool
+  default     = false
+}

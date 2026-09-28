@@ -66,3 +66,9 @@ variable "deletion_protection" {
   type        = bool
   default     = true
 }
+
+variable "skip_final_snapshot" {
+  description = "삭제 시 최종 스냅샷 생략 여부 (테스트 환경 정리용)"
+  type        = bool
+  default     = false
+}

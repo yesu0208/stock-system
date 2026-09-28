@@ -16,6 +16,13 @@ variable "aws_region" {
   default     = "ap-northeast-2"
 }
 
+# 삭제 보호
+variable "protect_resources" {
+  description = "삭제 방지 (RDS/ALB 삭제 방지, 최종 스냅샷, 버킷·저장소 비우기 방지, 시크릿 복구 기간). 테스트 환경은 false 로 두고 destroy"
+  type        = bool
+  default     = true
+}
+
 # 네트워크
 variable "vpc_cidr" {
   description = "VPC CIDR"
@@ -123,6 +130,7 @@ variable "stock_groups" {
   }))
   default = {
     a = { group = "A" }
+    b = { group = "B" }
   }
 }
 

@@ -154,13 +154,13 @@ module "stock_server" {
   })
 
   secrets = merge(local.db_secrets["stock"], {
-    for k in ["APPROVAL_KEY_URL", "APP_KEY", "APP_SECRET", "WS_URL", "CHART_API_URL", "CHART_API_APPKEY", "CHART_API_APPSECRET"] :
-    k => "${module.secrets.app_secret_arns["stock"]}:${k}::"
+    for k in local.stock_app_secret_keys :
+    k => "${module.secrets.app_secret_arns["stock-${each.key}"]}:${k}::"
   })
 
   secret_arns = [
     module.secrets.db_secret_arns["stock"],
-    module.secrets.app_secret_arns["stock"],
+    module.secrets.app_secret_arns["stock-${each.key}"],
   ]
 
   desired_count      = 1

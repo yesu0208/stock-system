@@ -67,7 +67,7 @@ resource "aws_db_instance" "this" {
   performance_insights_enabled    = var.performance_insights_enabled
 
   deletion_protection       = var.deletion_protection
-  skip_final_snapshot       = false
+  skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = "${var.name}-mysql-final"
   copy_tags_to_snapshot     = true
 

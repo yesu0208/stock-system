@@ -23,3 +23,9 @@ variable "price_class" {
   type        = string
   default     = "PriceClass_200"
 }
+
+variable "force_destroy" {
+  description = "객체가 남아 있어도 버킷 삭제 허용 (테스트 환경 정리용)"
+  type        = bool
+  default     = false
+}
