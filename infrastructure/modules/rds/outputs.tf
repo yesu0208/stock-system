@@ -14,7 +14,7 @@ output "port" {
 
 output "master_user_secret_arn" {
   description = "RDS 가 관리하는 마스터 계정 시크릿 ARN"
-  value       = aws_db_instance.this.master_user_secret[0].secret_arn
+  value       = try(aws_db_instance.this.master_user_secret[0].secret_arn, null)
 }
 
 output "identifier" {
