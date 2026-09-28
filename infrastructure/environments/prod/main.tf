@@ -121,3 +121,22 @@ module "monitoring" {
   target_group_arn_suffix = module.alb.bff_target_group_arn_suffix
   db_instance_identifier  = module.rds.identifier
 }
+
+module "github_oidc" {
+  source = "../../modules/github-oidc"
+
+  name                 = local.name
+  create_oidc_provider = var.create_github_oidc_provider
+  github_repository    = var.github_repository
+
+  ecr_repository_arns = module.ecr.repository_arns
+  ecs_role_arns = flatten([
+    for s in concat([module.bff_server, module.account_server], values(module.stock_server)) :
+    [s.execution_role_arn, s.task_role_arn]
+  ])
+
+  web_bucket_arn              = module.frontend.web_bucket_arn
+  cloudfront_distribution_arn = module.frontend.distribution_arn
+  state_bucket_name           = "stock-system-tfstate"
+  secret_arns                 = module.secrets.all_secret_arns
+}

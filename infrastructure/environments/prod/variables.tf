@@ -138,3 +138,16 @@ variable "alarm_emails" {
   type        = list(string)
   default     = []
 }
+
+# CI/CD
+variable "github_repository" {
+  description = "owner/repo 형식의 GitHub 저장소"
+  type        = string
+  default     = "yesu0208/stock-system"
+}
+
+variable "create_github_oidc_provider" {
+  description = "계정에 GitHub OIDC 공급자가 이미 있으면 false"
+  type        = bool
+  default     = true
+}
