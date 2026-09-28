@@ -41,25 +41,20 @@ module "secrets" {
   name        = local.name
   db_services = ["bff", "stock", "account"]
 
-  # application.yaml 의 ${...} 환경변수 이름과 동일하게 맞춘다.
-  app_secret_keys = {
-    bff = [
-      "SECRET_KEY",
-      "ADMIN_PASSWORD",
-      "SLACK_WEBHOOK_URL",
-      "NAVER_CLIENT_ID",
-      "NAVER_CLIENT_SECRET",
-    ]
-    stock = [
-      "APPROVAL_KEY_URL",
-      "APP_KEY",
-      "APP_SECRET",
-      "WS_URL",
-      "CHART_API_URL",
-      "CHART_API_APPKEY",
-      "CHART_API_APPSECRET",
-    ]
-  }
+  # application.yaml 의 ${...} 환경변수 이름과 동일하게 맞춤.
+  # stock 은 그룹마다 증권사 API 키가 다르므로 그룹별 시크릿 (stock-a, stock-b ...)
+  app_secret_keys = merge(
+    {
+      bff = [
+        "SECRET_KEY",
+        "ADMIN_PASSWORD",
+        "SLACK_WEBHOOK_URL",
+        "NAVER_CLIENT_ID",
+        "NAVER_CLIENT_SECRET",
+      ]
+    },
+    { for k, _ in var.stock_groups : "stock-${k}" => local.stock_app_secret_keys },
+  )
 }
 
 module "rds" {
