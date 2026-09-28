@@ -1,0 +1,157 @@
+# EC2 단일 서버 배포 (MySQL, Redis, 서버 4개)
+# 사용: .env 준비 후 docker compose up -d --build  (자세한 절차는 deploy/README.md)
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # 앱 계정 자동 생성 (init-db.sh 에서 서비스별 DB 권한 부여)
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Seoul
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+09:00"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./deploy/mysql/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - internal
+
+  account-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.module
+      args:
+        MODULE: account-server
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Seoul
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
+      LOCAL_DB_URL: jdbc:mysql://mysql:3306/account_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      LOCAL_DB_USER: ${DB_USER}
+      LOCAL_DB_PW: ${DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - internal
+
+  stock-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.module
+      args:
+        MODULE: stock-server
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Seoul
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
+      LOCAL_DB_URL: jdbc:mysql://mysql:3306/stock_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      LOCAL_DB_USER: ${DB_USER}
+      LOCAL_DB_PW: ${DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      ACCOUNT_API_URL: http://account-server:8082
+      APPROVAL_KEY_URL: ${APPROVAL_KEY_URL}
+      APP_KEY: ${APP_KEY}
+      APP_SECRET: ${APP_SECRET}
+      WS_URL: ${WS_URL}
+      CHART_API_URL: ${CHART_API_URL}
+      CHART_API_APPKEY: ${CHART_API_APPKEY}
+      CHART_API_APPSECRET: ${CHART_API_APPSECRET}
+      SERVER_GROUP: A
+    depends_on:
+      - mysql
+      - redis
+      - account-server
+    networks:
+      - internal
+
+  stock-server-b:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.module
+      args:
+        MODULE: stock-server
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Seoul
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
+      LOCAL_DB_URL: jdbc:mysql://mysql:3306/stock_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      LOCAL_DB_USER: ${DB_USER}
+      LOCAL_DB_PW: ${DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      ACCOUNT_API_URL: http://account-server:8082
+      APPROVAL_KEY_URL: ${APPROVAL_KEY_URL}
+      APP_KEY: ${APP_KEY_B}
+      APP_SECRET: ${APP_SECRET_B}
+      WS_URL: ${WS_URL}
+      CHART_API_URL: ${CHART_API_URL}
+      CHART_API_APPKEY: ${CHART_API_APPKEY}
+      CHART_API_APPSECRET: ${CHART_API_APPSECRET}
+      SERVER_GROUP: B
+    depends_on:
+      - mysql
+      - redis
+      - account-server
+    networks:
+      - internal
+
+  bff-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.module
+      args:
+        MODULE: bff-server
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Seoul
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
+      LOCAL_DB_URL: jdbc:mysql://mysql:3306/bff_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      LOCAL_DB_USER: ${DB_USER}
+      LOCAL_DB_PW: ${DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      ACCOUNT_API_URL: http://account-server:8082
+      STOCK_API_URL: http://stock-server:8081
+      SECRET_KEY: ${SECRET_KEY}
+      FE_URL: ${FE_URL}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - redis
+      - account-server
+      - stock-server
+      - stock-server-b
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
