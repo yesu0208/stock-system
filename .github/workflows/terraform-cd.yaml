@@ -1,53 +1,42 @@
-name: Terraform CD
+name: Terraform Plan
 
+# 운영 인프라는 자동 apply 하지 않는다.
+# 수동 실행으로 plan 결과만 확인하고, apply 는 검토 후 로컬/승인된 환경에서 수행한다.
 on:
-  workflow_run:
-    workflows: ["Terraform CI"]
-    types:
-      - completed
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  terraform-cd:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  terraform-plan:
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: infrastructure/environments/dev
-
-    permissions:
-      id-token: write
-      contents: read
+        working-directory: infrastructure/environments/prod
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_PLAN_ROLE_ARN }}
           aws-region: ap-northeast-2
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          terraform_version: 1.11.4
 
-      - name: Terraform Init (real backend)
+      - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Apply
+      - name: Terraform Plan
         run: |
-          terraform apply -auto-approve \
-            -var="db_username=${{ secrets.DB_USERNAME }}" \
-            -var="db_password=${{ secrets.DB_PASSWORD }}" \
-            -var="db_name=${{ secrets.DB_NAME }}" \
-            -var="fe_url=${{ secrets.FE_URL }}" \
-            -var="cloudfront_acm_arn=${{ secrets.CLOUDFRONT_ACM_ARN }}" \
-            -var="alb_acm_arn=${{ secrets.ALB_ACM_ARN }}" \
-            -var="app_key=${{ secrets.APP_KEY }}" \
-            -var="app_secret=${{ secrets.APP_SECRET }}" \
-            -var="approval_key_url=${{ secrets.APPROVAL_KEY_URL }}" \
-            -var="secret_key=${{ secrets.SECRET_KEY }}" \
-            -var="ws_url=${{ secrets.WS_URL }}"
+          terraform plan -input=false -lock=false \
+            -var="domain_name=${{ vars.DOMAIN_NAME }}" \
+            -var="image_tag=${{ vars.INITIAL_IMAGE_TAG }}"
