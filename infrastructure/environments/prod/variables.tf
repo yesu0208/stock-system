@@ -123,6 +123,7 @@ variable "stock_groups" {
   }))
   default = {
     a = { group = "A" }
+    b = { group = "B" }
   }
 }
 
