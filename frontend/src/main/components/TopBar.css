@@ -258,6 +258,14 @@
     z-index: 100;
 }
 
+.top-bar .dropdown .name {
+    font-size: 12px;
+}
+
+.top-bar .dropdown .code {
+    font-size: 11px;
+}
+
 .top-bar .item {
     display: flex;
     justify-content: space-between;
