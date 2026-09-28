@@ -93,3 +93,12 @@ module "alb" {
   api_domain        = module.dns.api_domain
   target_port       = local.ports.bff
 }
+
+module "frontend" {
+  source = "../../modules/frontend"
+
+  name            = local.name
+  aliases         = module.dns.frontend_aliases
+  certificate_arn = module.dns.frontend_certificate_arn
+  zone_id         = module.dns.zone_id
+}
