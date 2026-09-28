@@ -7,3 +7,11 @@ module "network" {
   availability_zones = var.availability_zones
   single_nat_gateway = var.single_nat_gateway
 }
+
+module "security" {
+  source = "../../modules/security"
+
+  name   = local.name
+  vpc_id = module.network.vpc_id
+  ports  = local.ports
+}
