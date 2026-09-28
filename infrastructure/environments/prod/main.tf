@@ -71,3 +71,12 @@ module "rds" {
   instance_class    = var.db_instance_class
   multi_az          = var.db_multi_az
 }
+
+module "redis" {
+  source = "../../modules/elasticache"
+
+  name              = local.name
+  subnet_ids        = module.network.private_data_subnet_ids
+  security_group_id = module.security.redis_sg_id
+  node_type         = var.redis_node_type
+}

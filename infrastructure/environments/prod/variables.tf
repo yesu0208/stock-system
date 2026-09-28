@@ -59,3 +59,9 @@ variable "db_multi_az" {
   type        = bool
   default     = true
 }
+
+variable "redis_node_type" {
+  description = "ElastiCache 노드 타입"
+  type        = string
+  default     = "cache.t4g.small"
+}
