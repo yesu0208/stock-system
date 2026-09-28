@@ -27,3 +27,10 @@ module "dns" {
   domain_name        = var.domain_name
   create_hosted_zone = var.create_hosted_zone
 }
+
+module "ecr" {
+  source = "../../modules/ecr"
+
+  name         = var.project
+  repositories = ["bff-server", "stock-server", "account-server"]
+}
