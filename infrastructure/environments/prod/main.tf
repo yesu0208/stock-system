@@ -80,3 +80,16 @@ module "redis" {
   security_group_id = module.security.redis_sg_id
   node_type         = var.redis_node_type
 }
+
+module "alb" {
+  source = "../../modules/alb"
+
+  name              = local.name
+  vpc_id            = module.network.vpc_id
+  subnet_ids        = module.network.public_subnet_ids
+  security_group_id = module.security.alb_sg_id
+  certificate_arn   = module.dns.api_certificate_arn
+  zone_id           = module.dns.zone_id
+  api_domain        = module.dns.api_domain
+  target_port       = local.ports.bff
+}
