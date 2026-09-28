@@ -131,3 +131,10 @@ variable "primary_stock_group_key" {
   type        = string
   default     = "a"
 }
+
+#  모니터링
+variable "alarm_emails" {
+  description = "CloudWatch 알람을 받을 이메일 목록"
+  type        = list(string)
+  default     = []
+}

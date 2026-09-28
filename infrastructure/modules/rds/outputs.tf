@@ -16,3 +16,8 @@ output "master_user_secret_arn" {
   description = "RDS 가 관리하는 마스터 계정 시크릿 ARN"
   value       = aws_db_instance.this.master_user_secret[0].secret_arn
 }
+
+output "identifier" {
+  description = "CloudWatch 지표 차원용 DB 인스턴스 식별자"
+  value       = aws_db_instance.this.identifier
+}

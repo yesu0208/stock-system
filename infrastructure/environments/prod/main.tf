@@ -109,3 +109,15 @@ module "ecs_cluster" {
   name      = local.name
   namespace = "${var.project}.internal"
 }
+
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  name                    = local.name
+  alarm_emails            = var.alarm_emails
+  cluster_name            = module.ecs_cluster.cluster_name
+  singleton_service_names = [for s in module.stock_server : s.service_name]
+  alb_arn_suffix          = module.alb.alb_arn_suffix
+  target_group_arn_suffix = module.alb.bff_target_group_arn_suffix
+  db_instance_identifier  = module.rds.identifier
+}
