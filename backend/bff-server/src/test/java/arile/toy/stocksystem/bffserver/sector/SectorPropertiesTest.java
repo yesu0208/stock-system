@@ -39,6 +39,6 @@ class SectorPropertiesTest {
         assertThat(groups.get("반도체")).contains("005930", "000660");
         assertThat(groups.get("2차전지")).contains("373220");
         assertThat(groups.get("자동차")).contains("005380");
-        assertThat(groups).hasSize(8);
+        assertThat(groups).hasSize(12);
     }
 }
