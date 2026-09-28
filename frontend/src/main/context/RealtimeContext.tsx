@@ -108,9 +108,38 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             // 구독한 세션 전용 채널로 받음. 스냅샷을 종목 구독자 전원에게 다시 보내지 않기 위함.
             // 실시간 채널을 먼저 구독해, 스냅샷 이후의 틱을 놓치지 않게 함.
             const unsubscribeLive = subscribeDestination(`/sub/stock/${code}`, onTick)
-            const unsubscribeSnapshot = subscribeDestination(`/user/sub/stock/${code}/snapshot`, onTick)
+
+            // 구독 이벤트 직후 서버가 보낸 스냅샷이 브로커 구독 등록 전에 전송되어 유실될 수 있으므로,
+            // 일정 시간 안에 스냅샷이 오지 않으면 스냅샷 채널만 다시 구독해 재요청
+            const SNAPSHOT_TIMEOUT_MS = 2000
+            const SNAPSHOT_MAX_RETRY = 3
+
+            const snapshotDestination = `/user/sub/stock/${code}/snapshot`
+            let received = false
+            let retryCount = 0
+            let retryTimer: number | undefined
+
+            const onSnapshot = (tick: StockTickMessage) => {
+                received = true
+                window.clearTimeout(retryTimer)
+                onTick(tick)
+            }
+
+            let unsubscribeSnapshot = subscribeDestination(snapshotDestination, onSnapshot)
+
+            const scheduleRetry = () => {
+                retryTimer = window.setTimeout(() => {
+                    if (received || retryCount >= SNAPSHOT_MAX_RETRY) return
+                    retryCount++
+                    unsubscribeSnapshot()
+                    unsubscribeSnapshot = subscribeDestination(snapshotDestination, onSnapshot)
+                    scheduleRetry()
+                }, SNAPSHOT_TIMEOUT_MS)
+            }
+            scheduleRetry()
 
             return () => {
+                window.clearTimeout(retryTimer)
                 unsubscribeLive()
                 unsubscribeSnapshot()
             }
