@@ -102,3 +102,10 @@ module "frontend" {
   certificate_arn = module.dns.frontend_certificate_arn
   zone_id         = module.dns.zone_id
 }
+
+module "ecs_cluster" {
+  source = "../../modules/ecs-cluster"
+
+  name      = local.name
+  namespace = "${var.project}.internal"
+}
