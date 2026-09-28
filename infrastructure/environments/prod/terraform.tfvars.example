@@ -1,0 +1,19 @@
+# 복사해서 terraform.tfvars 로 사용 (terraform.tfvars 는 .gitignore 대상)
+
+domain_name        = "stock-system.cloud"
+create_hosted_zone = true
+
+# 최초 apply 전에 ECR 에 push 해 둔 이미지 태그 (이후 배포는 CI 가 담당)
+image_tag = "initial"
+
+alarm_emails = ["you@example.com"]
+
+# 비용을 줄이려면 (운영 권장값은 아래 주석과 반대)
+# single_nat_gateway = true   # NAT Gateway 1개
+# db_multi_az        = false  # RDS 단일 AZ
+
+# stock 그룹을 추가하면 서비스가 하나씩 추가된다 (application.yaml 의 stock-groups 와 맞출 것)
+# stock_groups = {
+#   a = { group = "A" }
+#   b = { group = "B" }
+# }
