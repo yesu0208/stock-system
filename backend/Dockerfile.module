@@ -1,0 +1,29 @@
+# 서버 모듈별 이미지 빌드 (bff-server / stock-server / account-server)
+# 사용: docker build -f Dockerfile.module --build-arg MODULE=bff-server .
+
+# Build stage
+FROM eclipse-temurin:21 AS build
+ARG MODULE
+WORKDIR /app
+
+COPY gradlew .
+COPY gradle ./gradle
+COPY build.gradle .
+COPY settings.gradle .
+COPY lombok.config .
+COPY common ./common
+COPY bff-server ./bff-server
+COPY stock-server ./stock-server
+COPY account-server ./account-server
+
+RUN chmod +x ./gradlew
+RUN ./gradlew :${MODULE}:clean :${MODULE}:bootJar -x test
+
+# Run stage
+FROM eclipse-temurin:21-jre
+ARG MODULE
+WORKDIR /app
+
+COPY --from=build /app/${MODULE}/build/libs/*.jar app.jar
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
