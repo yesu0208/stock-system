@@ -15,3 +15,15 @@ module "security" {
   vpc_id = module.network.vpc_id
   ports  = local.ports
 }
+
+module "dns" {
+  source = "../../modules/dns"
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  domain_name        = var.domain_name
+  create_hosted_zone = var.create_hosted_zone
+}

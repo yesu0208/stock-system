@@ -34,3 +34,15 @@ variable "single_nat_gateway" {
   type        = bool
   default     = false
 }
+
+# 도메인
+variable "domain_name" {
+  description = "구입한 루트 도메인 (예: example.com)"
+  type        = string
+}
+
+variable "create_hosted_zone" {
+  description = "Route53 호스팅 영역을 새로 만들지 여부 (외부 등록기관에서 구입한 도메인이면 true)"
+  type        = bool
+  default     = true
+}
