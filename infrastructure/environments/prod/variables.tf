@@ -46,3 +46,16 @@ variable "create_hosted_zone" {
   type        = bool
   default     = true
 }
+
+# 데이터
+variable "db_instance_class" {
+  description = "RDS 인스턴스 타입"
+  type        = string
+  default     = "db.t4g.medium"
+}
+
+variable "db_multi_az" {
+  description = "RDS Multi-AZ 사용 여부"
+  type        = bool
+  default     = true
+}

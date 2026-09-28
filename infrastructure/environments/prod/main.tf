@@ -61,3 +61,13 @@ module "secrets" {
     ]
   }
 }
+
+module "rds" {
+  source = "../../modules/rds"
+
+  name              = local.name
+  subnet_ids        = module.network.private_data_subnet_ids
+  security_group_id = module.security.rds_sg_id
+  instance_class    = var.db_instance_class
+  multi_az          = var.db_multi_az
+}
