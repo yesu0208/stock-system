@@ -4,7 +4,7 @@ import "./Header.css";
 import { FiBell, FiCalendar, FiHelpCircle, FiLogOut } from "react-icons/fi";
 import { useToast } from "../context/ToastContext";
 import { useUser } from "../context/UserContext";
-import { useMarketPhase, getPhaseColor } from "../context/MarketPhaseContext";
+import { useMarketPhase, getPhaseColor, type MarketPhase } from "../context/MarketPhaseContext";
 import HelpModal from "./HelpModal";
 import LogoutModal from "./LogoutModal";
 import ManagedModal from "./ManagedModal";
@@ -14,6 +14,13 @@ import Tooltip from "../../tooltip/Tooltip";
 interface Props {
     onLogout: () => void;
 }
+
+const MARKET_SCHEDULE: { phase: MarketPhase; time: string; name: string }[] = [
+    { phase: "MORNING_CALL", time: "08:50 ~ 09:00", name: "개장 동시호가" },
+    { phase: "OPEN",         time: "09:00 ~ 15:20", name: "정규장" },
+    { phase: "CLOSING_CALL", time: "15:20 ~ 15:30", name: "마감 동시호가" },
+    { phase: "AFTER",        time: "16:00 ~ 20:00", name: "애프터마켓" },
+];
 
 export default function Header({ onLogout }: Props) {
     const [date, setDate] = useState("");
@@ -34,6 +41,7 @@ export default function Header({ onLogout }: Props) {
     const [logoutOpen, setLogoutOpen] = useState(false);
     const [managedOpen, setManagedOpen] = useState(false);
     const [holidayInfoOpen, setHolidayInfoOpen] = useState(false);
+    const [marketHover, setMarketHover] = useState(false);
 
     useEffect(() => {
         const updateTime = () => {
@@ -82,9 +90,33 @@ export default function Header({ onLogout }: Props) {
                 <div className="header__center">
                     <span className="market-label">시장 상태</span>
 
-                    <span className={`market-status ${market.color}`}>
-                        <span className={`market-dot ${market.color}`} />
-                        {market.label}
+                    <span
+                        className="market-status-wrap"
+                        onMouseEnter={() => setMarketHover(true)}
+                        onMouseLeave={() => setMarketHover(false)}
+                    >
+                        <span className={`market-status ${market.color}`}>
+                            <span className={`market-dot ${market.color}`} />
+                            {market.label}
+                        </span>
+
+                        {marketHover && (
+                            <div className="market-schedule">
+                                <div className="market-schedule__title">장 운영 시간</div>
+
+                                {MARKET_SCHEDULE.map((item) => (
+                                    <div
+                                        key={item.phase}
+                                        className={`market-schedule__row${phase === item.phase ? " market-schedule__row--active" : ""}`}
+                                    >
+                                        <span className="market-schedule__time">{item.time}</span>
+                                        <span className="market-schedule__name">{item.name}</span>
+                                    </div>
+                                ))}
+
+                                <div className="market-schedule__note">그 외 시간은 거래 불가</div>
+                            </div>
+                        )}
                     </span>
 
                     <span className="divider" />

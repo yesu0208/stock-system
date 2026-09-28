@@ -304,7 +304,7 @@ export default function StockInfoPanel() {
 
             <div className="tab-divider" />
 
-            <div className="tab-content">
+            <div className="tab-content" key={tab}>
                 {tab === "summary" && (
                     <div className="company-summary">
                         {detail.companySummary?.split("\n").map((line, i) => (

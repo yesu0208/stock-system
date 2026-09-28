@@ -68,7 +68,7 @@ const CONTENT: Record<TabId, { title: string; sections: { heading: string; items
                 heading: "로그인 및 보안",
                 items: [
                     "계정 보안을 위해 비밀번호를 주기적으로 변경해 주세요.",
-                    "우측 상단 메뉴의 로그아웃 버튼으로 로그아웃할 수 있습니다.",
+                    "오른쪽 상단 메뉴의 로그아웃 버튼으로 로그아웃할 수 있습니다.",
                 ],
             },
         ],
@@ -94,6 +94,7 @@ const CONTENT: Record<TabId, { title: string; sections: { heading: string; items
                 heading: "등급별 신용 가능 범위",
                 items: [
                     "등급에 따라 가능한 신용 주문 범위는 다음과 같습니다.",
+                    "GOLD 미만: x1.5, PLATINUM 미만: x2, PLATINUM 이상: x2.5",
                     "보유 포지션 손익도 등급 산정에 반영됩니다.",
                 ],
             },
@@ -106,7 +107,7 @@ const CONTENT: Record<TabId, { title: string; sections: { heading: string; items
                 heading: "계좌 개요",
                 items: [
                     "모의투자 계좌에서 가상 자산으로 매매를 체험할 수 있습니다.",
-                    "초기 예수금은 시스템에서 지급되며 실제 금액과 무관합니다.",
+                    "초기 예수금(10억)은 시스템에서 지급되며 실제 금액과 무관합니다.",
                 ],
             },
             {
@@ -172,7 +173,7 @@ const CONTENT: Record<TabId, { title: string; sections: { heading: string; items
             {
                 heading: "기간 전환",
                 items: [
-                    "우측 상단 버튼으로 1분·5분·15분·60분·일봉 등 기간을 전환하세요.",
+                    "우측 상단 버튼으로 분봉·일봉 등 기간을 전환하세요.",
                     "기간을 짧게 설정할수록 실시간 등락을 자세히 볼 수 있습니다.",
                 ],
             },

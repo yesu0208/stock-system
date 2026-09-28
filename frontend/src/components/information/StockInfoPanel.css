@@ -524,3 +524,16 @@
     color: #94a3b8;
     font-size: 13px;
 }
+
+.stock-info-panel .tab-content {
+    animation: tabContentFadeIn 0.2s ease-out;
+}
+
+@keyframes tabContentFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
