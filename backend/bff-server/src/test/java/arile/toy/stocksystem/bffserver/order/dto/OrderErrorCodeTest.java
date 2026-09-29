@@ -24,4 +24,11 @@ class OrderErrorCodeTest {
         assertThat(OrderErrorCode.INSUFFICIENT_STOCK.userMessage())
                 .isEqualTo("[주문 거절] 보유 주식이 부족하여 주문에 실패했습니다.");
     }
+
+    @Test
+    @DisplayName("장 마감: stock-server 처리 시점에 장이 닫혀 주문이 처리되지 않았음을 안내")
+    void marketClosed() {
+        assertThat(OrderErrorCode.MARKET_CLOSED.userMessage())
+                .isEqualTo("[주문 거절] 장이 마감되어 주문이 처리되지 않았습니다.");
+    }
 }
