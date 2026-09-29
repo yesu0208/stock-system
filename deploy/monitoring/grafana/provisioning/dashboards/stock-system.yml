@@ -1,0 +1,11 @@
+# 저장소의 대시보드 JSON 을 Grafana 에 자동 등록
+apiVersion: 1
+
+providers:
+  - name: stock-system
+    folder: stock-system
+    type: file
+    disableDeletion: true
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards
