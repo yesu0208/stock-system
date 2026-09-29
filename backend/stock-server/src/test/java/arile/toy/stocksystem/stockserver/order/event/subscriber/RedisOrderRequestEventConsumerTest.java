@@ -3,8 +3,10 @@ package arile.toy.stocksystem.stockserver.order.event.subscriber;
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.order.dto.OrderExecutionType;
+import arile.toy.stocksystem.stockserver.order.dto.OrderErrorCode;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
+import arile.toy.stocksystem.stockserver.order.event.publisher.OrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,13 +38,14 @@ class RedisOrderRequestEventConsumerTest {
     @Mock private RedisTemplate<String, Object> streamRedisTemplate;
     @Mock private OrderService orderService;
     @Mock private StockServerMarketPhaseRegistry registry;
+    @Mock private OrderResponseEventPublisher orderResponseEventPublisher;
 
     private RedisOrderRequestEventConsumer sut;
 
     @BeforeEach
     void setUp() {
         sut = new RedisOrderRequestEventConsumer(
-                streamRedisTemplate, orderService, registry, "order", "order-group", "1", 4);
+                streamRedisTemplate, orderService, registry, orderResponseEventPublisher, "order", "order-group", "1", 4);
     }
 
     @DisplayName("종목 코드를 기준으로 설정한 워커 수만큼 병렬 처리한다")
@@ -138,14 +141,17 @@ class RedisOrderRequestEventConsumerTest {
         then(orderService).shouldHaveNoInteractions();
     }
 
-    @DisplayName("장이 닫힌 종목이면 주문을 등록하지 않는다")
+    @DisplayName("장이 닫힌 종목이면 주문을 등록하지 않고 장 마감 에러를 발행한다")
     @Test
-    void givenMarketClosed_whenHandling_thenSkips() {
+    void givenMarketClosed_whenHandling_thenSkipsAndPublishesMarketClosed() {
         given(registry.isClosed("005930")).willReturn(true);
 
         sut.handle(record(orderValue()));
 
         then(orderService).shouldHaveNoInteractions();
+        ArgumentCaptor<StockServerOrderRequestEvent> captor = ArgumentCaptor.forClass(StockServerOrderRequestEvent.class);
+        then(orderResponseEventPublisher).should().publishError(captor.capture(), eq(OrderErrorCode.MARKET_CLOSED));
+        assertThat(captor.getValue().stockCode()).isEqualTo("005930");
     }
 
     @DisplayName("주문유형이 없으면 예외 없이 건너뛴다 (재시도·DLQ 방지)")

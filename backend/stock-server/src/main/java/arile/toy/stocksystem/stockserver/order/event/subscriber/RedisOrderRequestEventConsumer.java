@@ -3,9 +3,11 @@ package arile.toy.stocksystem.stockserver.order.event.subscriber;
 import arile.toy.stocksystem.stockserver.common.stream.AbstractRedisStreamConsumer;
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.order.dto.OrderErrorCode;
 import arile.toy.stocksystem.stockserver.order.dto.OrderExecutionType;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.order.event.StockServerOrderRequestEvent;
+import arile.toy.stocksystem.stockserver.order.event.publisher.OrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.order.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,12 +23,14 @@ public class RedisOrderRequestEventConsumer extends AbstractRedisStreamConsumer 
 
     private final OrderService orderService;
     private final StockServerMarketPhaseRegistry registry;
+    private final OrderResponseEventPublisher orderResponseEventPublisher;
     private final int workers;
 
     public RedisOrderRequestEventConsumer(
             RedisTemplate<String, Object> streamRedisTemplate,
             OrderService orderService,
             StockServerMarketPhaseRegistry registry,
+            OrderResponseEventPublisher orderResponseEventPublisher,
             @Value("${redis.streams.order.prefix}") String prefix,
             @Value("${redis.streams.order.consumer-group}") String group,
             @Value("${server.group}") String stockGroup,
@@ -35,6 +39,7 @@ public class RedisOrderRequestEventConsumer extends AbstractRedisStreamConsumer 
                 "ORDER_CREATED", "order", "order-dlq");
         this.orderService = orderService;
         this.registry = registry;
+        this.orderResponseEventPublisher = orderResponseEventPublisher;
         this.workers = workers;
     }
 
@@ -98,14 +103,17 @@ public class RedisOrderRequestEventConsumer extends AbstractRedisStreamConsumer 
             return;
         }
 
+        StockServerOrderRequestEvent request = StockServerOrderRequestEvent
+                .of(username, stockCode, orderType, orderPrice, orderQuantity, leverageRatio, orderExecutionType);
+
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip order for stockCode {}", stockCode);
+            orderResponseEventPublisher.publishError(request, OrderErrorCode.MARKET_CLOSED);
             return;
         }
         log.info("Processing order username: {} for stock {}", username, stockCode);
 
-        orderService.registerOrder(StockServerOrderRequestEvent
-                .of(username, stockCode, orderType, orderPrice, orderQuantity, leverageRatio, orderExecutionType), false);
+        orderService.registerOrder(request, false);
     }
 
     private Integer parseInt(Object raw) {
