@@ -1,6 +1,10 @@
 package arile.toy.stocksystem.stockserver.common.stream;
 
 import lombok.extern.slf4j.Slf4j;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -36,6 +40,13 @@ public abstract class AbstractRedisStreamConsumer {
     private final String dlqStreamKey;
 
     private final String consumerName = "stock-server" + UUID.randomUUID();
+
+    private MeterRegistry meterRegistry = Metrics.globalRegistry;
+
+    @Autowired
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
 
     /**
      * @param streamKey    읽을 스트림 키 (예: order-1)
@@ -74,6 +85,9 @@ public abstract class AbstractRedisStreamConsumer {
             return;
         }
 
+        meterRegistry.summary("stream.consume.batch.size", "stream", streamKey)
+                .record(records.size());
+
         for (MapRecord<String, Object, Object> record : records) {
             String recordId = record.getId().getValue();
             // 이번 호출에서 PROCESSING 선점에 성공했는지 / 처리(DONE 기록)까지 끝났는지
@@ -106,13 +120,17 @@ public abstract class AbstractRedisStreamConsumer {
                 }
                 acquired = true;
 
+                recordWaitTime(record);
+                Timer.Sample sample = Timer.start(meterRegistry);
                 handle(record);
+                sample.stop(handleTimer());
 
                 markProcessed(recordId);
                 done = true;
 
                 acknowledge(record);
             } catch (Exception e) {
+                meterRegistry.counter("stream.consume.errors", "stream", streamKey).increment();
                 log.error("Failed to process {}", record.getId(), e);
                 if (acquired && !done) {
                     clearProcessingMark(recordId);
@@ -211,6 +229,23 @@ public abstract class AbstractRedisStreamConsumer {
 
             log.error("Retry failed {}", record.getId(), e);
         }
+    }
+
+    // 레코드 ID 앞부분은 XADD 시각(ms) → 발행부터 처리 시작까지 스트림에서 기다린 시간
+    private void recordWaitTime(MapRecord<String, Object, Object> record) {
+        long waitMillis = System.currentTimeMillis() - record.getId().getTimestamp();
+        Timer.builder("stream.consume.wait")
+                .tag("stream", streamKey)
+                .publishPercentileHistogram()
+                .register(meterRegistry)
+                .record(Duration.ofMillis(Math.max(waitMillis, 0)));
+    }
+
+    private Timer handleTimer() {
+        return Timer.builder("stream.consume.handle")
+                .tag("stream", streamKey)
+                .publishPercentileHistogram()
+                .register(meterRegistry);
     }
 
     private void acknowledge(MapRecord<String, Object, Object> record) {
