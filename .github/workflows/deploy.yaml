@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       targets:
-        description: '배포 대상 (bff-server, account-server, frontend 를 쉼표로 구분, 또는 all)'
+        description: '배포 대상 (bff-server, account-server, frontend 를 쉼표로 구분, 또는 all / stock-server 는 이미지 빌드만)'
         required: true
         default: 'all'
 
@@ -87,6 +87,7 @@ jobs:
             [[ "$t" == *",bff-server,"* ]]     && { build+=(bff-server); servers+=(bff-server); }
             [[ "$t" == *",account-server,"* ]] && { build+=(account-server); servers+=(account-server); }
             [[ "$t" == *",frontend,"* ]]       && frontend=true
+            [[ "$t" == *",stock-server,"* ]]   && build+=(stock-server)
           else
             # common 모듈, 빌드 설정이 바뀌면 모든 서버 이미지를 다시 빌드
             [[ "$BFF" == "true" || "$COMMON" == "true" ]]     && { build+=(bff-server); servers+=(bff-server); }
