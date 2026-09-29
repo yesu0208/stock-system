@@ -35,9 +35,11 @@ locals {
 # bff-server
 data "aws_iam_policy_document" "bff_task" {
   # 프로필 이미지 저장 (S3 저장소 구현체 적용 후 사용)
+  # 버킷 ARN 을 이름으로 구성: 리소스 ARN 을 쓰면 최초 plan 에서 값이 확정되지 않아
+  # ecs-service 모듈의 count 를 계산할 수 없음 (frontend 모듈의 "${name}-uploads" 와 일치해야 함)
   statement {
     actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
-    resources = ["${module.frontend.uploads_bucket_arn}/profile/*"]
+    resources = ["arn:aws:s3:::${local.name}-uploads/profile/*"]
   }
 }
 
