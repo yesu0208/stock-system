@@ -16,9 +16,12 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -52,6 +55,23 @@ class AbstractRedisStreamConsumerTest {
         @Override
         protected void handle(MapRecord<String, Object, Object> record) {
             handler.handle(record);
+        }
+    }
+
+    static class PartitionedTestConsumer extends TestConsumer {
+
+        PartitionedTestConsumer(RedisTemplate<String, Object> template, RecordHandler handler) {
+            super(template, handler);
+        }
+
+        @Override
+        protected Object partitionKey(MapRecord<String, Object, Object> record) {
+            return record.getValue().get("key");
+        }
+
+        @Override
+        protected int workerCount() {
+            return 4;
         }
     }
 
@@ -124,6 +144,45 @@ class AbstractRedisStreamConsumerTest {
 
             then(streamOps).should(times(1))
                     .read(any(Consumer.class), any(StreamReadOptions.class), any(StreamOffset.class));
+        }
+
+        @DisplayName("파티션 키가 다른 레코드는 동시에 처리한다")
+        @Test
+        void givenDifferentPartitionKeys_whenConsuming_thenHandlesConcurrently() throws Exception {
+            var partitioned = new PartitionedTestConsumer(streamRedisTemplate, handler);
+            givenRead(List.of(keyedRecord("1-0", "A"), keyedRecord("2-0", "B")));
+            givenAcquireAny();
+            CountDownLatch bothStarted = new CountDownLatch(2);
+            List<Boolean> overlapped = Collections.synchronizedList(new ArrayList<>());
+            willAnswer(invocation -> {
+                bothStarted.countDown();
+                overlapped.add(bothStarted.await(2, TimeUnit.SECONDS));
+                return null;
+            }).given(handler).handle(any());
+
+            partitioned.consume();
+            partitioned.shutdownWorkers();
+
+            assertThat(overlapped).containsExactly(true, true);
+        }
+
+        @DisplayName("파티션 키가 같은 레코드는 읽은 순서대로 처리한다")
+        @Test
+        void givenSamePartitionKey_whenConsuming_thenHandlesInOrder() throws Exception {
+            var partitioned = new PartitionedTestConsumer(streamRedisTemplate, handler);
+            givenRead(List.of(keyedRecord("1-0", "A"), keyedRecord("2-0", "A"), keyedRecord("3-0", "A")));
+            givenAcquireAny();
+            List<String> handled = Collections.synchronizedList(new ArrayList<>());
+            willAnswer(invocation -> {
+                MapRecord<String, Object, Object> record = invocation.getArgument(0);
+                handled.add(record.getId().getValue());
+                return null;
+            }).given(handler).handle(any());
+
+            partitioned.consume();
+            partitioned.shutdownWorkers();
+
+            assertThat(handled).containsExactly("1-0", "2-0", "3-0");
         }
 
         @DisplayName("대상 이벤트 타입이 아닌 레코드는 처리 없이 ack한다")
@@ -424,6 +483,16 @@ class AbstractRedisStreamConsumerTest {
     private void givenRead(List<MapRecord<String, Object, Object>> records) {
         doReturn(records).when(streamOps)
                 .read(any(Consumer.class), any(StreamReadOptions.class), any(StreamOffset.class));
+    }
+
+    private MapRecord<String, Object, Object> keyedRecord(String id, String key) {
+        Map<Object, Object> value = value();
+        value.put("key", key);
+        return record(id, value);
+    }
+
+    private void givenAcquireAny() {
+        given(valueOps.setIfAbsent(anyString(), eq("PROCESSING"), any(Duration.class))).willReturn(true);
     }
 
     private void givenAcquire() {
