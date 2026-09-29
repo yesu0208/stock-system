@@ -94,20 +94,12 @@ sudo rm -rf /var/www/stock-system/* && sudo cp -r dist/* /var/www/stock-system/
 
 ## 배포
 
-### 백엔드
-```bash
-git pull
-docker compose up -d --build
-```
-- **stock-server는 장 마감 이후에 배포합니다.** 재시작 동안 담당 그룹 종목의 체결이 멈춥니다.
-- 특정 서버만: `docker compose up -d --build bff-server`
+평소 배포는 [자동 배포 (CD)](#자동-배포-cd)를 사용합니다. EC2 에서 직접 빌드하지 않습니다.
 
-### 프론트엔드
-```bash
-git pull
-cd frontend && npm ci && npm run build
-sudo rm -rf /var/www/stock-system/* && sudo cp -r dist/* /var/www/stock-system/
-```
+- **stock-server는 장 마감 이후에 배포합니다.** 재시작 동안 담당 그룹 종목의 체결이 멈춥니다.
+- EC2 에서 서비스를 직접 재시작할 때는 반드시 서비스를 지정하고 `--no-deps` 를 붙입니다.
+  서비스 없이 `docker compose up -d` 를 실행하거나 `--no-deps` 를 빼면, 의존 관계(`depends_on`)에 있는 stock-server 까지 재생성될 수 있습니다.
+- EC2 에서는 커밋하지 않습니다. `git pull --ff-only` 가 실패하면 `git reset --hard origin/main` 으로 맞춥니다 (`.env` 는 영향 없음).
 
 ### nginx 설정 변경
 저장소의 `deploy/nginx/stock-system.conf`를 수정한 뒤 서버에 반영합니다.
@@ -203,7 +195,7 @@ Actions 탭 → 워크플로 선택 → **Run workflow**
 ```bash
 cd ~/stock-system
 IMAGE_TAG=<이전 커밋 SHA> docker compose pull bff-server
-IMAGE_TAG=<이전 커밋 SHA> docker compose up -d --no-build bff-server
+IMAGE_TAG=<이전 커밋 SHA> docker compose up -d --no-build --no-deps bff-server
 ```
 
 - `IMAGE_TAG` 는 명령 앞에만 붙이고 `.env` 에는 넣지 않습니다.
@@ -217,7 +209,7 @@ GitHub Actions 나 GHCR 을 쓸 수 없을 때만 사용합니다.
 ```bash
 cd ~/stock-system
 git pull --ff-only
-docker compose up -d --build bff-server
+docker compose up -d --build --no-deps bff-server
 ```
 
 - EC2 에서 빌드하면 메모리를 많이 쓰므로 한 서비스씩 빌드합니다.

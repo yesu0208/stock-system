@@ -190,8 +190,8 @@ jobs:
             script+=$(cat <<EOF
 
           echo "== 서버 배포: ${SERVERS}"
-          run "docker compose pull ${SERVERS}"
-          run "docker compose up -d --no-build ${SERVERS}"
+          run "docker compose pull --quiet ${SERVERS}"
+          run "docker compose up -d --no-build --no-deps ${SERVERS}"
           EOF
           )
           fi

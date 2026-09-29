@@ -93,15 +93,15 @@ jobs:
           run "docker compose images stock-server stock-server-b"
 
           echo "== stock 이미지 pull"
-          run "docker compose pull stock-server stock-server-b"
+          run "docker compose pull --quiet stock-server stock-server-b"
 
           # 이미지가 바뀌지 않았으면 compose 가 재시작하지 않음 (변경 없으면 그대로 유지)
           echo "== stock-server (A) 배포"
-          run "docker compose up -d --no-build stock-server"
+          run "docker compose up -d --no-build --no-deps stock-server"
           check stock-server
 
           echo "== stock-server-b (B) 배포"
-          run "docker compose up -d --no-build stock-server-b"
+          run "docker compose up -d --no-build --no-deps stock-server-b"
           check stock-server-b
 
           echo "== 최근 로그 (A)"
