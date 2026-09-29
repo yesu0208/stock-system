@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.stockserver.common.stream;
 
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
@@ -11,10 +12,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Redis Stream 요청 컨슈머 공통 처리.
@@ -44,6 +51,8 @@ public abstract class AbstractRedisStreamConsumer {
 
     private MeterRegistry meterRegistry = Metrics.globalRegistry;
 
+    private ExecutorService workers;
+
     @Autowired
     public void setMeterRegistry(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
@@ -70,6 +79,14 @@ public abstract class AbstractRedisStreamConsumer {
     /** 레코드 1건을 실제 도메인 처리로 넘긴다. 예외를 던지면 재시도 대상이 된다. */
     protected abstract void handle(MapRecord<String, Object, Object> record);
 
+    protected Object partitionKey(MapRecord<String, Object, Object> record) {
+        return null;
+    }
+
+    protected int workerCount() {
+        return 1;
+    }
+
     @Scheduled(fixedDelay = 100)
     public void consume() {
         while (consumeBatch() == BATCH_SIZE) {
@@ -94,56 +111,91 @@ public abstract class AbstractRedisStreamConsumer {
         meterRegistry.summary("stream.consume.batch.size", "stream", streamKey)
                 .record(records.size());
 
-        for (MapRecord<String, Object, Object> record : records) {
-            String recordId = record.getId().getValue();
-            // 이번 호출에서 PROCESSING 선점에 성공했는지 / 처리(DONE 기록)까지 끝났는지
-            // → 실패 시 "내가 잡은 미완료 PROCESSING"만 지우기 위함 (DONE을 지우면 재시도에서 중복 처리 발생)
-            boolean acquired = false;
-            boolean done = false;
-            try {
-
-                String type = (String) record.getValue().get("type");
-                if (!eventType.equals(type)) {
-                    acknowledge(record);
-                    continue;
-                }
-
-                String status = getStatus(recordId);
-
-                if (DONE.equals(status)) {
-                    log.warn("Duplicate DONE skip recordId={}", recordId);
-                    acknowledge(record);
-                    continue;
-                }
-
-                if (PROCESSING.equals(status)) {
-                    log.warn("Still PROCESSING recordId={}", recordId);
-                    continue;
-                }
-
-                if (!tryStartProcess(recordId)) {
-                    continue;
-                }
-                acquired = true;
-
-                recordWaitTime(record);
-                Timer.Sample sample = Timer.start(meterRegistry);
-                handle(record);
-                sample.stop(handleTimer());
-
-                markProcessed(recordId);
-                done = true;
-
-                acknowledge(record);
-            } catch (Exception e) {
-                meterRegistry.counter("stream.consume.errors", "stream", streamKey).increment();
-                log.error("Failed to process {}", record.getId(), e);
-                if (acquired && !done) {
-                    clearProcessingMark(recordId);
-                }
-            }
+        if (workerCount() <= 1) {
+            records.forEach(this::processRecord);
+        } else {
+            processInParallel(records);
         }
         return records.size();
+    }
+
+    private void processInParallel(List<MapRecord<String, Object, Object>> records) {
+        Map<Object, List<MapRecord<String, Object, Object>>> groups = new LinkedHashMap<>();
+        for (MapRecord<String, Object, Object> record : records) {
+            Object key = partitionKey(record);
+            groups.computeIfAbsent(key == null ? "" : key, k -> new ArrayList<>()).add(record);
+        }
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (List<MapRecord<String, Object, Object>> group : groups.values()) {
+            futures.add(CompletableFuture.runAsync(() -> group.forEach(this::processRecord), workers()));
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    }
+
+    private synchronized ExecutorService workers() {
+        if (workers == null) {
+            workers = Executors.newFixedThreadPool(workerCount());
+        }
+        return workers;
+    }
+
+    @PreDestroy
+    public synchronized void shutdownWorkers() throws InterruptedException {
+        if (workers != null) {
+            workers.shutdown();
+            workers.awaitTermination(10, TimeUnit.SECONDS);
+        }
+    }
+
+    private void processRecord(MapRecord<String, Object, Object> record) {
+        String recordId = record.getId().getValue();
+        // 이번 호출에서 PROCESSING 선점에 성공했는지 / 처리(DONE 기록)까지 끝났는지
+        // → 실패 시 "내가 잡은 미완료 PROCESSING"만 지우기 위함 (DONE을 지우면 재시도에서 중복 처리 발생)
+        boolean acquired = false;
+        boolean done = false;
+        try {
+
+            String type = (String) record.getValue().get("type");
+            if (!eventType.equals(type)) {
+                acknowledge(record);
+                return;
+            }
+
+            String status = getStatus(recordId);
+
+            if (DONE.equals(status)) {
+                log.warn("Duplicate DONE skip recordId={}", recordId);
+                acknowledge(record);
+                return;
+            }
+
+            if (PROCESSING.equals(status)) {
+                log.warn("Still PROCESSING recordId={}", recordId);
+                return;
+            }
+
+            if (!tryStartProcess(recordId)) {
+                return;
+            }
+            acquired = true;
+
+            recordWaitTime(record);
+            Timer.Sample sample = Timer.start(meterRegistry);
+            handle(record);
+            sample.stop(handleTimer());
+
+            markProcessed(recordId);
+            done = true;
+
+            acknowledge(record);
+        } catch (Exception e) {
+            meterRegistry.counter("stream.consume.errors", "stream", streamKey).increment();
+            log.error("Failed to process {}", record.getId(), e);
+            if (acquired && !done) {
+                clearProcessingMark(recordId);
+            }
+        }
     }
 
     @Scheduled(fixedDelay = 1000)

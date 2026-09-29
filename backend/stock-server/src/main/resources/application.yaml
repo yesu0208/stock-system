@@ -47,6 +47,7 @@ redis:
     order:
       prefix: order-events
       consumer-group: stock-group
+      workers: 4
 
     cancel:
       prefix: cancel-events

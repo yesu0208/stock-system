@@ -21,6 +21,7 @@ public class RedisOrderRequestEventConsumer extends AbstractRedisStreamConsumer 
 
     private final OrderService orderService;
     private final StockServerMarketPhaseRegistry registry;
+    private final int workers;
 
     public RedisOrderRequestEventConsumer(
             RedisTemplate<String, Object> streamRedisTemplate,
@@ -28,11 +29,23 @@ public class RedisOrderRequestEventConsumer extends AbstractRedisStreamConsumer 
             StockServerMarketPhaseRegistry registry,
             @Value("${redis.streams.order.prefix}") String prefix,
             @Value("${redis.streams.order.consumer-group}") String group,
-            @Value("${server.group}") String stockGroup) {
+            @Value("${server.group}") String stockGroup,
+            @Value("${redis.streams.order.workers:1}") int workers) {
         super(streamRedisTemplate, prefix + "-" + stockGroup, group,
                 "ORDER_CREATED", "order", "order-dlq");
         this.orderService = orderService;
         this.registry = registry;
+        this.workers = workers;
+    }
+
+    @Override
+    protected Object partitionKey(MapRecord<String, Object, Object> record) {
+        return record.getValue().get("stockCode");
+    }
+
+    @Override
+    protected int workerCount() {
+        return workers;
     }
 
     @Override

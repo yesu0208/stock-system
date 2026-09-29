@@ -42,7 +42,21 @@ class RedisOrderRequestEventConsumerTest {
     @BeforeEach
     void setUp() {
         sut = new RedisOrderRequestEventConsumer(
-                streamRedisTemplate, orderService, registry, "order", "order-group", "1");
+                streamRedisTemplate, orderService, registry, "order", "order-group", "1", 4);
+    }
+
+    @DisplayName("종목 코드를 기준으로 설정한 워커 수만큼 병렬 처리한다")
+    @Test
+    void whenCreated_thenPartitionsByStockCode() {
+        Map<Object, Object> value = new HashMap<>();
+        value.put("stockCode", "005930");
+        MapRecord<String, Object, Object> record = StreamRecords.newRecord()
+                .in("order-1")
+                .withId(RecordId.of("1-0"))
+                .ofMap(value);
+
+        assertThat(sut.partitionKey(record)).isEqualTo("005930");
+        assertThat(sut.workerCount()).isEqualTo(4);
     }
 
     @DisplayName("스트림 키·그룹·이벤트 타입·키 구분자·DLQ를 주문용으로 설정한다")
