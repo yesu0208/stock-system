@@ -1,6 +1,6 @@
 # 모니터링 스택 (로컬 / 부하 테스트용)
 # 실행: docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
-# 부하 테스트: docker compose -f docker-compose.yml -f docker-compose.monitoring.yml run --rm k6 run /scripts/order-intake.js
+# 부하 테스트: docker-compose.loadtest.yml 을 함께 지정 (loadtest/k6/order-intake.js 상단 참고)
 # Prometheus: http://localhost:9090
 # Grafana   : http://localhost:3000 (admin / GRAFANA_ADMIN_PASSWORD, 기본값 admin)
 

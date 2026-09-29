@@ -3,8 +3,9 @@
 // - 본 테스트: 체결되지 않는 지정가 매수(1주, 낮은 가격)를 목표 초당 요청 수로 전송 (open model)
 // - bff 응답은 "접수" 까지만 의미함. 실제 처리 지연은 Grafana 의 Stream 대기/처리 시간으로 확인
 //
-// 실행 (저장소 루트):
-//   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml run --rm k6 run /scripts/order-intake.js
+// 실행 (저장소 루트, 부하 테스트 설정 포함):
+//   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml -f docker-compose.loadtest.yml up -d
+//   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml -f docker-compose.loadtest.yml run --rm k6 run /scripts/order-intake.js
 // 환경변수로 조절: USERS, RATES(단계별 초당 요청 수), STAGE(단계 길이), STOCK_CODES, PRICE
 
 import http from 'k6/http';

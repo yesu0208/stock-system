@@ -3,6 +3,7 @@ package arile.toy.stocksystem.bffserver.market.phase;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -26,8 +27,15 @@ public class BffServerMarketPhaseRegistry {
 
     private static final String GLOBAL_SNAPSHOT_KEY = "market:global-phase:snapshot";
 
+    // 부하 테스트 전용: true 면 장 상태와 관계없이 주문을 받는다 (운영에서는 켜지 않음, 기본 false)
+    @Value("${market-phase.force-open:false}")
+    private boolean forceOpen;
+
     @PostConstruct
     public void init() {
+        if (forceOpen) {
+            log.warn("[LOADTEST] market-phase.force-open=true: 장 상태와 관계없이 주문을 받습니다. 운영 환경이면 즉시 끄세요.");
+        }
         resync();
     }
 
@@ -57,11 +65,17 @@ public class BffServerMarketPhaseRegistry {
     }
 
     public boolean isClosed(String stockCode) {
+        if (forceOpen) {
+            return false;
+        }
         BffServerMarketPhase phase = phaseMap.get(stockCode);
         return phase == null || phase == BffServerMarketPhase.CLOSED;
     }
 
     public boolean isOrderable(String stockCode) {
+        if (forceOpen) {
+            return true;
+        }
         BffServerMarketPhase phase = phaseMap.get(stockCode);
         return phase != null && phase.isOrderable();
     }

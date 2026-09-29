@@ -1,3 +1,7 @@
+# 부하 테스트 전용: true 면 장 상태와 관계없이 주문을 받는다 (운영에서는 켜지 않음)
+market-phase:
+  force-open: ${MARKET_PHASE_FORCE_OPEN:false}
+
 account:
   initial-balance: 1000000000
 

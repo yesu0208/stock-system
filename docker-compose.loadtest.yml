@@ -1,0 +1,17 @@
+# 부하 테스트 전용 설정 (로컬). 운영 EC2 에서는 사용하지 않음
+# 실행: docker compose -f docker-compose.yml -f docker-compose.monitoring.yml -f docker-compose.loadtest.yml up -d
+# - 장 상태와 관계없이 주문을 받도록 bff, stock A/B 에 market-phase.force-open 을 켠다
+
+x-loadtest-env: &loadtest-env
+  MARKET_PHASE_FORCE_OPEN: "true"
+
+services:
+  bff-server:
+    environment:
+      <<: *loadtest-env
+  stock-server:
+    environment:
+      <<: *loadtest-env
+  stock-server-b:
+    environment:
+      <<: *loadtest-env
