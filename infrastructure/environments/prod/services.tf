@@ -8,10 +8,11 @@ locals {
 
   # 모든 서비스 공통 환경변수
   common_env = {
-    TZ                = "Asia/Seoul"
-    JAVA_TOOL_OPTIONS = "-XX:MaxRAMPercentage=75.0 -Duser.timezone=Asia/Seoul"
-    REDIS_HOST        = module.redis.primary_endpoint
-    REDIS_PORT        = tostring(module.redis.port)
+    SPRING_PROFILES_ACTIVE = "prod"
+    TZ                     = "Asia/Seoul"
+    JAVA_TOOL_OPTIONS      = "-XX:MaxRAMPercentage=75.0 -Duser.timezone=Asia/Seoul"
+    REDIS_HOST             = module.redis.primary_endpoint
+    REDIS_PORT             = tostring(module.redis.port)
   }
 
   db_url = { for s in ["bff", "stock", "account"] :
