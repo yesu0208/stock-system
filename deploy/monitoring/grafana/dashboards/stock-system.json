@@ -504,6 +504,85 @@
       ]
     },
     {
+      "type": "timeseries",
+      "title": "주문 등록 단계별 평균 처리 시간",
+      "id": 23,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (step) (rate(order_register_step_seconds_sum[1m])) / sum by (step) (rate(order_register_step_seconds_count[1m]))",
+          "legendFormat": "{{step}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "B",
+          "expr": "sum(rate(queue_position_broadcast_seconds_sum[1m])) / sum(rate(queue_position_broadcast_seconds_count[1m]))",
+          "legendFormat": "broadcast"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "C",
+          "expr": "sum(rate(http_client_requests_seconds_sum{application=\"stock-server\", uri=~\".*reserve-cash\"}[1m])) / sum(rate(http_client_requests_seconds_count{application=\"stock-server\", uri=~\".*reserve-cash\"}[1m]))",
+          "legendFormat": "reserve-cash (account HTTP)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "D",
+          "expr": "sum(rate(stream_consume_handle_seconds_sum{stream=~\"order-events-.*\"}[1m])) / sum(rate(stream_consume_handle_seconds_count{stream=~\"order-events-.*\"}[1m]))",
+          "legendFormat": "handle 전체"
+        }
+      ]
+    },
+    {
       "type": "row",
       "title": "2. 시세 → 체결 (틱 처리)",
       "id": 11,
@@ -512,7 +591,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 41
       },
       "panels": []
     },
@@ -529,7 +608,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 34
+        "y": 42
       },
       "fieldConfig": {
         "defaults": {
@@ -581,7 +660,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 34
+        "y": 42
       },
       "fieldConfig": {
         "defaults": {
@@ -642,7 +721,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 50
       },
       "fieldConfig": {
         "defaults": {
@@ -703,7 +782,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 50
       },
       "fieldConfig": {
         "defaults": {
@@ -755,7 +834,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 50
+        "y": 58
       },
       "fieldConfig": {
         "defaults": {
@@ -807,7 +886,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 50
+        "y": 58
       },
       "fieldConfig": {
         "defaults": {
@@ -855,7 +934,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 66
       },
       "panels": []
     },
@@ -872,7 +951,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 59
+        "y": 67
       },
       "fieldConfig": {
         "defaults": {
@@ -933,7 +1012,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 59
+        "y": 67
       },
       "fieldConfig": {
         "defaults": {
@@ -994,7 +1073,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 67
+        "y": 75
       },
       "fieldConfig": {
         "defaults": {
@@ -1046,7 +1125,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 67
+        "y": 75
       },
       "fieldConfig": {
         "defaults": {

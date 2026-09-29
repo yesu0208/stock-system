@@ -7,6 +7,7 @@ import arile.toy.stocksystem.stockserver.order.event.publisher.OrderResponseEven
 import arile.toy.stocksystem.stockserver.order.repository.OrderRepository;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +69,25 @@ class OrderServiceRegisterTest {
         then(stockServerOrderResponseRepository).should().save(any(StockServerOrderResponseMessage.class));
         then(orderResponseEventPublisher).should().publish(any(StockServerOrderResponseMessage.class));
         then(orderResponseEventPublisher).should(never()).publishError(any(), any());
+    }
+
+    @DisplayName("주문 등록에 성공하면 저장·대기열 등록·응답 저장·응답 발행 단계별 처리 시간을 기록한다")
+    @Test
+    void givenSpotBuy_whenRegistering_thenRecordsStepTimers() {
+        // Given
+        var registry = new SimpleMeterRegistry();
+        sut.setMeterRegistry(registry);
+        var request = request(OrderType.BUY, LeverageRatio.SPOT);
+        given(accountApiClient.reserveCash(USERNAME, 700_000L + FEE)).willReturn(true);
+        givenSaveAssignsId();
+
+        // When
+        sut.registerOrder(request, false);
+
+        // Then
+        for (String step : new String[]{"save", "enqueue", "response_save", "publish"}) {
+            assertThat(registry.get("order.register.step").tag("step", step).timer().count()).isEqualTo(1);
+        }
     }
 
     @DisplayName("레버리지 매수 주문이면 증거금+수수료만 예약하고, 증거금을 주문에 저장한다")

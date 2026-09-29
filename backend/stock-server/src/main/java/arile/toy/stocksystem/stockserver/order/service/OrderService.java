@@ -7,8 +7,12 @@ import arile.toy.stocksystem.stockserver.order.event.publisher.OrderResponseEven
 import arile.toy.stocksystem.stockserver.order.repository.OrderRepository;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.useraccount.client.AccountApiClient;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +31,13 @@ public class OrderService {
     private final AccountApiClient accountApiClient;
     private final QueuePositionBroadcastService queuePositionBroadcastService;
     private final ReserveAmountCalculator reserveAmountCalculator;
+
+    private MeterRegistry meterRegistry = Metrics.globalRegistry;
+
+    @Autowired
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
 
     public OrderEntity registerOrder(StockServerOrderRequestEvent request, boolean fromAutoOrder) {
 
@@ -86,10 +97,14 @@ public class OrderService {
                     initialReservedFee,
                     initialReservedMargin
             );
+            Timer.Sample saveSample = Timer.start(meterRegistry);
             savedOrder = orderRepository.save(orderEntity);
+            saveSample.stop(stepTimer("save"));
 
             var orderDto = OrderDto.fromEntity(savedOrder);
+            Timer.Sample enqueueSample = Timer.start(meterRegistry);
             orderQueueRegistry.orderEnqueue(orderDto);
+            enqueueSample.stop(stepTimer("enqueue"));
             queuePositionBroadcastService.broadcastFrom(orderDto.stockCode(), orderDto.orderType(), orderDto.orderId());
 
         } catch (Exception e) {
@@ -131,14 +146,26 @@ public class OrderService {
                 savedOrder.getOrigin(), savedOrder.getOriginId());
 
         // 등록은 이미 완료됨: 응답 캐시 저장 실패가 예외로 전파되면 컨슈머 재시도로 예약·주문이 중복되므로 로그만 남김
+        Timer.Sample responseSaveSample = Timer.start(meterRegistry);
         try {
             stockServerOrderResponseRepository.save(orderResponseMessage);
         } catch (Exception e) {
             log.warn("Order response save failed after registration. orderId={}", savedOrder.getOrderId(), e);
         }
+        responseSaveSample.stop(stepTimer("response_save"));
+
+        Timer.Sample publishSample = Timer.start(meterRegistry);
         orderResponseEventPublisher.publish(orderResponseMessage);
+        publishSample.stop(stepTimer("publish"));
 
         return savedOrder;
+    }
+
+    private Timer stepTimer(String step) {
+        return Timer.builder("order.register.step")
+                .tag("step", step)
+                .publishPercentileHistogram()
+                .register(meterRegistry);
     }
 
     private long resolveReserveAmount(OrderType orderType, LeverageRatio leverageRatio, long orderAmount) {
