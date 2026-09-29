@@ -5,8 +5,12 @@ import arile.toy.stocksystem.stockserver.order.dto.OrderQueueRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.order.event.QueuePositionEvent;
 import arile.toy.stocksystem.stockserver.order.event.publisher.QueuePositionEventPublisher;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,8 +32,19 @@ public class QueuePositionBroadcastService {
     private final OrderQueueRegistry orderQueueRegistry;
     private final QueuePositionEventPublisher queuePositionEventPublisher;
 
+    private MeterRegistry meterRegistry = Metrics.globalRegistry;
+
+    @Autowired
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
+
     public void broadcast(String stockCode, OrderType orderType) {
+        Timer.Sample sample = Timer.start(meterRegistry);
         List<OrderDto> ranked = orderQueueRegistry.snapshotRanked(stockCode, orderType);
+
+        meterRegistry.summary("queue.position.broadcast.size", "side", orderType.name())
+                .record(ranked.size());
 
         long quantityAhead = 0;
         for (OrderDto order : ranked) {
@@ -43,5 +58,10 @@ public class QueuePositionBroadcastService {
             }
             quantityAhead += order.remainingQuantity();
         }
+
+        sample.stop(Timer.builder("queue.position.broadcast")
+                .tag("side", orderType.name())
+                .publishPercentileHistogram()
+                .register(meterRegistry));
     }
 }
