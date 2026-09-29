@@ -15,6 +15,7 @@ import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +93,37 @@ class AbstractRedisStreamConsumerTest {
 
             then(handler).shouldHaveNoInteractions();
             then(valueOps).shouldHaveNoInteractions();
+        }
+
+        @DisplayName("배치가 꽉 차서 읽히면 쉬지 않고 바로 다음 배치를 읽는다")
+        @Test
+        void givenFullBatch_whenConsuming_thenReadsNextBatchImmediately() {
+            List<MapRecord<String, Object, Object>> full = new ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                Map<Object, Object> value = value();
+                value.put("type", "SOMETHING_ELSE");
+                full.add(record(i + "-0", value));
+            }
+            doReturn(full, List.of()).when(streamOps)
+                    .read(any(Consumer.class), any(StreamReadOptions.class), any(StreamOffset.class));
+
+            sut.consume();
+
+            then(streamOps).should(times(2))
+                    .read(any(Consumer.class), any(StreamReadOptions.class), any(StreamOffset.class));
+        }
+
+        @DisplayName("배치가 덜 차서 읽히면 다음 배치는 다음 주기에 읽는다")
+        @Test
+        void givenPartialBatch_whenConsuming_thenReadsOnce() {
+            Map<Object, Object> value = value();
+            value.put("type", "SOMETHING_ELSE");
+            givenRead(List.of(record("1-0", value)));
+
+            sut.consume();
+
+            then(streamOps).should(times(1))
+                    .read(any(Consumer.class), any(StreamReadOptions.class), any(StreamOffset.class));
         }
 
         @DisplayName("대상 이벤트 타입이 아닌 레코드는 처리 없이 ack한다")

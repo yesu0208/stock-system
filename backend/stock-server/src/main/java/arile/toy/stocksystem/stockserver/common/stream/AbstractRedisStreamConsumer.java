@@ -28,6 +28,7 @@ public abstract class AbstractRedisStreamConsumer {
 
     private static final long RETRY_IDLE_MILLIS = 10000;
     private static final int MAX_RETRY_COUNT = 3;
+    private static final int BATCH_SIZE = 10;
     private static final String PROCESSING = "PROCESSING";
     private static final String DONE = "DONE";
 
@@ -71,18 +72,23 @@ public abstract class AbstractRedisStreamConsumer {
 
     @Scheduled(fixedDelay = 100)
     public void consume() {
+        while (consumeBatch() == BATCH_SIZE) {
+        }
+    }
+
+    private int consumeBatch() {
 
         List<MapRecord<String, Object, Object>> records =
                 streamRedisTemplate.opsForStream().read(
                         Consumer.from(group, consumerName),
                         StreamReadOptions.empty()
-                                .count(10)
+                                .count(BATCH_SIZE)
                                 .block(Duration.ofMillis(100)),
                         StreamOffset.create(streamKey, ReadOffset.lastConsumed())
                 );
 
         if (records == null || records.isEmpty()) {
-            return;
+            return 0;
         }
 
         meterRegistry.summary("stream.consume.batch.size", "stream", streamKey)
@@ -137,6 +143,7 @@ public abstract class AbstractRedisStreamConsumer {
                 }
             }
         }
+        return records.size();
     }
 
     @Scheduled(fixedDelay = 1000)
