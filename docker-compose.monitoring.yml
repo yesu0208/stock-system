@@ -1,5 +1,6 @@
 # 모니터링 스택 (로컬 / 부하 테스트용)
 # 실행: docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+# 부하 테스트: docker-compose.loadtest.yml 을 함께 지정 (loadtest/k6/order-intake.js 상단 참고)
 # Prometheus: http://localhost:9090
 # Grafana   : http://localhost:3000 (admin / GRAFANA_ADMIN_PASSWORD, 기본값 admin)
 
@@ -9,6 +10,7 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=7d
+      - --web.enable-remote-write-receiver   # k6 결과를 Prometheus 로 받기 위함
     volumes:
       - ./deploy/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
@@ -29,6 +31,22 @@ services:
       - grafana-data:/var/lib/grafana
     ports:
       - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - internal
+
+  # 부하 생성기 (평소에는 뜨지 않음. run 으로 실행할 때만 사용)
+  k6:
+    image: grafana/k6:1.0.0
+    profiles: ["loadtest"]
+    command: ["version"]
+    environment:
+      K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
+      K6_PROMETHEUS_RW_TREND_STATS: "p(95),p(99),avg,max"
+      K6_OUT: experimental-prometheus-rw
+    volumes:
+      - ./loadtest/k6:/scripts:ro
     depends_on:
       - prometheus
     networks:
