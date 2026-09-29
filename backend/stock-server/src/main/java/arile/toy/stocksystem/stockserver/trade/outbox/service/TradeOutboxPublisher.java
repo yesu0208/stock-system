@@ -3,8 +3,12 @@ package arile.toy.stocksystem.stockserver.trade.outbox.service;
 import arile.toy.stocksystem.stockserver.trade.outbox.entity.OutboxStatus;
 import arile.toy.stocksystem.stockserver.trade.outbox.entity.TradeOutboxEntity;
 import arile.toy.stocksystem.stockserver.trade.outbox.repository.TradeOutboxRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -26,6 +30,13 @@ public class TradeOutboxPublisher {
     @Value("${redis.streams.trade-executed.key}")
     private String streamKey;
 
+    private MeterRegistry meterRegistry = Metrics.globalRegistry;
+
+    @Autowired
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
+
     @Scheduled(fixedDelay = 200)
     @Transactional
     public void publishPending() {
@@ -36,6 +47,9 @@ public class TradeOutboxPublisher {
         if (pendingEvents.isEmpty()) {
             return;
         }
+
+        meterRegistry.summary("outbox.publish.batch.size").record(pendingEvents.size());
+        Timer.Sample sample = Timer.start(meterRegistry);
 
         for (TradeOutboxEntity outbox : pendingEvents) {
             try {
@@ -63,5 +77,9 @@ public class TradeOutboxPublisher {
         }
 
         tradeOutboxRepository.saveAll(pendingEvents);
+
+        sample.stop(Timer.builder("outbox.publish")
+                .publishPercentileHistogram()
+                .register(meterRegistry));
     }
 }
