@@ -14,10 +14,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health, prometheus
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
 
 redis:
   host: ${REDIS_HOST}

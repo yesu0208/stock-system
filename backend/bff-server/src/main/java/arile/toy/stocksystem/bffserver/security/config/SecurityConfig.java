@@ -61,7 +61,7 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/index.html", "/ws-stock/**", "/ws-order/**")
                                 .permitAll()
-                                .requestMatchers("/actuator/health")
+                                .requestMatchers("/actuator/health", "/actuator/prometheus")
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/*/users/all")
                                 .hasRole("ADMIN")
