@@ -47,6 +47,18 @@ export const options = {
 export function setup() {
   const tokens = [];
 
+  // 서버 기동 대기: bff 헬스 체크가 200 이 될 때까지 최대 3분
+  for (let i = 0; ; i++) {
+    const health = http.get(`${BASE_URL}/actuator/health`, { tags: { name: 'health' } });
+    if (health.status === 200) {
+      break;
+    }
+    if (i >= 90) {
+      fail('bff-server 가 3분 안에 기동되지 않았습니다');
+    }
+    sleep(2);
+  }
+
   for (let i = 0; i < USERS; i++) {
     const username = `lt${RUN_ID}${i}`;
     const res = http.post(`${API}/users`, JSON.stringify({
@@ -55,7 +67,8 @@ export function setup() {
       password: PASSWORD,
     }), { headers: JSON_HEADERS, tags: { name: 'signup' } });
 
-    if (res.status >= 300) {
+    // 연결 실패(status 0)도 실패로 처리
+    if (res.status < 200 || res.status >= 300) {
       fail(`회원가입 실패 username=${username} status=${res.status} body=${res.body}`);
     }
   }
