@@ -14,8 +14,12 @@ import arile.toy.stocksystem.stockserver.otoco.service.OtocoEntryTriggerService;
 import arile.toy.stocksystem.stockserver.otoco.service.OtocoExitTriggerService;
 import arile.toy.stocksystem.stockserver.trade.service.TradeMatchingService;
 import arile.toy.stocksystem.stockserver.trailingstop.service.TrailingStopTriggerService;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,6 +38,13 @@ public class TradePriceTickMessageHandler {
     private final MarketPhaseService marketPhaseService;
     private final LiveDailyCandleService liveDailyCandleService;
     private final LiveMinuteCandleService liveMinuteCandleService;
+
+    private MeterRegistry meterRegistry = Metrics.globalRegistry;
+
+    @Autowired
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
 
     public void handle(String message) {
 
@@ -88,6 +99,8 @@ public class TradePriceTickMessageHandler {
 
                 // 단계별로 격리: 앞 단계(예: Redis 저장, 자동주문 발동)가 실패해도
                 // 같은 틱의 체결 매칭·장 마감 전환 등 나머지 단계는 반드시 수행되어야 함
+                // 틱 1건의 전체 처리 시간 (11단계 합계)
+                Timer.Sample tickSample = Timer.start(meterRegistry);
                 runStep(stockCode, "saveTradePrice", () -> stockServerTradePriceRepository.save(tradePriceTickMessage));
                 runStep(stockCode, "publishTradePrice", () -> redisTradePriceEventPublisher.publish(
                         TradePriceTickEvent.fromMessage(tradePriceTickMessage)));
@@ -101,6 +114,7 @@ public class TradePriceTickMessageHandler {
                         tradePriceTickMessage.stockCode(), tradePriceTickMessage.tradeTime()));
                 runStep(stockCode, "dailyCandle", () -> liveDailyCandleService.buildAndPublish(stockCode, tradePriceTickMessage));
                 runStep(stockCode, "minuteCandle", () -> liveMinuteCandleService.updateAndPublish(stockCode, tradePriceTickMessage));
+                tickSample.stop(timer("tick.process", null));
             } catch (NumberFormatException e) {
                 log.warn("[TICK 파싱 실패] 소수점 등 처리 불가 가격 데이터 무시. stockCode={}, message={}",
                         stockCode, e.getMessage());
@@ -109,10 +123,23 @@ public class TradePriceTickMessageHandler {
     }
 
     private void runStep(String stockCode, String step, Runnable action) {
+        // 단계별 처리 시간 (실패해도 걸린 시간은 기록)
+        Timer.Sample sample = Timer.start(meterRegistry);
         try {
             action.run();
         } catch (Exception e) {
             log.error("Trade price tick step failed. stockCode={}, step={}", stockCode, step, e);
+        } finally {
+            sample.stop(timer("tick.step", step));
         }
+    }
+
+    // 종목 코드는 태그로 쓰지 않음 (종목 수만큼 시계열이 늘어나므로 단계 이름만 구분)
+    private Timer timer(String name, String step) {
+        Timer.Builder builder = Timer.builder(name).publishPercentileHistogram();
+        if (step != null) {
+            builder.tag("step", step);
+        }
+        return builder.register(meterRegistry);
     }
 }
