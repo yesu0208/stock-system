@@ -1,0 +1,266 @@
+name: Deploy
+
+# main 머지 시 변경된 서비스만 EC2 에 배포
+# - bff-server, account-server: GHCR 이미지 pull 후 재시작
+# - frontend: EC2 에서 빌드 후 nginx 정적 파일 교체
+# - stock-server(A/B): 이미지만 빌드해 두고, 배포는 deploy-stock.yaml (평일 20:30 KST)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docker-compose.yml'
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: '배포 대상 (bff-server, account-server, frontend 를 쉼표로 구분, 또는 all)'
+        required: true
+        default: 'all'
+
+# 배포 워크플로끼리 동시에 실행되지 않도록 (deploy-stock.yaml 과 같은 그룹)
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
+jobs:
+  plan:
+    name: 배포 대상 결정
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.plan.outputs.build }}
+      servers: ${{ steps.plan.outputs.servers }}
+      frontend: ${{ steps.plan.outputs.frontend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 변경 파일 확인
+        id: filter
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            common:
+              - 'backend/common/**'
+              - 'backend/build.gradle'
+              - 'backend/settings.gradle'
+              - 'backend/gradle/**'
+              - 'backend/lombok.config'
+              - 'backend/Dockerfile.module'
+            bff:
+              - 'backend/bff-server/**'
+            account:
+              - 'backend/account-server/**'
+            stock:
+              - 'backend/stock-server/**'
+            frontend:
+              - 'frontend/**'
+            compose:
+              - 'docker-compose.yml'
+
+      - name: 대상 계산
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGETS: ${{ inputs.targets }}
+          COMMON: ${{ steps.filter.outputs.common }}
+          BFF: ${{ steps.filter.outputs.bff }}
+          ACCOUNT: ${{ steps.filter.outputs.account }}
+          STOCK: ${{ steps.filter.outputs.stock }}
+          FRONTEND: ${{ steps.filter.outputs.frontend }}
+          COMPOSE: ${{ steps.filter.outputs.compose }}
+        run: |
+          build=()
+          servers=()
+          frontend=false
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            t=",${TARGETS// /},"
+            [[ "$t" == *",all,"* ]] && t=",bff-server,account-server,frontend,"
+            [[ "$t" == *",bff-server,"* ]]     && { build+=(bff-server); servers+=(bff-server); }
+            [[ "$t" == *",account-server,"* ]] && { build+=(account-server); servers+=(account-server); }
+            [[ "$t" == *",frontend,"* ]]       && frontend=true
+          else
+            # common 모듈, 빌드 설정이 바뀌면 모든 서버 이미지를 다시 빌드
+            [[ "$BFF" == "true" || "$COMMON" == "true" ]]     && { build+=(bff-server); servers+=(bff-server); }
+            [[ "$ACCOUNT" == "true" || "$COMMON" == "true" ]] && { build+=(account-server); servers+=(account-server); }
+            [[ "$STOCK" == "true" || "$COMMON" == "true" ]]   && build+=(stock-server)
+            [[ "$COMPOSE" == "true" ]]                         && servers+=(bff-server account-server)
+            [[ "$FRONTEND" == "true" ]]                        && frontend=true
+          fi
+
+          build_json=$(printf '%s\n' "${build[@]}" | sed '/^$/d' | sort -u | jq -R . | jq -sc .)
+          servers_str=$(printf '%s\n' "${servers[@]}" | sed '/^$/d' | sort -u | paste -sd' ' -)
+
+          echo "build=$build_json" >> "$GITHUB_OUTPUT"
+          echo "servers=$servers_str" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### 배포 계획"
+            echo "- 이미지 빌드: \`$build_json\`"
+            echo "- 서버 배포: \`${servers_str:-없음}\`"
+            echo "- 프론트 배포: \`$frontend\`"
+            echo "- stock-server 는 평일 20:30 KST 에 deploy-stock.yaml 로 배포"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: 이미지 빌드 (${{ matrix.module }})
+    needs: plan
+    if: needs.plan.outputs.build != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        module: ${{ fromJSON(needs.plan.outputs.build) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: GHCR 로그인
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 빌드 및 push
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile.module
+          build-args: MODULE=${{ matrix.module }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.module }}:latest
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.module }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.module }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.module }}
+
+  deploy:
+    name: EC2 배포
+    needs: [plan, build]
+    if: >-
+      always() &&
+      (needs.build.result == 'success' || needs.build.result == 'skipped') &&
+      (needs.plan.outputs.servers != '' || needs.plan.outputs.frontend == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: AWS 인증 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: SSM 으로 배포 실행
+        env:
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          APP_DIR: ${{ vars.EC2_APP_DIR }}
+          APP_USER: ${{ vars.EC2_USER }}
+          SERVERS: ${{ needs.plan.outputs.servers }}
+          FRONTEND: ${{ needs.plan.outputs.frontend }}
+        run: |
+          # EC2 에서 실행할 스크립트 (SSM 은 root 로 실행하므로 git, docker 는 앱 사용자로 전환)
+          script=$(cat <<EOF
+          set -euo pipefail
+          run() { sudo -u ${APP_USER} -H bash -lc "cd ${APP_DIR} && \$1"; }
+
+          echo "== git pull"
+          run "git pull --ff-only"
+          EOF
+          )
+
+          if [ -n "$SERVERS" ]; then
+            script+=$(cat <<EOF
+
+          echo "== 서버 배포: ${SERVERS}"
+          run "docker compose pull ${SERVERS}"
+          run "docker compose up -d --no-build ${SERVERS}"
+          EOF
+          )
+          fi
+
+          if [[ " $SERVERS " == *" bff-server "* ]]; then
+            script+=$(cat <<'EOF'
+
+          echo "== bff 헬스 체크"
+          for i in $(seq 1 36); do
+            if curl -fs http://127.0.0.1:8080/actuator/health > /dev/null; then echo "bff UP"; break; fi
+            sleep 5
+          done
+          curl -fs http://127.0.0.1:8080/actuator/health
+          EOF
+          )
+          fi
+
+          if [ "$FRONTEND" = "true" ]; then
+            script+=$(cat <<EOF
+
+          echo "== 프론트 빌드 및 교체"
+          run "cd frontend && npm ci && npm run build"
+          rm -rf /var/www/stock-system/*
+          cp -r ${APP_DIR}/frontend/dist/* /var/www/stock-system/
+          EOF
+          )
+          fi
+
+          script+=$(cat <<EOF
+
+          echo "== 사용하지 않는 이미지 정리"
+          run "docker image prune -f"
+          echo "== 배포 완료"
+          EOF
+          )
+
+          # 따옴표 문제를 피하기 위해 base64 로 전달해 bash 로 실행
+          encoded=$(printf '%s\n' "$script" | base64 -w0)
+          params=$(jq -nc --arg c "echo $encoded | base64 -d | bash" \
+            '{commands: [$c], executionTimeout: ["1800"]}')
+
+          command_id=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy ${GITHUB_SHA::7}" \
+            --parameters "$params" \
+            --query Command.CommandId --output text)
+          echo "SSM command: $command_id"
+
+          # 최대 25분 대기
+          status=Pending
+          for i in $(seq 1 150); do
+            sleep 10
+            status=$(aws ssm get-command-invocation \
+              --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case "$status" in
+              Pending|InProgress|Delayed) continue ;;
+              *) break ;;
+            esac
+          done
+
+          echo "::group::EC2 출력"
+          aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+            --query StandardOutputContent --output text
+          echo "::endgroup::"
+          echo "::group::EC2 에러 출력"
+          aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+            --query StandardErrorContent --output text
+          echo "::endgroup::"
+
+          echo "최종 상태: $status"
+          [ "$status" = "Success" ]

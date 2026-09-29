@@ -1,0 +1,151 @@
+name: Deploy Stock
+
+# stock-server(A/B) 배포: 장 마감 후에만 실행
+# - 자동: 평일 20:30 KST (AfterMarketCloseJob 20:05 이후)
+# - 수동: Actions 탭에서 실행 (평일 08:40~20:15 KST 는 force 없이 차단)
+# 이미지 빌드는 deploy.yaml 이 담당하고, 여기서는 GHCR 의 latest 를 받아 재시작만 함
+on:
+  schedule:
+    - cron: '30 11 * * 1-5'   # UTC 11:30 = KST 20:30 (월~금)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '장 운영 시간에도 강제 배포 (주의: 체결, 시세 중단)'
+        type: boolean
+        default: false
+
+# deploy.yaml 과 같은 그룹 → 두 배포가 동시에 실행되지 않음
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: 배포 시간 확인
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.check.outputs.ok }}
+    steps:
+      - name: KST 시간 확인
+        id: check
+        env:
+          FORCE: ${{ inputs.force }}
+        run: |
+          dow=$(TZ=Asia/Seoul date +%u)          # 1=월 ... 7=일
+          hm=$(TZ=Asia/Seoul date +%H%M)         # 예: 2030
+          now=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M (%a)')
+          echo "현재 KST: $now"
+
+          # 평일 08:40 ~ 20:15 는 장 준비, 정규장, 시간외 거래 시간
+          if [ "$dow" -le 5 ] && [ "$((10#$hm))" -ge 840 ] && [ "$((10#$hm))" -le 2015 ]; then
+            if [ "$FORCE" = "true" ]; then
+              echo "::warning::장 운영 시간이지만 force 로 강제 배포합니다 ($now)"
+              echo "ok=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::장 운영 시간(평일 08:40~20:15 KST)에는 배포할 수 없습니다 ($now). 필요하면 force 를 선택하세요."
+              echo "ok=false" >> "$GITHUB_OUTPUT"
+              exit 1
+            fi
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    name: stock-server 배포
+    needs: guard
+    if: needs.guard.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: AWS 인증 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: SSM 으로 배포 실행
+        env:
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          APP_DIR: ${{ vars.EC2_APP_DIR }}
+          APP_USER: ${{ vars.EC2_USER }}
+        run: |
+          script=$(cat <<EOF
+          set -euo pipefail
+          run() { sudo -u ${APP_USER} -H bash -lc "cd ${APP_DIR} && \$1"; }
+
+          # 컨테이너가 running 상태로 유지되는지 확인 (60초 대기 후 재확인)
+          check() {
+            sleep 60
+            state=\$(run "docker compose ps --format '{{.State}}' \$1")
+            echo "\$1: \$state"
+            [ "\$state" = "running" ]
+          }
+
+          echo "== git pull"
+          run "git pull --ff-only"
+
+          echo "== 현재 이미지"
+          run "docker compose images stock-server stock-server-b"
+
+          echo "== stock 이미지 pull"
+          run "docker compose pull stock-server stock-server-b"
+
+          # 이미지가 바뀌지 않았으면 compose 가 재시작하지 않음 (변경 없으면 그대로 유지)
+          echo "== stock-server (A) 배포"
+          run "docker compose up -d --no-build stock-server"
+          check stock-server
+
+          echo "== stock-server-b (B) 배포"
+          run "docker compose up -d --no-build stock-server-b"
+          check stock-server-b
+
+          echo "== 최근 로그 (A)"
+          run "docker compose logs --tail 30 stock-server"
+          echo "== 최근 로그 (B)"
+          run "docker compose logs --tail 30 stock-server-b"
+
+          run "docker image prune -f"
+          echo "== 배포 완료"
+          EOF
+          )
+
+          encoded=$(printf '%s\n' "$script" | base64 -w0)
+          params=$(jq -nc --arg c "echo $encoded | base64 -d | bash" \
+            '{commands: [$c], executionTimeout: ["1800"]}')
+
+          command_id=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy-stock ${GITHUB_SHA::7}" \
+            --parameters "$params" \
+            --query Command.CommandId --output text)
+          echo "SSM command: $command_id"
+
+          status=Pending
+          for i in $(seq 1 150); do
+            sleep 10
+            status=$(aws ssm get-command-invocation \
+              --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case "$status" in
+              Pending|InProgress|Delayed) continue ;;
+              *) break ;;
+            esac
+          done
+
+          echo "::group::EC2 출력"
+          aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+            --query StandardOutputContent --output text
+          echo "::endgroup::"
+          echo "::group::EC2 에러 출력"
+          aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+            --query StandardErrorContent --output text
+          echo "::endgroup::"
+
+          echo "최종 상태: $status"
+          [ "$status" = "Success" ]
