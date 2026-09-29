@@ -1,5 +1,6 @@
-# EC2 단일 서버 배포 (MySQL, Redis, 서버 4개)
-# 사용: .env 준비 후 docker compose up -d --build  (자세한 절차는 deploy/README.md)
+ # EC2 단일 서버 배포 (MySQL, Redis, 서버 4개)
+# 배포: GitHub Actions 가 GHCR 이미지를 빌드하고, EC2 에서 docker compose pull && up -d (deploy/README.md)
+# 비상 시: docker compose up -d --build 로 EC2 에서 직접 빌드 가능
 services:
   mysql:
     image: mysql:8.0
@@ -27,6 +28,7 @@ services:
       - internal
 
   account-server:
+    image: ghcr.io/yesu0208/stock-system/account-server:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile.module
@@ -49,6 +51,7 @@ services:
       - internal
 
   stock-server:
+    image: ghcr.io/yesu0208/stock-system/stock-server:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile.module
@@ -81,6 +84,7 @@ services:
       - internal
 
   stock-server-b:
+    image: ghcr.io/yesu0208/stock-system/stock-server:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile.module
@@ -113,6 +117,7 @@ services:
       - internal
 
   bff-server:
+    image: ghcr.io/yesu0208/stock-system/bff-server:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile.module
