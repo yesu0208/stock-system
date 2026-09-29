@@ -8,10 +8,11 @@ locals {
 
   # 모든 서비스 공통 환경변수
   common_env = {
-    TZ                = "Asia/Seoul"
-    JAVA_TOOL_OPTIONS = "-XX:MaxRAMPercentage=75.0 -Duser.timezone=Asia/Seoul"
-    REDIS_HOST        = module.redis.primary_endpoint
-    REDIS_PORT        = tostring(module.redis.port)
+    SPRING_PROFILES_ACTIVE = "prod"
+    TZ                     = "Asia/Seoul"
+    JAVA_TOOL_OPTIONS      = "-XX:MaxRAMPercentage=75.0 -Duser.timezone=Asia/Seoul"
+    REDIS_HOST             = module.redis.primary_endpoint
+    REDIS_PORT             = tostring(module.redis.port)
   }
 
   db_url = { for s in ["bff", "stock", "account"] :
@@ -34,9 +35,11 @@ locals {
 # bff-server
 data "aws_iam_policy_document" "bff_task" {
   # 프로필 이미지 저장 (S3 저장소 구현체 적용 후 사용)
+  # 버킷 ARN 을 이름으로 구성: 리소스 ARN 을 쓰면 최초 plan 에서 값이 확정되지 않아
+  # ecs-service 모듈의 count 를 계산할 수 없음 (frontend 모듈의 "${name}-uploads" 와 일치해야 함)
   statement {
     actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
-    resources = ["${module.frontend.uploads_bucket_arn}/profile/*"]
+    resources = ["arn:aws:s3:::${local.name}-uploads/profile/*"]
   }
 }
 
