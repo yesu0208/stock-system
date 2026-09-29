@@ -92,4 +92,48 @@ class QueuePositionBroadcastServiceTest {
 
         verifyNoInteractions(queuePositionEventPublisher);
     }
+
+    @Test
+    @DisplayName("새 주문부터 발행하면, 새 주문과 그 뒤 주문들에게만 보내고 앞선 수량은 맨 앞부터 누적한다")
+    void broadcastFrom_publishesFromNewOrderOnly() {
+        given(orderQueueRegistry.snapshotRanked("005930", OrderType.BUY)).willReturn(List.of(
+                order(1, "userA", 100),
+                order(2, "userB", 50),
+                order(3, "userC", 30)));
+
+        service.broadcastFrom("005930", OrderType.BUY, 2L);
+
+        ArgumentCaptor<QueuePositionEvent> events = ArgumentCaptor.forClass(QueuePositionEvent.class);
+        verify(queuePositionEventPublisher, times(2)).publish(events.capture());
+        assertThat(events.getAllValues())
+                .extracting(QueuePositionEvent::orderId, QueuePositionEvent::quantityAhead)
+                .containsExactly(
+                        tuple(2L, 100L),
+                        tuple(3L, 150L));
+    }
+
+    @Test
+    @DisplayName("새 주문이 맨 뒤면 자기 자신에게만 보낸다")
+    void broadcastFrom_lastOrder_publishesOnlyItself() {
+        given(orderQueueRegistry.snapshotRanked("005930", OrderType.BUY)).willReturn(List.of(
+                order(1, "userA", 100),
+                order(2, "userB", 50),
+                order(3, "userC", 30)));
+
+        service.broadcastFrom("005930", OrderType.BUY, 3L);
+
+        verify(queuePositionEventPublisher).publish(argThat(e -> e.orderId().equals(3L) && e.quantityAhead() == 150L));
+        verify(queuePositionEventPublisher, times(1)).publish(any());
+    }
+
+    @Test
+    @DisplayName("새 주문이 대기열에 없으면(즉시 체결 등) 아무것도 보내지 않는다")
+    void broadcastFrom_orderNotInQueue() {
+        given(orderQueueRegistry.snapshotRanked("005930", OrderType.BUY)).willReturn(List.of(
+                order(1, "userA", 100)));
+
+        service.broadcastFrom("005930", OrderType.BUY, 99L);
+
+        verifyNoInteractions(queuePositionEventPublisher);
+    }
 }

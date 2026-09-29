@@ -64,7 +64,7 @@ class OrderServiceRegisterTest {
         then(orderQueueRegistry).should().orderEnqueue(dtoCaptor.capture());
         assertThat(dtoCaptor.getValue().orderId()).isEqualTo(1L);
 
-        then(queuePositionBroadcastService).should().broadcast(STOCK_CODE, OrderType.BUY);
+        then(queuePositionBroadcastService).should().broadcastFrom(STOCK_CODE, OrderType.BUY, 1L);
         then(stockServerOrderResponseRepository).should().save(any(StockServerOrderResponseMessage.class));
         then(orderResponseEventPublisher).should().publish(any(StockServerOrderResponseMessage.class));
         then(orderResponseEventPublisher).should(never()).publishError(any(), any());
@@ -134,7 +134,7 @@ class OrderServiceRegisterTest {
         assertThat(result.getRemainingReservedFee()).isNull();
         assertThat(result.getRemainingReservedMargin()).isNull();
         then(accountApiClient).should(never()).reserveCash(any(), anyLong());
-        then(queuePositionBroadcastService).should().broadcast(STOCK_CODE, OrderType.SELL);
+        then(queuePositionBroadcastService).should().broadcastFrom(STOCK_CODE, OrderType.SELL, 1L);
     }
 
     @DisplayName("레버리지 매도 주문이면 레버리지 포지션 수량을 예약한다")
@@ -217,7 +217,7 @@ class OrderServiceRegisterTest {
         given(accountApiClient.reserveCash(USERNAME, 700_000L + FEE)).willReturn(true);
         givenSaveAssignsId();
         willThrow(new IllegalStateException("broadcast error"))
-                .given(queuePositionBroadcastService).broadcast(STOCK_CODE, OrderType.BUY);
+                .given(queuePositionBroadcastService).broadcastFrom(STOCK_CODE, OrderType.BUY, 1L);
 
         // When & Then
         assertThatThrownBy(() -> sut.registerOrder(request, false))

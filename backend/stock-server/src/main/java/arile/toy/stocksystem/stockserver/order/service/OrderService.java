@@ -90,7 +90,7 @@ public class OrderService {
 
             var orderDto = OrderDto.fromEntity(savedOrder);
             orderQueueRegistry.orderEnqueue(orderDto);
-            queuePositionBroadcastService.broadcast(orderDto.stockCode(), orderDto.orderType());
+            queuePositionBroadcastService.broadcastFrom(orderDto.stockCode(), orderDto.orderType(), orderDto.orderId());
 
         } catch (Exception e) {
             // 저장 이후 단계(대기열 등록·브로드캐스트)에서 실패한 경우,

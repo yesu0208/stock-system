@@ -40,24 +40,40 @@ public class QueuePositionBroadcastService {
     }
 
     public void broadcast(String stockCode, OrderType orderType) {
+        publishFrom(stockCode, orderType, null);
+    }
+
+    public void broadcastFrom(String stockCode, OrderType orderType, Long orderId) {
+        publishFrom(stockCode, orderType, orderId);
+    }
+
+    private void publishFrom(String stockCode, OrderType orderType, Long fromOrderId) {
         Timer.Sample sample = Timer.start(meterRegistry);
         List<OrderDto> ranked = orderQueueRegistry.snapshotRanked(stockCode, orderType);
 
-        meterRegistry.summary("queue.position.broadcast.size", "side", orderType.name())
-                .record(ranked.size());
-
+        boolean publishing = fromOrderId == null;
+        int published = 0;
         long quantityAhead = 0;
         for (OrderDto order : ranked) {
-            try {
-                queuePositionEventPublisher.publish(
-                        QueuePositionEvent.of(order.orderId(), order.username(), stockCode, quantityAhead)
-                );
-            } catch (Exception e) {
-                log.warn("QueuePositionEvent 발행 실패. orderId={}, username={}",
-                        order.orderId(), order.username(), e);
+            if (!publishing && order.orderId().equals(fromOrderId)) {
+                publishing = true;
+            }
+            if (publishing) {
+                published++;
+                try {
+                    queuePositionEventPublisher.publish(
+                            QueuePositionEvent.of(order.orderId(), order.username(), stockCode, quantityAhead)
+                    );
+                } catch (Exception e) {
+                    log.warn("QueuePositionEvent 발행 실패. orderId={}, username={}",
+                            order.orderId(), order.username(), e);
+                }
             }
             quantityAhead += order.remainingQuantity();
         }
+
+        meterRegistry.summary("queue.position.broadcast.size", "side", orderType.name())
+                .record(published);
 
         sample.stop(Timer.builder("queue.position.broadcast")
                 .tag("side", orderType.name())
