@@ -11,5 +11,6 @@ public enum OtocoResultCode {
     ENTRY_FAILED,
     ENTRY_CANCELED,
     TP_TRIGGERED,
-    SL_TRIGGERED
+    SL_TRIGGERED,
+    MARKET_CLOSED
 }

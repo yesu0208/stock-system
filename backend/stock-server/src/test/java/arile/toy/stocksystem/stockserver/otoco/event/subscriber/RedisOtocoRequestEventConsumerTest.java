@@ -4,7 +4,9 @@ import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegi
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoEntryDirection;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoExitMode;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoResultCode;
 import arile.toy.stocksystem.stockserver.otoco.event.StockServerOtocoRequestEvent;
+import arile.toy.stocksystem.stockserver.otoco.event.publisher.OtocoResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.otoco.service.OtocoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +25,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
 @DisplayName("[Consumer] OTOCO 등록 요청 처리(handle) 테스트")
@@ -32,12 +36,13 @@ class RedisOtocoRequestEventConsumerTest {
     @Mock private RedisTemplate<String, Object> streamRedisTemplate;
     @Mock private OtocoService otocoService;
     @Mock private StockServerMarketPhaseRegistry registry;
+    @Mock private OtocoResponseEventPublisher responseEventPublisher;
 
     private RedisOtocoRequestEventConsumer sut;
 
     @BeforeEach
     void setUp() {
-        sut = new RedisOtocoRequestEventConsumer(streamRedisTemplate, otocoService, registry, "otoco", "otoco-group", "A");
+        sut = new RedisOtocoRequestEventConsumer(streamRedisTemplate, otocoService, registry, responseEventPublisher, "otoco", "otoco-group", "A");
     }
 
     @DisplayName("PRICE 모드 값을 파싱해 등록을 요청한다 (\"null\" 문자열은 null, 대소문자 무시)")
@@ -111,14 +116,16 @@ class RedisOtocoRequestEventConsumerTest {
         then(registry).shouldHaveNoInteractions();
     }
 
-    @DisplayName("장이 닫혀 있으면 등록하지 않는다")
+    @DisplayName("장이 닫혀 있으면 등록하지 않고 장 마감 결과를 발행한다")
     @Test
-    void givenClosed_whenHandling_thenSkips() {
+    void givenClosed_whenHandling_thenSkipsAndPublishesMarketClosed() {
         given(registry.isClosed("005930")).willReturn(true);
 
         sut.handle(record(Map.of()));
 
         then(otocoService).should(never()).registerOtoco(any());
+        then(responseEventPublisher).should().publishError(
+                argThat(request -> "005930".equals(request.stockCode())), eq(OtocoResultCode.MARKET_CLOSED));
     }
 
     @DisplayName("PRICE 모드인데 익절가가 \"null\" 문자열이면 예외 없이 건너뛴다")

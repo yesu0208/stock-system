@@ -6,6 +6,8 @@ import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoEntryDirection;
 import arile.toy.stocksystem.stockserver.otoco.dto.OtocoExitMode;
 import arile.toy.stocksystem.stockserver.otoco.event.StockServerOtocoRequestEvent;
+import arile.toy.stocksystem.stockserver.otoco.event.publisher.OtocoResponseEventPublisher;
+import arile.toy.stocksystem.stockserver.otoco.dto.OtocoResultCode;
 import arile.toy.stocksystem.stockserver.otoco.service.OtocoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,11 +23,13 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
 
     private final OtocoService otocoService;
     private final StockServerMarketPhaseRegistry registry;
+    private final OtocoResponseEventPublisher responseEventPublisher;
 
     public RedisOtocoRequestEventConsumer(
             RedisTemplate<String, Object> streamRedisTemplate,
             OtocoService otocoService,
             StockServerMarketPhaseRegistry registry,
+            OtocoResponseEventPublisher responseEventPublisher,
             @Value("${redis.streams.otoco.prefix}") String prefix,
             @Value("${redis.streams.otoco.consumer-group}") String group,
             @Value("${server.group}") String stockGroup) {
@@ -33,6 +37,7 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
                 "OTOCO_CREATED", "otoco", "otoco-dlq");
         this.otocoService = otocoService;
         this.registry = registry;
+        this.responseEventPublisher = responseEventPublisher;
     }
 
     @Override
@@ -91,16 +96,19 @@ public class RedisOtocoRequestEventConsumer extends AbstractRedisStreamConsumer 
             return;
         }
 
+        StockServerOtocoRequestEvent request = new StockServerOtocoRequestEvent(
+                username, stockCode, entryDirection, orderQuantity, entryTriggerPrice,
+                tpMode, tpPrice, tpPct, slMode, slPrice, slPct, leverageRatio);
+
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip otoco for stockCode {}", stockCode);
+            responseEventPublisher.publishError(request, OtocoResultCode.MARKET_CLOSED);
             return;
         }
 
         log.info("Processing otoco username: {} for stock {}", username, stockCode);
 
-        otocoService.registerOtoco(new StockServerOtocoRequestEvent(
-                username, stockCode, entryDirection, orderQuantity, entryTriggerPrice,
-                tpMode, tpPrice, tpPct, slMode, slPrice, slPct, leverageRatio));
+        otocoService.registerOtoco(request);
     }
 
     private OtocoExitMode parseExitMode(Object raw) {
