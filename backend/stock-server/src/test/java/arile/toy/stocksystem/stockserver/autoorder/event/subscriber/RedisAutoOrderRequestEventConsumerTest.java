@@ -1,6 +1,8 @@
 package arile.toy.stocksystem.stockserver.autoorder.event.subscriber;
 
+import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderResultCode;
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderType;
+import arile.toy.stocksystem.stockserver.autoorder.event.publisher.AutoOrderResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.autoorder.event.StockServerAutoOrderRequestEvent;
 import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderService;
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
@@ -24,6 +26,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
 @DisplayName("[Consumer] 자동주문 요청 컨슈머 설정·파싱 테스트")
@@ -33,13 +37,14 @@ class RedisAutoOrderRequestEventConsumerTest {
     @Mock private RedisTemplate<String, Object> streamRedisTemplate;
     @Mock private AutoOrderService autoOrderService;
     @Mock private StockServerMarketPhaseRegistry registry;
+    @Mock private AutoOrderResponseEventPublisher responseEventPublisher;
 
     private RedisAutoOrderRequestEventConsumer sut;
 
     @BeforeEach
     void setUp() {
         sut = new RedisAutoOrderRequestEventConsumer(
-                streamRedisTemplate, autoOrderService, registry, "auto-order", "auto-order-group", "1");
+                streamRedisTemplate, autoOrderService, registry, responseEventPublisher, "auto-order", "auto-order-group", "1");
     }
 
     @DisplayName("스트림 키·그룹·이벤트 타입·키 구분자·DLQ를 자동주문용으로 설정한다")
@@ -90,14 +95,16 @@ class RedisAutoOrderRequestEventConsumerTest {
         then(autoOrderService).shouldHaveNoInteractions();
     }
 
-    @DisplayName("장이 닫힌 종목이면 등록하지 않는다")
+    @DisplayName("장이 닫힌 종목이면 등록하지 않고 장 마감 결과를 발행한다")
     @Test
-    void givenMarketClosed_whenHandling_thenSkips() {
+    void givenMarketClosed_whenHandling_thenSkipsAndPublishesMarketClosed() {
         given(registry.isClosed("005930")).willReturn(true);
 
         sut.handle(record(autoOrderValue()));
 
         then(autoOrderService).shouldHaveNoInteractions();
+        then(responseEventPublisher).should().publishError(
+                argThat(request -> "005930".equals(request.stockCode())), eq(AutoOrderResultCode.MARKET_CLOSED));
     }
 
     @DisplayName("자동 주문 타입이 없으면 예외 없이 건너뛴다 (재시도·DLQ 방지)")

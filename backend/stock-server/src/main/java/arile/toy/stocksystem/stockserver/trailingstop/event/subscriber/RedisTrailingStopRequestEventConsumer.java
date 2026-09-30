@@ -5,6 +5,8 @@ import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegi
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.TrailingStopType;
 import arile.toy.stocksystem.stockserver.trailingstop.event.StockServerTrailingStopRequestEvent;
+import arile.toy.stocksystem.stockserver.trailingstop.event.publisher.TrailingStopResponseEventPublisher;
+import arile.toy.stocksystem.stockserver.trailingstop.dto.TrailingStopResultCode;
 import arile.toy.stocksystem.stockserver.trailingstop.service.TrailingStopService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,11 +22,13 @@ public class RedisTrailingStopRequestEventConsumer extends AbstractRedisStreamCo
 
     private final TrailingStopService trailingStopService;
     private final StockServerMarketPhaseRegistry registry;
+    private final TrailingStopResponseEventPublisher responseEventPublisher;
 
     public RedisTrailingStopRequestEventConsumer(
             RedisTemplate<String, Object> streamRedisTemplate,
             TrailingStopService trailingStopService,
             StockServerMarketPhaseRegistry registry,
+            TrailingStopResponseEventPublisher responseEventPublisher,
             @Value("${redis.streams.trailing-stop.prefix}") String prefix,
             @Value("${redis.streams.trailing-stop.consumer-group}") String group,
             @Value("${server.group}") String stockGroup) {
@@ -32,6 +36,7 @@ public class RedisTrailingStopRequestEventConsumer extends AbstractRedisStreamCo
                 "TRAILING_STOP_CREATED", "trailingStop", "trailing-stop-dlq");
         this.trailingStopService = trailingStopService;
         this.registry = registry;
+        this.responseEventPublisher = responseEventPublisher;
     }
 
     @Override
@@ -72,15 +77,18 @@ public class RedisTrailingStopRequestEventConsumer extends AbstractRedisStreamCo
             return;
         }
 
+        StockServerTrailingStopRequestEvent request = StockServerTrailingStopRequestEvent
+                .of(username, stockCode, trailingStopType, orderQuantity, stopPercent, basePrice, leverageRatio);
+
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip trailing stop for stockCode {}", stockCode);
+            responseEventPublisher.publishError(request, TrailingStopResultCode.MARKET_CLOSED);
             return;
         }
 
         log.info("Processing trailing stop username: {} for stock {}", username, stockCode);
 
-        trailingStopService.registerTrailingStop(StockServerTrailingStopRequestEvent
-                .of(username, stockCode, trailingStopType, orderQuantity, stopPercent, basePrice, leverageRatio));
+        trailingStopService.registerTrailingStop(request);
     }
 
     private Integer parseInt(Object raw) {

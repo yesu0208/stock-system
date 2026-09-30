@@ -5,5 +5,6 @@ public enum TrailingStopResultCode {
     INSUFFICIENT_STOCK,
     INTERNAL_ERROR,
     TRIGGERED,
-    TRAILING_UPDATED
+    TRAILING_UPDATED,
+    MARKET_CLOSED
 }

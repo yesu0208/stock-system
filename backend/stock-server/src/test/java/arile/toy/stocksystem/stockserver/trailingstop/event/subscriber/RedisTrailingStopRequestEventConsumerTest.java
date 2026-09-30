@@ -2,7 +2,9 @@ package arile.toy.stocksystem.stockserver.trailingstop.event.subscriber;
 
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.LeverageRatio;
+import arile.toy.stocksystem.stockserver.trailingstop.dto.TrailingStopResultCode;
 import arile.toy.stocksystem.stockserver.trailingstop.dto.TrailingStopType;
+import arile.toy.stocksystem.stockserver.trailingstop.event.publisher.TrailingStopResponseEventPublisher;
 import arile.toy.stocksystem.stockserver.trailingstop.event.StockServerTrailingStopRequestEvent;
 import arile.toy.stocksystem.stockserver.trailingstop.service.TrailingStopService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
 @DisplayName("[Consumer] 트레일링 스탑 등록 요청 처리(handle) 테스트")
@@ -31,12 +35,13 @@ class RedisTrailingStopRequestEventConsumerTest {
     @Mock private RedisTemplate<String, Object> streamRedisTemplate;
     @Mock private TrailingStopService trailingStopService;
     @Mock private StockServerMarketPhaseRegistry registry;
+    @Mock private TrailingStopResponseEventPublisher responseEventPublisher;
 
     private RedisTrailingStopRequestEventConsumer sut;
 
     @BeforeEach
     void setUp() {
-        sut = new RedisTrailingStopRequestEventConsumer(streamRedisTemplate, trailingStopService, registry,
+        sut = new RedisTrailingStopRequestEventConsumer(streamRedisTemplate, trailingStopService, registry, responseEventPublisher,
                 "trailing-stop", "trailing-stop-group", "A");
     }
 
@@ -60,6 +65,18 @@ class RedisTrailingStopRequestEventConsumerTest {
 
         then(trailingStopService).should().registerTrailingStop(StockServerTrailingStopRequestEvent
                 .of("user", "005930", TrailingStopType.BUY, 10, 3.0, 70_000, LeverageRatio.SPOT));
+    }
+
+    @DisplayName("장이 닫혀 있으면 등록하지 않고 장 마감 결과를 발행한다")
+    @Test
+    void givenClosed_whenHandling_thenPublishesMarketClosed() {
+        given(registry.isClosed("005930")).willReturn(true);
+
+        sut.handle(record(Map.of()));
+
+        then(trailingStopService).should(never()).registerTrailingStop(any());
+        then(responseEventPublisher).should().publishError(
+                argThat(request -> "005930".equals(request.stockCode())), eq(TrailingStopResultCode.MARKET_CLOSED));
     }
 
     @DisplayName("잘못된 타입·레버리지 비율이거나 장이 닫혀 있으면 등록하지 않는다")

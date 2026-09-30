@@ -5,5 +5,6 @@ public enum AutoOrderResultCode {
     INSUFFICIENT_STOCK,
     INTERNAL_ERROR,
     TRIGGER_FAILED,
-    TRIGGERED
+    TRIGGERED,
+    MARKET_CLOSED
 }

@@ -2,6 +2,8 @@ package arile.toy.stocksystem.stockserver.autoorder.event.subscriber;
 
 import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderType;
 import arile.toy.stocksystem.stockserver.autoorder.event.StockServerAutoOrderRequestEvent;
+import arile.toy.stocksystem.stockserver.autoorder.event.publisher.AutoOrderResponseEventPublisher;
+import arile.toy.stocksystem.stockserver.autoorder.dto.AutoOrderResultCode;
 import arile.toy.stocksystem.stockserver.autoorder.service.AutoOrderService;
 import arile.toy.stocksystem.stockserver.common.stream.AbstractRedisStreamConsumer;
 import arile.toy.stocksystem.stockserver.market.phase.StockServerMarketPhaseRegistry;
@@ -20,11 +22,13 @@ public class RedisAutoOrderRequestEventConsumer extends AbstractRedisStreamConsu
 
     private final AutoOrderService autoOrderService;
     private final StockServerMarketPhaseRegistry registry;
+    private final AutoOrderResponseEventPublisher responseEventPublisher;
 
     public RedisAutoOrderRequestEventConsumer(
             RedisTemplate<String, Object> streamRedisTemplate,
             AutoOrderService autoOrderService,
             StockServerMarketPhaseRegistry registry,
+            AutoOrderResponseEventPublisher responseEventPublisher,
             @Value("${redis.streams.auto-order.prefix}") String prefix,
             @Value("${redis.streams.auto-order.consumer-group}") String group,
             @Value("${server.group}") String stockGroup) {
@@ -32,6 +36,7 @@ public class RedisAutoOrderRequestEventConsumer extends AbstractRedisStreamConsu
                 "AUTO_ORDER_CREATED", "autoOrder", "auto-order-dlq");
         this.autoOrderService = autoOrderService;
         this.registry = registry;
+        this.responseEventPublisher = responseEventPublisher;
     }
 
     @Override
@@ -73,15 +78,18 @@ public class RedisAutoOrderRequestEventConsumer extends AbstractRedisStreamConsu
             return;
         }
 
+        StockServerAutoOrderRequestEvent request = StockServerAutoOrderRequestEvent
+                .of(username, stockCode, autoOrderType, triggerPrice, orderPrice, orderQuantity, leverageRatio);
+
         if (registry.isClosed(stockCode)) {
             log.info("Market closed. Skip auto order for stockCode {}", stockCode);
+            responseEventPublisher.publishError(request, AutoOrderResultCode.MARKET_CLOSED);
             return;
         }
 
         log.info("Processing order username: {} for stock {}", username, stockCode);
 
-        autoOrderService.registerAutoOrder(StockServerAutoOrderRequestEvent
-                .of(username, stockCode, autoOrderType, triggerPrice, orderPrice, orderQuantity, leverageRatio));
+        autoOrderService.registerAutoOrder(request);
     }
 
     private Integer parseInt(Object raw) {

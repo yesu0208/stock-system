@@ -54,7 +54,7 @@ class OtocoResponsePushServiceTest {
 
     @ParameterizedTest(name = "{0}")
     @EnumSource(value = OtocoResultCode.class, names = {
-            "INSUFFICIENT_BALANCE", "INTERNAL_ERROR", "INVALID_TP_PRICE", "INVALID_SL_PRICE", "ENTRY_FAILED"})
+            "INSUFFICIENT_BALANCE", "INTERNAL_ERROR", "INVALID_TP_PRICE", "INVALID_SL_PRICE", "ENTRY_FAILED", "MARKET_CLOSED"})
     @DisplayName("실패: 결과 코드의 안내 문구를 담은 ERROR 결과만 보내고, 목록은 조회하지 않는다")
     void failure(OtocoResultCode resultCode) {
         service.push(event(false, resultCode, OtocoStatus.CANCELED));
