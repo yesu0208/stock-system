@@ -20,8 +20,12 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +36,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class AbstractRedisStreamConsumerTest {
@@ -74,6 +79,30 @@ class AbstractRedisStreamConsumerTest {
                 throw failure;
             }
             handled.add(record);
+        }
+    }
+
+    static class PartitionedStreamConsumer extends TestStreamConsumer {
+
+        java.util.function.Consumer<MapRecord<String, Object, Object>> onHandle = record -> { };
+
+        PartitionedStreamConsumer(RedisTemplate<String, Object> template) {
+            super(template);
+        }
+
+        @Override
+        protected Object partitionKey(MapRecord<String, Object, Object> record) {
+            return record.getValue().get("key");
+        }
+
+        @Override
+        protected int workerCount() {
+            return 4;
+        }
+
+        @Override
+        protected void handle(MapRecord<String, Object, Object> record) {
+            onHandle.accept(record);
         }
     }
 
@@ -140,6 +169,84 @@ class AbstractRedisStreamConsumerTest {
 
             assertThat(consumer.handled).isEmpty();
             verifyNotAcked();
+        }
+
+        @Test
+        @DisplayName("배치가 꽉 차서 읽히면 쉬지 않고 바로 다음 배치를 읽는다")
+        void whenFullBatch_readsNextBatchImmediately() {
+            List<MapRecord<String, Object, Object>> full = new ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                full.add(StreamRecords.newRecord()
+                        .in(STREAM_KEY)
+                        .withId(RecordId.of(i + "-0"))
+                        .ofMap(Map.<Object, Object>of("type", "OTHER_EVENT")));
+            }
+            doReturn(full, List.of()).when(streamOps).read(
+                    any(Consumer.class), any(StreamReadOptions.class), any(StreamOffset.class));
+
+            consumer.consume();
+
+            verify(streamOps, times(2)).read(
+                    any(Consumer.class), any(StreamReadOptions.class), any(StreamOffset.class));
+        }
+
+        @Test
+        @DisplayName("배치가 덜 차서 읽히면 다음 배치는 다음 주기에 읽는다")
+        void whenPartialBatch_readsOnce() {
+            givenRead(List.of(record("OTHER_EVENT")));
+
+            consumer.consume();
+
+            verify(streamOps, times(1)).read(
+                    any(Consumer.class), any(StreamReadOptions.class), any(StreamOffset.class));
+        }
+
+        @Test
+        @DisplayName("파티션 키가 다른 레코드는 동시에 처리한다")
+        void whenDifferentPartitionKeys_handlesConcurrently() throws Exception {
+            var partitioned = new PartitionedStreamConsumer(streamRedisTemplate);
+            givenRead(List.of(keyedRecord("1-0", "A"), keyedRecord("2-0", "B")));
+            given(valueOps.setIfAbsent(anyString(), eq("PROCESSING"), any(Duration.class))).willReturn(true);
+            CountDownLatch bothStarted = new CountDownLatch(2);
+            List<Boolean> overlapped = Collections.synchronizedList(new ArrayList<>());
+            partitioned.onHandle = record -> {
+                bothStarted.countDown();
+                try {
+                    overlapped.add(bothStarted.await(2, TimeUnit.SECONDS));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            };
+
+            partitioned.consume();
+            partitioned.shutdownWorkers();
+
+            assertThat(overlapped).containsExactly(true, true);
+        }
+
+        @Test
+        @DisplayName("파티션 키가 같은 레코드는 읽은 순서대로 처리한다")
+        void whenSamePartitionKey_handlesInOrder() throws Exception {
+            var partitioned = new PartitionedStreamConsumer(streamRedisTemplate);
+            givenRead(List.of(keyedRecord("1-0", "A"), keyedRecord("2-0", "A"), keyedRecord("3-0", "A")));
+            given(valueOps.setIfAbsent(anyString(), eq("PROCESSING"), any(Duration.class))).willReturn(true);
+            List<String> handled = Collections.synchronizedList(new ArrayList<>());
+            partitioned.onHandle = record -> handled.add(record.getId().getValue());
+
+            partitioned.consume();
+            partitioned.shutdownWorkers();
+
+            assertThat(handled).containsExactly("1-0", "2-0", "3-0");
+        }
+
+        private MapRecord<String, Object, Object> keyedRecord(String id, String key) {
+            Map<Object, Object> value = new HashMap<>();
+            value.put("type", EVENT_TYPE);
+            value.put("key", key);
+            return StreamRecords.newRecord()
+                    .in(STREAM_KEY)
+                    .withId(RecordId.of(id))
+                    .ofMap(value);
         }
 
         @Test

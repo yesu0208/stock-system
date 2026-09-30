@@ -1,5 +1,6 @@
 package arile.toy.stocksystem.accountserver.stream;
 
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -12,10 +13,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Redis Stream 컨슈머 공통 로직.
@@ -27,6 +34,7 @@ public abstract class AbstractRedisStreamConsumer {
 
     private static final long RETRY_IDLE_MILLIS = 10000;
     private static final int MAX_RETRY_COUNT = 3;
+    private static final int BATCH_SIZE = 10;
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -38,6 +46,8 @@ public abstract class AbstractRedisStreamConsumer {
             "account-server" + UUID.randomUUID();
 
     private MeterRegistry meterRegistry = Metrics.globalRegistry;
+
+    private ExecutorService workers;
 
     @Autowired
     public void setMeterRegistry(MeterRegistry meterRegistry) {
@@ -66,64 +76,119 @@ public abstract class AbstractRedisStreamConsumer {
     /** 실제 이벤트 처리. 예외를 던지면 재시도 대상이 된다. */
     protected abstract void handle(MapRecord<String, Object, Object> record);
 
+    protected Object partitionKey(MapRecord<String, Object, Object> record) {
+        return null;
+    }
+
+    protected int workerCount() {
+        return 1;
+    }
+
     @Scheduled(fixedDelay = 100)
     public void consume() {
+        while (consumeBatch() == BATCH_SIZE) {
+        }
+    }
+
+    private int consumeBatch() {
 
         List<MapRecord<String, Object, Object>> records =
                 streamRedisTemplate.opsForStream().read(
                         Consumer.from(group, consumerName),
                         StreamReadOptions.empty()
-                                .count(10)
+                                .count(BATCH_SIZE)
                                 .block(Duration.ofMillis(100)),
                         StreamOffset.create(streamKey, ReadOffset.lastConsumed())
                 );
 
         if (records == null || records.isEmpty()) {
-            return;
+            return 0;
         }
 
         meterRegistry.summary("stream.consume.batch.size", "stream", streamKey)
                 .record(records.size());
 
+        if (workerCount() <= 1) {
+            records.forEach(this::processRecord);
+        } else {
+            processInParallel(records);
+        }
+        return records.size();
+    }
+
+    private void processInParallel(List<MapRecord<String, Object, Object>> records) {
+        Map<Object, List<MapRecord<String, Object, Object>>> groups = new LinkedHashMap<>();
         for (MapRecord<String, Object, Object> record : records) {
-            try {
+            Object key = partitionKey(record);
+            groups.computeIfAbsent(key == null ? "" : key, k -> new ArrayList<>()).add(record);
+        }
 
-                String type = (String) record.getValue().get("type");
-                if (!eventType().equals(type)) {
-                    acknowledge(record);
-                    continue;
-                }
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (List<MapRecord<String, Object, Object>> group : groups.values()) {
+            futures.add(CompletableFuture.runAsync(() -> group.forEach(this::processRecord), workers()));
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    }
 
-                String recordId = record.getId().getValue();
-                String status = getStatus(recordId);
+    private synchronized ExecutorService workers() {
+        if (workers == null) {
+            workers = Executors.newFixedThreadPool(workerCount());
+        }
+        return workers;
+    }
 
-                if ("DONE".equals(status)) {
-                    log.warn("Duplicate DONE skip recordId={}", recordId);
-                    acknowledge(record);
-                    continue;
-                }
+    @PreDestroy
+    public synchronized void shutdownWorkers() throws InterruptedException {
+        if (workers != null) {
+            workers.shutdown();
+            workers.awaitTermination(10, TimeUnit.SECONDS);
+        }
+    }
 
-                if ("PROCESSING".equals(status)) {
-                    log.warn("Still PROCESSING recordId={}", recordId);
-                    continue;
-                }
+    private void processRecord(MapRecord<String, Object, Object> record) {
+        String recordId = record.getId().getValue();
+        boolean acquired = false;
+        boolean done = false;
+        try {
 
-                if (!tryStartProcess(recordId)) {
-                    continue;
-                }
-
-                recordWaitTime(record);
-                Timer.Sample sample = Timer.start(meterRegistry);
-                handle(record);
-                sample.stop(handleTimer());
-
-                markProcessed(recordId);
-
+            String type = (String) record.getValue().get("type");
+            if (!eventType().equals(type)) {
                 acknowledge(record);
-            } catch (Exception e) {
-                meterRegistry.counter("stream.consume.errors", "stream", streamKey).increment();
-                log.error("Failed to process {}", record.getId(), e);
-                clearProcessingMark(record.getId().getValue());
+                return;
+            }
+
+            String status = getStatus(recordId);
+
+            if ("DONE".equals(status)) {
+                log.warn("Duplicate DONE skip recordId={}", recordId);
+                acknowledge(record);
+                return;
+            }
+
+            if ("PROCESSING".equals(status)) {
+                log.warn("Still PROCESSING recordId={}", recordId);
+                return;
+            }
+
+            if (!tryStartProcess(recordId)) {
+                return;
+            }
+            acquired = true;
+
+            recordWaitTime(record);
+            Timer.Sample sample = Timer.start(meterRegistry);
+            handle(record);
+            sample.stop(handleTimer());
+
+            markProcessed(recordId);
+            done = true;
+
+            acknowledge(record);
+        } catch (Exception e) {
+            meterRegistry.counter("stream.consume.errors", "stream", streamKey).increment();
+            log.error("Failed to process {}", record.getId(), e);
+            if (acquired && !done) {
+                clearProcessingMark(recordId);
             }
         }
     }

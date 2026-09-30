@@ -36,6 +36,7 @@ redis:
     trade-executed:
       key: trade-executed-events
       consumer-group: account-group
+      workers: 4
 
 spring:
   application.name: account-server
