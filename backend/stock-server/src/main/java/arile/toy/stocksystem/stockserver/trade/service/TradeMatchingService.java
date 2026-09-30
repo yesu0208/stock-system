@@ -5,6 +5,7 @@ import arile.toy.stocksystem.stockserver.lock.StockLockRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.OrderDto;
 import arile.toy.stocksystem.stockserver.order.dto.OrderQueueRegistry;
 import arile.toy.stocksystem.stockserver.order.dto.OrderStatus;
+import arile.toy.stocksystem.stockserver.order.dto.OrderType;
 import arile.toy.stocksystem.stockserver.order.dto.StockServerOrderResponseMessage;
 import arile.toy.stocksystem.stockserver.order.repository.StockServerOrderResponseRepository;
 import arile.toy.stocksystem.stockserver.order.service.QueuePositionBroadcastService;
@@ -48,23 +49,38 @@ public class TradeMatchingService {
         String tradingType = tick.tradingType();
 
         switch (tradingType) {
-            case "1" -> matchAndExecuteSellSide(stockCode, tradePrice, leftQuantity);
-            case "5" -> matchAndExecuteBuySide(stockCode, tradePrice, leftQuantity);
-            case "3", "" -> matchAndExecuteCallAuction(stockCode, tradePrice, leftQuantity);
+            case "1" -> {
+                if (matchAndExecuteSellSide(stockCode, tradePrice, leftQuantity)) {
+                    broadcastQueuePosition(stockCode, OrderType.SELL);
+                }
+            }
+            case "5" -> {
+                if (matchAndExecuteBuySide(stockCode, tradePrice, leftQuantity)) {
+                    broadcastQueuePosition(stockCode, OrderType.BUY);
+                }
+            }
+            case "3", "" -> {
+                if (matchAndExecuteCallAuction(stockCode, tradePrice, leftQuantity)) {
+                    broadcastQueuePosition(stockCode, OrderType.BUY);
+                    broadcastQueuePosition(stockCode, OrderType.SELL);
+                }
+            }
         }
     }
 
-    private void matchAndExecuteSellSide(String stockCode, int tradePrice, int leftQuantity) {
+    private boolean matchAndExecuteSellSide(String stockCode, int tradePrice, int leftQuantity) {
+
+        boolean executed = false;
 
         while (leftQuantity > 0) {
 
             var sell = orderQueueRegistry.pollSell(stockCode);
 
-            if (sell == null) return;
+            if (sell == null) return executed;
 
             if (sell.orderPrice() > tradePrice) {
                 orderQueueRegistry.orderEnqueue(sell);
-                return;
+                return executed;
             }
 
             int executable = Math.min(leftQuantity, sell.remainingQuantity());
@@ -76,7 +92,7 @@ public class TradeMatchingService {
                 // 체결 트랜잭션 실패(롤백): 꺼낸 주문을 대기열로 되돌리고 이번 틱 매칭 중단
                 log.error("Sell trade execution failed. orderId={}", sell.orderId(), e);
                 orderQueueRegistry.orderEnqueue(sell);
-                return;
+                return executed;
             }
 
             if (tradeResult == null) {
@@ -88,22 +104,26 @@ public class TradeMatchingService {
 
             int remaining = sell.remainingQuantity() - executable;
             finalizeOrderAfterExecution(sell, remaining);
+            executed = true;
 
             leftQuantity -= executable;
         }
+        return executed;
     }
 
-    private void matchAndExecuteBuySide(String stockCode, int tradePrice, int leftQuantity) {
+    private boolean matchAndExecuteBuySide(String stockCode, int tradePrice, int leftQuantity) {
+
+        boolean executed = false;
 
         while (leftQuantity > 0) {
 
             var buy = orderQueueRegistry.pollBuy(stockCode);
 
-            if (buy == null) return;
+            if (buy == null) return executed;
 
             if (buy.orderPrice() < tradePrice) {
                 orderQueueRegistry.orderEnqueue(buy);
-                return;
+                return executed;
             }
 
             int executable = Math.min(leftQuantity, buy.remainingQuantity());
@@ -115,7 +135,7 @@ public class TradeMatchingService {
                 // 체결 트랜잭션 실패(롤백): 꺼낸 주문을 대기열로 되돌리고 이번 틱 매칭 중단
                 log.error("Buy trade execution failed. orderId={}", buy.orderId(), e);
                 orderQueueRegistry.orderEnqueue(buy);
-                return;
+                return executed;
             }
 
             if (tradeResult == null) {
@@ -127,12 +147,16 @@ public class TradeMatchingService {
 
             int remaining = buy.remainingQuantity() - executable;
             finalizeOrderAfterExecution(buy, remaining);
+            executed = true;
 
             leftQuantity -= executable;
         }
+        return executed;
     }
 
-    private void matchAndExecuteCallAuction(String stockCode, int tradePrice, int leftQuantity) {
+    private boolean matchAndExecuteCallAuction(String stockCode, int tradePrice, int leftQuantity) {
+
+        boolean executed = false;
 
         while (leftQuantity > 0) {
 
@@ -171,6 +195,7 @@ public class TradeMatchingService {
                 tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(sellResult.tradeEntity()));
                 int remaining = sell.remainingQuantity() - executable;
                 finalizeOrderAfterExecution(sell, remaining);
+                executed = true;
             } else {
                 log.info("skip canceled order.");
             }
@@ -189,12 +214,14 @@ public class TradeMatchingService {
                 tradeResponseEventPublisher.publish(TradeResponseEvent.fromEntity(buyResult.tradeEntity()));
                 int remaining = buy.remainingQuantity() - executable;
                 finalizeOrderAfterExecution(buy, remaining);
+                executed = true;
             } else {
                 log.info("skip canceled order.");
             }
 
             leftQuantity -= executable;
         }
+        return executed;
     }
 
     private void finalizeOrderAfterExecution(OrderDto order, int remainingQuantity) {
@@ -250,11 +277,13 @@ public class TradeMatchingService {
         } catch (Exception e) {
             log.warn("Order response update failed after trade. orderId={}", order.orderId(), e);
         }
+    }
 
+    private void broadcastQueuePosition(String stockCode, OrderType orderType) {
         try {
-            queuePositionBroadcastService.broadcast(order.stockCode(), order.orderType());
+            queuePositionBroadcastService.broadcast(stockCode, orderType);
         } catch (Exception e) {
-            log.warn("Queue position broadcast failed after trade. orderId={}", order.orderId(), e);
+            log.warn("Queue position broadcast failed after trade. stockCode={}, orderType={}", stockCode, orderType, e);
         }
     }
 }
