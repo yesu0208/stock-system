@@ -41,7 +41,7 @@ class RedisTradeExecutedEventConsumerTest {
     private RedisTradeExecutedEventConsumer consumer() {
         return new RedisTradeExecutedEventConsumer(
                 streamRedisTemplate, tradeExecutionApplyService, objectMapper,
-                "trade-executed-events", "account-group");
+                "trade-executed-events", "account-group", 4);
     }
 
     private static MapRecord<String, Object, Object> record() {
@@ -59,6 +59,26 @@ class RedisTradeExecutedEventConsumerTest {
         assertThat(consumer.eventType()).isEqualTo("TRADE_EXECUTED");
         assertThat(consumer.processedKeyPrefix()).isEqualTo("processed:tradeExecuted:");
         assertThat(consumer.dlqStreamKey()).isEqualTo("trade-executed-dlq");
+    }
+
+    @Test
+    @DisplayName("체결 이벤트의 사용자 이름으로 파티션을 나누고 설정한 워커 수로 병렬 처리한다 (파싱 실패 시 파티션 없음)")
+    void partitionsByUsername() {
+        var consumer = new RedisTradeExecutedEventConsumer(
+                streamRedisTemplate, tradeExecutionApplyService, new ObjectMapper(),
+                "trade-executed-events", "account-group", 4);
+        MapRecord<String, Object, Object> valid = StreamRecords.newRecord()
+                .in("trade-executed-events")
+                .withId(RecordId.of("1-0"))
+                .ofMap(Map.<Object, Object>of("type", "TRADE_EXECUTED", "payload", "{\"username\":\"user1\"}"));
+        MapRecord<String, Object, Object> invalid = StreamRecords.newRecord()
+                .in("trade-executed-events")
+                .withId(RecordId.of("2-0"))
+                .ofMap(Map.<Object, Object>of("type", "TRADE_EXECUTED", "payload", "not-json"));
+
+        assertThat(consumer.partitionKey(valid)).isEqualTo("user1");
+        assertThat(consumer.partitionKey(invalid)).isNull();
+        assertThat(consumer.workerCount()).isEqualTo(4);
     }
 
     @Test

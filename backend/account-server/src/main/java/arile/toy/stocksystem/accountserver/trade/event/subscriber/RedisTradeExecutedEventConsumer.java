@@ -14,17 +14,34 @@ public class RedisTradeExecutedEventConsumer extends AbstractRedisStreamConsumer
 
     private final TradeExecutionApplyService tradeExecutionApplyService;
     private final ObjectMapper objectMapper;
+    private final int workers;
 
     public RedisTradeExecutedEventConsumer(
             RedisTemplate<String, Object> streamRedisTemplate,
             TradeExecutionApplyService tradeExecutionApplyService,
             ObjectMapper objectMapper,
             @Value("${redis.streams.trade-executed.key}") String streamKey,
-            @Value("${redis.streams.trade-executed.consumer-group}") String group
+            @Value("${redis.streams.trade-executed.consumer-group}") String group,
+            @Value("${redis.streams.trade-executed.workers:1}") int workers
     ) {
         super(streamRedisTemplate, streamKey, group);
         this.tradeExecutionApplyService = tradeExecutionApplyService;
         this.objectMapper = objectMapper;
+        this.workers = workers;
+    }
+
+    @Override
+    protected Object partitionKey(MapRecord<String, Object, Object> record) {
+        try {
+            return objectMapper.readTree((String) record.getValue().get("payload")).path("username").asText(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Override
+    protected int workerCount() {
+        return workers;
     }
 
     @Override
