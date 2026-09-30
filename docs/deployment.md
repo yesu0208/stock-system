@@ -7,7 +7,7 @@
 | 위치 | [`infrastructure/`](../infrastructure) | [`deploy/`](../deploy), `docker-compose.yml` |
 | 목적 | 트래픽이 늘었을 때의 운영형 구조를 코드로 설계·검증 | 실제 서비스([stock-system.cloud](https://stock-system.cloud)) 운영 |
 | 실행 환경 | ECS Fargate + RDS + ElastiCache + ALB + CloudFront | EC2 1대 + docker compose |
-| 상태 | 설계 완료, 실제 AWS에서 임시 적용 테스트 완 | 운영 중 |
+| 상태 | 설계 완료, 실제 AWS에서 임시 적용 테스트 완료 | 운영 중 |
 
 두 방식은 **같은 이미지 빌드 파일(`backend/Dockerfile.module`)과 같은 애플리케이션 설정(`prod` 프로필, Flyway, 서비스별 DB)**을 사용합니다. 그래서 코드 변경 없이 인프라만 바꿔 옮겨 갈 수 있습니다.
 
