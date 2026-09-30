@@ -2,6 +2,15 @@
 market-phase:
   force-open: ${MARKET_PHASE_FORCE_OPEN:false}
 
+loadtest:
+  fake-tick:
+    enabled: ${LOADTEST_FAKE_TICK_ENABLED:false}
+    stock-codes: ${LOADTEST_FAKE_TICK_STOCK_CODES:}
+    interval-ms: ${LOADTEST_FAKE_TICK_INTERVAL_MS:100}
+    volume: ${LOADTEST_FAKE_TICK_VOLUME:20}
+    min-price: ${LOADTEST_FAKE_TICK_MIN_PRICE:990}
+    max-price: ${LOADTEST_FAKE_TICK_MAX_PRICE:1000}
+
 api:
   approval-key-url: ${APPROVAL_KEY_URL}
   app-key: ${APP_KEY}

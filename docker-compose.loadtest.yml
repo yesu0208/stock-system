@@ -12,6 +12,10 @@ services:
   stock-server:
     environment:
       <<: *loadtest-env
+      LOADTEST_FAKE_TICK_ENABLED: "true"
+      LOADTEST_FAKE_TICK_STOCK_CODES: "005930,000660,373220"
   stock-server-b:
     environment:
       <<: *loadtest-env
+      LOADTEST_FAKE_TICK_ENABLED: "true"
+      LOADTEST_FAKE_TICK_STOCK_CODES: "000810,032830,086790"
