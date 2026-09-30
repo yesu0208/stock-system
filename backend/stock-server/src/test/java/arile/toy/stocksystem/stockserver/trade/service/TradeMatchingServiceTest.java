@@ -176,6 +176,33 @@ class TradeMatchingServiceTest {
             assertThat(orderQueueRegistry.snapshotRanked(STOCK_CODE, OrderType.BUY)).isEmpty();
         }
 
+        @DisplayName("한 틱에 여러 주문이 체결되어도 매수 대기 순번은 틱마다 한 번만 발행한다")
+        @Test
+        void givenMultipleFillsInOneTick_whenTick_thenBroadcastsOnce() {
+            enqueue(order(1L, OrderType.BUY, 70_000, 1, T0));
+            enqueue(order(2L, OrderType.BUY, 70_000, 1, T0.plusSeconds(1)));
+            enqueue(order(3L, OrderType.BUY, 70_000, 1, T0.plusSeconds(2)));
+            givenBuyExecutes(1L, 70_000, 1);
+            givenBuyExecutes(2L, 70_000, 1);
+            givenBuyExecutes(3L, 70_000, 1);
+
+            sut.getExternalTickMessageAndTrade(tick(70_000, 3, "5"));
+
+            then(tradeExecutionService).should(times(3)).executeBuyTrade(any(), anyInt(), anyInt());
+            then(queuePositionBroadcastService).should(times(1)).broadcast(STOCK_CODE, OrderType.BUY);
+            then(queuePositionBroadcastService).should(never()).broadcast(STOCK_CODE, OrderType.SELL);
+        }
+
+        @DisplayName("체결된 주문이 없으면 대기 순번을 발행하지 않는다")
+        @Test
+        void givenNoFill_whenTick_thenDoesNotBroadcast() {
+            enqueue(order(1L, OrderType.BUY, 69_000, 5, T0));
+
+            sut.getExternalTickMessageAndTrade(tick(70_000, 5, "5"));
+
+            then(queuePositionBroadcastService).shouldHaveNoInteractions();
+        }
+
         @DisplayName("가장 비싼 매수 주문도 체결가보다 싸면 체결하지 않고 대기열에 그대로 둔다")
         @Test
         void givenBuyBelowTradePrice_whenTick_thenKeepsInQueue() {
@@ -246,6 +273,24 @@ class TradeMatchingServiceTest {
             then(tradeResponseEventPublisher).should(times(2)).publish(captor.capture());
             assertThat(captor.getAllValues()).extracting(TradeResponseEvent::orderId)
                     .containsExactlyInAnyOrder(1L, 2L);
+        }
+
+        @DisplayName("동시호가 체결이 있으면 매수·매도 대기 순번을 틱마다 한 번씩 발행한다")
+        @Test
+        void givenCallAuctionFills_whenTick_thenBroadcastsBothSidesOnce() {
+            enqueue(order(1L, OrderType.BUY, 70_000, 1, T0));
+            enqueue(order(2L, OrderType.BUY, 70_000, 1, T0.plusSeconds(1)));
+            enqueue(order(3L, OrderType.SELL, 70_000, 1, T0));
+            enqueue(order(4L, OrderType.SELL, 70_000, 1, T0.plusSeconds(1)));
+            givenSellExecutes(3L, 70_000, 1);
+            givenSellExecutes(4L, 70_000, 1);
+            givenBuyExecutes(1L, 70_000, 1);
+            givenBuyExecutes(2L, 70_000, 1);
+
+            sut.getExternalTickMessageAndTrade(tick(70_000, 2, "3"));
+
+            then(queuePositionBroadcastService).should(times(1)).broadcast(STOCK_CODE, OrderType.BUY);
+            then(queuePositionBroadcastService).should(times(1)).broadcast(STOCK_CODE, OrderType.SELL);
         }
 
         @DisplayName("빈 문자열 체결 구분도 동시호가로 처리한다")
