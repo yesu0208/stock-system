@@ -36,8 +36,8 @@ class AbstractRedisStreamConsumerTest {
     private static final String EVENT_TYPE = "TEST_CREATED";
     private static final String DLQ_KEY = "test-dlq";
     private static final RecordId RECORD_ID = RecordId.of("1-0");
-    private static final String PROCESSED_KEY = "processed:test:1-0";
-    private static final String RETRY_KEY = "retry:test:1-0";
+    private static final String PROCESSED_KEY = "processed:test:test-1:1-0";
+    private static final String RETRY_KEY = "retry:test:test-1:1-0";
 
     /** 테스트용 컨슈머: handle()을 mock에 위임 */
     interface RecordHandler {
@@ -48,7 +48,11 @@ class AbstractRedisStreamConsumerTest {
         private final RecordHandler handler;
 
         TestConsumer(RedisTemplate<String, Object> template, RecordHandler handler) {
-            super(template, STREAM_KEY, GROUP, EVENT_TYPE, "test", DLQ_KEY);
+            this(template, handler, STREAM_KEY);
+        }
+
+        TestConsumer(RedisTemplate<String, Object> template, RecordHandler handler, String streamKey) {
+            super(template, streamKey, GROUP, EVENT_TYPE, "test", DLQ_KEY);
             this.handler = handler;
         }
 
@@ -102,6 +106,24 @@ class AbstractRedisStreamConsumerTest {
 
             then(handler).shouldHaveNoInteractions();
             then(valueOps).shouldHaveNoInteractions();
+        }
+
+        @DisplayName("다른 스트림의 같은 레코드 ID는 처리 상태 키가 달라 서로의 처리 완료로 건너뛰지 않는다")
+        @Test
+        void givenSameRecordIdOnAnotherStream_whenConsuming_thenUsesStreamScopedKey() {
+            var otherStream = new TestConsumer(streamRedisTemplate, handler, "test-2");
+            var record = StreamRecords.newRecord()
+                    .in("test-2")
+                    .withId(RECORD_ID)
+                    .ofMap(value());
+            givenRead(List.of(record));
+            given(valueOps.setIfAbsent("processed:test:test-2:1-0", "PROCESSING", Duration.ofMinutes(5))).willReturn(true);
+
+            otherStream.consume();
+
+            then(handler).should().handle(record);
+            then(valueOps).should().set("processed:test:test-2:1-0", "DONE", Duration.ofHours(24));
+            then(valueOps).should(never()).get(PROCESSED_KEY);
         }
 
         @DisplayName("읽은 결과가 null이면 아무것도 하지 않는다")

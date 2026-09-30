@@ -313,7 +313,7 @@ public abstract class AbstractRedisStreamConsumer {
 
     // 스트림마다 레코드 ID(타임스탬프-순번)가 겹칠 수 있으므로 컨슈머별 구분자를 붙임
     private String retryKey(RecordId id) {
-        return "retry:" + keyNamespace + ":" + id.getValue();
+        return "retry:" + keyNamespace + ":" + streamKey + ":" + id.getValue();
     }
 
     private int getRetryCount(MapRecord<String, Object, Object> record) {
@@ -343,7 +343,7 @@ public abstract class AbstractRedisStreamConsumer {
     }
 
     private String processedKey(String recordId) {
-        return "processed:" + keyNamespace + ":" + recordId;
+        return "processed:" + keyNamespace + ":" + streamKey + ":" + recordId;
     }
 
     private boolean tryStartProcess(String recordId) {
