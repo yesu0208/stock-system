@@ -182,7 +182,8 @@ k6 부하 테스트(초당 20 → 50 → 100건 주문)와 Prometheus/Grafana �
 - Docker
 
 ## System Architecture
-<img width="1230" height="621" alt="stock-system-system-architecture (2) drawio (1)" src="https://github.com/user-attachments/assets/83ed3610-3f44-456b-97cc-f2e1c2de8bf5" />
+<img width="1230" height="621" alt="stock-system-system-architecture drawio" src="https://github.com/user-attachments/assets/b5bddebd-a642-44a7-972a-6175ee750121" />
+
 
 
 
