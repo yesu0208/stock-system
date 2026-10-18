@@ -181,20 +181,14 @@ k6 부하 테스트(초당 20 → 50 → 100건 주문)와 Prometheus/Grafana �
 - GitKraken
 - Docker
 
-## 확장성과 트래픽 분산을 고려한 설계(BFF / Stock(A/B) / Account 서버 분리)
-- [#22](https://github.com/yesu0208/stock-system/issues/22) 12. 확장성과 트래픽 분산을 고려한 설계
-<img width="962" height="416" alt="화면 캡처 2026-03-25 144143" src="https://github.com/user-attachments/assets/64f69772-1f29-47c1-93a9-8f62e9b8825e" />
-
-- [#31](https://github.com/yesu0208/stock-system/issues/31) 17. 주문 서비스 구현(기본 기능)
-<img width="990" height="577" alt="화면 캡처 2026-03-25 144156" src="https://github.com/user-attachments/assets/eae7a038-3483-40c6-a8bb-a6de7bbf7a9f" />
-
-
 ## System Architecture
-<img width="937" height="493" alt="화면 캡처 2026-03-25 123106" src="https://github.com/user-attachments/assets/390d585e-785b-4800-ba6c-6b22de1cf43e" />
+<img width="1197" height="562" alt="stock-system-system-architecture (2) drawio" src="https://github.com/user-attachments/assets/4e8718c6-2a20-4593-8474-0b532c2ff9c0" />
+
 
 
 ## AWS 배포 구조 (+Terraform IaC)
 
 다음과 같은 배포구조를 채택하게 된 배경은 아래 Issue에서 확인할 수 있습니다.
 - [#111](https://github.com/yesu0208/stock-system/issues/111) 52. AWS(+Terraform IaC) 배포 채택
-<img width="1137" height="617" alt="1773816372650" src="https://github.com/user-attachments/assets/7f04a61e-43ff-42b9-b868-2d58890b90c9" />
+<img width="1284" height="672" alt="stock-system-aws-architecture (7) drawio" src="https://github.com/user-attachments/assets/9a251f2e-a8ee-4b5c-87a1-c337ee4dc1ab" />
+
