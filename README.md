@@ -182,7 +182,8 @@ k6 부하 테스트(초당 20 → 50 → 100건 주문)와 Prometheus/Grafana �
 - Docker
 
 ## System Architecture
-<img width="1197" height="562" alt="stock-system-system-architecture (2) drawio" src="https://github.com/user-attachments/assets/4e8718c6-2a20-4593-8474-0b532c2ff9c0" />
+<img width="1230" height="621" alt="stock-system-system-architecture (2) drawio (1)" src="https://github.com/user-attachments/assets/83ed3610-3f44-456b-97cc-f2e1c2de8bf5" />
+
 
 
 
@@ -190,5 +191,7 @@ k6 부하 테스트(초당 20 → 50 → 100건 주문)와 Prometheus/Grafana �
 
 다음과 같은 배포구조를 채택하게 된 배경은 아래 Issue에서 확인할 수 있습니다.
 - [#111](https://github.com/yesu0208/stock-system/issues/111) 52. AWS(+Terraform IaC) 배포 채택
-<img width="1284" height="672" alt="stock-system-aws-architecture (7) drawio" src="https://github.com/user-attachments/assets/9a251f2e-a8ee-4b5c-87a1-c337ee4dc1ab" />
+<img width="1340" height="720" alt="stock-system-aws-architecture (7) drawio (1)" src="https://github.com/user-attachments/assets/9aeb5165-fb96-4769-b829-6a011541842b" />
+
+
 
